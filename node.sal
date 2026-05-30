@@ -1,0 +1,779 @@
+// Node compatibility plugin public SA macro facade.
+@import "node.sai"
+
+[MACRO] NODE_OS_CPUS %out_ptr, %out_len, %out_status
+    __c_ptr_slot = stack_alloc 8
+    __c_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_cpus(&__c_ptr_slot, &__c_len_slot)
+    %out_ptr = load __c_ptr_slot+0 as ptr
+    %out_len = load __c_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_TOTALMEM %out_mem, %out_status
+    __tm_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_totalmem(&__tm_slot)
+    %out_mem = load __tm_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_FREEMEM %out_mem, %out_status
+    __fm_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_freemem(&__fm_slot)
+    %out_mem = load __fm_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_HOMEDIR %out_ptr, %out_len, %out_status
+    __h_ptr_slot = stack_alloc 8
+    __h_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_homedir(&__h_ptr_slot, &__h_len_slot)
+    %out_ptr = load __h_ptr_slot+0 as ptr
+    %out_len = load __h_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_TMPDIR %out_ptr, %out_len, %out_status
+    __t_ptr_slot = stack_alloc 8
+    __t_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_tmpdir(&__t_ptr_slot, &__t_len_slot)
+    %out_ptr = load __t_ptr_slot+0 as ptr
+    %out_len = load __t_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_PLATFORM %out_ptr, %out_len, %out_status
+    __p_ptr_slot = stack_alloc 8
+    __p_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_platform(&__p_ptr_slot, &__p_len_slot)
+    %out_ptr = load __p_ptr_slot+0 as ptr
+    %out_len = load __p_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_ARCH %out_ptr, %out_len, %out_status
+    __a_ptr_slot = stack_alloc 8
+    __a_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_arch(&__a_ptr_slot, &__a_len_slot)
+    %out_ptr = load __a_ptr_slot+0 as ptr
+    %out_len = load __a_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_RELEASE %out_ptr, %out_len, %out_status
+    __r_ptr_slot = stack_alloc 8
+    __r_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_release(&__r_ptr_slot, &__r_len_slot)
+    %out_ptr = load __r_ptr_slot+0 as ptr
+    %out_len = load __r_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_TYPE %out_ptr, %out_len, %out_status
+    __ty_ptr_slot = stack_alloc 8
+    __ty_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_type(&__ty_ptr_slot, &__ty_len_slot)
+    %out_ptr = load __ty_ptr_slot+0 as ptr
+    %out_len = load __ty_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_SYSTEM_UPTIME %out_uptime, %out_status
+    __su_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_system_uptime(&__su_slot)
+    %out_uptime = load __su_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_LOADAVG %out_status, %load_buf
+    %out_status = call @sa_node_plugin_os_loadavg(%load_buf)
+[END_MACRO]
+
+[MACRO] NODE_OS_NETWORK_INTERFACES %out_ptr, %out_len, %out_status
+    __ni_ptr_slot = stack_alloc 8
+    __ni_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_network_interfaces(&__ni_ptr_slot, &__ni_len_slot)
+    %out_ptr = load __ni_ptr_slot+0 as ptr
+    %out_len = load __ni_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_HOSTNAME %out_ptr, %out_len, %out_status
+    __hn_ptr_slot = stack_alloc 8
+    __hn_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_hostname(&__hn_ptr_slot, &__hn_len_slot)
+    %out_ptr = load __hn_ptr_slot+0 as ptr
+    %out_len = load __hn_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_USER_INFO %out_ptr, %out_len, %out_status
+    __ui_ptr_slot = stack_alloc 8
+    __ui_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_user_info(&__ui_ptr_slot, &__ui_len_slot)
+    %out_ptr = load __ui_ptr_slot+0 as ptr
+    %out_len = load __ui_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_HRTIME_BIGINT %out_ns, %out_status
+    __hr_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_hrtime_bigint(&__hr_slot)
+    %out_ns = load __hr_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_CPU_USAGE %out_ptr, %out_len, %out_status
+    __cpu_ptr_slot = stack_alloc 8
+    __cpu_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_cpu_usage(&__cpu_ptr_slot, &__cpu_len_slot)
+    %out_ptr = load __cpu_ptr_slot+0 as ptr
+    %out_len = load __cpu_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_MEMORY_USAGE %out_ptr, %out_len, %out_status
+    __mem_ptr_slot = stack_alloc 8
+    __mem_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_memory_usage(&__mem_ptr_slot, &__mem_len_slot)
+    %out_ptr = load __mem_ptr_slot+0 as ptr
+    %out_len = load __mem_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_CWD %out_ptr, %out_len, %out_status
+    __cwd_ptr_slot = stack_alloc 8
+    __cwd_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_cwd(&__cwd_ptr_slot, &__cwd_len_slot)
+    %out_ptr = load __cwd_ptr_slot+0 as ptr
+    %out_len = load __cwd_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_UPTIME %out_uptime, %out_status
+    __upt_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_uptime(&__upt_slot)
+    %out_uptime = load __upt_slot+0 as f64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARGV %out_ptr, %out_len, %out_status
+    __arg_ptr_slot = stack_alloc 8
+    __arg_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_argv_json(&__arg_ptr_slot, &__arg_len_slot)
+    %out_ptr = load __arg_ptr_slot+0 as ptr
+    %out_len = load __arg_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_GETEUID %out_uid, %out_status
+    __euid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_geteuid(&__euid_slot)
+    %out_uid = load __euid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_GETEGID %out_gid, %out_status
+    __egid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_getegid(&__egid_slot)
+    %out_gid = load __egid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_GROUPS %out_ptr, %out_len, %out_status
+    __gr_ptr_slot = stack_alloc 8
+    __gr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_groups(&__gr_ptr_slot, &__gr_len_slot)
+    %out_ptr = load __gr_ptr_slot+0 as ptr
+    %out_len = load __gr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_JOIN %paths_argv, %paths_len, %out_ptr, %out_len, %out_status
+    __pj_ptr_slot = stack_alloc 8
+    __pj_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_join(&%paths_argv, %paths_len, &__pj_ptr_slot, &__pj_len_slot)
+    %out_ptr = load __pj_ptr_slot+0 as ptr
+    %out_len = load __pj_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_RESOLVE %paths_argv, %paths_len, %out_ptr, %out_len, %out_status
+    __pr_ptr_slot = stack_alloc 8
+    __pr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_resolve(&%paths_argv, %paths_len, &__pr_ptr_slot, &__pr_len_slot)
+    %out_ptr = load __pr_ptr_slot+0 as ptr
+    %out_len = load __pr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_NORMALIZE %out_ptr, %out_len, %out_status, %path, %path_len
+    __pn_ptr_slot = stack_alloc 8
+    __pn_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_normalize(&%path, %path_len, &__pn_ptr_slot, &__pn_len_slot)
+    %out_ptr = load __pn_ptr_slot+0 as ptr
+    %out_len = load __pn_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_BASENAME %out_ptr, %out_len, %out_status, %path, %path_len, %ext, %ext_len
+    __pb_ptr_slot = stack_alloc 8
+    __pb_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_basename(&%path, %path_len, &%ext, %ext_len, &__pb_ptr_slot, &__pb_len_slot)
+    %out_ptr = load __pb_ptr_slot+0 as ptr
+    %out_len = load __pb_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_DIRNAME %out_ptr, %out_len, %out_status, %path, %path_len
+    __pd_ptr_slot = stack_alloc 8
+    __pd_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_dirname(&%path, %path_len, &__pd_ptr_slot, &__pd_len_slot)
+    %out_ptr = load __pd_ptr_slot+0 as ptr
+    %out_len = load __pd_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_EXTNAME %out_ptr, %out_len, %out_status, %path, %path_len
+    __pe_ptr_slot = stack_alloc 8
+    __pe_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_extname(&%path, %path_len, &__pe_ptr_slot, &__pe_len_slot)
+    %out_ptr = load __pe_ptr_slot+0 as ptr
+    %out_len = load __pe_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_IS_ABSOLUTE %out_bool, %out_status, %path, %path_len
+    __paa_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_is_absolute(&%path, %path_len, &__paa_slot)
+    %out_bool = load __paa_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_RANDOM_BYTES %size, %out_ptr, %out_status
+    __rand_ptr_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_random_bytes(%size, &__rand_ptr_slot)
+    %out_ptr = load __rand_ptr_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HASH %out_ptr, %out_len, %out_status, %algo, %algo_len, %in_data, %in_len
+    __hash_ptr_slot = stack_alloc 8
+    __hash_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_hash(&%algo, %algo_len, &%in_data, %in_len, &__hash_ptr_slot, &__hash_len_slot)
+    %out_ptr = load __hash_ptr_slot+0 as ptr
+    %out_len = load __hash_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_PBKDF2 %out_ptr, %out_status, %pass, %pass_len, %salt, %salt_len, %iter, %keylen, %digest, %digest_len
+    __pb_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_pbkdf2(&%pass, %pass_len, &%salt, %salt_len, %iter, %keylen, &%digest, %digest_len, &__pb_slot)
+    %out_ptr = load __pb_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_GZIP %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __gz_ptr_slot = stack_alloc 8
+    __gz_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_zlib_gzip(&%in_data, %in_len, &__gz_ptr_slot, &__gz_len_slot)
+    %out_ptr = load __gz_ptr_slot+0 as ptr
+    %out_len = load __gz_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_GUNZIP %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __gun_ptr_slot = stack_alloc 8
+    __gun_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_zlib_gunzip(&%in_data, %in_len, &__gun_ptr_slot, &__gun_len_slot)
+    %out_ptr = load __gun_ptr_slot+0 as ptr
+    %out_len = load __gun_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_ENDIANNESS %out_ptr, %out_len, %out_status
+    __end_ptr_slot = stack_alloc 8
+    __end_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_endianness(&__end_ptr_slot, &__end_len_slot)
+    %out_ptr = load __end_ptr_slot+0 as ptr
+    %out_len = load __end_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_PID %out_pid, %out_status
+    __pid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_pid(&__pid_slot)
+    %out_pid = load __pid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_PPID %out_ppid, %out_status
+    __ppid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_ppid(&__ppid_slot)
+    %out_ppid = load __ppid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_GETUID %out_uid, %out_status
+    __uid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_getuid(&__uid_slot)
+    %out_uid = load __uid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_GETGID %out_gid, %out_status
+    __gid_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_process_getgid(&__gid_slot)
+    %out_gid = load __gid_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ENV_GET %key, %key_len, %out_ptr, %out_len, %out_status
+    __ev_ptr_slot = stack_alloc 8
+    __ev_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_env_get(&%key, %key_len, &__ev_ptr_slot, &__ev_len_slot)
+    %out_ptr = load __ev_ptr_slot+0 as ptr
+    %out_len = load __ev_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ENV_SET %key, %key_len, %val, %val_len, %out_status
+    %out_status = call @sa_node_plugin_process_env_set(&%key, %key_len, &%val, %val_len)
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ENV_DELETE %key, %key_len, %out_status
+    %out_status = call @sa_node_plugin_process_env_delete(&%key, %key_len)
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_VERSION %out_ptr, %out_len, %out_status
+    __ver_ptr_slot = stack_alloc 8
+    __ver_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_version(&__ver_ptr_slot, &__ver_len_slot)
+    %out_ptr = load __ver_ptr_slot+0 as ptr
+    %out_len = load __ver_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_VERSIONS_JSON %out_ptr, %out_len, %out_status
+    __vj_ptr_slot = stack_alloc 8
+    __vj_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_versions_json(&__vj_ptr_slot, &__vj_len_slot)
+    %out_ptr = load __vj_ptr_slot+0 as ptr
+    %out_len = load __vj_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_ESCAPE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __qse_ptr_slot = stack_alloc 8
+    __qse_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_escape(&%in_data, %in_len, &__qse_ptr_slot, &__qse_len_slot)
+    %out_ptr = load __qse_ptr_slot+0 as ptr
+    %out_len = load __qse_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_UNESCAPE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __qsu_ptr_slot = stack_alloc 8
+    __qsu_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_unescape(&%in_data, %in_len, &__qsu_ptr_slot, &__qsu_len_slot)
+    %out_ptr = load __qsu_ptr_slot+0 as ptr
+    %out_len = load __qsu_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_PARSE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __qsp_ptr_slot = stack_alloc 8
+    __qsp_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_parse(&%in_data, %in_len, &__qsp_ptr_slot, &__qsp_len_slot)
+    %out_ptr = load __qsp_ptr_slot+0 as ptr
+    %out_len = load __qsp_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_STRINGIFY %out_ptr, %out_len, %out_status, %in_json, %in_len
+    __qss_ptr_slot = stack_alloc 8
+    __qss_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_stringify(&%in_json, %in_len, &__qss_ptr_slot, &__qss_len_slot)
+    %out_ptr = load __qss_ptr_slot+0 as ptr
+    %out_len = load __qss_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_PARSE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __urlp_ptr_slot = stack_alloc 8
+    __urlp_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_parse(&%in_data, %in_len, &__urlp_ptr_slot, &__urlp_len_slot)
+    %out_ptr = load __urlp_ptr_slot+0 as ptr
+    %out_len = load __urlp_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_FORMAT %out_ptr, %out_len, %out_status, %in_json, %in_len
+    __urlf_ptr_slot = stack_alloc 8
+    __urlf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_format(&%in_json, %in_len, &__urlf_ptr_slot, &__urlf_len_slot)
+    %out_ptr = load __urlf_ptr_slot+0 as ptr
+    %out_len = load __urlf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_RESOLVE %out_ptr, %out_len, %out_status, %from, %from_len, %to, %to_len
+    __urlr_ptr_slot = stack_alloc 8
+    __urlr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_resolve(&%from, %from_len, &%to, %to_len, &__urlr_ptr_slot, &__urlr_len_slot)
+    %out_ptr = load __urlr_ptr_slot+0 as ptr
+    %out_len = load __urlr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_FORMAT %out_ptr, %out_len, %out_status, %format, %format_len, %args_json, %args_len
+    __ut_ptr_slot = stack_alloc 8
+    __ut_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_format(&%format, %format_len, &%args_json, %args_len, &__ut_ptr_slot, &__ut_len_slot)
+    %out_ptr = load __ut_ptr_slot+0 as ptr
+    %out_len = load __ut_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_INSPECT %out_ptr, %out_len, %out_status, %in_json, %in_len
+    __ui_ptr_slot = stack_alloc 8
+    __ui_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_inspect(&%in_json, %in_len, &__ui_ptr_slot, &__ui_len_slot)
+    %out_ptr = load __ui_ptr_slot+0 as ptr
+    %out_len = load __ui_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_ENCODE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __pe_ptr_slot = stack_alloc 8
+    __pe_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_encode(&%in_data, %in_len, &__pe_ptr_slot, &__pe_len_slot)
+    %out_ptr = load __pe_ptr_slot+0 as ptr
+    %out_len = load __pe_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_DECODE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __pd_ptr_slot = stack_alloc 8
+    __pd_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_decode(&%in_data, %in_len, &__pd_ptr_slot, &__pd_len_slot)
+    %out_ptr = load __pd_ptr_slot+0 as ptr
+    %out_len = load __pd_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_AVAILABLE_PARALLELISM %out_val, %out_status
+    __ap_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_available_parallelism(&__ap_slot)
+    %out_val = load __ap_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_MACHINE %out_ptr, %out_len, %out_status
+    __mach_ptr_slot = stack_alloc 8
+    __mach_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_machine(&__mach_ptr_slot, &__mach_len_slot)
+    %out_ptr = load __mach_ptr_slot+0 as ptr
+    %out_len = load __mach_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_OS_VERSION %out_ptr, %out_len, %out_status
+    __osv_ptr_slot = stack_alloc 8
+    __osv_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_os_version(&__osv_ptr_slot, &__osv_len_slot)
+    %out_ptr = load __osv_ptr_slot+0 as ptr
+    %out_len = load __osv_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_RELATIVE %out_ptr, %out_len, %out_status, %from_p, %from_l, %to_p, %to_l
+    __rel_ptr_slot = stack_alloc 8
+    __rel_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_relative(&%from_p, %from_l, &%to_p, %to_l, &__rel_ptr_slot, &__rel_len_slot)
+    %out_ptr = load __rel_ptr_slot+0 as ptr
+    %out_len = load __rel_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_FORMAT %out_ptr, %out_len, %out_status, %in_json, %in_len
+    __pf_ptr_slot = stack_alloc 8
+    __pf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_format(&%in_json, %in_len, &__pf_ptr_slot, &__pf_len_slot)
+    %out_ptr = load __pf_ptr_slot+0 as ptr
+    %out_len = load __pf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_PARSE %out_ptr, %out_len, %out_status, %in_path, %in_len
+    __pp_ptr_slot = stack_alloc 8
+    __pp_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_parse(&%in_path, %in_len, &__pp_ptr_slot, &__pp_len_slot)
+    %out_ptr = load __pp_ptr_slot+0 as ptr
+    %out_len = load __pp_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_IS_DEEP_STRICT_EQUAL %out_bool, %out_status, %a_js, %a_len, %b_js, %b_len
+    __de_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_is_deep_strict_equal(&%a_js, %a_len, &%b_js, %b_len, &__de_slot)
+    %out_bool = load __de_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_STRIP_VT_CONTROL_CHARACTERS %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __vt_ptr_slot = stack_alloc 8
+    __vt_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_strip_vt_control_characters(&%in_data, %in_len, &__vt_ptr_slot, &__vt_len_slot)
+    %out_ptr = load __vt_ptr_slot+0 as ptr
+    %out_len = load __vt_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_RANDOM_UUID %out_ptr, %out_len, %out_status
+    __uuid_ptr_slot = stack_alloc 8
+    __uuid_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_random_uuid(&__uuid_ptr_slot, &__uuid_len_slot)
+    %out_ptr = load __uuid_ptr_slot+0 as ptr
+    %out_len = load __uuid_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_TIMING_SAFE_EQUAL %out_bool, %out_status, %a_ptr, %a_len, %b_ptr, %b_len
+    __tse_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_timing_safe_equal(&%a_ptr, %a_len, &%b_ptr, %b_len, &__tse_slot)
+    %out_bool = load __tse_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HMAC %out_ptr, %out_len, %out_status, %algo, %algo_len, %key, %key_len, %in_data, %in_len
+    __hmac_ptr_slot = stack_alloc 8
+    __hmac_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_crypto_hmac(&%algo, %algo_len, &%key, %key_len, &%in_data, %in_len, &__hmac_ptr_slot, &__hmac_len_slot)
+    %out_ptr = load __hmac_ptr_slot+0 as ptr
+    %out_len = load __hmac_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_DEFLATE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __def_ptr_slot = stack_alloc 8
+    __def_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_zlib_deflate(&%in_data, %in_len, &__def_ptr_slot, &__def_len_slot)
+    %out_ptr = load __def_ptr_slot+0 as ptr
+    %out_len = load __def_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_INFLATE %out_ptr, %out_len, %out_status, %in_data, %in_len
+    __inf_ptr_slot = stack_alloc 8
+    __inf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_zlib_inflate(&%in_data, %in_len, &__inf_ptr_slot, &__inf_len_slot)
+    %out_ptr = load __inf_ptr_slot+0 as ptr
+    %out_len = load __inf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
+    __bl_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)
+    %out_len = load __bl_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_CONCAT %buffers_argv, %buffers_len, %out_ptr, %out_len, %out_status
+    __bc_ptr_slot = stack_alloc 8
+    __bc_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_concat(&%buffers_argv, %buffers_len, &__bc_ptr_slot, &__bc_len_slot)
+    %out_ptr = load __bc_ptr_slot+0 as ptr
+    %out_len = load __bc_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_CREATE %out_ee
+    %out_ee = call @sa_node_plugin_events_create()
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_ON %ee, %event_name, %event_len, %callback, %out_status
+    %out_status = call @sa_node_plugin_events_on(%ee, &%event_name, %event_len, %callback)
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_EMIT %ee, %event_name, %event_len, %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_events_emit(%ee, &%event_name, %event_len, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_LISTENER_COUNT %ee, %event_name, %event_len, %out_count, %out_status
+    __elc_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_events_listener_count(%ee, &%event_name, %event_len, &__elc_slot)
+    %out_count = load __elc_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_FREE %ee, %out_status
+    %out_status = call @sa_node_plugin_events_free(%ee)
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CREATE %out_rl
+    %out_rl = call @sa_node_plugin_readline_create()
+[END_MACRO]
+
+[MACRO] NODE_READLINE_QUESTION %rl, %query, %query_len, %out_ptr, %out_len, %out_status
+    __rlq_ptr_slot = stack_alloc 8
+    __rlq_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_question(%rl, &%query, %query_len, &__rlq_ptr_slot, &__rlq_len_slot)
+    %out_ptr = load __rlq_ptr_slot+0 as ptr
+    %out_len = load __rlq_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_FREE %rl, %out_status
+    %out_status = call @sa_node_plugin_readline_free(%rl)
+[END_MACRO]
+
+[MACRO] NODE_STREAM_READABLE_NEW %out_readable
+    %out_readable = call @sa_node_plugin_stream_readable_new()
+[END_MACRO]
+
+[MACRO] NODE_STREAM_WRITABLE_NEW %out_writable
+    %out_writable = call @sa_node_plugin_stream_writable_new()
+[END_MACRO]
+
+[MACRO] NODE_STREAM_PUSH %readable, %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_stream_push(%readable, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_STREAM_WRITE %writable, %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_stream_write(%writable, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_DNS_LOOKUP %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_ptr_slot = stack_alloc 8
+    __dns_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_lookup(&%hostname, %hostname_len, &__dns_ptr_slot, &__dns_len_slot)
+    %out_ptr = load __dns_ptr_slot+0 as ptr
+    %out_len = load __dns_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %rrtype, %rrtype_len
+    __dnsr_ptr_slot = stack_alloc 8
+    __dnsr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve(&%hostname, %hostname_len, &%rrtype, %rrtype_len, &__dnsr_ptr_slot, &__dnsr_len_slot)
+    %out_ptr = load __dnsr_ptr_slot+0 as ptr
+    %out_len = load __dnsr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_CONNECT %host, %host_len, %port, %out_socket, %out_status
+    __net_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_connect(&%host, %host_len, %port, &__net_slot)
+    %out_socket = load __net_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_LISTEN %host, %host_len, %port, %out_server, %out_status
+    __nets_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_listen(&%host, %host_len, %port, &__nets_slot)
+    %out_server = load __nets_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_ACCEPT %server, %out_socket, %out_status
+    __neta_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_accept(%server, &__neta_slot)
+    %out_socket = load __neta_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_WRITE %socket, %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_net_write(%socket, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_NET_READ %socket, %max_len, %out_ptr, %out_len, %out_status
+    __netr_ptr_slot = stack_alloc 8
+    __netr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_read(%socket, %max_len, &__netr_ptr_slot, &__netr_len_slot)
+    %out_ptr = load __netr_ptr_slot+0 as ptr
+    %out_len = load __netr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_END %socket, %out_status
+    %out_status = call @sa_node_plugin_net_end(%socket)
+[END_MACRO]
+
+[MACRO] NODE_FS_STAT %out_ptr, %out_len, %out_status, %path, %path_len
+    __fss_ptr_slot = stack_alloc 8
+    __fss_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_stat(&%path, %path_len, &__fss_ptr_slot, &__fss_len_slot)
+    %out_ptr = load __fss_ptr_slot+0 as ptr
+    %out_len = load __fss_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_LSTAT %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsls_ptr_slot = stack_alloc 8
+    __fsls_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_lstat(&%path, %path_len, &__fsls_ptr_slot, &__fsls_len_slot)
+    %out_ptr = load __fsls_ptr_slot+0 as ptr
+    %out_len = load __fsls_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_READDIR %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsr_ptr_slot = stack_alloc 8
+    __fsr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_readdir(&%path, %path_len, &__fsr_ptr_slot, &__fsr_len_slot)
+    %out_ptr = load __fsr_ptr_slot+0 as ptr
+    %out_len = load __fsr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_READDIR_WITH_TYPES %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsrt_ptr_slot = stack_alloc 8
+    __fsrt_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_readdir_with_types(&%path, %path_len, &__fsrt_ptr_slot, &__fsrt_len_slot)
+    %out_ptr = load __fsrt_ptr_slot+0 as ptr
+    %out_len = load __fsrt_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_READLINK %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsl_ptr_slot = stack_alloc 8
+    __fsl_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_readlink(&%path, %path_len, &__fsl_ptr_slot, &__fsl_len_slot)
+    %out_ptr = load __fsl_ptr_slot+0 as ptr
+    %out_len = load __fsl_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_REALPATH %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsrp_ptr_slot = stack_alloc 8
+    __fsrp_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_realpath(&%path, %path_len, &__fsrp_ptr_slot, &__fsrp_len_slot)
+    %out_ptr = load __fsrp_ptr_slot+0 as ptr
+    %out_len = load __fsrp_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_EXISTS %path, %path_len, %out_bool, %out_status
+    __fse_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_fs_exists(&%path, %path_len, &__fse_slot)
+    %out_bool = load __fse_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_FS_ACCESS %path, %path_len, %mode, %out_bool, %out_status
+    __fsa_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_fs_access(&%path, %path_len, %mode, &__fsa_slot)
+    %out_bool = load __fsa_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_FREE_BUFFER %ptr, %len, %out_status
+    %out_status = call @sa_node_plugin_free_buffer(%ptr, %len)
+[END_MACRO]
+
+[MACRO] NODE_FS_READ_FILE %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsrf_ptr_slot = stack_alloc 8
+    __fsrf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_fs_read_file(&%path, %path_len, &__fsrf_ptr_slot, &__fsrf_len_slot)
+    %out_ptr = load __fsrf_ptr_slot+0 as ptr
+    %out_len = load __fsrf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_FS_WRITE_FILE %out_status, %path, %path_len, %data, %data_len
+    %out_status = call @sa_node_plugin_fs_write_file(&%path, %path_len, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_FS_MKDIR %out_status, %path, %path_len, %recursive
+    %out_status = call @sa_node_plugin_fs_mkdir(&%path, %path_len, %recursive)
+[END_MACRO]
+
+[MACRO] NODE_FS_RMDIR %out_status, %path, %path_len
+    %out_status = call @sa_node_plugin_fs_rmdir(&%path, %path_len)
+[END_MACRO]
+
+[MACRO] NODE_FS_UNLINK %out_status, %path, %path_len
+    %out_status = call @sa_node_plugin_fs_unlink(&%path, %path_len)
+[END_MACRO]
+
+[MACRO] NODE_FS_RENAME %out_status, %old, %old_len, %new, %new_len
+    %out_status = call @sa_node_plugin_fs_rename(&%old, %old_len, &%new, %new_len)
+[END_MACRO]
+
+[MACRO] NODE_FS_COPY_FILE %out_status, %src, %src_len, %dst, %dst_len
+    %out_status = call @sa_node_plugin_fs_copy_file(&%src, %src_len, &%dst, %dst_len)
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXEC %out_code, %out_stdout_ptr, %out_stdout_len, %out_stderr_ptr, %out_stderr_len, %out_status, %p_argv, %l_argv, %p_cwd, %l_cwd
+    __exec_code_slot = stack_alloc 4
+    __exec_out_ptr_slot = stack_alloc 8
+    __exec_out_len_slot = stack_alloc 8
+    __exec_err_ptr_slot = stack_alloc 8
+    __exec_err_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_exec(&%p_argv, %l_argv, %p_cwd, %l_cwd, &__exec_code_slot, &__exec_out_ptr_slot, &__exec_out_len_slot, &__exec_err_ptr_slot, &__exec_err_len_slot)
+    %out_code = load __exec_code_slot+0 as u32
+    %out_stdout_ptr = load __exec_out_ptr_slot+0 as ptr
+    %out_stdout_len = load __exec_out_len_slot+0 as u64
+    %out_stderr_ptr = load __exec_err_ptr_slot+0 as ptr
+    %out_stderr_len = load __exec_err_len_slot+0 as u64
+[END_MACRO]
+
+// --- Console, Timers, and String Decoder macros ---
+[MACRO] NODE_CONSOLE_LOG %out_status, %data, %data_len
+    %out_status = call @sa_node_plugin_console_log(&%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_ERROR %out_status, %data, %data_len
+    %out_status = call @sa_node_plugin_console_error(&%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME %out_status, %label, %label_len
+    %out_status = call @sa_node_plugin_console_time(&%label, %label_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME_END %out_status, %out_ms, %label, %label_len
+    __cte_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_time_end(&%label, %label_len, &__cte_slot)
+    %out_ms = load __cte_slot+0 as f64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_CLEAR %out_status
+    %out_status = call @sa_node_plugin_console_clear()
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SLEEP %out_status, %ms
+    %out_status = call @sa_node_plugin_timers_sleep(%ms)
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_CREATE %out_sd
+    %out_sd = call @sa_node_plugin_string_decoder_create()
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_WRITE %out_status, %out_ptr, %out_len, %sd, %chunk, %chunk_len
+    __sdw_ptr_slot = stack_alloc 8
+    __sdw_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_write(%sd, &%chunk, %chunk_len, &__sdw_ptr_slot, &__sdw_len_slot)
+    %out_ptr = load __sdw_ptr_slot+0 as ptr
+    %out_len = load __sdw_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_FREE %out_status, %sd
+    %out_status = call @sa_node_plugin_string_decoder_free(%sd)
+[END_MACRO]

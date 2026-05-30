@@ -1,0 +1,4 @@
+pub export fn sa_node_plugin_fs_access(path_ptr: ?[*]const u8, path_len: u64, mode: u32, out_bool: ?*u32) u32 {
+    _ = mode;
+    return sa_node_plugin_fs_exists(path_ptr, path_len, out_bool);
+}

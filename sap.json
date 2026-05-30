@@ -1,0 +1,51 @@
+{
+  "schema": "sa.plugin/1",
+  "name": "node",
+  "version": "0.1.0",
+  "source": {
+    "type": "local",
+    "path": "."
+  },
+  "abi": {
+    "plugin": 1,
+    "saasm": ">=0.4.0",
+    "symbols": "node.sai"
+  },
+  "artifacts": {
+    "linux-x86_64": {
+      "path": "zig-out/lib/libnode.so"
+    }
+  },
+  "interfaces": {
+    "sai": { "path": "node.sai" },
+    "sal": { "path": "node.sal" }
+  },
+  "skills": ["node.os", "node.process", "node.crypto"],
+  "permissions": {
+    "fs": [
+      { "op": "read", "path": "$PROJECT/**" },
+      { "op": "write", "path": "$PROJECT/**" },
+      { "op": "create", "path": "$PROJECT/**" },
+      { "op": "delete", "path": "$PROJECT/**" },
+      { "op": "metadata", "path": "$PROJECT/**" },
+      { "op": "read", "path": "/tmp/**" },
+      { "op": "write", "path": "/tmp/**" },
+      { "op": "create", "path": "/tmp/**" },
+      { "op": "delete", "path": "/tmp/**" },
+      { "op": "metadata", "path": "/tmp/**" }
+    ],
+    "net": [
+      { "url": "http://127.0.0.1:18395" },
+      { "url": "http://localhost:18395" }
+    ],
+    "env": ["HOME", "TMPDIR", "TMP", "TEMP", "SA_*"],
+    "process": {
+      "spawn": true,
+      "exec": [
+        { "path": "/bin/echo", "args": ["*"] },
+        { "path": "/usr/bin/echo", "args": ["*"] }
+      ]
+    }
+  },
+  "dependencies": {}
+}

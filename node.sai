@@ -1,0 +1,167 @@
+// Node compatibility plugin public SA interface.
+// Status: native replacement surface implemented by libnode.so; this does not call Node.js.
+
+@extern sa_node_plugin_free_buffer(ptr: ptr, len: u64) -> u32
+
+// --- os module ---
+@extern sa_node_plugin_os_cpus(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_totalmem(&out_mem: ptr) -> u32
+@extern sa_node_plugin_os_freemem(&out_mem: ptr) -> u32
+@extern sa_node_plugin_os_homedir(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_tmpdir(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_platform(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_arch(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_release(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_type(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_system_uptime(&out_uptime: ptr) -> u32
+@extern sa_node_plugin_os_loadavg(out_load: ptr) -> u32
+@extern sa_node_plugin_os_network_interfaces(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_hostname(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_user_info(&out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- process module ---
+@extern sa_node_plugin_process_hrtime_bigint(&out_ns: ptr) -> u32
+@extern sa_node_plugin_process_cpu_usage(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_memory_usage(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_cwd(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_uptime(&out_uptime: ptr) -> u32
+@extern sa_node_plugin_process_argv_json(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_geteuid(&out_uid: ptr) -> u32
+@extern sa_node_plugin_process_getegid(&out_gid: ptr) -> u32
+@extern sa_node_plugin_process_groups(&out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- path module ---
+@extern sa_node_plugin_path_join(paths_argv: ptr, paths_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_resolve(paths_argv: ptr, paths_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_normalize(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_basename(&path: ptr, len: u64, &ext: ptr, ext_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_dirname(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_extname(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_is_absolute(&path: ptr, len: u64, &out_bool: ptr) -> u32
+
+// --- crypto module ---
+@extern sa_node_plugin_crypto_random_bytes(size: u64, &out_ptr: ptr) -> u32
+@extern sa_node_plugin_crypto_hash(&algo: ptr, algo_len: u64, &data: ptr, data_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_crypto_pbkdf2(&pass: ptr, pass_len: u64, &salt: ptr, salt_len: u64, iter: u64, keylen: u64, &digest: ptr, digest_len: u64, &out_ptr: ptr) -> u32
+
+// --- zlib module ---
+@extern sa_node_plugin_zlib_gzip(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_zlib_gunzip(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- new core extensions ---
+@extern sa_node_plugin_os_endianness(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_pid(&out_pid: ptr) -> u32
+@extern sa_node_plugin_process_ppid(&out_ppid: ptr) -> u32
+@extern sa_node_plugin_process_getuid(&out_uid: ptr) -> u32
+@extern sa_node_plugin_process_getgid(&out_gid: ptr) -> u32
+@extern sa_node_plugin_process_env_get(&key: ptr, key_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_env_set(&key: ptr, key_len: u64, &value: ptr, value_len: u64) -> u32
+@extern sa_node_plugin_process_env_delete(&key: ptr, key_len: u64) -> u32
+@extern sa_node_plugin_process_version(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_process_versions_json(&out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 2: querystring module ---
+@extern sa_node_plugin_querystring_escape(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_querystring_unescape(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_querystring_parse(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_querystring_stringify(&json: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 2: url module ---
+@extern sa_node_plugin_url_parse(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_url_format(&json: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_url_resolve(&from_url: ptr, from_len: u64, &to_url: ptr, to_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 2: util module ---
+@extern sa_node_plugin_util_format(&format: ptr, format_len: u64, &args_json: ptr, args_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_util_inspect(&json: ptr, json_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 2: punycode module ---
+@extern sa_node_plugin_punycode_encode(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_punycode_decode(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: os module additions ---
+@extern sa_node_plugin_os_available_parallelism(&out_val: ptr) -> u32
+@extern sa_node_plugin_os_machine(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_os_version(&out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: path module additions ---
+@extern sa_node_plugin_path_relative(&from_path: ptr, from_len: u64, &to_path: ptr, to_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_format(&json: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_path_parse(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: util module additions ---
+@extern sa_node_plugin_util_is_deep_strict_equal(&a_json: ptr, a_len: u64, &b_json: ptr, b_len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_util_strip_vt_control_characters(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: crypto module additions ---
+@extern sa_node_plugin_crypto_random_uuid(&out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_crypto_timing_safe_equal(&a: ptr, a_len: u64, &b: ptr, b_len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_crypto_hmac(&algo: ptr, algo_len: u64, &key: ptr, key_len: u64, &data: ptr, data_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: zlib module additions ---
+@extern sa_node_plugin_zlib_deflate(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_zlib_inflate(&data: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 3: buffer module additions ---
+@extern sa_node_plugin_buffer_byte_length(&data: ptr, len: u64, &out_len: ptr) -> u32
+@extern sa_node_plugin_buffer_concat(buffers_argv: ptr, buffers_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+// --- Phase 4: events & readline module ---
+@extern sa_node_plugin_events_create() -> ptr
+@extern sa_node_plugin_events_on(ee: ptr, &event_name: ptr, event_len: u64, callback: ptr) -> u32
+@extern sa_node_plugin_events_emit(ee: ptr, &event_name: ptr, event_len: u64, &data: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_events_listener_count(ee: ptr, &event_name: ptr, event_len: u64, &out_count: ptr) -> u32
+@extern sa_node_plugin_events_free(ee: ptr) -> u32
+
+@extern sa_node_plugin_readline_create() -> ptr
+@extern sa_node_plugin_readline_question(rl: ptr, &query: ptr, query_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_readline_free(rl: ptr) -> u32
+
+// --- Phase 4: stream module ---
+@extern sa_node_plugin_stream_readable_new() -> ptr
+@extern sa_node_plugin_stream_writable_new() -> ptr
+@extern sa_node_plugin_stream_push(readable: ptr, &data: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_stream_write(writable: ptr, &data: ptr, data_len: u64) -> u32
+
+// --- Phase 5: net & dns module ---
+@extern sa_node_plugin_dns_lookup(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve(&hostname: ptr, len: u64, &rrtype: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+
+@extern sa_node_plugin_net_connect(&host: ptr, host_len: u64, port: u64, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_listen(&host: ptr, host_len: u64, port: u64, &out_server: ptr) -> u32
+@extern sa_node_plugin_net_accept(server: ptr, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_write(socket: ptr, &data: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_net_read(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_end(socket: ptr) -> u32
+
+// --- Phase 6: fs read-only utilities ---
+@extern sa_node_plugin_fs_stat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_lstat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readdir(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readdir_with_types(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readlink(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_realpath(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_exists(&path: ptr, len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_fs_access(path: ptr, len: u64, mode: u32, &out_bool: ptr) -> u32
+
+@extern sa_node_plugin_fs_read_file(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_write_file(path_ptr: ptr, path_len: u64, data_ptr: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_fs_mkdir(path_ptr: ptr, path_len: u64, recursive: u8) -> u32
+@extern sa_node_plugin_fs_rmdir(path_ptr: ptr, path_len: u64) -> u32
+@extern sa_node_plugin_fs_unlink(path_ptr: ptr, path_len: u64) -> u32
+@extern sa_node_plugin_fs_rename(old_ptr: ptr, old_len: u64, new_ptr: ptr, new_len: u64) -> u32
+@extern sa_node_plugin_fs_copy_file(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u32
+@extern sa_node_plugin_process_exec(argv_ptr: ptr, argv_len: u64, cwd_ptr: ptr, cwd_len: u64, &out_code: ptr, &out_stdout_ptr: ptr, &out_stdout_len: ptr, &out_stderr_ptr: ptr, &out_stderr_len: ptr) -> u32
+
+// --- Console, Timers, and String Decoder ---
+@extern sa_node_plugin_console_log(data_ptr: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_console_error(data_ptr: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_console_time(label_ptr: ptr, label_len: u64) -> u32
+@extern sa_node_plugin_console_time_end(label_ptr: ptr, label_len: u64, &out_ms: ptr) -> u32
+@extern sa_node_plugin_console_clear() -> u32
+
+@extern sa_node_plugin_timers_sleep(ms: u64) -> u32
+
+@extern sa_node_plugin_string_decoder_create() -> ptr
+@extern sa_node_plugin_string_decoder_write(sd: ptr, chunk_ptr: ptr, chunk_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_string_decoder_free(sd: ptr) -> u32

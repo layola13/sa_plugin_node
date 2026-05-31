@@ -1,0 +1,788 @@
+// Tests for zlib, buffer, url, util, path, punycode, querystring extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_DATA = utf8:"hello world"
+@const S_JSON_A = utf8:"{\"a\":1}"
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_VT = utf8:"\x1b[31mred\x1b[0m"
+@const S_PATH = utf8:"/usr/local/bin/test.txt"
+@const S_FROM = utf8:"/usr/local/bin"
+@const S_TO = utf8:"/usr/local/share"
+@const S_QS = utf8:"a=1&b=two"
+@const S_DOMAIN = utf8:"münchen.de"
+@const S_ENCODED = utf8:"hello%20world"
+@const S_SLASH_A = utf8:"/a"
+@const S_SLASH_B = utf8:"/b"
+@const S_PATH_JSON = utf8:"{\"dir\":\"/tmp\",\"base\":\"x.txt\"}"
+@const S_URL_JSON = utf8:"{\"protocol\":\"https:\",\"host\":\"example.com\",\"pathname\":\"/p\"}"
+@const S_GLOB = utf8:"*.sa"
+
+@test "node.zlib inflate roundtrip"():
+L_ENTRY:
+    dp = add 0, 0
+    dl = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ZLIB_DEFLATE dp, dl, s1, S_DATA, 11
+    ok1 = eq s1, 0
+    br ok1 -> L_INFLATE, L_ERR1
+L_INFLATE:
+    !ok1
+    !s1
+    ip = add 0, 0
+    il = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ZLIB_INFLATE ip, il, s2, dp, dl
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    !dp
+    !dl
+    len_ok = eq il, 11
+    br len_ok -> L_OK, L_LEN_ERR
+L_OK:
+    !len_ok
+    !ip
+    !il
+    return
+L_ERR1:
+    !ok1
+    !s1
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !dp
+    !dl
+    !ip
+    !il
+    panic(103)
+L_LEN_ERR:
+    !len_ok
+    !ip
+    !il
+    panic(103)
+
+@test "node.zlib gunzip roundtrip"():
+L_ENTRY:
+    gp = add 0, 0
+    gl = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ZLIB_GZIP gp, gl, s1, S_DATA, 11
+    ok1 = eq s1, 0
+    br ok1 -> L_UNGZIP, L_ERR1
+L_UNGZIP:
+    !ok1
+    !s1
+    up = add 0, 0
+    ul = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ZLIB_GUNZIP up, ul, s2, gp, gl
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    !gp
+    !gl
+    len_ok = eq ul, 11
+    br len_ok -> L_OK, L_LEN_ERR
+L_OK:
+    !len_ok
+    !up
+    !ul
+    return
+L_ERR1:
+    !ok1
+    !s1
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !gp
+    !gl
+    !up
+    !ul
+    panic(103)
+L_LEN_ERR:
+    !len_ok
+    !up
+    !ul
+    panic(103)
+
+@test "node.zlib deflate_raw succeeds"():
+L_ENTRY:
+    dp = add 0, 0
+    dl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_DEFLATE_RAW dp, dl, s, S_DATA, 11
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt dl, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !dp
+    !dl
+    return
+L_ERR:
+    !ok
+    !dp
+    !dl
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !dp
+    !dl
+    panic(103)
+
+@test "node.zlib inflate_raw succeeds"():
+L_ENTRY:
+    dp = add 0, 0
+    dl = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ZLIB_DEFLATE_RAW dp, dl, s1, S_DATA, 11
+    ok1 = eq s1, 0
+    br ok1 -> L_INF, L_ERR1
+L_INF:
+    !ok1
+    !s1
+    ip = add 0, 0
+    il = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ZLIB_INFLATE_RAW ip, il, s2, dp, dl
+    ok2 = eq s2, 0
+    br ok2 -> L_OK, L_ERR2
+L_OK:
+    !ok2
+    !s2
+    !dp
+    !dl
+    !ip
+    !il
+    return
+L_ERR1:
+    !ok1
+    !s1
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !dp
+    !dl
+    !ip
+    !il
+    panic(103)
+
+@test "node.zlib unzip empty succeeds"():
+L_ENTRY:
+    up = add 0, 0
+    ul = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_UNZIP up, ul, s, S_DATA, 11
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !up
+    !ul
+    return
+L_ERR:
+    !ok
+    !up
+    !ul
+    !s
+    panic(103)
+
+@test "node.buffer atob succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_ATOB p, l, s, S_ENCODED, 11
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.buffer resolve_object_url returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL p, l, s, S_URL, 28
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.url new and free succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ne u, 0
+    br has -> L_FREE, L_U_ERR
+L_FREE:
+    !has
+    s2 = add 0, 0
+    EXPAND NODE_URL_FREE u, s2
+    !u
+    return
+L_ERR:
+    !ok
+    !u
+    panic(103)
+L_U_ERR:
+    !has
+    !u
+    panic(103)
+
+@test "node.url get_href returns bytes"():
+L_ENTRY:
+    u = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_GET, L_ERR1
+L_GET:
+    !ok1
+    !s1
+    hp = add 0, 0
+    hl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_URL_GET_HREF u, hp, hl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    has = ugt hl, 0
+    br has -> L_FREE, L_LEN_ERR
+L_FREE:
+    !has
+    !hp
+    !hl
+    s3 = add 0, 0
+    EXPAND NODE_URL_FREE u, s3
+    !u
+    return
+L_ERR1:
+    !ok1
+    !u
+    panic(103)
+L_ERR2:
+    !ok2
+    !hp
+    !hl
+    !u
+    panic(103)
+L_LEN_ERR:
+    !has
+    !hp
+    !hl
+    !u
+    panic(103)
+
+@test "node.url get_protocol returns bytes"():
+L_ENTRY:
+    u = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_GET, L_ERR1
+L_GET:
+    !ok1
+    !s1
+    pp = add 0, 0
+    pl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_URL_GET_PROTOCOL u, pp, pl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    has = ugt pl, 0
+    br has -> L_FREE, L_LEN_ERR
+L_FREE:
+    !has
+    !pp
+    !pl
+    s3 = add 0, 0
+    EXPAND NODE_URL_FREE u, s3
+    !u
+    return
+L_ERR1:
+    !ok1
+    !u
+    panic(103)
+L_ERR2:
+    !ok2
+    !pp
+    !pl
+    !u
+    panic(103)
+L_LEN_ERR:
+    !has
+    !pp
+    !pl
+    !u
+    panic(103)
+
+@test "node.url get_host returns bytes"():
+L_ENTRY:
+    u = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_GET, L_ERR1
+L_GET:
+    !ok1
+    !s1
+    hp = add 0, 0
+    hl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_URL_GET_HOST u, hp, hl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    has = ugt hl, 0
+    br has -> L_FREE, L_LEN_ERR
+L_FREE:
+    !has
+    !hp
+    !hl
+    s3 = add 0, 0
+    EXPAND NODE_URL_FREE u, s3
+    !u
+    return
+L_ERR1:
+    !ok1
+    !u
+    panic(103)
+L_ERR2:
+    !ok2
+    !hp
+    !hl
+    !u
+    panic(103)
+L_LEN_ERR:
+    !has
+    !hp
+    !hl
+    !u
+    panic(103)
+
+@test "node.url get_pathname returns bytes"():
+L_ENTRY:
+    u = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_GET, L_ERR1
+L_GET:
+    !ok1
+    !s1
+    pp = add 0, 0
+    pl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_URL_GET_PATHNAME u, pp, pl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CHK, L_ERR2
+L_CHK:
+    !ok2
+    !s2
+    has = ugt pl, 0
+    br has -> L_FREE, L_LEN_ERR
+L_FREE:
+    !has
+    !pp
+    !pl
+    s3 = add 0, 0
+    EXPAND NODE_URL_FREE u, s3
+    !u
+    return
+L_ERR1:
+    !ok1
+    !u
+    panic(103)
+L_ERR2:
+    !ok2
+    !pp
+    !pl
+    !u
+    panic(103)
+L_LEN_ERR:
+    !has
+    !pp
+    !pl
+    !u
+    panic(103)
+
+@test "node.util inspect returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_INSPECT p, l, s, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.util style_text returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_STYLE_TEXT p, l, s, S_VT, 11, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.util mime_type returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_MIME_TYPE p, l, s, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.util parse_args returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_PARSE_ARGS p, l, s, S_JSON_A, 7, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.util diff returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_DIFF p, l, s, S_DATA, 5, S_DATA, 5, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util inherits returns"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_UTIL_INHERITS s, S_JSON_A, 7, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.punycode to_unicode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PUNYCODE_TO_UNICODE p, l, s, S_DOMAIN, 10
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.punycode decode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PUNYCODE_DECODE p, l, s, S_DOMAIN, 10
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.querystring unescape_buffer succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_QUERYSTRING_UNESCAPE_BUFFER p, l, s, S_ENCODED, 11
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.path matches_glob succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_MATCHES_GLOB v, s, S_GLOB, 6, S_SLASH_A, 2
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.path join returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_JOIN S_SLASH_A, 2, S_SLASH_B, 2, p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.path resolve returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_RESOLVE S_SLASH_A, 2, S_SLASH_B, 2, p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)

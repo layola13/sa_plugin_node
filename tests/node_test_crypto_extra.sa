@@ -1,0 +1,313 @@
+// Tests for crypto stateful APIs
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SHA256 = utf8:"sha256"
+@const S_SECRET = utf8:"secret123"
+@const S_DATA = utf8:"hello"
+
+@test "node.crypto create_hash sha256 succeeds"():
+L_ENTRY:
+    h = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_HASH S_SHA256, 6, h, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    nonzero = ne h, 0
+    br nonzero -> L_FREE, L_H_ERR
+L_FREE:
+    !nonzero
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_HASH_FREE h, s2
+    !h
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+L_H_ERR:
+    !nonzero
+    !h
+    panic(103)
+
+@test "node.crypto hash update and final succeeds"():
+L_ENTRY:
+    h = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_HASH S_SHA256, 6, h, s
+    ok1 = eq s, 0
+    br ok1 -> L_UPD, L_ERR
+L_UPD:
+    !ok1
+    !s
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_HASH_UPDATE h, S_DATA, 5, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_FIN, L_UPD_ERR
+L_FIN:
+    !ok2
+    !s2
+    fp = add 0, 0
+    fl = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_CRYPTO_HASH_FINAL h, fp, fl, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_CHK, L_FIN_ERR
+L_CHK:
+    !ok3
+    !s3
+    has_data = ugt fl, 0
+    br has_data -> L_FREE, L_DATA_ERR
+L_FREE:
+    !has_data
+    !fp
+    !fl
+    s4 = add 0, 0
+    EXPAND NODE_CRYPTO_HASH_FREE h, s4
+    !h
+    return
+L_ERR:
+    !ok1
+    !s
+    !h
+    panic(103)
+L_UPD_ERR:
+    !ok2
+    !s2
+    !h
+    panic(103)
+L_FIN_ERR:
+    !ok3
+    !s3
+    !fp
+    !fl
+    !h
+    panic(103)
+L_DATA_ERR:
+    !has_data
+    !fp
+    !fl
+    !h
+    panic(103)
+
+@test "node.crypto create_hmac sha256 succeeds"():
+L_ENTRY:
+    h = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_HMAC S_SHA256, 6, S_SECRET, 9, h, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    nonzero = ne h, 0
+    br nonzero -> L_FREE, L_H_ERR
+L_FREE:
+    !nonzero
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_HMAC_FREE h, s2
+    !h
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+L_H_ERR:
+    !nonzero
+    !h
+    panic(103)
+
+@test "node.crypto hmac update and final succeeds"():
+L_ENTRY:
+    h = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_HMAC S_SHA256, 6, S_SECRET, 9, h, s
+    ok1 = eq s, 0
+    br ok1 -> L_UPD, L_ERR
+L_UPD:
+    !ok1
+    !s
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_HMAC_UPDATE h, S_DATA, 5, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_FIN, L_UPD_ERR
+L_FIN:
+    !ok2
+    !s2
+    fp = add 0, 0
+    fl = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_CRYPTO_HMAC_FINAL h, fp, fl, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_CHK, L_FIN_ERR
+L_CHK:
+    !ok3
+    !s3
+    has_data = ugt fl, 0
+    br has_data -> L_FREE, L_DATA_ERR
+L_FREE:
+    !has_data
+    !fp
+    !fl
+    s4 = add 0, 0
+    EXPAND NODE_CRYPTO_HMAC_FREE h, s4
+    !h
+    return
+L_ERR:
+    !ok1
+    !s
+    !h
+    panic(103)
+L_UPD_ERR:
+    !ok2
+    !s2
+    !h
+    panic(103)
+L_FIN_ERR:
+    !ok3
+    !s3
+    !fp
+    !fl
+    !h
+    panic(103)
+L_DATA_ERR:
+    !has_data
+    !fp
+    !fl
+    !h
+    panic(103)
+
+@test "node.crypto random_int returns valid"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_RANDOM_INT 0, 100, v, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    panic(103)
+
+@test "node.crypto random_fill succeeds"():
+L_ENTRY:
+    buf = stack_alloc 32
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_RANDOM_FILL buf, 32, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.crypto get_hashes returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_CRYPTO_GET_HASHES p, l
+    has_data = ugt l, 0
+    br has_data -> L_OK, L_ERR
+L_OK:
+    !has_data
+    !p
+    !l
+    return
+L_ERR:
+    !has_data
+    !p
+    !l
+    panic(103)
+
+@test "node.crypto generate_key succeeds"():
+L_ENTRY:
+    k = add 0, 0
+    kl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_GENERATE_KEY S_SHA256, 6, 256, k, kl, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ne k, 0
+    br has -> L_OK, L_K_ERR
+L_OK:
+    !has
+    !k
+    !kl
+    return
+L_ERR:
+    !ok
+    !k
+    !kl
+    panic(103)
+L_K_ERR:
+    !has
+    !k
+    !kl
+    panic(103)
+
+@test "node.crypto hkdf succeeds"():
+L_ENTRY:
+    op = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_HKDF S_SHA256, 6, S_SECRET, 9, S_SECRET, 9, S_DATA, 5, 32, op, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ne op, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !op
+    return
+L_ERR:
+    !ok
+    !op
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !op
+    panic(103)
+
+@test "node.crypto scrypt succeeds"():
+L_ENTRY:
+    op = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_SCRYPT S_SECRET, 9, S_SECRET, 9, 1024, 8, 1, 32, op, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ne op, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !op
+    return
+L_ERR:
+    !ok
+    !op
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !op
+    panic(103)

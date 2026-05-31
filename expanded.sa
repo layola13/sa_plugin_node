@@ -1,0 +1,2 @@
+error[SA-CLI-014]: unexpected argument
+  help: check option order and remove unsupported flags

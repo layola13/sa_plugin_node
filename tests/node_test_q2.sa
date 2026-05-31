@@ -1,0 +1,170 @@
+// sa_plugin_node/tests/node_plugin_unit_test.sa
+// SA native @test unit tests for the Node.js API compatibility plugin.
+// Run: sa test sa_plugin_node/tests/node_plugin_unit_test.sa
+
+@import "../node.sal"
+@import "../node_extra.sal"
+
+// ---- String constants ----
+
+@test "os.eol"():
+    EXPAND NODE_OS_EOL p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+@test "os.constants"():
+    EXPAND NODE_OS_CONSTANTS p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+// ============================================================
+// Process
+// ============================================================
+
+@test "process.pid"():
+    EXPAND NODE_PROCESS_PID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.ppid"():
+    EXPAND NODE_PROCESS_PPID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getuid"():
+    EXPAND NODE_PROCESS_GETUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getgid"():
+    EXPAND NODE_PROCESS_GETGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.geteuid"():
+    EXPAND NODE_PROCESS_GETEUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getegid"():
+    EXPAND NODE_PROCESS_GETEGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.hrtime.bigint"():
+    EXPAND NODE_PROCESS_HRTIME_BIGINT v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.cpuUsage"():
+    EXPAND NODE_PROCESS_CPU_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.memoryUsage"():
+    EXPAND NODE_PROCESS_MEMORY_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.cwd"():
+    EXPAND NODE_PROCESS_CWD p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.version"():
+    EXPAND NODE_PROCESS_VERSION p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.versions.json"():
+    EXPAND NODE_PROCESS_VERSIONS_JSON p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.env roundtrip"():
+    EXPAND NODE_PROCESS_ENV_SET S_KEY 11, S_VAL 10, s1
+    ok1 = eq s1, 0
+    !ok1
+    EXPAND NODE_PROCESS_ENV_GET S_KEY 11, gp, gl, s2
+    ok2 = eq s2, 0
+    !ok2
+    call @sa_node_plugin_free_buffer(gp, gl)
+    !gp
+    !gl
+    !s2
+    EXPAND NODE_PROCESS_ENV_DELETE S_KEY 11, s3
+    ok3 = eq s3, 0
+    !ok3
+    !s1
+    !s3
+    return
+
+// ============================================================
+// Path
+// ============================================================
+
+@test "path.basename"():
+    EXPAND NODE_PATH_BASENAME p, l, s, S_PATH 22, 0, 0
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "path.dirname"():

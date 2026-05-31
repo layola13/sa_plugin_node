@@ -1,0 +1,1690 @@
+// SA-native unit tests for the Node compatibility plugin.
+// These tests use the SA @test framework directly and exercise the Zig plugin API.
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SHA256 = utf8:"sha256"
+@const S_HELLO = utf8:"hello"
+@const S_SECRET = utf8:"secret123"
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_ENCODED = utf8:"hello%20world"
+@const S_PATH = utf8:"/usr/local/bin/test.txt"
+@const S_FROM = utf8:"/usr/local/bin"
+@const S_TO = utf8:"/usr/local/share"
+@const S_FMT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"world\"]"
+@const S_JSON_A = utf8:"{\"a\":1}"
+@const S_VT = utf8:"\x1b[31mred\x1b[0m"
+@const S_IP4 = utf8:"127.0.0.1"
+@const S_IP6 = utf8:"::1"
+@const S_NOTIP = utf8:"not-ip"
+@const S_DOMAIN = utf8:"example.com"
+@const S_LOG = utf8:"log msg"
+@const S_LABEL = utf8:"sa_unit_timer"
+@const S_KEY = utf8:"SA_NODE_UNIT_KEY"
+@const S_VAL = utf8:"unit_value"
+@const S_QS = utf8:"a=1&b=two"
+@const S_PATH_JSON = utf8:"{\"dir\":\"/tmp\",\"base\":\"x.txt\"}"
+@const S_URL_JSON = utf8:"{\"protocol\":\"https:\",\"host\":\"example.com\",\"pathname\":\"/p\"}"
+@const S_EVENT = utf8:"event"
+@const S_DATA = utf8:"data"
+@const S_PLUGIN_FILE = utf8:"/home/vscode/projects/sa_plugins/sa_plugin_node/sap.json"
+@const S_PLUGIN_DIR = utf8:"/home/vscode/projects/sa_plugins/sa_plugin_node"
+
+@test "node.os freemem succeeds"():
+L_ENTRY:
+    EXPAND NODE_OS_FREEMEM m, s
+    ok = eq s, 0
+    br ok -> L_OK, L_STATUS_ERR
+L_OK:
+    !ok
+    !m
+    !s
+    return
+L_STATUS_ERR:
+    !ok
+    !m
+    !s
+    panic(103)
+
+@test "node.os homedir returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_HOMEDIR p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_FREE, L_LEN_ERR
+L_FREE:
+    !non_empty
+    EXPAND NODE_FREE_BUFFER p, l, fs
+    free_ok = eq fs, 0
+    br free_ok -> L_OK, L_FREE_ERR
+L_OK:
+    !free_ok
+    !fs
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+L_FREE_ERR:
+    !free_ok
+    !fs
+    !p
+    !l
+    panic(103)
+
+@test "node.os arch returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_ARCH p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os available_parallelism succeeds"():
+L_ENTRY:
+    EXPAND NODE_OS_AVAILABLE_PARALLELISM v, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    positive = ugt v, 0
+    br positive -> L_OK, L_VALUE_ERR
+L_OK:
+    !positive
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !positive
+    !v
+    panic(103)
+
+@test "node.os eol returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_OS_EOL p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process cwd returns bytes"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_CWD p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process memory_usage returns json"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_MEMORY_USAGE p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process env set get delete"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_ENV_SET S_KEY, 16, S_VAL, 10, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_SET_OK, L_SET_ERR
+L_SET_OK:
+    !ok1
+    !s1
+    EXPAND NODE_PROCESS_ENV_GET S_KEY, 16, p, l, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_GET_OK, L_GET_ERR
+L_GET_OK:
+    !ok2
+    !s2
+    value_len = eq l, 10
+    br value_len -> L_DELETE, L_LEN_ERR
+L_DELETE:
+    !value_len
+    EXPAND NODE_PROCESS_ENV_DELETE S_KEY, 16, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_OK, L_DELETE_ERR
+L_OK:
+    !ok3
+    !s3
+    !p
+    !l
+    return
+L_SET_ERR:
+    !ok1
+    !s1
+    panic(103)
+L_GET_ERR:
+    !ok2
+    !p
+    !l
+    !s2
+    panic(103)
+L_LEN_ERR:
+    !value_len
+    !p
+    !l
+    panic(103)
+L_DELETE_ERR:
+    !ok3
+    !s3
+    !p
+    !l
+    panic(103)
+
+@test "node.process versions json returns bytes"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_VERSIONS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os platform returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_PLATFORM p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os cpus returns json"():
+L_ENTRY:
+    EXPAND NODE_OS_CPUS p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os totalmem succeeds"():
+L_ENTRY:
+    EXPAND NODE_OS_TOTALMEM m, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    positive = ugt m, 0
+    br positive -> L_OK, L_VALUE_ERR
+L_OK:
+    !positive
+    !m
+    return
+L_STATUS_ERR:
+    !ok
+    !m
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !positive
+    !m
+    panic(103)
+
+@test "node.process pid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_PID v, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    positive = ugt v, 0
+    br positive -> L_OK, L_VALUE_ERR
+L_OK:
+    !positive
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !positive
+    !v
+    panic(103)
+
+@test "node.process version returns bytes"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_VERSION p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path basename succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_BASENAME p, l, s, S_PATH, 23, 0, 0
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path dirname succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_DIRNAME p, l, s, S_PATH, 23
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path is_absolute true"():
+L_ENTRY:
+    EXPAND NODE_PATH_IS_ABSOLUTE v, s, S_PATH, 23
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_abs = eq v, 1
+    br is_abs -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_abs
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !is_abs
+    !v
+    panic(103)
+
+@test "node.crypto sha256 hash length"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_HASH p, l, s, S_SHA256, 6, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_hash_len = eq l, 64
+    br is_hash_len -> L_OK, L_LEN_ERR
+L_OK:
+    !is_hash_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !is_hash_len
+    !p
+    !l
+    panic(103)
+
+@test "node.crypto random bytes length"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_RANDOM_BYTES 16, p, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    !p
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !s
+    panic(103)
+
+@test "node.crypto hmac succeeds"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_HMAC p, l, s, S_SHA256, 6, S_SECRET, 9, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_hmac_len = eq l, 64
+    br is_hmac_len -> L_OK, L_LEN_ERR
+L_OK:
+    !is_hmac_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !is_hmac_len
+    !p
+    !l
+    panic(103)
+
+@test "node.zlib gzip succeeds"():
+L_ENTRY:
+    EXPAND NODE_ZLIB_GZIP p, l, s, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.querystring escape succeeds"():
+L_ENTRY:
+    EXPAND NODE_QUERYSTRING_ESCAPE p, l, s, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    expected_len = eq l, 5
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.querystring unescape succeeds"():
+L_ENTRY:
+    EXPAND NODE_QUERYSTRING_UNESCAPE p, l, s, S_ENCODED, 13
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    expected_len = eq l, 11
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.url parse succeeds"():
+L_ENTRY:
+    EXPAND NODE_URL_PARSE p, l, s, S_URL, 28
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.url resolve succeeds"():
+L_ENTRY:
+    EXPAND NODE_URL_RESOLVE p, l, s, S_FROM, 14, S_TO, 16
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.util format succeeds"():
+L_ENTRY:
+    EXPAND NODE_UTIL_FORMAT p, l, s, S_FMT, 8, S_ARGS, 9
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.util deep strict equal true"():
+L_ENTRY:
+    EXPAND NODE_UTIL_IS_DEEP_STRICT_EQUAL v, s, S_JSON_A, 7, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_equal = eq v, 1
+    br is_equal -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_equal
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !is_equal
+    !v
+    panic(103)
+
+@test "node.util strip vt succeeds"():
+L_ENTRY:
+    EXPAND NODE_UTIL_STRIP_VT_CONTROL_CHARACTERS p, l, s, S_VT, 12
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    expected_len = eq l, 3
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.buffer byte_length succeeds"():
+L_ENTRY:
+    EXPAND NODE_BUFFER_BYTE_LENGTH v, s, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_len = eq v, 5
+    br is_len -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_len
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !is_len
+    !v
+    panic(103)
+
+@test "node.buffer btoa succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_BUFFER_BTOA S_HELLO, 5, p, l
+    expected_len = eq l, 8
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.net is_ip ipv4"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_NET_IS_IP S_IP4, 9, v
+    is_v4 = eq v, 4
+    br is_v4 -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_v4
+    !v
+    return
+L_VALUE_ERR:
+    !is_v4
+    !v
+    panic(103)
+
+@test "node.net is_ipv6 true"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_NET_IS_IPV6 S_IP6, 3, v
+    is_true = eq v, 1
+    br is_true -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_true
+    !v
+    return
+L_VALUE_ERR:
+    !is_true
+    !v
+    panic(103)
+
+@test "node.net is_ip invalid"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_NET_IS_IP S_NOTIP, 6, v
+    is_zero = eq v, 0
+    br is_zero -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_zero
+    !v
+    return
+L_VALUE_ERR:
+    !is_zero
+    !v
+    panic(103)
+
+@test "node.punycode to_ascii succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PUNYCODE_TO_ASCII S_DOMAIN, 11, p, l
+    expected_len = eq l, 11
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.console log succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_LOG s, S_LOG, 7
+    ok = eq s, 0
+    br ok -> L_OK, L_STATUS_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_STATUS_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console time time_end succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TIME s1, S_LABEL, 13
+    ok1 = eq s1, 0
+    br ok1 -> L_TIME_OK, L_TIME_ERR
+L_TIME_OK:
+    !ok1
+    !s1
+    EXPAND NODE_CONSOLE_TIME_END s2, ms, S_LABEL, 13
+    ok2 = eq s2, 0
+    br ok2 -> L_OK, L_END_ERR
+L_OK:
+    !ok2
+    !s2
+    !ms
+    return
+L_TIME_ERR:
+    !ok1
+    !s1
+    panic(103)
+L_END_ERR:
+    !ok2
+    !s2
+    !ms
+    panic(103)
+
+@test "node.timers sleep zero succeeds"():
+L_ENTRY:
+    EXPAND NODE_TIMERS_SLEEP s, 0
+    ok = eq s, 0
+    br ok -> L_OK, L_STATUS_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_STATUS_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.path extname succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_EXTNAME p, l, s, S_PATH, 23
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    expected_len = eq l, 4
+    br expected_len -> L_OK, L_LEN_ERR
+L_OK:
+    !expected_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !p
+    !l
+    panic(103)
+
+@test "node.path normalize succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_NORMALIZE p, l, s, S_PATH, 23
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path relative succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_RELATIVE p, l, s, S_FROM, 14, S_TO, 16
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path parse succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_PARSE p, l, s, S_PATH, 23
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path format succeeds"():
+L_ENTRY:
+    EXPAND NODE_PATH_FORMAT p, l, s, S_PATH_JSON, 29
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.querystring parse succeeds"():
+L_ENTRY:
+    EXPAND NODE_QUERYSTRING_PARSE p, l, s, S_QS, 9
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.querystring stringify succeeds"():
+L_ENTRY:
+    EXPAND NODE_QUERYSTRING_STRINGIFY p, l, s, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.url format succeeds"():
+L_ENTRY:
+    EXPAND NODE_URL_FORMAT p, l, s, S_URL_JSON, 58
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.crypto random_uuid length"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_RANDOM_UUID p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    uuid_len = eq l, 36
+    br uuid_len -> L_OK, L_LEN_ERR
+L_OK:
+    !uuid_len
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !uuid_len
+    !p
+    !l
+    panic(103)
+
+@test "node.crypto timing_safe_equal true"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_TIMING_SAFE_EQUAL v, s, S_HELLO, 5, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    is_true = eq v, 1
+    br is_true -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_true
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !is_true
+    !v
+    panic(103)
+
+@test "node.crypto pbkdf2 succeeds"():
+L_ENTRY:
+    EXPAND NODE_CRYPTO_PBKDF2 p, s, S_SECRET, 9, S_HELLO, 5, 10, 16, S_SHA256, 6
+    ok = eq s, 0
+    br ok -> L_OK, L_STATUS_ERR
+L_OK:
+    !ok
+    !p
+    !s
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !s
+    panic(103)
+
+@test "node.zlib deflate succeeds"():
+L_ENTRY:
+    EXPAND NODE_ZLIB_DEFLATE p, l, s, S_HELLO, 5
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.buffer is_utf8 true"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_BUFFER_IS_UTF8 S_HELLO, 5, v
+    is_true = eq v, 1
+    br is_true -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_true
+    !v
+    return
+L_VALUE_ERR:
+    !is_true
+    !v
+    panic(103)
+
+@test "node.buffer is_ascii true"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_BUFFER_IS_ASCII S_HELLO, 5, v
+    is_true = eq v, 1
+    br is_true -> L_OK, L_VALUE_ERR
+L_OK:
+    !is_true
+    !v
+    return
+L_VALUE_ERR:
+    !is_true
+    !v
+    panic(103)
+
+@test "node.zlib crc32 succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_CRC32 S_HELLO, 5, v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_STATUS_ERR
+L_OK:
+    !ok
+    !v
+    !s
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process argv returns json"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_ARGV p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.events on emit count free"():
+L_ENTRY:
+    EXPAND NODE_EVENTS_CREATE ee
+    created = ne ee, 0
+    br created -> L_CREATED, L_CREATE_ERR
+L_CREATED:
+    !created
+    cb = stack_alloc 8
+    EXPAND NODE_EVENTS_ON ee, S_EVENT, 5, cb, s_on
+    ok_on = eq s_on, 0
+    br ok_on -> L_ON_OK, L_ON_ERR
+L_ON_OK:
+    !ok_on
+    !s_on
+    EXPAND NODE_EVENTS_LISTENER_COUNT ee, S_EVENT, 5, cnt, s_cnt
+    ok_cnt = eq s_cnt, 0
+    br ok_cnt -> L_COUNT_STATUS_OK, L_COUNT_STATUS_ERR
+L_COUNT_STATUS_OK:
+    !ok_cnt
+    !s_cnt
+    count_is_one = eq cnt, 1
+    br count_is_one -> L_COUNT_OK, L_COUNT_VALUE_ERR
+L_COUNT_OK:
+    !count_is_one
+    !cnt
+    EXPAND NODE_EVENTS_EMIT ee, S_EVENT, 5, S_DATA, 4, s_emit
+    ok_emit = eq s_emit, 0
+    br ok_emit -> L_EMIT_OK, L_EMIT_ERR
+L_EMIT_OK:
+    !ok_emit
+    !s_emit
+    EXPAND NODE_EVENTS_FREE ee, s_free
+    ok_free = eq s_free, 0
+    br ok_free -> L_OK, L_FREE_ERR
+L_OK:
+    !ok_free
+    !s_free
+    !ee
+    return
+L_CREATE_ERR:
+    !created
+    !ee
+    panic(103)
+L_ON_ERR:
+    !ok_on
+    !s_on
+    !ee
+    panic(103)
+L_COUNT_STATUS_ERR:
+    !ok_cnt
+    !cnt
+    !s_cnt
+    !ee
+    panic(103)
+L_COUNT_VALUE_ERR:
+    !count_is_one
+    !cnt
+    !ee
+    panic(103)
+L_EMIT_ERR:
+    !ok_emit
+    !s_emit
+    !ee
+    panic(103)
+L_FREE_ERR:
+    !ok_free
+    !s_free
+    !ee
+    panic(103)
+
+@test "node.stream readable writable push write"():
+L_ENTRY:
+    EXPAND NODE_STREAM_READABLE_NEW r
+    r_created = ne r, 0
+    br r_created -> L_R_OK, L_R_ERR
+L_R_OK:
+    !r_created
+    EXPAND NODE_STREAM_WRITABLE_NEW w
+    w_created = ne w, 0
+    br w_created -> L_W_OK, L_W_ERR
+L_W_OK:
+    !w_created
+    EXPAND NODE_STREAM_PUSH r, S_DATA, 4, s_push
+    ok_push = eq s_push, 0
+    br ok_push -> L_PUSH_OK, L_PUSH_ERR
+L_PUSH_OK:
+    !ok_push
+    !s_push
+    EXPAND NODE_STREAM_WRITE w, S_DATA, 4, s_write
+    ok_write = eq s_write, 0
+    br ok_write -> L_OK, L_WRITE_ERR
+L_OK:
+    !ok_write
+    !s_write
+    !r
+    !w
+    return
+L_R_ERR:
+    !r_created
+    !r
+    panic(103)
+L_W_ERR:
+    !w_created
+    !r
+    !w
+    panic(103)
+L_PUSH_ERR:
+    !ok_push
+    !s_push
+    !r
+    !w
+    panic(103)
+L_WRITE_ERR:
+    !ok_write
+    !s_write
+    !r
+    !w
+    panic(103)
+
+@test "node.string_decoder write free"():
+L_ENTRY:
+    EXPAND NODE_STRING_DECODER_CREATE sd
+    created = ne sd, 0
+    br created -> L_CREATED, L_CREATE_ERR
+L_CREATED:
+    !created
+    EXPAND NODE_STRING_DECODER_WRITE s_write, p, l, sd, S_HELLO, 5
+    ok_write = eq s_write, 0
+    br ok_write -> L_WRITE_OK, L_WRITE_ERR
+L_WRITE_OK:
+    !ok_write
+    !s_write
+    expected_len = eq l, 5
+    br expected_len -> L_FREE_DECODER, L_LEN_ERR
+L_FREE_DECODER:
+    !expected_len
+    EXPAND NODE_STRING_DECODER_FREE s_free, sd
+    ok_free = eq s_free, 0
+    br ok_free -> L_OK, L_FREE_ERR
+L_OK:
+    !ok_free
+    !s_free
+    !sd
+    !p
+    !l
+    return
+L_CREATE_ERR:
+    !created
+    !sd
+    panic(103)
+L_WRITE_ERR:
+    !ok_write
+    !s_write
+    !sd
+    !p
+    !l
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !sd
+    !p
+    !l
+    panic(103)
+L_FREE_ERR:
+    !ok_free
+    !s_free
+    !sd
+    !p
+    !l
+    panic(103)
+
+@test "node.fs stat plugin file"():
+L_ENTRY:
+    EXPAND NODE_FS_STAT p, l, s, S_PLUGIN_FILE, 56
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.fs exists plugin file"():
+L_ENTRY:
+    EXPAND NODE_FS_EXISTS S_PLUGIN_FILE, 56, v, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    exists = eq v, 1
+    br exists -> L_OK, L_VALUE_ERR
+L_OK:
+    !exists
+    !v
+    return
+L_STATUS_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !exists
+    !v
+    panic(103)
+
+@test "node.fs readdir plugin dir"():
+L_ENTRY:
+    EXPAND NODE_FS_READDIR p, l, s, S_PLUGIN_DIR, 47
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.fs realpath plugin file"():
+L_ENTRY:
+    EXPAND NODE_FS_REALPATH p, l, s, S_PLUGIN_FILE, 56
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_STATUS_ERR
+L_STATUS_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_STATUS_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.status json shims return bytes"():
+L_ENTRY:
+    p1 = add 0, 0
+    l1 = add 0, 0
+    EXPAND NODE_CLUSTER_STATUS_JSON p1, l1
+    ok1 = ugt l1, 0
+    br ok1 -> L_CLUSTER_OK, L_CLUSTER_ERR
+L_CLUSTER_OK:
+    !ok1
+    p2 = add 0, 0
+    l2 = add 0, 0
+    EXPAND NODE_HTTP_STATUS_JSON p2, l2
+    ok2 = ugt l2, 0
+    br ok2 -> L_HTTP_OK, L_HTTP_ERR
+L_HTTP_OK:
+    !ok2
+    p3 = add 0, 0
+    l3 = add 0, 0
+    EXPAND NODE_HTTP2_STATUS_JSON p3, l3
+    ok3 = ugt l3, 0
+    br ok3 -> L_HTTP2_OK, L_HTTP2_ERR
+L_HTTP2_OK:
+    !ok3
+    p4 = add 0, 0
+    l4 = add 0, 0
+    EXPAND NODE_TTY_STATUS_JSON p4, l4
+    ok4 = ugt l4, 0
+    br ok4 -> L_TTY_OK, L_TTY_ERR
+L_TTY_OK:
+    !ok4
+    p5 = add 0, 0
+    l5 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_STATUS_JSON p5, l5
+    ok5 = ugt l5, 0
+    br ok5 -> L_OK, L_DC_ERR
+L_OK:
+    !ok5
+    !p1
+    !l1
+    !p2
+    !l2
+    !p3
+    !l3
+    !p4
+    !l4
+    !p5
+    !l5
+    return
+L_CLUSTER_ERR:
+    !ok1
+    !p1
+    !l1
+    panic(103)
+L_HTTP_ERR:
+    !ok2
+    !p1
+    !l1
+    !p2
+    !l2
+    panic(103)
+L_HTTP2_ERR:
+    !ok3
+    !p1
+    !l1
+    !p2
+    !l2
+    !p3
+    !l3
+    panic(103)
+L_TTY_ERR:
+    !ok4
+    !p1
+    !l1
+    !p2
+    !l2
+    !p3
+    !l3
+    !p4
+    !l4
+    panic(103)
+L_DC_ERR:
+    !ok5
+    !p1
+    !l1
+    !p2
+    !l2
+    !p3
+    !l3
+    !p4
+    !l4
+    !p5
+    !l5
+    panic(103)

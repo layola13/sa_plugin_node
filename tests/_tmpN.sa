@@ -1,0 +1,600 @@
+// SA native @test unit tests for sa_plugin_node.
+// Run: sa test sa_plugin_node/tests/node_plugin_unit_test.sa
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SHA256 = utf8:"sha256"
+@const S_HELLO = utf8:"hello"
+@const S_SECRET = utf8:"secret123"
+@const S_MSG = utf8:"test msg"
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_DOMAIN = utf8:"example.com"
+@const S_ENCODED = utf8:"hello%20world"
+@const S_KEY = utf8:"SA_TEST_KEY"
+@const S_VAL = utf8:"test_value"
+@const S_IP4 = utf8:"127.0.0.1"
+@const S_IP6 = utf8:"::1"
+@const S_NOTIP = utf8:"not-ip"
+@const S_PATH = utf8:"/usr/local/bin/test.txt"
+@const S_SLASH = utf8:"/"
+@const S_FROM = utf8:"/usr/local/bin"
+@const S_TO = utf8:"/usr/local/share"
+@const S_FMT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"world\"]"
+@const S_JSON7 = utf8:"{\"a\":1}"
+@const S_VT = utf8:"\x1b[31mred\x1b[0m"
+@const S_LOG = utf8:"log msg"
+@const S_WARN4 = utf8:"warn"
+@const S_ERR5 = utf8:"error"
+@const S_DBG = utf8:"debug"
+@const S_INF = utf8:"info"
+@const S_DIR = utf8:"obj"
+@const S_TRC = utf8:"trace"
+@const S_TBL = utf8:"{}"
+@const S_LBL = utf8:"cnt1"
+@const S_CAT = utf8:"test"
+@const S_CHAN = utf8:"test.ch"
+@const S_ORD = utf8:"ipv4first"
+
+// OS
+@test "os.cpus"():
+    EXPAND NODE_OS_CPUS p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.totalmem"():
+    EXPAND NODE_OS_TOTALMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.freemem"():
+    EXPAND NODE_OS_FREEMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.homedir"():
+    EXPAND NODE_OS_HOMEDIR p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.tmpdir"():
+    EXPAND NODE_OS_TMPDIR p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.platform"():
+    EXPAND NODE_OS_PLATFORM p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.arch"():
+    EXPAND NODE_OS_ARCH p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.release"():
+    EXPAND NODE_OS_RELEASE p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.type"():
+    EXPAND NODE_OS_TYPE p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.hostname"():
+    EXPAND NODE_OS_HOSTNAME p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.userInfo"():
+    EXPAND NODE_OS_USER_INFO p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.networkInterfaces"():
+    EXPAND NODE_OS_NETWORK_INTERFACES p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.endianness"():
+    EXPAND NODE_OS_ENDIANNESS p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "os.eol"():
+    EXPAND NODE_OS_EOL p, l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+
+@test "os.constants"():
+    EXPAND NODE_OS_CONSTANTS p, l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+
+// Process
+@test "process.pid"():
+    EXPAND NODE_PROCESS_PID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.ppid"():
+    EXPAND NODE_PROCESS_PPID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getuid"():
+    EXPAND NODE_PROCESS_GETUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getgid"():
+    EXPAND NODE_PROCESS_GETGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.geteuid"():
+    EXPAND NODE_PROCESS_GETEUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getegid"():
+    EXPAND NODE_PROCESS_GETEGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.hrtime.bigint"():
+    EXPAND NODE_PROCESS_HRTIME_BIGINT v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.cpuUsage"():
+    EXPAND NODE_PROCESS_CPU_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "process.memoryUsage"():
+    EXPAND NODE_PROCESS_MEMORY_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "process.cwd"():
+    EXPAND NODE_PROCESS_CWD p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "process.version"():
+    EXPAND NODE_PROCESS_VERSION p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "process.versions.json"():
+    EXPAND NODE_PROCESS_VERSIONS_JSON p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "process.env roundtrip"():
+    EXPAND NODE_PROCESS_ENV_SET S_KEY, 11, S_VAL, 10, s1
+    ok1 = eq s1, 0
+    !ok1
+    EXPAND NODE_PROCESS_ENV_GET S_KEY, 11, gp, gl, s2
+    ok2 = eq s2, 0
+    !ok2
+    !gp
+    !gl
+    !s2
+    EXPAND NODE_PROCESS_ENV_DELETE S_KEY, 11, s3
+    ok3 = eq s3, 0
+    !ok3
+    !s1
+    !s3
+    return
+
+// Path
+@test "path.basename"():
+    EXPAND NODE_PATH_BASENAME p, l, s, S_PATH, 22, 0, 0
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "path.dirname"():
+    EXPAND NODE_PATH_DIRNAME p, l, s, S_PATH, 22
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "path.extname"():
+    EXPAND NODE_PATH_EXTNAME p, l, s, S_PATH, 22
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "path.isAbsolute"():
+    EXPAND NODE_PATH_IS_ABSOLUTE b, s, S_SLASH, 1
+    ok = eq s, 0
+    !ok
+    !b
+    !s
+    return
+
+@test "path.sep"():
+    EXPAND NODE_PATH_SEP p, l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+
+@test "path.delimiter"():
+    EXPAND NODE_PATH_DELIMITER p, l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+
+@test "path.relative"():
+    EXPAND NODE_PATH_RELATIVE p, l, s, S_FROM, 13, S_TO, 13
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "path.normalize"():
+    EXPAND NODE_PATH_NORMALIZE p, l, s, S_PATH, 22
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+// Crypto
+@test "crypto.hash sha256"():
+    EXPAND NODE_CRYPTO_HASH p, l, s, S_SHA256, 6, S_HELLO, 5
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "crypto.randomBytes"():
+    EXPAND NODE_CRYPTO_RANDOM_BYTES 32, p, s
+    ok = eq s, 0
+    !ok
+    !p
+    !s
+    return
+
+@test "crypto.randomUUID"():
+    EXPAND NODE_CRYPTO_RANDOM_UUID p, l, s
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "crypto.hmac"():
+    EXPAND NODE_CRYPTO_HMAC p, l, s, S_SHA256, 6, S_SECRET, 8, S_MSG, 8
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "crypto.getHashes"():
+    EXPAND NODE_CRYPTO_GET_HASHES p, l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+
+// Zlib
+@test "zlib.gzip"():
+    EXPAND NODE_ZLIB_GZIP p, l, s, S_HELLO, 5
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "zlib.roundtrip"():
+    EXPAND NODE_ZLIB_GZIP gp, gl, gs, S_HELLO, 5
+    ok1 = eq gs, 0
+    !ok1
+    EXPAND NODE_ZLIB_GUNZIP op, ol, os2, gp, gl
+    ok2 = eq os2, 0
+    !ok2
+    !gp
+    !gl
+    !gs
+    !op
+    !ol
+    !os2
+    !ok1
+    !ok2
+    return
+
+// Querystring
+@test "querystring.escape"():
+    EXPAND NODE_QUERYSTRING_ESCAPE p, l, s, S_HELLO, 5
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "querystring.parse"():
+    EXPAND NODE_QUERYSTRING_PARSE p, l, s, S_ENCODED, 12
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+// URL
+@test "url.parse"():
+    EXPAND NODE_URL_PARSE p, l, s, S_URL, 27
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "url.resolve"():
+    EXPAND NODE_URL_RESOLVE p, l, s, S_URL, 27, S_SLASH, 1
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+// Util
+@test "util.format"():
+    EXPAND NODE_UTIL_FORMAT p, l, s, S_FMT, 9, S_ARGS, 12
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "util.inspect"():
+    EXPAND NODE_UTIL_INSPECT p, l, s, S_JSON7, 7
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+@test "util.isDeepStrictEqual"():
+    EXPAND NODE_UTIL_IS_DEEP_STRICT_EQUAL b, s, S_JSON7, 7, S_JSON7, 7
+    ok = eq s, 0
+    !ok
+    !b
+    !s
+    return
+
+@test "util.stripVT"():
+    EXPAND NODE_UTIL_STRIP_VT_CONTROL_CHARACTERS p, l, s, S_VT, 14
+    ok = eq s, 0
+    !ok
+    !p
+    !l
+    !s
+    return
+
+// Events
+@test "events.create and free"():
+    EXPAND NODE_EVENTS_CREATE ee
+    !ee
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !ee
+    !fs
+    return
+
+@test "events.on and emit"():
+    EXPAND NODE_EVENTS_CREATE ee
+    EXPAND NODE_EVENTS_ON ee, S_HELLO, 5, 0, os1
+    EXPAND NODE_EVENTS_EMIT ee, S_HELLO, 5, S_HELLO, 5, es
+    !ee
+    !os1
+    !es
+    return
+
+@test "events.listenerCount"():
+    EXPAND NODE_EVENTS_CREATE ee
+    EXPAND NODE_EVENTS_ON ee, S_HELLO, 5, 0, os1
+    EXPAND NODE_EVENTS_LISTENER_COUNT ee, S_HELLO, 5, cnt, lc
+    !ee
+    !os1
+    !cnt
+    !lc
+    return
+
+// Console
+@test "console.log"():
+    EXPAND NODE_CONSOLE_LOG s, S_LOG, 7
+    !s
+    return
+
+@test "console.warn"():
+    EXPAND NODE_CONSOLE_WARN S_WARN4, 4
+    return
+
+@test "console.error"():
+    EXPAND NODE_CONSOLE_ERROR s, S_ERR5, 5
+    !s
+    return
+
+@test "console.info"():
+    EXPAND NODE_CONSOLE_INFO S_INF, 4
+    return
+
+@test "console.debug"():
+    EXPAND NODE_CONSOLE_DEBUG S_DBG, 5
+    return
+
+@test "console.clear"():
+    EXPAND NODE_CONSOLE_CLEAR s
+    !s
+    return
+
+@test "console.dir"():
+    EXPAND NODE_CONSOLE_DIR S_DIR, 3
+    return
+
+@test "console.trace"():
+    EXPAND NODE_CONSOLE_TRACE S_TRC, 5
+    return
+
+@test "console.table"():
+    EXPAND NODE_CONSOLE_TABLE S_TBL, 2
+    return
+
+@test "console.assert"():
+    EXPAND NODE_CONSOLE_ASSERT 1, S_LOG, 7
+    return
+
+@test "console.time and timeEnd"():
+    EXPAND NODE_CONSOLE_TIME s1, S_LBL, 4
+    !s1
+    EXPAND NODE_TIMERS_SLEEP ss, 10
+    EXPAND NODE_CONSOLE_TIME_END s2, v, S_LBL, 4
+    !s2
+    !ss
+    !v
+    return
+
+@test "console.group and groupEnd"():
+    EXPAND NODE_CONSOLE_GROUP
+    EXPAND NODE_CONSOLE_GROUP_END
+    return
+
+// Timers
+@test "timers.sleep"():
+    EXPAND NODE_TIMERS_SLEEP s, 5
+    !s
+    return
+
+// DNS
+@test "dns.getServers"():
+    EXPAND NODE_DNS_GET_SERVERS p, l

@@ -1,0 +1,543 @@
+// Tests for OS and Process macros not yet covered.
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.os tmpdir returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_TMPDIR p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os release returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_RELEASE p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os type returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_TYPE p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os hostname returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_HOSTNAME p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os machine returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_MACHINE p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os version returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_VERSION p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os endianness returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_ENDIANNESS p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os user_info returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_USER_INFO p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os network_interfaces returns bytes"():
+L_ENTRY:
+    EXPAND NODE_OS_NETWORK_INTERFACES p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os system_uptime succeeds"():
+L_ENTRY:
+    EXPAND NODE_OS_SYSTEM_UPTIME v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.os loadavg succeeds"():
+L_ENTRY:
+    lb = stack_alloc 24
+    EXPAND NODE_OS_LOADAVG s, lb
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.os constants returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_OS_CONSTANTS p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path sep returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PATH_SEP p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.path delimiter returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PATH_DELIMITER p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process hrtime_bigint succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_HRTIME_BIGINT v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    positive = ugt v, 0
+    br positive -> L_DONE, L_VALUE_ERR
+L_DONE:
+    !positive
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !positive
+    !v
+    panic(103)
+
+@test "node.process cpu_usage returns bytes"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_CPU_USAGE p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process uptime succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_UPTIME v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process ppid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_PPID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    positive = ugt v, 0
+    br positive -> L_DONE, L_VALUE_ERR
+L_DONE:
+    !positive
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+L_VALUE_ERR:
+    !positive
+    !v
+    panic(103)
+
+@test "node.process getuid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_GETUID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process getgid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_GETGID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process geteuid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_GETEUID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process getegid succeeds"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_GETEGID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.process groups returns bytes"():
+L_ENTRY:
+    EXPAND NODE_PROCESS_GROUPS p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process argv_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_ARGV_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    non_empty = ugt l, 0
+    br non_empty -> L_DONE, L_LEN_ERR
+L_DONE:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)

@@ -1,0 +1,421 @@
+// Tests for all STATUS_JSON shim macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.sqlite status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_SQLITE_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.tls status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_TLS_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.test_runner status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TEST_RUNNER_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.wasi status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_WASI_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.web_crypto status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.web_streams status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WEB_STREAMS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.worker_threads status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_WORKER_THREADS_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.child_process status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.dns get_servers returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_DNS_GET_SERVERS p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.dns get_default_result_order returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_GET_DEFAULT_RESULT_ORDER p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.perf_hooks now_ms succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PERF_HOOKS_NOW_MS v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.perf_hooks time_origin_ms succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_PERF_HOOKS_TIME_ORIGIN_MS v
+    positive = ugt v, 0
+    br positive -> L_OK, L_ERR
+L_OK:
+    !positive
+    !v
+    return
+L_ERR:
+    !positive
+    !v
+    panic(103)
+
+@test "node.perf_hooks entries_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PERF_HOOKS_ENTRIES_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.perf_hooks event_loop_utilization returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.async_hooks execution_async_id succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.async_hooks trigger_async_id succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_TRIGGER_ASYNC_ID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.async_hooks snapshot_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_SNAPSHOT_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.worker_threads thread_id succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_THREAD_ID v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.worker_threads is_main_thread succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_IS_MAIN_THREAD v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.worker_threads is_internal_thread succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_IS_INTERNAL_THREAD v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+

@@ -1,0 +1,350 @@
+// Auto-generated smoke tests
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "smoke node console clear"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_CLEAR out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node console error"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_ERROR out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node dgram bind"():
+L_ENTRY:
+    EXPAND NODE_DGRAM_BIND out_status, 0, 0, 5, 0
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node dgram close"():
+L_ENTRY:
+    EXPAND NODE_DGRAM_CLOSE out_status, 0
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node dgram create"():
+L_ENTRY:
+    EXPAND NODE_DGRAM_CREATE out_socket
+    ok = eq out_socket, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_socket
+    return
+L_ERR:
+    !ok
+    !out_socket
+    panic(103)
+
+@test "smoke node dgram recv"():
+L_ENTRY:
+    EXPAND NODE_DGRAM_RECV out_status, out_ptr, out_len, out_host_ptr, out_host_len, out_port, 0, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    !out_host_ptr
+    !out_host_len
+    !out_port
+    return
+L_ERR:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    !out_host_ptr
+    !out_host_len
+    !out_port
+    panic(103)
+
+@test "smoke node dgram send"():
+L_ENTRY:
+    EXPAND NODE_DGRAM_SEND out_status, 0, S_DATA, 5, 0, 5, 0
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node dns lookup"():
+L_ENTRY:
+    EXPAND NODE_DNS_LOOKUP out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node dns resolve"():
+L_ENTRY:
+    EXPAND NODE_DNS_RESOLVE out_ptr, out_len, out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs access"():
+L_ENTRY:
+    EXPAND NODE_FS_ACCESS S_DATA, 5, 0, out_bool, out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_bool
+    return
+L_ERR:
+    !ok
+    !out_bool
+    !out_status
+    panic(103)
+
+@test "smoke node fs copy file"():
+L_ENTRY:
+    EXPAND NODE_FS_COPY_FILE out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs lstat"():
+L_ENTRY:
+    EXPAND NODE_FS_LSTAT out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs mkdir"():
+L_ENTRY:
+    EXPAND NODE_FS_MKDIR out_status, S_DATA, 5, 0
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs readdir with types"():
+L_ENTRY:
+    EXPAND NODE_FS_READDIR_WITH_TYPES out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs readlink"():
+L_ENTRY:
+    EXPAND NODE_FS_READLINK out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs read file"():
+L_ENTRY:
+    EXPAND NODE_FS_READ_FILE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs rename"():
+L_ENTRY:
+    EXPAND NODE_FS_RENAME out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs rmdir"():
+L_ENTRY:
+    EXPAND NODE_FS_RMDIR out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs unlink"():
+L_ENTRY:
+    EXPAND NODE_FS_UNLINK out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs write file"():
+L_ENTRY:
+    EXPAND NODE_FS_WRITE_FILE out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node net accept"():
+L_ENTRY:
+    EXPAND NODE_NET_ACCEPT 0, out_socket, out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_socket
+    return
+L_ERR:
+    !ok
+    !out_socket
+    !out_status
+    panic(103)
+
+@test "smoke node net connect"():
+L_ENTRY:
+    EXPAND NODE_NET_CONNECT 0, 5, 0, out_socket, out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_socket
+    return
+L_ERR:
+    !ok
+    !out_socket
+    !out_status

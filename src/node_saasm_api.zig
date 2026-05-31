@@ -2177,6 +2177,113 @@ pub export fn sa_node_plugin_net_end(socket_ptr: ?*anyopaque) u32 {
     return 0;
 }
 
+pub const SaDgramSocket = struct {
+    allocator: std.mem.Allocator,
+    fd: std.posix.socket_t,
+
+    fn deinit(self: *SaDgramSocket) void {
+        std.posix.close(self.fd);
+        self.allocator.destroy(self);
+    }
+};
+
+fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !std.net.Address {
+    if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
+    const host = host_ptr.?[0..host_len];
+    if (host.len == 0 or std.mem.eql(u8, host, "0.0.0.0")) {
+        return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, @as(u16, @intCast(port)));
+    }
+    return std.net.Address.resolveIp(host, @as(u16, @intCast(port))) catch
+        std.net.Address.parseIp(host, @as(u16, @intCast(port)));
+}
+
+fn dgramAddressToOwnedHost(addr: std.net.Address) ![]u8 {
+    const allocator = std.heap.page_allocator;
+    switch (addr.any.family) {
+        std.posix.AF.INET => {
+            const bytes = std.mem.asBytes(&addr.in.sa.addr);
+            return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
+        },
+        std.posix.AF.INET6 => {
+            if (std.mem.eql(u8, addr.in6.sa.addr[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
+                return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{
+                    addr.in6.sa.addr[12],
+                    addr.in6.sa.addr[13],
+                    addr.in6.sa.addr[14],
+                    addr.in6.sa.addr[15],
+                });
+            }
+            return try std.fmt.allocPrint(allocator, "{}", .{addr});
+        },
+        else => return error.InvalidAddressFamily,
+    }
+}
+
+pub export fn sa_node_plugin_dgram_create() ?*anyopaque {
+    const fd = std.posix.socket(std.posix.AF.INET, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.UDP) catch return null;
+    const socket = std.heap.page_allocator.create(SaDgramSocket) catch {
+        std.posix.close(fd);
+        return null;
+    };
+    socket.* = .{
+        .allocator = std.heap.page_allocator,
+        .fd = fd,
+    };
+    return @ptrCast(socket);
+}
+
+pub export fn sa_node_plugin_dgram_bind(socket_ptr: ?*anyopaque, host_ptr: ?[*]const u8, host_len: u64, port: u64) u32 {
+    const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
+    const address = parseDgramAddress(host_ptr, host_len, port) catch return 2;
+    std.posix.bind(socket.fd, &address.any, address.getOsSockLen()) catch return 2;
+    return 0;
+}
+
+pub export fn sa_node_plugin_dgram_send(socket_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64, host_ptr: ?[*]const u8, host_len: u64, port: u64) u32 {
+    const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
+    const address = parseDgramAddress(host_ptr, host_len, port) catch return 2;
+    const data = data_ptr.?[0..data_len];
+    _ = std.posix.sendto(socket.fd, data, 0, &address.any, address.getOsSockLen()) catch return 2;
+    return 0;
+}
+
+pub export fn sa_node_plugin_dgram_recv(
+    socket_ptr: ?*anyopaque,
+    max_len: u64,
+    out_ptr: ?*?[*]const u8,
+    out_len: ?*u64,
+    out_host_ptr: ?*?[*]const u8,
+    out_host_len: ?*u64,
+    out_port: ?*u64,
+) u32 {
+    const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
+    const buf = std.heap.page_allocator.alloc(u8, max_len) catch return 2;
+    errdefer std.heap.page_allocator.free(buf);
+
+    var src_addr: std.net.Address = undefined;
+    var src_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.in);
+    const n = std.posix.recvfrom(socket.fd, buf, 0, &src_addr.any, &src_len) catch return 2;
+    const owned = std.heap.page_allocator.alloc(u8, n) catch return 2;
+    @memcpy(owned[0..n], buf[0..n]);
+    std.heap.page_allocator.free(buf);
+    const host = dgramAddressToOwnedHost(src_addr) catch return 2;
+
+    out_ptr.?.* = owned.ptr;
+    out_len.?.* = owned.len;
+    out_host_ptr.?.* = host.ptr;
+    out_host_len.?.* = host.len;
+    out_port.?.* = src_addr.getPort();
+    return 0;
+}
+
+pub export fn sa_node_plugin_dgram_close(socket_ptr: ?*anyopaque) u32 {
+    if (socket_ptr) |ptr| {
+        const socket: *SaDgramSocket = @ptrCast(@alignCast(ptr));
+        socket.deinit();
+    }
+    return 0;
+}
+
 // --- Phase 6: fs read-only utilities ---
 
 pub export fn sa_node_plugin_fs_stat(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -2665,6 +2772,4 @@ pub export fn sa_node_plugin_string_decoder_free(sd_ptr: ?*anyopaque) u32 {
     }
     return 0;
 }
-
-
 

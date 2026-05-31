@@ -1,6 +1,8 @@
 const std = @import("std");
 const plugin_api = @import("plugin_api");
 pub usingnamespace @import("node_saasm_api.zig");
+pub usingnamespace @import("node_saasm_api_ext.zig");
+pub usingnamespace @import("node_saasm_extra.zig");
 
 const skills = [_]plugin_api.SkillSection{
     .{

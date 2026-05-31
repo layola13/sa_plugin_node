@@ -1,0 +1,16 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+@test "smoke node console clear"():
+L_ENTRY:
+    out_status = add 0, 0
+    EXPAND NODE_CONSOLE_CLEAR out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)

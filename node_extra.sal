@@ -1,0 +1,3503 @@
+@import "node.sai"
+@import "node_extra.sai"
+
+[MACRO] NODE_CRYPTO_CREATE_HASH %p_0, %p_1, %p_2, %p_3
+    __m_slot_07cc6ba1_0 = stack_alloc 8
+    __m_status_07cc6ba1 = call @sa_node_plugin_crypto_create_hash(%p_0, %p_1, &__m_slot_07cc6ba1_0)
+    !%p_3
+    %p_3 = add __m_status_07cc6ba1, 0
+    !__m_status_07cc6ba1
+    __m_load_07cc6ba1_p_2 = load __m_slot_07cc6ba1_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_07cc6ba1_p_2, 0
+    !__m_load_07cc6ba1_p_2
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HASH_UPDATE %p_0, %p_1, %p_2, %p_3
+    __m_status_de3c8dcf = call @sa_node_plugin_crypto_hash_update(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_de3c8dcf, 0
+    !__m_status_de3c8dcf
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HASH_FINAL %p_0, %p_1, %p_2, %p_3
+    __m_slot_6daa9903_0 = stack_alloc 8
+    __m_slot_6daa9903_1 = stack_alloc 8
+    __m_status_6daa9903 = call @sa_node_plugin_crypto_hash_final(%p_0, &__m_slot_6daa9903_0, &__m_slot_6daa9903_1)
+    !%p_3
+    %p_3 = add __m_status_6daa9903, 0
+    !__m_status_6daa9903
+    __m_load_6daa9903_p_1 = load __m_slot_6daa9903_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_6daa9903_p_1, 0
+    !__m_load_6daa9903_p_1
+    __m_load_6daa9903_p_2 = load __m_slot_6daa9903_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_6daa9903_p_2, 0
+    !__m_load_6daa9903_p_2
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HASH_FREE %p_0, %p_1
+    __m_status_abe4116e = call @sa_node_plugin_crypto_hash_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_abe4116e, 0
+    !__m_status_abe4116e
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CREATE_HMAC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_a08b7529_0 = stack_alloc 8
+    __m_status_a08b7529 = call @sa_node_plugin_crypto_create_hmac(%p_0, %p_1, %p_2, %p_3, &__m_slot_a08b7529_0)
+    !%p_5
+    %p_5 = add __m_status_a08b7529, 0
+    !__m_status_a08b7529
+    __m_load_a08b7529_p_4 = load __m_slot_a08b7529_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_a08b7529_p_4, 0
+    !__m_load_a08b7529_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HMAC_UPDATE %p_0, %p_1, %p_2, %p_3
+    __m_status_ad601c93 = call @sa_node_plugin_crypto_hmac_update(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_ad601c93, 0
+    !__m_status_ad601c93
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HMAC_FINAL %p_0, %p_1, %p_2, %p_3
+    __m_slot_98d64601_0 = stack_alloc 8
+    __m_slot_98d64601_1 = stack_alloc 8
+    __m_status_98d64601 = call @sa_node_plugin_crypto_hmac_final(%p_0, &__m_slot_98d64601_0, &__m_slot_98d64601_1)
+    !%p_3
+    %p_3 = add __m_status_98d64601, 0
+    !__m_status_98d64601
+    __m_load_98d64601_p_1 = load __m_slot_98d64601_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_98d64601_p_1, 0
+    !__m_load_98d64601_p_1
+    __m_load_98d64601_p_2 = load __m_slot_98d64601_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_98d64601_p_2, 0
+    !__m_load_98d64601_p_2
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HMAC_FREE %p_0, %p_1
+    __m_status_5bd52a06 = call @sa_node_plugin_crypto_hmac_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_5bd52a06, 0
+    !__m_status_5bd52a06
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_HKDF %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8, %p_9, %p_10
+    __m_slot_1385d8eb_0 = stack_alloc 8
+    __m_status_1385d8eb = call @sa_node_plugin_crypto_hkdf(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8, &__m_slot_1385d8eb_0)
+    !%p_10
+    %p_10 = add __m_status_1385d8eb, 0
+    !__m_status_1385d8eb
+    __m_load_1385d8eb_p_9 = load __m_slot_1385d8eb_0+0 as ptr
+    !%p_9
+    %p_9 = add __m_load_1385d8eb_p_9, 0
+    !__m_load_1385d8eb_p_9
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_SCRYPT %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8, %p_9
+    __m_slot_2c2302ec_0 = stack_alloc 8
+    __m_status_2c2302ec = call @sa_node_plugin_crypto_scrypt(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, &__m_slot_2c2302ec_0)
+    !%p_9
+    %p_9 = add __m_status_2c2302ec, 0
+    !__m_status_2c2302ec
+    __m_load_2c2302ec_p_8 = load __m_slot_2c2302ec_0+0 as ptr
+    !%p_8
+    %p_8 = add __m_load_2c2302ec_p_8, 0
+    !__m_load_2c2302ec_p_8
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_RANDOM_INT %p_0, %p_1, %p_2, %p_3
+    __m_slot_e9743657_0 = stack_alloc 8
+    __m_status_e9743657 = call @sa_node_plugin_crypto_random_int(%p_0, %p_1, &__m_slot_e9743657_0)
+    !%p_3
+    %p_3 = add __m_status_e9743657, 0
+    !__m_status_e9743657
+    __m_load_e9743657_p_2 = load __m_slot_e9743657_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_e9743657_p_2, 0
+    !__m_load_e9743657_p_2
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_RANDOM_FILL %p_0, %p_1, %p_2
+    __m_status_a75392d5 = call @sa_node_plugin_crypto_random_fill(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_a75392d5, 0
+    !__m_status_a75392d5
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CREATE_CIPHER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_ebd6eaeb_0 = stack_alloc 8
+    __m_status_ebd6eaeb = call @sa_node_plugin_crypto_create_cipher(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_ebd6eaeb_0)
+    !%p_7
+    %p_7 = add __m_status_ebd6eaeb, 0
+    !__m_status_ebd6eaeb
+    __m_load_ebd6eaeb_p_6 = load __m_slot_ebd6eaeb_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_ebd6eaeb_p_6, 0
+    !__m_load_ebd6eaeb_p_6
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CIPHER_UPDATE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_7860a25d_0 = stack_alloc 8
+    __m_slot_7860a25d_1 = stack_alloc 8
+    __m_status_7860a25d = call @sa_node_plugin_crypto_cipher_update(%p_0, %p_1, %p_2, &__m_slot_7860a25d_0, &__m_slot_7860a25d_1)
+    !%p_5
+    %p_5 = add __m_status_7860a25d, 0
+    !__m_status_7860a25d
+    __m_load_7860a25d_p_3 = load __m_slot_7860a25d_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_7860a25d_p_3, 0
+    !__m_load_7860a25d_p_3
+    __m_load_7860a25d_p_4 = load __m_slot_7860a25d_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_7860a25d_p_4, 0
+    !__m_load_7860a25d_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CIPHER_FINAL %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_9db733a3_0 = stack_alloc 8
+    __m_slot_9db733a3_1 = stack_alloc 8
+    __m_slot_9db733a3_2 = stack_alloc 8
+    __m_status_9db733a3 = call @sa_node_plugin_crypto_cipher_final(%p_0, %p_1, &__m_slot_9db733a3_0, &__m_slot_9db733a3_1, &__m_slot_9db733a3_2)
+    !%p_5
+    %p_5 = add __m_status_9db733a3, 0
+    !__m_status_9db733a3
+    __m_load_9db733a3_p_2 = load __m_slot_9db733a3_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_9db733a3_p_2, 0
+    !__m_load_9db733a3_p_2
+    __m_load_9db733a3_p_3 = load __m_slot_9db733a3_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_9db733a3_p_3, 0
+    !__m_load_9db733a3_p_3
+    __m_load_9db733a3_p_4 = load __m_slot_9db733a3_2+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_9db733a3_p_4, 0
+    !__m_load_9db733a3_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CIPHER_FREE %p_0, %p_1
+    __m_status_8c924e34 = call @sa_node_plugin_crypto_cipher_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_8c924e34, 0
+    !__m_status_8c924e34
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_CREATE_DECIPHER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_faf8ea33_0 = stack_alloc 8
+    __m_status_faf8ea33 = call @sa_node_plugin_crypto_create_decipher(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_faf8ea33_0)
+    !%p_7
+    %p_7 = add __m_status_faf8ea33, 0
+    !__m_status_faf8ea33
+    __m_load_faf8ea33_p_6 = load __m_slot_faf8ea33_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_faf8ea33_p_6, 0
+    !__m_load_faf8ea33_p_6
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_DECIPHER_UPDATE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_e7adbb36_0 = stack_alloc 8
+    __m_slot_e7adbb36_1 = stack_alloc 8
+    __m_status_e7adbb36 = call @sa_node_plugin_crypto_decipher_update(%p_0, %p_1, %p_2, &__m_slot_e7adbb36_0, &__m_slot_e7adbb36_1)
+    !%p_5
+    %p_5 = add __m_status_e7adbb36, 0
+    !__m_status_e7adbb36
+    __m_load_e7adbb36_p_3 = load __m_slot_e7adbb36_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_e7adbb36_p_3, 0
+    !__m_load_e7adbb36_p_3
+    __m_load_e7adbb36_p_4 = load __m_slot_e7adbb36_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_e7adbb36_p_4, 0
+    !__m_load_e7adbb36_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_DECIPHER_FINAL %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_1a15933a_0 = stack_alloc 8
+    __m_slot_1a15933a_1 = stack_alloc 8
+    __m_status_1a15933a = call @sa_node_plugin_crypto_decipher_final(%p_0, %p_1, %p_2, &__m_slot_1a15933a_0, &__m_slot_1a15933a_1)
+    !%p_5
+    %p_5 = add __m_status_1a15933a, 0
+    !__m_status_1a15933a
+    __m_load_1a15933a_p_3 = load __m_slot_1a15933a_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_1a15933a_p_3, 0
+    !__m_load_1a15933a_p_3
+    __m_load_1a15933a_p_4 = load __m_slot_1a15933a_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_1a15933a_p_4, 0
+    !__m_load_1a15933a_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_DECIPHER_FREE %p_0, %p_1
+    __m_status_9fb203b6 = call @sa_node_plugin_crypto_decipher_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_9fb203b6, 0
+    !__m_status_9fb203b6
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_SIGN %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8
+    __m_slot_e11d85dd_0 = stack_alloc 8
+    __m_slot_e11d85dd_1 = stack_alloc 8
+    __m_status_e11d85dd = call @sa_node_plugin_crypto_sign(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_e11d85dd_0, &__m_slot_e11d85dd_1)
+    !%p_8
+    %p_8 = add __m_status_e11d85dd, 0
+    !__m_status_e11d85dd
+    __m_load_e11d85dd_p_6 = load __m_slot_e11d85dd_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_e11d85dd_p_6, 0
+    !__m_load_e11d85dd_p_6
+    __m_load_e11d85dd_p_7 = load __m_slot_e11d85dd_1+0 as u64
+    !%p_7
+    %p_7 = add __m_load_e11d85dd_p_7, 0
+    !__m_load_e11d85dd_p_7
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_VERIFY %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8, %p_9
+    __m_slot_ff880168_0 = stack_alloc 8
+    __m_status_ff880168 = call @sa_node_plugin_crypto_verify(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, &__m_slot_ff880168_0)
+    !%p_9
+    %p_9 = add __m_status_ff880168, 0
+    !__m_status_ff880168
+    __m_load_ff880168_p_8 = load __m_slot_ff880168_0+0 as u64
+    !%p_8
+    %p_8 = add __m_load_ff880168_p_8, 0
+    !__m_load_ff880168_p_8
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_GENERATE_KEY %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_7339d626_0 = stack_alloc 8
+    __m_slot_7339d626_1 = stack_alloc 8
+    __m_status_7339d626 = call @sa_node_plugin_crypto_generate_key(%p_0, %p_1, %p_2, &__m_slot_7339d626_0, &__m_slot_7339d626_1)
+    !%p_5
+    %p_5 = add __m_status_7339d626, 0
+    !__m_status_7339d626
+    __m_load_7339d626_p_3 = load __m_slot_7339d626_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_7339d626_p_3, 0
+    !__m_load_7339d626_p_3
+    __m_load_7339d626_p_4 = load __m_slot_7339d626_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_7339d626_p_4, 0
+    !__m_load_7339d626_p_4
+[END_MACRO]
+
+[MACRO] NODE_CRYPTO_GET_HASHES %p_0, %p_1
+    __m_slot_9c318b95_0 = stack_alloc 8
+    __m_slot_9c318b95_1 = stack_alloc 8
+    __m_status_9c318b95 = call @sa_node_plugin_crypto_get_hashes(&__m_slot_9c318b95_0, &__m_slot_9c318b95_1)
+    !__m_status_9c318b95
+    __m_load_9c318b95_p_0 = load __m_slot_9c318b95_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_9c318b95_p_0, 0
+    !__m_load_9c318b95_p_0
+    __m_load_9c318b95_p_1 = load __m_slot_9c318b95_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_9c318b95_p_1, 0
+    !__m_load_9c318b95_p_1
+[END_MACRO]
+
+[MACRO] NODE_FS_CHMOD %p_0, %p_1, %p_2, %p_3
+    __m_status_c35cf7f1 = call @sa_node_plugin_fs_chmod(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_c35cf7f1, 0
+    !__m_status_c35cf7f1
+[END_MACRO]
+
+[MACRO] NODE_FS_CHOWN %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_347c5f82 = call @sa_node_plugin_fs_chown(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_347c5f82, 0
+    !__m_status_347c5f82
+[END_MACRO]
+
+[MACRO] NODE_FS_FCHMOD %p_0, %p_1, %p_2
+    __m_status_42614e4b = call @sa_node_plugin_fs_fchmod(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_42614e4b, 0
+    !__m_status_42614e4b
+[END_MACRO]
+
+[MACRO] NODE_FS_FCHOWN %p_0, %p_1, %p_2, %p_3
+    __m_status_11d64365 = call @sa_node_plugin_fs_fchown(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_11d64365, 0
+    !__m_status_11d64365
+[END_MACRO]
+
+[MACRO] NODE_FS_FDATASYNC %p_0, %p_1
+    __m_status_3c5450bc = call @sa_node_plugin_fs_fdatasync(%p_0)
+    !%p_1
+    %p_1 = add __m_status_3c5450bc, 0
+    !__m_status_3c5450bc
+[END_MACRO]
+
+[MACRO] NODE_FS_FSTAT %p_0, %p_1, %p_2, %p_3
+    __m_slot_3a737408_0 = stack_alloc 8
+    __m_slot_3a737408_1 = stack_alloc 8
+    __m_status_3a737408 = call @sa_node_plugin_fs_fstat(%p_0, &__m_slot_3a737408_0, &__m_slot_3a737408_1)
+    !%p_3
+    %p_3 = add __m_status_3a737408, 0
+    !__m_status_3a737408
+    __m_load_3a737408_p_1 = load __m_slot_3a737408_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3a737408_p_1, 0
+    !__m_load_3a737408_p_1
+    __m_load_3a737408_p_2 = load __m_slot_3a737408_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_3a737408_p_2, 0
+    !__m_load_3a737408_p_2
+[END_MACRO]
+
+[MACRO] NODE_FS_FSYNC %p_0, %p_1
+    __m_status_2e725bb5 = call @sa_node_plugin_fs_fsync(%p_0)
+    !%p_1
+    %p_1 = add __m_status_2e725bb5, 0
+    !__m_status_2e725bb5
+[END_MACRO]
+
+[MACRO] NODE_FS_FTRUNCATE %p_0, %p_1, %p_2
+    __m_status_0c737390 = call @sa_node_plugin_fs_ftruncate(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_0c737390, 0
+    !__m_status_0c737390
+[END_MACRO]
+
+[MACRO] NODE_FS_FUTIMES %p_0, %p_1, %p_2, %p_3
+    __m_status_06c1f22a = call @sa_node_plugin_fs_futimes(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_06c1f22a, 0
+    !__m_status_06c1f22a
+[END_MACRO]
+
+[MACRO] NODE_FS_GLOB %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_9123929e_0 = stack_alloc 8
+    __m_slot_9123929e_1 = stack_alloc 8
+    __m_status_9123929e = call @sa_node_plugin_fs_glob(%p_0, %p_1, &__m_slot_9123929e_0, &__m_slot_9123929e_1)
+    !%p_4
+    %p_4 = add __m_status_9123929e, 0
+    !__m_status_9123929e
+    __m_load_9123929e_p_2 = load __m_slot_9123929e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_9123929e_p_2, 0
+    !__m_load_9123929e_p_2
+    __m_load_9123929e_p_3 = load __m_slot_9123929e_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_9123929e_p_3, 0
+    !__m_load_9123929e_p_3
+[END_MACRO]
+
+[MACRO] NODE_FS_LINK %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_a9f3eab5 = call @sa_node_plugin_fs_link(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_a9f3eab5, 0
+    !__m_status_a9f3eab5
+[END_MACRO]
+
+[MACRO] NODE_FS_MKDTEMP %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_587e12bf_0 = stack_alloc 8
+    __m_slot_587e12bf_1 = stack_alloc 8
+    __m_status_587e12bf = call @sa_node_plugin_fs_mkdtemp(%p_0, %p_1, &__m_slot_587e12bf_0, &__m_slot_587e12bf_1)
+    !%p_4
+    %p_4 = add __m_status_587e12bf, 0
+    !__m_status_587e12bf
+    __m_load_587e12bf_p_2 = load __m_slot_587e12bf_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_587e12bf_p_2, 0
+    !__m_load_587e12bf_p_2
+    __m_load_587e12bf_p_3 = load __m_slot_587e12bf_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_587e12bf_p_3, 0
+    !__m_load_587e12bf_p_3
+[END_MACRO]
+
+[MACRO] NODE_FS_OPEN %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_ff510392_0 = stack_alloc 8
+    __m_status_ff510392 = call @sa_node_plugin_fs_open(%p_0, %p_1, %p_2, %p_3, &__m_slot_ff510392_0)
+    !%p_5
+    %p_5 = add __m_status_ff510392, 0
+    !__m_status_ff510392
+    __m_load_ff510392_p_4 = load __m_slot_ff510392_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_ff510392_p_4, 0
+    !__m_load_ff510392_p_4
+[END_MACRO]
+
+[MACRO] NODE_FS_CLOSE_FD %p_0, %p_1
+    __m_status_d357469c = call @sa_node_plugin_fs_close_fd(%p_0)
+    !%p_1
+    %p_1 = add __m_status_d357469c, 0
+    !__m_status_d357469c
+[END_MACRO]
+
+[MACRO] NODE_FS_READ_FD %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_0bcbefee_0 = stack_alloc 8
+    __m_status_0bcbefee = call @sa_node_plugin_fs_read_fd(%p_0, %p_1, %p_2, %p_3, &__m_slot_0bcbefee_0)
+    !%p_5
+    %p_5 = add __m_status_0bcbefee, 0
+    !__m_status_0bcbefee
+    __m_load_0bcbefee_p_4 = load __m_slot_0bcbefee_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_0bcbefee_p_4, 0
+    !__m_load_0bcbefee_p_4
+[END_MACRO]
+
+[MACRO] NODE_FS_WRITE_FD %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_cd6e7de4_0 = stack_alloc 8
+    __m_status_cd6e7de4 = call @sa_node_plugin_fs_write_fd(%p_0, %p_1, %p_2, %p_3, &__m_slot_cd6e7de4_0)
+    !%p_5
+    %p_5 = add __m_status_cd6e7de4, 0
+    !__m_status_cd6e7de4
+    __m_load_cd6e7de4_p_4 = load __m_slot_cd6e7de4_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_cd6e7de4_p_4, 0
+    !__m_load_cd6e7de4_p_4
+[END_MACRO]
+
+[MACRO] NODE_FS_READV %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_bcff476e_0 = stack_alloc 8
+    __m_status_bcff476e = call @sa_node_plugin_fs_readv(%p_0, %p_1, %p_2, &__m_slot_bcff476e_0)
+    !%p_4
+    %p_4 = add __m_status_bcff476e, 0
+    !__m_status_bcff476e
+    __m_load_bcff476e_p_3 = load __m_slot_bcff476e_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_bcff476e_p_3, 0
+    !__m_load_bcff476e_p_3
+[END_MACRO]
+
+[MACRO] NODE_FS_WRITEV %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_c120120c_0 = stack_alloc 8
+    __m_status_c120120c = call @sa_node_plugin_fs_writev(%p_0, %p_1, %p_2, &__m_slot_c120120c_0)
+    !%p_4
+    %p_4 = add __m_status_c120120c, 0
+    !__m_status_c120120c
+    __m_load_c120120c_p_3 = load __m_slot_c120120c_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_c120120c_p_3, 0
+    !__m_load_c120120c_p_3
+[END_MACRO]
+
+[MACRO] NODE_FS_OPENDIR %p_0, %p_1, %p_2, %p_3
+    __m_slot_4fd7a3a6_0 = stack_alloc 8
+    __m_status_4fd7a3a6 = call @sa_node_plugin_fs_opendir(%p_0, %p_1, &__m_slot_4fd7a3a6_0)
+    !%p_3
+    %p_3 = add __m_status_4fd7a3a6, 0
+    !__m_status_4fd7a3a6
+    __m_load_4fd7a3a6_p_2 = load __m_slot_4fd7a3a6_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_4fd7a3a6_p_2, 0
+    !__m_load_4fd7a3a6_p_2
+[END_MACRO]
+
+[MACRO] NODE_FS_OPENDIR_NEXT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_e81795f3_0 = stack_alloc 8
+    __m_slot_e81795f3_1 = stack_alloc 8
+    __m_slot_e81795f3_2 = stack_alloc 8
+    __m_status_e81795f3 = call @sa_node_plugin_fs_opendir_next(%p_0, &__m_slot_e81795f3_0, &__m_slot_e81795f3_1, &__m_slot_e81795f3_2)
+    !%p_4
+    %p_4 = add __m_status_e81795f3, 0
+    !__m_status_e81795f3
+    __m_load_e81795f3_p_1 = load __m_slot_e81795f3_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_e81795f3_p_1, 0
+    !__m_load_e81795f3_p_1
+    __m_load_e81795f3_p_2 = load __m_slot_e81795f3_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_e81795f3_p_2, 0
+    !__m_load_e81795f3_p_2
+    __m_load_e81795f3_p_3 = load __m_slot_e81795f3_2+0 as u64
+    !%p_3
+    %p_3 = add __m_load_e81795f3_p_3, 0
+    !__m_load_e81795f3_p_3
+[END_MACRO]
+
+[MACRO] NODE_FS_OPENDIR_FREE %p_0, %p_1
+    __m_status_4b02f4a6 = call @sa_node_plugin_fs_opendir_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_4b02f4a6, 0
+    !__m_status_4b02f4a6
+[END_MACRO]
+
+[MACRO] NODE_FS_RM %p_0, %p_1, %p_2, %p_3
+    __m_status_1d0a6cef = call @sa_node_plugin_fs_rm(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_1d0a6cef, 0
+    !__m_status_1d0a6cef
+[END_MACRO]
+
+[MACRO] NODE_FS_STATFS %p_0, %p_1, %p_2, %p_3
+    __m_slot_99808f05_0 = stack_alloc 8
+    __m_slot_99808f05_1 = stack_alloc 8
+    __m_status_99808f05 = call @sa_node_plugin_fs_statfs(%p_0, &__m_slot_99808f05_0, &__m_slot_99808f05_1)
+    !%p_3
+    %p_3 = add __m_status_99808f05, 0
+    !__m_status_99808f05
+    __m_load_99808f05_p_1 = load __m_slot_99808f05_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_99808f05_p_1, 0
+    !__m_load_99808f05_p_1
+    __m_load_99808f05_p_2 = load __m_slot_99808f05_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_99808f05_p_2, 0
+    !__m_load_99808f05_p_2
+[END_MACRO]
+
+[MACRO] NODE_FS_SYMLINK %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_f0963f7b = call @sa_node_plugin_fs_symlink(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_f0963f7b, 0
+    !__m_status_f0963f7b
+[END_MACRO]
+
+[MACRO] NODE_FS_TRUNCATE %p_0, %p_1, %p_2, %p_3
+    __m_status_2a599116 = call @sa_node_plugin_fs_truncate(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_2a599116, 0
+    !__m_status_2a599116
+[END_MACRO]
+
+[MACRO] NODE_FS_UTIMES %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_c66f077d = call @sa_node_plugin_fs_utimes(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_c66f077d, 0
+    !__m_status_c66f077d
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_ONCE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_e7ae6005 = call @sa_node_plugin_events_once(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_e7ae6005, 0
+    !__m_status_e7ae6005
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_OFF %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_6c06c887 = call @sa_node_plugin_events_off(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_6c06c887, 0
+    !__m_status_6c06c887
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_REMOVE_ALL_LISTENERS %p_0, %p_1, %p_2, %p_3
+    __m_status_98713f24 = call @sa_node_plugin_events_remove_all_listeners(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_98713f24, 0
+    !__m_status_98713f24
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_PREPEND_LISTENER %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_b43a3f4c = call @sa_node_plugin_events_prepend_listener(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_b43a3f4c, 0
+    !__m_status_b43a3f4c
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_SET_MAX_LISTENERS %p_0, %p_1, %p_2
+    __m_status_f978a924 = call @sa_node_plugin_events_set_max_listeners(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_f978a924, 0
+    !__m_status_f978a924
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_GET_MAX_LISTENERS %p_0, %p_1, %p_2
+    __m_slot_6a980edf_0 = stack_alloc 8
+    __m_status_6a980edf = call @sa_node_plugin_events_get_max_listeners(%p_0, &__m_slot_6a980edf_0)
+    !%p_2
+    %p_2 = add __m_status_6a980edf, 0
+    !__m_status_6a980edf
+    __m_load_6a980edf_p_1 = load __m_slot_6a980edf_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_6a980edf_p_1, 0
+    !__m_load_6a980edf_p_1
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_GET_EVENT_LISTENERS %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_8d3f2f8d_0 = stack_alloc 8
+    __m_slot_8d3f2f8d_1 = stack_alloc 8
+    __m_status_8d3f2f8d = call @sa_node_plugin_events_get_event_listeners(%p_0, %p_1, %p_2, &__m_slot_8d3f2f8d_0, &__m_slot_8d3f2f8d_1)
+    !%p_5
+    %p_5 = add __m_status_8d3f2f8d, 0
+    !__m_status_8d3f2f8d
+    __m_load_8d3f2f8d_p_3 = load __m_slot_8d3f2f8d_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_8d3f2f8d_p_3, 0
+    !__m_load_8d3f2f8d_p_3
+    __m_load_8d3f2f8d_p_4 = load __m_slot_8d3f2f8d_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_8d3f2f8d_p_4, 0
+    !__m_load_8d3f2f8d_p_4
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_LISTENER_COUNT_BY_EVENT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_6af2447d_0 = stack_alloc 8
+    __m_status_6af2447d = call @sa_node_plugin_events_listener_count_by_event(%p_0, %p_1, %p_2, &__m_slot_6af2447d_0)
+    !%p_4
+    %p_4 = add __m_status_6af2447d, 0
+    !__m_status_6af2447d
+    __m_load_6af2447d_p_3 = load __m_slot_6af2447d_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_6af2447d_p_3, 0
+    !__m_load_6af2447d_p_3
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_EMIT_WITH_ERROR %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_status_194b3e44 = call @sa_node_plugin_events_emit_with_error(%p_0, %p_1, %p_2, %p_3, %p_4)
+    !%p_5
+    %p_5 = add __m_status_194b3e44, 0
+    !__m_status_194b3e44
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_WARN %p_0, %p_1
+    __m_status_0f814217 = call @sa_node_plugin_console_warn(%p_0, %p_1)
+    !__m_status_0f814217
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_INFO %p_0, %p_1
+    __m_status_110ef2a4 = call @sa_node_plugin_console_info(%p_0, %p_1)
+    !__m_status_110ef2a4
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DEBUG %p_0, %p_1
+    __m_status_fcf17c21 = call @sa_node_plugin_console_debug(%p_0, %p_1)
+    !__m_status_fcf17c21
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DIR %p_0, %p_1
+    __m_status_ef29609d = call @sa_node_plugin_console_dir(%p_0, %p_1)
+    !__m_status_ef29609d
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DIRXML %p_0, %p_1, %p_2
+    __m_status_6c0b9ebd = call @sa_node_plugin_console_dirxml(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_6c0b9ebd, 0
+    !__m_status_6c0b9ebd
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME_LOG %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_f0e70d74 = call @sa_node_plugin_console_time_log(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_f0e70d74, 0
+    !__m_status_f0e70d74
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_COUNT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_de75c44e_0 = stack_alloc 8
+    __m_slot_de75c44e_1 = stack_alloc 8
+    __m_status_de75c44e = call @sa_node_plugin_console_count(%p_0, %p_1, &__m_slot_de75c44e_0, &__m_slot_de75c44e_1)
+    !%p_4
+    %p_4 = add __m_status_de75c44e, 0
+    !__m_status_de75c44e
+    __m_load_de75c44e_p_2 = load __m_slot_de75c44e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_de75c44e_p_2, 0
+    !__m_load_de75c44e_p_2
+    __m_load_de75c44e_p_3 = load __m_slot_de75c44e_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_de75c44e_p_3, 0
+    !__m_load_de75c44e_p_3
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_COUNT_RESET %p_0, %p_1, %p_2
+    __m_status_04ad31ae = call @sa_node_plugin_console_count_reset(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_04ad31ae, 0
+    !__m_status_04ad31ae
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_ASSERT %p_0, %p_1, %p_2
+    __m_status_f31f8338 = call @sa_node_plugin_console_assert(%p_0, %p_1, %p_2)
+    !__m_status_f31f8338
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TRACE %p_0, %p_1
+    __m_status_b0dc0f0b = call @sa_node_plugin_console_trace(%p_0, %p_1)
+    !__m_status_b0dc0f0b
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TABLE %p_0, %p_1
+    __m_status_4413f4ef = call @sa_node_plugin_console_table(%p_0, %p_1)
+    !__m_status_4413f4ef
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP %p_0
+    __m_status_31c417b5 = call @sa_node_plugin_console_group()
+    !%p_0
+    %p_0 = add __m_status_31c417b5, 0
+    !__m_status_31c417b5
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP_END %p_0
+    __m_status_8867c005 = call @sa_node_plugin_console_group_end()
+    !%p_0
+    %p_0 = add __m_status_8867c005, 0
+    !__m_status_8867c005
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP_COLLAPSED %p_0
+    __m_status_94b7ce64 = call @sa_node_plugin_console_group_collapsed()
+    !%p_0
+    %p_0 = add __m_status_94b7ce64, 0
+    !__m_status_94b7ce64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME_STAMP %p_0, %p_1, %p_2
+    __m_status_3d54d8e0 = call @sa_node_plugin_console_time_stamp(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_3d54d8e0, 0
+    !__m_status_3d54d8e0
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE4 %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_b15f3256_0 = stack_alloc 8
+    __m_slot_b15f3256_1 = stack_alloc 8
+    __m_status_b15f3256 = call @sa_node_plugin_dns_resolve4(%p_0, %p_1, &__m_slot_b15f3256_0, &__m_slot_b15f3256_1)
+    !%p_4
+    %p_4 = add __m_status_b15f3256, 0
+    !__m_status_b15f3256
+    __m_load_b15f3256_p_2 = load __m_slot_b15f3256_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_b15f3256_p_2, 0
+    !__m_load_b15f3256_p_2
+    __m_load_b15f3256_p_3 = load __m_slot_b15f3256_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_b15f3256_p_3, 0
+    !__m_load_b15f3256_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE6 %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_1f575066_0 = stack_alloc 8
+    __m_slot_1f575066_1 = stack_alloc 8
+    __m_status_1f575066 = call @sa_node_plugin_dns_resolve6(%p_0, %p_1, &__m_slot_1f575066_0, &__m_slot_1f575066_1)
+    !%p_4
+    %p_4 = add __m_status_1f575066, 0
+    !__m_status_1f575066
+    __m_load_1f575066_p_2 = load __m_slot_1f575066_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_1f575066_p_2, 0
+    !__m_load_1f575066_p_2
+    __m_load_1f575066_p_3 = load __m_slot_1f575066_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_1f575066_p_3, 0
+    !__m_load_1f575066_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_CNAME %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_cc0413b9_0 = stack_alloc 8
+    __m_slot_cc0413b9_1 = stack_alloc 8
+    __m_status_cc0413b9 = call @sa_node_plugin_dns_resolve_cname(%p_0, %p_1, &__m_slot_cc0413b9_0, &__m_slot_cc0413b9_1)
+    !%p_4
+    %p_4 = add __m_status_cc0413b9, 0
+    !__m_status_cc0413b9
+    __m_load_cc0413b9_p_2 = load __m_slot_cc0413b9_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_cc0413b9_p_2, 0
+    !__m_load_cc0413b9_p_2
+    __m_load_cc0413b9_p_3 = load __m_slot_cc0413b9_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_cc0413b9_p_3, 0
+    !__m_load_cc0413b9_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_MX %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_eeea44dc_0 = stack_alloc 8
+    __m_slot_eeea44dc_1 = stack_alloc 8
+    __m_status_eeea44dc = call @sa_node_plugin_dns_resolve_mx(%p_0, %p_1, &__m_slot_eeea44dc_0, &__m_slot_eeea44dc_1)
+    !%p_4
+    %p_4 = add __m_status_eeea44dc, 0
+    !__m_status_eeea44dc
+    __m_load_eeea44dc_p_2 = load __m_slot_eeea44dc_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_eeea44dc_p_2, 0
+    !__m_load_eeea44dc_p_2
+    __m_load_eeea44dc_p_3 = load __m_slot_eeea44dc_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_eeea44dc_p_3, 0
+    !__m_load_eeea44dc_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_NS %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_44c4a048_0 = stack_alloc 8
+    __m_slot_44c4a048_1 = stack_alloc 8
+    __m_status_44c4a048 = call @sa_node_plugin_dns_resolve_ns(%p_0, %p_1, &__m_slot_44c4a048_0, &__m_slot_44c4a048_1)
+    !%p_4
+    %p_4 = add __m_status_44c4a048, 0
+    !__m_status_44c4a048
+    __m_load_44c4a048_p_2 = load __m_slot_44c4a048_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_44c4a048_p_2, 0
+    !__m_load_44c4a048_p_2
+    __m_load_44c4a048_p_3 = load __m_slot_44c4a048_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_44c4a048_p_3, 0
+    !__m_load_44c4a048_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_TXT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_be34290e_0 = stack_alloc 8
+    __m_slot_be34290e_1 = stack_alloc 8
+    __m_status_be34290e = call @sa_node_plugin_dns_resolve_txt(%p_0, %p_1, &__m_slot_be34290e_0, &__m_slot_be34290e_1)
+    !%p_4
+    %p_4 = add __m_status_be34290e, 0
+    !__m_status_be34290e
+    __m_load_be34290e_p_2 = load __m_slot_be34290e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_be34290e_p_2, 0
+    !__m_load_be34290e_p_2
+    __m_load_be34290e_p_3 = load __m_slot_be34290e_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_be34290e_p_3, 0
+    !__m_load_be34290e_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_SRV %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_f2df9e25_0 = stack_alloc 8
+    __m_slot_f2df9e25_1 = stack_alloc 8
+    __m_status_f2df9e25 = call @sa_node_plugin_dns_resolve_srv(%p_0, %p_1, &__m_slot_f2df9e25_0, &__m_slot_f2df9e25_1)
+    !%p_4
+    %p_4 = add __m_status_f2df9e25, 0
+    !__m_status_f2df9e25
+    __m_load_f2df9e25_p_2 = load __m_slot_f2df9e25_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_f2df9e25_p_2, 0
+    !__m_load_f2df9e25_p_2
+    __m_load_f2df9e25_p_3 = load __m_slot_f2df9e25_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_f2df9e25_p_3, 0
+    !__m_load_f2df9e25_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_PTR %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_dcbf3d5b_0 = stack_alloc 8
+    __m_slot_dcbf3d5b_1 = stack_alloc 8
+    __m_status_dcbf3d5b = call @sa_node_plugin_dns_resolve_ptr(%p_0, %p_1, &__m_slot_dcbf3d5b_0, &__m_slot_dcbf3d5b_1)
+    !%p_4
+    %p_4 = add __m_status_dcbf3d5b, 0
+    !__m_status_dcbf3d5b
+    __m_load_dcbf3d5b_p_2 = load __m_slot_dcbf3d5b_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_dcbf3d5b_p_2, 0
+    !__m_load_dcbf3d5b_p_2
+    __m_load_dcbf3d5b_p_3 = load __m_slot_dcbf3d5b_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_dcbf3d5b_p_3, 0
+    !__m_load_dcbf3d5b_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_REVERSE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_c238a094_0 = stack_alloc 8
+    __m_slot_c238a094_1 = stack_alloc 8
+    __m_status_c238a094 = call @sa_node_plugin_dns_reverse(%p_0, %p_1, &__m_slot_c238a094_0, &__m_slot_c238a094_1)
+    !%p_4
+    %p_4 = add __m_status_c238a094, 0
+    !__m_status_c238a094
+    __m_load_c238a094_p_2 = load __m_slot_c238a094_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_c238a094_p_2, 0
+    !__m_load_c238a094_p_2
+    __m_load_c238a094_p_3 = load __m_slot_c238a094_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_c238a094_p_3, 0
+    !__m_load_c238a094_p_3
+[END_MACRO]
+
+[MACRO] NODE_DNS_GET_SERVERS %p_0, %p_1
+    __m_slot_1449b5e9_0 = stack_alloc 8
+    __m_slot_1449b5e9_1 = stack_alloc 8
+    __m_status_1449b5e9 = call @sa_node_plugin_dns_get_servers(&__m_slot_1449b5e9_0, &__m_slot_1449b5e9_1)
+    !__m_status_1449b5e9
+    __m_load_1449b5e9_p_0 = load __m_slot_1449b5e9_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_1449b5e9_p_0, 0
+    !__m_load_1449b5e9_p_0
+    __m_load_1449b5e9_p_1 = load __m_slot_1449b5e9_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_1449b5e9_p_1, 0
+    !__m_load_1449b5e9_p_1
+[END_MACRO]
+
+[MACRO] NODE_DNS_SET_SERVERS %p_0, %p_1, %p_2
+    __m_status_b90728ad = call @sa_node_plugin_dns_set_servers(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_b90728ad, 0
+    !__m_status_b90728ad
+[END_MACRO]
+
+[MACRO] NODE_DNS_GET_DEFAULT_RESULT_ORDER %p_0, %p_1, %p_2
+    __m_slot_4cd649d9_0 = stack_alloc 8
+    __m_slot_4cd649d9_1 = stack_alloc 8
+    __m_status_4cd649d9 = call @sa_node_plugin_dns_get_default_result_order(&__m_slot_4cd649d9_0, &__m_slot_4cd649d9_1)
+    !%p_2
+    %p_2 = add __m_status_4cd649d9, 0
+    !__m_status_4cd649d9
+    __m_load_4cd649d9_p_0 = load __m_slot_4cd649d9_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_4cd649d9_p_0, 0
+    !__m_load_4cd649d9_p_0
+    __m_load_4cd649d9_p_1 = load __m_slot_4cd649d9_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_4cd649d9_p_1, 0
+    !__m_load_4cd649d9_p_1
+[END_MACRO]
+
+[MACRO] NODE_DNS_SET_DEFAULT_RESULT_ORDER %p_0, %p_1
+    __m_status_02626d24 = call @sa_node_plugin_dns_set_default_result_order(%p_0, %p_1)
+    !__m_status_02626d24
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_71aa8c1d_0 = stack_alloc 8
+    __m_slot_71aa8c1d_1 = stack_alloc 8
+    __m_slot_71aa8c1d_2 = stack_alloc 8
+    __m_status_71aa8c1d = call @sa_node_plugin_child_process_exec(%p_0, %p_1, %p_2, %p_3, &__m_slot_71aa8c1d_0, &__m_slot_71aa8c1d_1, &__m_slot_71aa8c1d_2)
+    !%p_7
+    %p_7 = add __m_status_71aa8c1d, 0
+    !__m_status_71aa8c1d
+    __m_load_71aa8c1d_p_4 = load __m_slot_71aa8c1d_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_71aa8c1d_p_4, 0
+    !__m_load_71aa8c1d_p_4
+    __m_load_71aa8c1d_p_5 = load __m_slot_71aa8c1d_1+0 as ptr
+    !%p_5
+    %p_5 = add __m_load_71aa8c1d_p_5, 0
+    !__m_load_71aa8c1d_p_5
+    __m_load_71aa8c1d_p_6 = load __m_slot_71aa8c1d_2+0 as u64
+    !%p_6
+    %p_6 = add __m_load_71aa8c1d_p_6, 0
+    !__m_load_71aa8c1d_p_6
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC_FILE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_2952ef80_0 = stack_alloc 8
+    __m_slot_2952ef80_1 = stack_alloc 8
+    __m_status_2952ef80 = call @sa_node_plugin_child_process_exec_file(%p_0, %p_1, %p_2, %p_3, &__m_slot_2952ef80_0, &__m_slot_2952ef80_1)
+    !%p_6
+    %p_6 = add __m_status_2952ef80, 0
+    !__m_status_2952ef80
+    __m_load_2952ef80_p_4 = load __m_slot_2952ef80_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_2952ef80_p_4, 0
+    !__m_load_2952ef80_p_4
+    __m_load_2952ef80_p_5 = load __m_slot_2952ef80_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_2952ef80_p_5, 0
+    !__m_load_2952ef80_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXECFILE_SYNC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_f40a1125_0 = stack_alloc 8
+    __m_slot_f40a1125_1 = stack_alloc 8
+    __m_status_f40a1125 = call @sa_node_plugin_child_process_execfile_sync(%p_0, %p_1, %p_2, %p_3, &__m_slot_f40a1125_0, &__m_slot_f40a1125_1)
+    !%p_6
+    %p_6 = add __m_status_f40a1125, 0
+    !__m_status_f40a1125
+    __m_load_f40a1125_p_4 = load __m_slot_f40a1125_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_f40a1125_p_4, 0
+    !__m_load_f40a1125_p_4
+    __m_load_f40a1125_p_5 = load __m_slot_f40a1125_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_f40a1125_p_5, 0
+    !__m_load_f40a1125_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_FORK %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_d38eed00_0 = stack_alloc 8
+    __m_status_d38eed00 = call @sa_node_plugin_child_process_fork(%p_0, %p_1, %p_2, %p_3, &__m_slot_d38eed00_0)
+    !%p_5
+    %p_5 = add __m_status_d38eed00, 0
+    !__m_status_d38eed00
+    __m_load_d38eed00_p_4 = load __m_slot_d38eed00_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_d38eed00_p_4, 0
+    !__m_load_d38eed00_p_4
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_SPAWN %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_366c0d64_0 = stack_alloc 8
+    __m_status_366c0d64 = call @sa_node_plugin_child_process_spawn(%p_0, %p_1, %p_2, %p_3, &__m_slot_366c0d64_0)
+    !%p_5
+    %p_5 = add __m_status_366c0d64, 0
+    !__m_status_366c0d64
+    __m_load_366c0d64_p_4 = load __m_slot_366c0d64_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_366c0d64_p_4, 0
+    !__m_load_366c0d64_p_4
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_SPAWN_SYNC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_86ddbec0_0 = stack_alloc 8
+    __m_slot_86ddbec0_1 = stack_alloc 8
+    __m_status_86ddbec0 = call @sa_node_plugin_child_process_spawn_sync(%p_0, %p_1, %p_2, %p_3, &__m_slot_86ddbec0_0, &__m_slot_86ddbec0_1)
+    !%p_6
+    %p_6 = add __m_status_86ddbec0, 0
+    !__m_status_86ddbec0
+    __m_load_86ddbec0_p_4 = load __m_slot_86ddbec0_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_86ddbec0_p_4, 0
+    !__m_load_86ddbec0_p_4
+    __m_load_86ddbec0_p_5 = load __m_slot_86ddbec0_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_86ddbec0_p_5, 0
+    !__m_load_86ddbec0_p_5
+[END_MACRO]
+
+[MACRO] NODE_STREAM_DUPLEX_NEW %p_0
+    __m_slot_d5ec9468_0 = stack_alloc 8
+    __m_status_d5ec9468 = call @sa_node_plugin_stream_duplex_new(&__m_slot_d5ec9468_0)
+    !__m_status_d5ec9468
+    __m_load_d5ec9468_p_0 = load __m_slot_d5ec9468_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_d5ec9468_p_0, 0
+    !__m_load_d5ec9468_p_0
+[END_MACRO]
+
+[MACRO] NODE_STREAM_TRANSFORM_NEW %p_0
+    __m_slot_cc4e497e_0 = stack_alloc 8
+    __m_status_cc4e497e = call @sa_node_plugin_stream_transform_new(&__m_slot_cc4e497e_0)
+    !__m_status_cc4e497e
+    __m_load_cc4e497e_p_0 = load __m_slot_cc4e497e_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_cc4e497e_p_0, 0
+    !__m_load_cc4e497e_p_0
+[END_MACRO]
+
+[MACRO] NODE_STREAM_PASSTHROUGH_NEW %p_0
+    __m_slot_52e5c915_0 = stack_alloc 8
+    __m_status_52e5c915 = call @sa_node_plugin_stream_passthrough_new(&__m_slot_52e5c915_0)
+    !__m_status_52e5c915
+    __m_load_52e5c915_p_0 = load __m_slot_52e5c915_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_52e5c915_p_0, 0
+    !__m_load_52e5c915_p_0
+[END_MACRO]
+
+[MACRO] NODE_STREAM_PIPELINE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_22fcad66_0 = stack_alloc 8
+    __m_slot_22fcad66_1 = stack_alloc 8
+    __m_status_22fcad66 = call @sa_node_plugin_stream_pipeline(%p_0, %p_1, &__m_slot_22fcad66_0, &__m_slot_22fcad66_1)
+    !%p_4
+    %p_4 = add __m_status_22fcad66, 0
+    !__m_status_22fcad66
+    __m_load_22fcad66_p_2 = load __m_slot_22fcad66_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_22fcad66_p_2, 0
+    !__m_load_22fcad66_p_2
+    __m_load_22fcad66_p_3 = load __m_slot_22fcad66_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_22fcad66_p_3, 0
+    !__m_load_22fcad66_p_3
+[END_MACRO]
+
+[MACRO] NODE_STREAM_FINISHED %p_0, %p_1, %p_2, %p_3
+    __m_slot_ac1d49a9_0 = stack_alloc 8
+    __m_slot_ac1d49a9_1 = stack_alloc 8
+    __m_status_ac1d49a9 = call @sa_node_plugin_stream_finished(%p_0, &__m_slot_ac1d49a9_0, &__m_slot_ac1d49a9_1)
+    !%p_3
+    %p_3 = add __m_status_ac1d49a9, 0
+    !__m_status_ac1d49a9
+    __m_load_ac1d49a9_p_1 = load __m_slot_ac1d49a9_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_ac1d49a9_p_1, 0
+    !__m_load_ac1d49a9_p_1
+    __m_load_ac1d49a9_p_2 = load __m_slot_ac1d49a9_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_ac1d49a9_p_2, 0
+    !__m_load_ac1d49a9_p_2
+[END_MACRO]
+
+[MACRO] NODE_STREAM_COMPOSE %p_0, %p_1, %p_2, %p_3
+    __m_slot_3554d0ac_0 = stack_alloc 8
+    __m_status_3554d0ac = call @sa_node_plugin_stream_compose(%p_0, %p_1, &__m_slot_3554d0ac_0)
+    !%p_3
+    %p_3 = add __m_status_3554d0ac, 0
+    !__m_status_3554d0ac
+    __m_load_3554d0ac_p_2 = load __m_slot_3554d0ac_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_3554d0ac_p_2, 0
+    !__m_load_3554d0ac_p_2
+[END_MACRO]
+
+[MACRO] NODE_STREAM_DESTROY %p_0
+    __m_status_8d5aabaf = call @sa_node_plugin_stream_destroy(%p_0)
+    !__m_status_8d5aabaf
+[END_MACRO]
+
+[MACRO] NODE_STREAM_DUPLEX_PAIR %p_0, %p_1, %p_2
+    __m_slot_333f34f7_0 = stack_alloc 8
+    __m_slot_333f34f7_1 = stack_alloc 8
+    __m_status_333f34f7 = call @sa_node_plugin_stream_duplex_pair(&__m_slot_333f34f7_0, &__m_slot_333f34f7_1)
+    !%p_2
+    %p_2 = add __m_status_333f34f7, 0
+    !__m_status_333f34f7
+    __m_load_333f34f7_p_0 = load __m_slot_333f34f7_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_333f34f7_p_0, 0
+    !__m_load_333f34f7_p_0
+    __m_load_333f34f7_p_1 = load __m_slot_333f34f7_1+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_333f34f7_p_1, 0
+    !__m_load_333f34f7_p_1
+[END_MACRO]
+
+[MACRO] NODE_STREAM_READABLE_DESTROY %p_0, %p_1
+    __m_status_198ee172 = call @sa_node_plugin_stream_readable_destroy(%p_0)
+    !%p_1
+    %p_1 = add __m_status_198ee172, 0
+    !__m_status_198ee172
+[END_MACRO]
+
+[MACRO] NODE_STREAM_WRITABLE_DESTROY %p_0, %p_1
+    __m_status_2db2d7aa = call @sa_node_plugin_stream_writable_destroy(%p_0)
+    !%p_1
+    %p_1 = add __m_status_2db2d7aa, 0
+    !__m_status_2db2d7aa
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IP %p_0, %p_1, %p_2
+    __m_slot_6bf65efe_0 = stack_alloc 8
+    __m_status_6bf65efe = call @sa_node_plugin_net_is_ip(%p_0, %p_1, &__m_slot_6bf65efe_0)
+    !__m_status_6bf65efe
+    __m_load_6bf65efe_p_2 = load __m_slot_6bf65efe_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_6bf65efe_p_2, 0
+    !__m_load_6bf65efe_p_2
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IPV4 %p_0, %p_1, %p_2
+    __m_slot_c3f0ba06_0 = stack_alloc 8
+    __m_status_c3f0ba06 = call @sa_node_plugin_net_is_ipv4(%p_0, %p_1, &__m_slot_c3f0ba06_0)
+    !__m_status_c3f0ba06
+    __m_load_c3f0ba06_p_2 = load __m_slot_c3f0ba06_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_c3f0ba06_p_2, 0
+    !__m_load_c3f0ba06_p_2
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IPV6 %p_0, %p_1, %p_2
+    __m_slot_bcfa9a27_0 = stack_alloc 8
+    __m_status_bcfa9a27 = call @sa_node_plugin_net_is_ipv6(%p_0, %p_1, &__m_slot_bcfa9a27_0)
+    !__m_status_bcfa9a27
+    __m_load_bcfa9a27_p_2 = load __m_slot_bcfa9a27_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_bcfa9a27_p_2, 0
+    !__m_load_bcfa9a27_p_2
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_CONNECTION %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_b8dbacf7_0 = stack_alloc 8
+    __m_status_b8dbacf7 = call @sa_node_plugin_net_create_connection(%p_0, %p_1, %p_2, &__m_slot_b8dbacf7_0)
+    !%p_4
+    %p_4 = add __m_status_b8dbacf7, 0
+    !__m_status_b8dbacf7
+    __m_load_b8dbacf7_p_3 = load __m_slot_b8dbacf7_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_b8dbacf7_p_3, 0
+    !__m_load_b8dbacf7_p_3
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_SERVER %p_0, %p_1
+    __m_slot_b31b1cd1_0 = stack_alloc 8
+    __m_status_b31b1cd1 = call @sa_node_plugin_net_create_server(&__m_slot_b31b1cd1_0)
+    !%p_1
+    %p_1 = add __m_status_b31b1cd1, 0
+    !__m_status_b31b1cd1
+    __m_load_b31b1cd1_p_0 = load __m_slot_b31b1cd1_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_b31b1cd1_p_0, 0
+    !__m_load_b31b1cd1_p_0
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SET_TIMEOUT %p_0, %p_1, %p_2, %p_3
+    __m_slot_f787e0e6_0 = stack_alloc 8
+    __m_status_f787e0e6 = call @sa_node_plugin_timers_set_timeout(%p_0, %p_1, &__m_slot_f787e0e6_0)
+    !%p_3
+    %p_3 = add __m_status_f787e0e6, 0
+    !__m_status_f787e0e6
+    __m_load_f787e0e6_p_2 = load __m_slot_f787e0e6_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_f787e0e6_p_2, 0
+    !__m_load_f787e0e6_p_2
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SET_INTERVAL %p_0, %p_1, %p_2, %p_3
+    __m_slot_22c216a1_0 = stack_alloc 8
+    __m_status_22c216a1 = call @sa_node_plugin_timers_set_interval(%p_0, %p_1, &__m_slot_22c216a1_0)
+    !%p_3
+    %p_3 = add __m_status_22c216a1, 0
+    !__m_status_22c216a1
+    __m_load_22c216a1_p_2 = load __m_slot_22c216a1_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_22c216a1_p_2, 0
+    !__m_load_22c216a1_p_2
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SET_IMMEDIATE %p_0, %p_1, %p_2
+    __m_slot_da3033d5_0 = stack_alloc 8
+    __m_status_da3033d5 = call @sa_node_plugin_timers_set_immediate(%p_0, &__m_slot_da3033d5_0)
+    !%p_2
+    %p_2 = add __m_status_da3033d5, 0
+    !__m_status_da3033d5
+    __m_load_da3033d5_p_1 = load __m_slot_da3033d5_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_da3033d5_p_1, 0
+    !__m_load_da3033d5_p_1
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_TIMEOUT %p_0, %p_1
+    __m_status_73118dfa = call @sa_node_plugin_timers_clear_timeout(%p_0)
+    !%p_1
+    %p_1 = add __m_status_73118dfa, 0
+    !__m_status_73118dfa
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_INTERVAL %p_0, %p_1
+    __m_status_05a9ac20 = call @sa_node_plugin_timers_clear_interval(%p_0)
+    !%p_1
+    %p_1 = add __m_status_05a9ac20, 0
+    !__m_status_05a9ac20
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_IMMEDIATE %p_0, %p_1
+    __m_status_d9c66cc7 = call @sa_node_plugin_timers_clear_immediate(%p_0)
+    !%p_1
+    %p_1 = add __m_status_d9c66cc7, 0
+    !__m_status_d9c66cc7
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_ATOB %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_73d83d80_0 = stack_alloc 8
+    __m_slot_73d83d80_1 = stack_alloc 8
+    __m_status_73d83d80 = call @sa_node_plugin_buffer_atob(%p_0, %p_1, &__m_slot_73d83d80_0, &__m_slot_73d83d80_1)
+    !%p_4
+    %p_4 = add __m_status_73d83d80, 0
+    !__m_status_73d83d80
+    __m_load_73d83d80_p_2 = load __m_slot_73d83d80_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_73d83d80_p_2, 0
+    !__m_load_73d83d80_p_2
+    __m_load_73d83d80_p_3 = load __m_slot_73d83d80_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_73d83d80_p_3, 0
+    !__m_load_73d83d80_p_3
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_BTOA %p_0, %p_1, %p_2, %p_3
+    __m_slot_1408642c_0 = stack_alloc 8
+    __m_slot_1408642c_1 = stack_alloc 8
+    __m_status_1408642c = call @sa_node_plugin_buffer_btoa(%p_0, %p_1, &__m_slot_1408642c_0, &__m_slot_1408642c_1)
+    !__m_status_1408642c
+    __m_load_1408642c_p_2 = load __m_slot_1408642c_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_1408642c_p_2, 0
+    !__m_load_1408642c_p_2
+    __m_load_1408642c_p_3 = load __m_slot_1408642c_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_1408642c_p_3, 0
+    !__m_load_1408642c_p_3
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_IS_UTF8 %p_0, %p_1, %p_2
+    __m_slot_5fb0aa7f_0 = stack_alloc 8
+    __m_status_5fb0aa7f = call @sa_node_plugin_buffer_is_utf8(%p_0, %p_1, &__m_slot_5fb0aa7f_0)
+    !__m_status_5fb0aa7f
+    __m_load_5fb0aa7f_p_2 = load __m_slot_5fb0aa7f_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_5fb0aa7f_p_2, 0
+    !__m_load_5fb0aa7f_p_2
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_IS_ASCII %p_0, %p_1, %p_2
+    __m_slot_690cabde_0 = stack_alloc 8
+    __m_status_690cabde = call @sa_node_plugin_buffer_is_ascii(%p_0, %p_1, &__m_slot_690cabde_0)
+    !__m_status_690cabde
+    __m_load_690cabde_p_2 = load __m_slot_690cabde_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_690cabde_p_2, 0
+    !__m_load_690cabde_p_2
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_TRANSCODE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8
+    __m_slot_ecddda12_0 = stack_alloc 8
+    __m_slot_ecddda12_1 = stack_alloc 8
+    __m_status_ecddda12 = call @sa_node_plugin_buffer_transcode(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_ecddda12_0, &__m_slot_ecddda12_1)
+    !%p_8
+    %p_8 = add __m_status_ecddda12, 0
+    !__m_status_ecddda12
+    __m_load_ecddda12_p_6 = load __m_slot_ecddda12_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_ecddda12_p_6, 0
+    !__m_load_ecddda12_p_6
+    __m_load_ecddda12_p_7 = load __m_slot_ecddda12_1+0 as u64
+    !%p_7
+    %p_7 = add __m_load_ecddda12_p_7, 0
+    !__m_load_ecddda12_p_7
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_RESOLVE_OBJECT_URL %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_d5f3ff2a_0 = stack_alloc 8
+    __m_slot_d5f3ff2a_1 = stack_alloc 8
+    __m_status_d5f3ff2a = call @sa_node_plugin_buffer_resolve_object_url(%p_0, %p_1, &__m_slot_d5f3ff2a_0, &__m_slot_d5f3ff2a_1)
+    !%p_4
+    %p_4 = add __m_status_d5f3ff2a, 0
+    !__m_status_d5f3ff2a
+    __m_load_d5f3ff2a_p_2 = load __m_slot_d5f3ff2a_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_d5f3ff2a_p_2, 0
+    !__m_load_d5f3ff2a_p_2
+    __m_load_d5f3ff2a_p_3 = load __m_slot_d5f3ff2a_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_d5f3ff2a_p_3, 0
+    !__m_load_d5f3ff2a_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_DEFLATE_RAW %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_4c57272f_0 = stack_alloc 8
+    __m_slot_4c57272f_1 = stack_alloc 8
+    __m_status_4c57272f = call @sa_node_plugin_zlib_deflate_raw(%p_0, %p_1, &__m_slot_4c57272f_0, &__m_slot_4c57272f_1)
+    !%p_4
+    %p_4 = add __m_status_4c57272f, 0
+    !__m_status_4c57272f
+    __m_load_4c57272f_p_2 = load __m_slot_4c57272f_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_4c57272f_p_2, 0
+    !__m_load_4c57272f_p_2
+    __m_load_4c57272f_p_3 = load __m_slot_4c57272f_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_4c57272f_p_3, 0
+    !__m_load_4c57272f_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_INFLATE_RAW %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_80959189_0 = stack_alloc 8
+    __m_slot_80959189_1 = stack_alloc 8
+    __m_status_80959189 = call @sa_node_plugin_zlib_inflate_raw(%p_0, %p_1, &__m_slot_80959189_0, &__m_slot_80959189_1)
+    !%p_4
+    %p_4 = add __m_status_80959189, 0
+    !__m_status_80959189
+    __m_load_80959189_p_2 = load __m_slot_80959189_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_80959189_p_2, 0
+    !__m_load_80959189_p_2
+    __m_load_80959189_p_3 = load __m_slot_80959189_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_80959189_p_3, 0
+    !__m_load_80959189_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_UNZIP %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_6396dbb1_0 = stack_alloc 8
+    __m_slot_6396dbb1_1 = stack_alloc 8
+    __m_status_6396dbb1 = call @sa_node_plugin_zlib_unzip(%p_0, %p_1, &__m_slot_6396dbb1_0, &__m_slot_6396dbb1_1)
+    !%p_4
+    %p_4 = add __m_status_6396dbb1, 0
+    !__m_status_6396dbb1
+    __m_load_6396dbb1_p_2 = load __m_slot_6396dbb1_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_6396dbb1_p_2, 0
+    !__m_load_6396dbb1_p_2
+    __m_load_6396dbb1_p_3 = load __m_slot_6396dbb1_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_6396dbb1_p_3, 0
+    !__m_load_6396dbb1_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_BROTLI_COMPRESS %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_dd8087e2_0 = stack_alloc 8
+    __m_slot_dd8087e2_1 = stack_alloc 8
+    __m_status_dd8087e2 = call @sa_node_plugin_zlib_brotli_compress(%p_0, %p_1, &__m_slot_dd8087e2_0, &__m_slot_dd8087e2_1)
+    !%p_4
+    %p_4 = add __m_status_dd8087e2, 0
+    !__m_status_dd8087e2
+    __m_load_dd8087e2_p_2 = load __m_slot_dd8087e2_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_dd8087e2_p_2, 0
+    !__m_load_dd8087e2_p_2
+    __m_load_dd8087e2_p_3 = load __m_slot_dd8087e2_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_dd8087e2_p_3, 0
+    !__m_load_dd8087e2_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_BROTLI_DECOMPRESS %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_964ba53b_0 = stack_alloc 8
+    __m_slot_964ba53b_1 = stack_alloc 8
+    __m_status_964ba53b = call @sa_node_plugin_zlib_brotli_decompress(%p_0, %p_1, &__m_slot_964ba53b_0, &__m_slot_964ba53b_1)
+    !%p_4
+    %p_4 = add __m_status_964ba53b, 0
+    !__m_status_964ba53b
+    __m_load_964ba53b_p_2 = load __m_slot_964ba53b_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_964ba53b_p_2, 0
+    !__m_load_964ba53b_p_2
+    __m_load_964ba53b_p_3 = load __m_slot_964ba53b_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_964ba53b_p_3, 0
+    !__m_load_964ba53b_p_3
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_CRC32 %p_0, %p_1, %p_2, %p_3
+    __m_slot_6efd86e2_0 = stack_alloc 8
+    __m_status_6efd86e2 = call @sa_node_plugin_zlib_crc32(%p_0, %p_1, &__m_slot_6efd86e2_0)
+    !%p_3
+    %p_3 = add __m_status_6efd86e2, 0
+    !__m_status_6efd86e2
+    __m_load_6efd86e2_p_2 = load __m_slot_6efd86e2_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_6efd86e2_p_2, 0
+    !__m_load_6efd86e2_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_98bc6032_0 = stack_alloc 8
+    __m_status_98bc6032 = call @sa_node_plugin_url_new(%p_0, %p_1, &__m_slot_98bc6032_0)
+    !%p_3
+    %p_3 = add __m_status_98bc6032, 0
+    !__m_status_98bc6032
+    __m_load_98bc6032_p_2 = load __m_slot_98bc6032_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_98bc6032_p_2, 0
+    !__m_load_98bc6032_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_HREF %p_0, %p_1, %p_2, %p_3
+    __m_slot_63061582_0 = stack_alloc 8
+    __m_slot_63061582_1 = stack_alloc 8
+    __m_status_63061582 = call @sa_node_plugin_url_get_href(%p_0, &__m_slot_63061582_0, &__m_slot_63061582_1)
+    !%p_3
+    %p_3 = add __m_status_63061582, 0
+    !__m_status_63061582
+    __m_load_63061582_p_1 = load __m_slot_63061582_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_63061582_p_1, 0
+    !__m_load_63061582_p_1
+    __m_load_63061582_p_2 = load __m_slot_63061582_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_63061582_p_2, 0
+    !__m_load_63061582_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_PROTOCOL %p_0, %p_1, %p_2, %p_3
+    __m_slot_782e39a0_0 = stack_alloc 8
+    __m_slot_782e39a0_1 = stack_alloc 8
+    __m_status_782e39a0 = call @sa_node_plugin_url_get_protocol(%p_0, &__m_slot_782e39a0_0, &__m_slot_782e39a0_1)
+    !%p_3
+    %p_3 = add __m_status_782e39a0, 0
+    !__m_status_782e39a0
+    __m_load_782e39a0_p_1 = load __m_slot_782e39a0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_782e39a0_p_1, 0
+    !__m_load_782e39a0_p_1
+    __m_load_782e39a0_p_2 = load __m_slot_782e39a0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_782e39a0_p_2, 0
+    !__m_load_782e39a0_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_HOST %p_0, %p_1, %p_2, %p_3
+    __m_slot_2c8e3fe0_0 = stack_alloc 8
+    __m_slot_2c8e3fe0_1 = stack_alloc 8
+    __m_status_2c8e3fe0 = call @sa_node_plugin_url_get_host(%p_0, &__m_slot_2c8e3fe0_0, &__m_slot_2c8e3fe0_1)
+    !%p_3
+    %p_3 = add __m_status_2c8e3fe0, 0
+    !__m_status_2c8e3fe0
+    __m_load_2c8e3fe0_p_1 = load __m_slot_2c8e3fe0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_2c8e3fe0_p_1, 0
+    !__m_load_2c8e3fe0_p_1
+    __m_load_2c8e3fe0_p_2 = load __m_slot_2c8e3fe0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_2c8e3fe0_p_2, 0
+    !__m_load_2c8e3fe0_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_PATHNAME %p_0, %p_1, %p_2, %p_3
+    __m_slot_2a2cb46a_0 = stack_alloc 8
+    __m_slot_2a2cb46a_1 = stack_alloc 8
+    __m_status_2a2cb46a = call @sa_node_plugin_url_get_pathname(%p_0, &__m_slot_2a2cb46a_0, &__m_slot_2a2cb46a_1)
+    !%p_3
+    %p_3 = add __m_status_2a2cb46a, 0
+    !__m_status_2a2cb46a
+    __m_load_2a2cb46a_p_1 = load __m_slot_2a2cb46a_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_2a2cb46a_p_1, 0
+    !__m_load_2a2cb46a_p_1
+    __m_load_2a2cb46a_p_2 = load __m_slot_2a2cb46a_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_2a2cb46a_p_2, 0
+    !__m_load_2a2cb46a_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_FREE %p_0, %p_1
+    __m_status_d76202f7 = call @sa_node_plugin_url_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_d76202f7, 0
+    !__m_status_d76202f7
+[END_MACRO]
+
+[MACRO] NODE_UTIL_CALLBACKIFY %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_870439c7_0 = stack_alloc 8
+    __m_slot_870439c7_1 = stack_alloc 8
+    __m_status_870439c7 = call @sa_node_plugin_util_callbackify(%p_0, %p_1, &__m_slot_870439c7_0, &__m_slot_870439c7_1)
+    !%p_4
+    %p_4 = add __m_status_870439c7, 0
+    !__m_status_870439c7
+    __m_load_870439c7_p_2 = load __m_slot_870439c7_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_870439c7_p_2, 0
+    !__m_load_870439c7_p_2
+    __m_load_870439c7_p_3 = load __m_slot_870439c7_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_870439c7_p_3, 0
+    !__m_load_870439c7_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_PROMISIFY %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_780285d2_0 = stack_alloc 8
+    __m_slot_780285d2_1 = stack_alloc 8
+    __m_status_780285d2 = call @sa_node_plugin_util_promisify(%p_0, %p_1, &__m_slot_780285d2_0, &__m_slot_780285d2_1)
+    !%p_4
+    %p_4 = add __m_status_780285d2, 0
+    !__m_status_780285d2
+    __m_load_780285d2_p_2 = load __m_slot_780285d2_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_780285d2_p_2, 0
+    !__m_load_780285d2_p_2
+    __m_load_780285d2_p_3 = load __m_slot_780285d2_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_780285d2_p_3, 0
+    !__m_load_780285d2_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_INHERITS %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_e1e17fc9 = call @sa_node_plugin_util_inherits(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_e1e17fc9, 0
+    !__m_status_e1e17fc9
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DEBUGLOG %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_3832ca9b_0 = stack_alloc 8
+    __m_slot_3832ca9b_1 = stack_alloc 8
+    __m_status_3832ca9b = call @sa_node_plugin_util_debuglog(%p_0, %p_1, &__m_slot_3832ca9b_0, &__m_slot_3832ca9b_1)
+    !%p_4
+    %p_4 = add __m_status_3832ca9b, 0
+    !__m_status_3832ca9b
+    __m_load_3832ca9b_p_2 = load __m_slot_3832ca9b_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_3832ca9b_p_2, 0
+    !__m_load_3832ca9b_p_2
+    __m_load_3832ca9b_p_3 = load __m_slot_3832ca9b_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_3832ca9b_p_3, 0
+    !__m_load_3832ca9b_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DEPRECATE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_87b4d45a = call @sa_node_plugin_util_deprecate(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_87b4d45a, 0
+    !__m_status_87b4d45a
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DIFF %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8
+    __m_slot_0b185bdc_0 = stack_alloc 8
+    __m_slot_0b185bdc_1 = stack_alloc 8
+    __m_status_0b185bdc = call @sa_node_plugin_util_diff(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_0b185bdc_0, &__m_slot_0b185bdc_1)
+    !%p_8
+    %p_8 = add __m_status_0b185bdc, 0
+    !__m_status_0b185bdc
+    __m_load_0b185bdc_p_6 = load __m_slot_0b185bdc_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_0b185bdc_p_6, 0
+    !__m_load_0b185bdc_p_6
+    __m_load_0b185bdc_p_7 = load __m_slot_0b185bdc_1+0 as u64
+    !%p_7
+    %p_7 = add __m_load_0b185bdc_p_7, 0
+    !__m_load_0b185bdc_p_7
+[END_MACRO]
+
+[MACRO] NODE_UTIL_PARSE_ARGS %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_869951e5_0 = stack_alloc 8
+    __m_slot_869951e5_1 = stack_alloc 8
+    __m_status_869951e5 = call @sa_node_plugin_util_parse_args(%p_0, %p_1, %p_2, %p_3, &__m_slot_869951e5_0, &__m_slot_869951e5_1)
+    !%p_6
+    %p_6 = add __m_status_869951e5, 0
+    !__m_status_869951e5
+    __m_load_869951e5_p_4 = load __m_slot_869951e5_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_869951e5_p_4, 0
+    !__m_load_869951e5_p_4
+    __m_load_869951e5_p_5 = load __m_slot_869951e5_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_869951e5_p_5, 0
+    !__m_load_869951e5_p_5
+[END_MACRO]
+
+[MACRO] NODE_UTIL_MIME_TYPE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_554f8baa_0 = stack_alloc 8
+    __m_slot_554f8baa_1 = stack_alloc 8
+    __m_status_554f8baa = call @sa_node_plugin_util_mime_type(%p_0, %p_1, &__m_slot_554f8baa_0, &__m_slot_554f8baa_1)
+    !%p_4
+    %p_4 = add __m_status_554f8baa, 0
+    !__m_status_554f8baa
+    __m_load_554f8baa_p_2 = load __m_slot_554f8baa_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_554f8baa_p_2, 0
+    !__m_load_554f8baa_p_2
+    __m_load_554f8baa_p_3 = load __m_slot_554f8baa_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_554f8baa_p_3, 0
+    !__m_load_554f8baa_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_STYLE_TEXT %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_8684af3d_0 = stack_alloc 8
+    __m_slot_8684af3d_1 = stack_alloc 8
+    __m_status_8684af3d = call @sa_node_plugin_util_style_text(%p_0, %p_1, %p_2, %p_3, &__m_slot_8684af3d_0, &__m_slot_8684af3d_1)
+    !%p_6
+    %p_6 = add __m_status_8684af3d, 0
+    !__m_status_8684af3d
+    __m_load_8684af3d_p_4 = load __m_slot_8684af3d_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_8684af3d_p_4, 0
+    !__m_load_8684af3d_p_4
+    __m_load_8684af3d_p_5 = load __m_slot_8684af3d_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_8684af3d_p_5, 0
+    !__m_load_8684af3d_p_5
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CLEAR_LINE %p_0, %p_1
+    __m_status_e82318fb = call @sa_node_plugin_readline_clear_line(%p_0, %p_1)
+    !__m_status_e82318fb
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CLEAR_SCREEN_DOWN %p_0
+    __m_status_d7c0e0ed = call @sa_node_plugin_readline_clear_screen_down(%p_0)
+    !__m_status_d7c0e0ed
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CURSOR_TO %p_0, %p_1, %p_2
+    __m_status_472981ab = call @sa_node_plugin_readline_cursor_to(%p_0, %p_1, %p_2)
+    !__m_status_472981ab
+[END_MACRO]
+
+[MACRO] NODE_READLINE_MOVE_CURSOR %p_0, %p_1, %p_2, %p_3
+    __m_status_6bc095a0 = call @sa_node_plugin_readline_move_cursor(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_6bc095a0, 0
+    !__m_status_6bc095a0
+[END_MACRO]
+
+[MACRO] NODE_READLINE_EMIT_KEYPRESS_EVENTS %p_0, %p_1, %p_2
+    __m_status_3af2415b = call @sa_node_plugin_readline_emit_keypress_events(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_3af2415b, 0
+    !__m_status_3af2415b
+[END_MACRO]
+
+[MACRO] NODE_PATH_SEP %p_0, %p_1
+    __m_slot_f7035237_0 = stack_alloc 8
+    __m_slot_f7035237_1 = stack_alloc 8
+    __m_status_f7035237 = call @sa_node_plugin_path_sep(&__m_slot_f7035237_0, &__m_slot_f7035237_1)
+    !__m_status_f7035237
+    __m_load_f7035237_p_0 = load __m_slot_f7035237_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f7035237_p_0, 0
+    !__m_load_f7035237_p_0
+    __m_load_f7035237_p_1 = load __m_slot_f7035237_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_f7035237_p_1, 0
+    !__m_load_f7035237_p_1
+[END_MACRO]
+
+[MACRO] NODE_PATH_DELIMITER %p_0, %p_1
+    __m_slot_1843a441_0 = stack_alloc 8
+    __m_slot_1843a441_1 = stack_alloc 8
+    __m_status_1843a441 = call @sa_node_plugin_path_delimiter(&__m_slot_1843a441_0, &__m_slot_1843a441_1)
+    !__m_status_1843a441
+    __m_load_1843a441_p_0 = load __m_slot_1843a441_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_1843a441_p_0, 0
+    !__m_load_1843a441_p_0
+    __m_load_1843a441_p_1 = load __m_slot_1843a441_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_1843a441_p_1, 0
+    !__m_load_1843a441_p_1
+[END_MACRO]
+
+[MACRO] NODE_PATH_MATCHES_GLOB %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_5a08e190_0 = stack_alloc 8
+    __m_status_5a08e190 = call @sa_node_plugin_path_matches_glob(%p_0, %p_1, %p_2, %p_3, &__m_slot_5a08e190_0)
+    !%p_5
+    %p_5 = add __m_status_5a08e190, 0
+    !__m_status_5a08e190
+    __m_load_5a08e190_p_4 = load __m_slot_5a08e190_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_5a08e190_p_4, 0
+    !__m_load_5a08e190_p_4
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TO_ASCII %p_0, %p_1, %p_2, %p_3
+    __m_slot_9387880f_0 = stack_alloc 8
+    __m_slot_9387880f_1 = stack_alloc 8
+    __m_status_9387880f = call @sa_node_plugin_punycode_to_ascii(%p_0, %p_1, &__m_slot_9387880f_0, &__m_slot_9387880f_1)
+    !__m_status_9387880f
+    __m_load_9387880f_p_2 = load __m_slot_9387880f_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_9387880f_p_2, 0
+    !__m_load_9387880f_p_2
+    __m_load_9387880f_p_3 = load __m_slot_9387880f_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_9387880f_p_3, 0
+    !__m_load_9387880f_p_3
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TO_UNICODE %p_0, %p_1, %p_2, %p_3
+    __m_slot_dacc3c0e_0 = stack_alloc 8
+    __m_slot_dacc3c0e_1 = stack_alloc 8
+    __m_status_dacc3c0e = call @sa_node_plugin_punycode_to_unicode(%p_0, %p_1, &__m_slot_dacc3c0e_0, &__m_slot_dacc3c0e_1)
+    !__m_status_dacc3c0e
+    __m_load_dacc3c0e_p_2 = load __m_slot_dacc3c0e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_dacc3c0e_p_2, 0
+    !__m_load_dacc3c0e_p_2
+    __m_load_dacc3c0e_p_3 = load __m_slot_dacc3c0e_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_dacc3c0e_p_3, 0
+    !__m_load_dacc3c0e_p_3
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_UNESCAPE_BUFFER %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_9a177f35_0 = stack_alloc 8
+    __m_slot_9a177f35_1 = stack_alloc 8
+    __m_status_9a177f35 = call @sa_node_plugin_querystring_unescape_buffer(%p_0, %p_1, &__m_slot_9a177f35_0, &__m_slot_9a177f35_1)
+    !%p_4
+    %p_4 = add __m_status_9a177f35, 0
+    !__m_status_9a177f35
+    __m_load_9a177f35_p_2 = load __m_slot_9a177f35_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_9a177f35_p_2, 0
+    !__m_load_9a177f35_p_2
+    __m_load_9a177f35_p_3 = load __m_slot_9a177f35_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_9a177f35_p_3, 0
+    !__m_load_9a177f35_p_3
+[END_MACRO]
+
+[MACRO] NODE_OS_EOL %p_0, %p_1
+    __m_slot_7870af9b_0 = stack_alloc 8
+    __m_slot_7870af9b_1 = stack_alloc 8
+    __m_status_7870af9b = call @sa_node_plugin_os_eol(&__m_slot_7870af9b_0, &__m_slot_7870af9b_1)
+    !__m_status_7870af9b
+    __m_load_7870af9b_p_0 = load __m_slot_7870af9b_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_7870af9b_p_0, 0
+    !__m_load_7870af9b_p_0
+    __m_load_7870af9b_p_1 = load __m_slot_7870af9b_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_7870af9b_p_1, 0
+    !__m_load_7870af9b_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_CONSTANTS %p_0, %p_1
+    __m_slot_cd9aaebd_0 = stack_alloc 8
+    __m_slot_cd9aaebd_1 = stack_alloc 8
+    __m_status_cd9aaebd = call @sa_node_plugin_os_constants(&__m_slot_cd9aaebd_0, &__m_slot_cd9aaebd_1)
+    !__m_status_cd9aaebd
+    __m_load_cd9aaebd_p_0 = load __m_slot_cd9aaebd_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_cd9aaebd_p_0, 0
+    !__m_load_cd9aaebd_p_0
+    __m_load_cd9aaebd_p_1 = load __m_slot_cd9aaebd_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_cd9aaebd_p_1, 0
+    !__m_load_cd9aaebd_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_GET_PRIORITY %p_0, %p_1, %p_2
+    __m_slot_114714a8_0 = stack_alloc 8
+    __m_status_114714a8 = call @sa_node_plugin_os_get_priority(%p_0, &__m_slot_114714a8_0)
+    !%p_2
+    %p_2 = add __m_status_114714a8, 0
+    !__m_status_114714a8
+    __m_load_114714a8_p_1 = load __m_slot_114714a8_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_114714a8_p_1, 0
+    !__m_load_114714a8_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_SET_PRIORITY %p_0, %p_1, %p_2
+    __m_status_93eb6e10 = call @sa_node_plugin_os_set_priority(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_93eb6e10, 0
+    !__m_status_93eb6e10
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXIT %p_0, %p_1
+    __m_status_71423e0b = call @sa_node_plugin_process_exit(%p_0)
+    !%p_1
+    %p_1 = add __m_status_71423e0b, 0
+    !__m_status_71423e0b
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_KILL %p_0, %p_1, %p_2
+    __m_status_fe45f16f = call @sa_node_plugin_process_kill(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_fe45f16f, 0
+    !__m_status_fe45f16f
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_WORKER_DATA %p_0, %p_1
+    __m_slot_335015a4_0 = stack_alloc 8
+    __m_slot_335015a4_1 = stack_alloc 8
+    __m_status_335015a4 = call @sa_node_plugin_worker_threads_worker_data(&__m_slot_335015a4_0, &__m_slot_335015a4_1)
+    !__m_status_335015a4
+    __m_load_335015a4_p_0 = load __m_slot_335015a4_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_335015a4_p_0, 0
+    !__m_load_335015a4_p_0
+    __m_load_335015a4_p_1 = load __m_slot_335015a4_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_335015a4_p_1, 0
+    !__m_load_335015a4_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_RECEIVE_MESSAGE_ON_PORT %p_0, %p_1, %p_2, %p_3
+    __m_slot_0f72d559_0 = stack_alloc 8
+    __m_slot_0f72d559_1 = stack_alloc 8
+    __m_status_0f72d559 = call @sa_node_plugin_worker_threads_receive_message_on_port(%p_0, &__m_slot_0f72d559_0, &__m_slot_0f72d559_1)
+    !%p_3
+    %p_3 = add __m_status_0f72d559, 0
+    !__m_status_0f72d559
+    __m_load_0f72d559_p_1 = load __m_slot_0f72d559_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_0f72d559_p_1, 0
+    !__m_load_0f72d559_p_1
+    __m_load_0f72d559_p_2 = load __m_slot_0f72d559_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_0f72d559_p_2, 0
+    !__m_load_0f72d559_p_2
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_POST_MESSAGE_TO_THREAD %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_03d5877e_0 = stack_alloc 8
+    __m_status_03d5877e = call @sa_node_plugin_worker_threads_post_message_to_thread(%p_0, %p_1, %p_2, &__m_slot_03d5877e_0)
+    !%p_4
+    %p_4 = add __m_status_03d5877e, 0
+    !__m_status_03d5877e
+    __m_load_03d5877e_p_3 = load __m_slot_03d5877e_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_03d5877e_p_3, 0
+    !__m_load_03d5877e_p_3
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CREATE_HISTOGRAM %p_0
+    __m_slot_7bd92f42_0 = stack_alloc 8
+    __m_status_7bd92f42 = call @sa_node_plugin_perf_hooks_create_histogram(&__m_slot_7bd92f42_0)
+    !__m_status_7bd92f42
+    __m_load_7bd92f42_p_0 = load __m_slot_7bd92f42_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_7bd92f42_p_0, 0
+    !__m_load_7bd92f42_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_RECORD %p_0, %p_1
+    __m_status_dbc0efaa = call @sa_node_plugin_perf_hooks_histogram_record(%p_0, %p_1)
+    !__m_status_dbc0efaa
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_GET_STATISTICS %p_0, %p_1, %p_2
+    __m_slot_5700297d_0 = stack_alloc 8
+    __m_slot_5700297d_1 = stack_alloc 8
+    __m_status_5700297d = call @sa_node_plugin_perf_hooks_histogram_get_statistics(%p_0, &__m_slot_5700297d_0, &__m_slot_5700297d_1)
+    !__m_status_5700297d
+    __m_load_5700297d_p_1 = load __m_slot_5700297d_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_5700297d_p_1, 0
+    !__m_load_5700297d_p_1
+    __m_load_5700297d_p_2 = load __m_slot_5700297d_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_5700297d_p_2, 0
+    !__m_load_5700297d_p_2
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_FREE %p_0
+    __m_status_f29990a7 = call @sa_node_plugin_perf_hooks_histogram_free(%p_0)
+    !__m_status_f29990a7
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION %p_0, %p_1, %p_2
+    __m_slot_529c5861_0 = stack_alloc 8
+    __m_slot_529c5861_1 = stack_alloc 8
+    __m_status_529c5861 = call @sa_node_plugin_perf_hooks_event_loop_utilization(&__m_slot_529c5861_0, &__m_slot_529c5861_1)
+    !%p_2
+    %p_2 = add __m_status_529c5861, 0
+    !__m_status_529c5861
+    __m_load_529c5861_p_0 = load __m_slot_529c5861_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_529c5861_p_0, 0
+    !__m_load_529c5861_p_0
+    __m_load_529c5861_p_1 = load __m_slot_529c5861_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_529c5861_p_1, 0
+    !__m_load_529c5861_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_TIMERIFY %p_0, %p_1, %p_2, %p_3
+    __m_slot_ede3627a_0 = stack_alloc 8
+    __m_status_ede3627a = call @sa_node_plugin_perf_hooks_timerify(%p_0, %p_1, &__m_slot_ede3627a_0)
+    !%p_3
+    %p_3 = add __m_status_ede3627a, 0
+    !__m_status_ede3627a
+    __m_load_ede3627a_p_2 = load __m_slot_ede3627a_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_ede3627a_p_2, 0
+    !__m_load_ede3627a_p_2
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TRACING_CHANNEL %p_0, %p_1, %p_2
+    __m_slot_7d4f5895_0 = stack_alloc 8
+    __m_status_7d4f5895 = call @sa_node_plugin_diagnostics_channel_tracing_channel(%p_0, %p_1, &__m_slot_7d4f5895_0)
+    !__m_status_7d4f5895
+    __m_load_7d4f5895_p_2 = load __m_slot_7d4f5895_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_7d4f5895_p_2, 0
+    !__m_load_7d4f5895_p_2
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_SNAPSHOT_JSON %p_0, %p_1, %p_2
+    __m_slot_814aa657_0 = stack_alloc 8
+    __m_slot_814aa657_1 = stack_alloc 8
+    __m_status_814aa657 = call @sa_node_plugin_async_hooks_snapshot_json(&__m_slot_814aa657_0, &__m_slot_814aa657_1)
+    !%p_2
+    %p_2 = add __m_status_814aa657, 0
+    !__m_status_814aa657
+    __m_load_814aa657_p_0 = load __m_slot_814aa657_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_814aa657_p_0, 0
+    !__m_load_814aa657_p_0
+    __m_load_814aa657_p_1 = load __m_slot_814aa657_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_814aa657_p_1, 0
+    !__m_load_814aa657_p_1
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_63212c43_0 = stack_alloc 8
+    __m_slot_63212c43_1 = stack_alloc 8
+    __m_status_63212c43 = call @sa_node_plugin_async_hooks_status_json(&__m_slot_63212c43_0, &__m_slot_63212c43_1)
+    !%p_2
+    %p_2 = add __m_status_63212c43, 0
+    !__m_status_63212c43
+    __m_load_63212c43_p_0 = load __m_slot_63212c43_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_63212c43_p_0, 0
+    !__m_load_63212c43_p_0
+    __m_load_63212c43_p_1 = load __m_slot_63212c43_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_63212c43_p_1, 0
+    !__m_load_63212c43_p_1
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID %p_0
+    __m_slot_8ddc8ec0_0 = stack_alloc 8
+    __m_status_8ddc8ec0 = call @sa_node_plugin_async_hooks_execution_async_id(&__m_slot_8ddc8ec0_0)
+    !__m_status_8ddc8ec0
+    __m_load_8ddc8ec0_p_0 = load __m_slot_8ddc8ec0_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_8ddc8ec0_p_0, 0
+    !__m_load_8ddc8ec0_p_0
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TRIGGER_ASYNC_ID %p_0
+    __m_slot_df78a949_0 = stack_alloc 8
+    __m_status_df78a949 = call @sa_node_plugin_async_hooks_trigger_async_id(&__m_slot_df78a949_0)
+    !__m_status_df78a949
+    __m_load_df78a949_p_0 = load __m_slot_df78a949_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_df78a949_p_0, 0
+    !__m_load_df78a949_p_0
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_CREATE %p_0, %p_1, %p_2, %p_3
+    __m_slot_cafef336_0 = stack_alloc 8
+    __m_status_cafef336 = call @sa_node_plugin_async_hooks_async_resource_create(%p_0, %p_1, %p_2, &__m_slot_cafef336_0)
+    !__m_status_cafef336
+    __m_load_cafef336_p_3 = load __m_slot_cafef336_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_cafef336_p_3, 0
+    !__m_load_cafef336_p_3
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_FREE %p_0
+    __m_status_90ff5583 = call @sa_node_plugin_async_hooks_async_resource_free(%p_0)
+    !__m_status_90ff5583
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_SNAPSHOT_JSON %p_0, %p_1, %p_2
+    __m_slot_b5d588d5_0 = stack_alloc 8
+    __m_slot_b5d588d5_1 = stack_alloc 8
+    __m_status_b5d588d5 = call @sa_node_plugin_async_hooks_async_resource_snapshot_json(%p_0, &__m_slot_b5d588d5_0, &__m_slot_b5d588d5_1)
+    !__m_status_b5d588d5
+    __m_load_b5d588d5_p_1 = load __m_slot_b5d588d5_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b5d588d5_p_1, 0
+    !__m_load_b5d588d5_p_1
+    __m_load_b5d588d5_p_2 = load __m_slot_b5d588d5_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_b5d588d5_p_2, 0
+    !__m_load_b5d588d5_p_2
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_CREATE %p_0, %p_1, %p_2, %p_3
+    __m_slot_064f5ee5_0 = stack_alloc 8
+    __m_status_064f5ee5 = call @sa_node_plugin_diagnostics_channel_create(%p_0, %p_1, &__m_slot_064f5ee5_0)
+    !%p_3
+    %p_3 = add __m_status_064f5ee5, 0
+    !__m_status_064f5ee5
+    __m_load_064f5ee5_p_2 = load __m_slot_064f5ee5_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_064f5ee5_p_2, 0
+    !__m_load_064f5ee5_p_2
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_SUBSCRIBE %p_0, %p_1, %p_2
+    __m_status_ac9ef657 = call @sa_node_plugin_diagnostics_channel_subscribe(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_ac9ef657, 0
+    !__m_status_ac9ef657
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_UNSUBSCRIBE %p_0, %p_1, %p_2
+    __m_status_dd476e3b = call @sa_node_plugin_diagnostics_channel_unsubscribe(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_dd476e3b, 0
+    !__m_status_dd476e3b
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_PUBLISH %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_76126f13_0 = stack_alloc 8
+    __m_status_76126f13 = call @sa_node_plugin_diagnostics_channel_publish(%p_0, %p_1, %p_2, &__m_slot_76126f13_0)
+    !%p_4
+    %p_4 = add __m_status_76126f13, 0
+    !__m_status_76126f13
+    __m_load_76126f13_p_3 = load __m_slot_76126f13_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_76126f13_p_3, 0
+    !__m_load_76126f13_p_3
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_HAS_SUBSCRIBERS %p_0, %p_1, %p_2
+    __m_slot_15ba0840_0 = stack_alloc 8
+    __m_status_15ba0840 = call @sa_node_plugin_diagnostics_channel_has_subscribers(%p_0, &__m_slot_15ba0840_0)
+    !%p_2
+    %p_2 = add __m_status_15ba0840, 0
+    !__m_status_15ba0840
+    __m_load_15ba0840_p_1 = load __m_slot_15ba0840_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_15ba0840_p_1, 0
+    !__m_load_15ba0840_p_1
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_FREE %p_0
+    __m_status_17f5945b = call @sa_node_plugin_diagnostics_channel_free(%p_0)
+    !__m_status_17f5945b
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_SNAPSHOT_JSON %p_0, %p_1, %p_2, %p_3
+    __m_slot_3b071334_0 = stack_alloc 8
+    __m_slot_3b071334_1 = stack_alloc 8
+    __m_status_3b071334 = call @sa_node_plugin_diagnostics_channel_snapshot_json(%p_0, &__m_slot_3b071334_0, &__m_slot_3b071334_1)
+    !%p_3
+    %p_3 = add __m_status_3b071334, 0
+    !__m_status_3b071334
+    __m_load_3b071334_p_1 = load __m_slot_3b071334_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3b071334_p_1, 0
+    !__m_load_3b071334_p_1
+    __m_load_3b071334_p_2 = load __m_slot_3b071334_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_3b071334_p_2, 0
+    !__m_load_3b071334_p_2
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_15917300_0 = stack_alloc 8
+    __m_slot_15917300_1 = stack_alloc 8
+    __m_status_15917300 = call @sa_node_plugin_async_context_tracking_status_json(&__m_slot_15917300_0, &__m_slot_15917300_1)
+    !%p_2
+    %p_2 = add __m_status_15917300, 0
+    !__m_status_15917300
+    __m_load_15917300_p_0 = load __m_slot_15917300_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_15917300_p_0, 0
+    !__m_load_15917300_p_0
+    __m_load_15917300_p_1 = load __m_slot_15917300_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_15917300_p_1, 0
+    !__m_load_15917300_p_1
+[END_MACRO]
+
+[MACRO] NODE_COMMAND_LINE_OPTIONS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_493e3735_0 = stack_alloc 8
+    __m_slot_493e3735_1 = stack_alloc 8
+    __m_status_493e3735 = call @sa_node_plugin_command_line_options_status_json(&__m_slot_493e3735_0, &__m_slot_493e3735_1)
+    !%p_2
+    %p_2 = add __m_status_493e3735, 0
+    !__m_status_493e3735
+    __m_load_493e3735_p_0 = load __m_slot_493e3735_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_493e3735_p_0, 0
+    !__m_load_493e3735_p_0
+    __m_load_493e3735_p_1 = load __m_slot_493e3735_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_493e3735_p_1, 0
+    !__m_load_493e3735_p_1
+[END_MACRO]
+
+[MACRO] NODE_DEBUGGER_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_240a3406_0 = stack_alloc 8
+    __m_slot_240a3406_1 = stack_alloc 8
+    __m_status_240a3406 = call @sa_node_plugin_debugger_status_json(&__m_slot_240a3406_0, &__m_slot_240a3406_1)
+    !%p_2
+    %p_2 = add __m_status_240a3406, 0
+    !__m_status_240a3406
+    __m_load_240a3406_p_0 = load __m_slot_240a3406_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_240a3406_p_0, 0
+    !__m_load_240a3406_p_0
+    __m_load_240a3406_p_1 = load __m_slot_240a3406_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_240a3406_p_1, 0
+    !__m_load_240a3406_p_1
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_3691080f_0 = stack_alloc 8
+    __m_slot_3691080f_1 = stack_alloc 8
+    __m_status_3691080f = call @sa_node_plugin_deprecated_status_json(&__m_slot_3691080f_0, &__m_slot_3691080f_1)
+    !%p_2
+    %p_2 = add __m_status_3691080f, 0
+    !__m_status_3691080f
+    __m_load_3691080f_p_0 = load __m_slot_3691080f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_3691080f_p_0, 0
+    !__m_load_3691080f_p_0
+    __m_load_3691080f_p_1 = load __m_slot_3691080f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_3691080f_p_1, 0
+    !__m_load_3691080f_p_1
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_8995f291_0 = stack_alloc 8
+    __m_slot_8995f291_1 = stack_alloc 8
+    __m_status_8995f291 = call @sa_node_plugin_environment_variables_status_json(&__m_slot_8995f291_0, &__m_slot_8995f291_1)
+    !%p_2
+    %p_2 = add __m_status_8995f291, 0
+    !__m_status_8995f291
+    __m_load_8995f291_p_0 = load __m_slot_8995f291_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_8995f291_p_0, 0
+    !__m_load_8995f291_p_0
+    __m_load_8995f291_p_1 = load __m_slot_8995f291_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_8995f291_p_1, 0
+    !__m_load_8995f291_p_1
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_7ac24375_0 = stack_alloc 8
+    __m_slot_7ac24375_1 = stack_alloc 8
+    __m_status_7ac24375 = call @sa_node_plugin_errors_status_json(&__m_slot_7ac24375_0, &__m_slot_7ac24375_1)
+    !%p_2
+    %p_2 = add __m_status_7ac24375, 0
+    !__m_status_7ac24375
+    __m_load_7ac24375_p_0 = load __m_slot_7ac24375_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_7ac24375_p_0, 0
+    !__m_load_7ac24375_p_0
+    __m_load_7ac24375_p_1 = load __m_slot_7ac24375_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_7ac24375_p_1, 0
+    !__m_load_7ac24375_p_1
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_bc858a78_0 = stack_alloc 8
+    __m_slot_bc858a78_1 = stack_alloc 8
+    __m_status_bc858a78 = call @sa_node_plugin_internationalization_status_json(&__m_slot_bc858a78_0, &__m_slot_bc858a78_1)
+    !%p_2
+    %p_2 = add __m_status_bc858a78, 0
+    !__m_status_bc858a78
+    __m_load_bc858a78_p_0 = load __m_slot_bc858a78_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_bc858a78_p_0, 0
+    !__m_load_bc858a78_p_0
+    __m_load_bc858a78_p_1 = load __m_slot_bc858a78_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_bc858a78_p_1, 0
+    !__m_load_bc858a78_p_1
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_4eec8950_0 = stack_alloc 8
+    __m_slot_4eec8950_1 = stack_alloc 8
+    __m_status_4eec8950 = call @sa_node_plugin_iterable_streams_status_json(&__m_slot_4eec8950_0, &__m_slot_4eec8950_1)
+    !%p_2
+    %p_2 = add __m_status_4eec8950, 0
+    !__m_status_4eec8950
+    __m_load_4eec8950_p_0 = load __m_slot_4eec8950_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_4eec8950_p_0, 0
+    !__m_load_4eec8950_p_0
+    __m_load_4eec8950_p_1 = load __m_slot_4eec8950_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_4eec8950_p_1, 0
+    !__m_load_4eec8950_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_5777a059_0 = stack_alloc 8
+    __m_slot_5777a059_1 = stack_alloc 8
+    __m_status_5777a059 = call @sa_node_plugin_permissions_status_json(&__m_slot_5777a059_0, &__m_slot_5777a059_1)
+    !%p_2
+    %p_2 = add __m_status_5777a059, 0
+    !__m_status_5777a059
+    __m_load_5777a059_p_0 = load __m_slot_5777a059_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_5777a059_p_0, 0
+    !__m_load_5777a059_p_0
+    __m_load_5777a059_p_1 = load __m_slot_5777a059_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_5777a059_p_1, 0
+    !__m_load_5777a059_p_1
+[END_MACRO]
+
+[MACRO] NODE_REPL_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_81994972_0 = stack_alloc 8
+    __m_slot_81994972_1 = stack_alloc 8
+    __m_status_81994972 = call @sa_node_plugin_repl_status_json(&__m_slot_81994972_0, &__m_slot_81994972_1)
+    !%p_2
+    %p_2 = add __m_status_81994972, 0
+    !__m_status_81994972
+    __m_load_81994972_p_0 = load __m_slot_81994972_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_81994972_p_0, 0
+    !__m_load_81994972_p_0
+    __m_load_81994972_p_1 = load __m_slot_81994972_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_81994972_p_1, 0
+    !__m_load_81994972_p_1
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_b7993a1c_0 = stack_alloc 8
+    __m_slot_b7993a1c_1 = stack_alloc 8
+    __m_status_b7993a1c = call @sa_node_plugin_test_runner_status_json(&__m_slot_b7993a1c_0, &__m_slot_b7993a1c_1)
+    !%p_2
+    %p_2 = add __m_status_b7993a1c, 0
+    !__m_status_b7993a1c
+    __m_load_b7993a1c_p_0 = load __m_slot_b7993a1c_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_b7993a1c_p_0, 0
+    !__m_load_b7993a1c_p_0
+    __m_load_b7993a1c_p_1 = load __m_slot_b7993a1c_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_b7993a1c_p_1, 0
+    !__m_load_b7993a1c_p_1
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_931d5555_0 = stack_alloc 8
+    __m_slot_931d5555_1 = stack_alloc 8
+    __m_status_931d5555 = call @sa_node_plugin_web_crypto_status_json(&__m_slot_931d5555_0, &__m_slot_931d5555_1)
+    !%p_2
+    %p_2 = add __m_status_931d5555, 0
+    !__m_status_931d5555
+    __m_load_931d5555_p_0 = load __m_slot_931d5555_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_931d5555_p_0, 0
+    !__m_load_931d5555_p_0
+    __m_load_931d5555_p_1 = load __m_slot_931d5555_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_931d5555_p_1, 0
+    !__m_load_931d5555_p_1
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_3b6291eb_0 = stack_alloc 8
+    __m_slot_3b6291eb_1 = stack_alloc 8
+    __m_status_3b6291eb = call @sa_node_plugin_web_streams_status_json(&__m_slot_3b6291eb_0, &__m_slot_3b6291eb_1)
+    !%p_2
+    %p_2 = add __m_status_3b6291eb, 0
+    !__m_status_3b6291eb
+    __m_load_3b6291eb_p_0 = load __m_slot_3b6291eb_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_3b6291eb_p_0, 0
+    !__m_load_3b6291eb_p_0
+    __m_load_3b6291eb_p_1 = load __m_slot_3b6291eb_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_3b6291eb_p_1, 0
+    !__m_load_3b6291eb_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_NOW_MS %p_0, %p_1
+    __m_slot_62df6856_0 = stack_alloc 8
+    __m_status_62df6856 = call @sa_node_plugin_perf_hooks_now_ms(&__m_slot_62df6856_0)
+    !%p_1
+    %p_1 = add __m_status_62df6856, 0
+    !__m_status_62df6856
+    __m_load_62df6856_p_0 = load __m_slot_62df6856_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_62df6856_p_0, 0
+    !__m_load_62df6856_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_TIME_ORIGIN_MS %p_0
+    __m_slot_c56f3c03_0 = stack_alloc 8
+    __m_status_c56f3c03 = call @sa_node_plugin_perf_hooks_time_origin_ms(&__m_slot_c56f3c03_0)
+    !__m_status_c56f3c03
+    __m_load_c56f3c03_p_0 = load __m_slot_c56f3c03_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_c56f3c03_p_0, 0
+    !__m_load_c56f3c03_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_MARK %p_0, %p_1, %p_2
+    __m_status_8929bc56 = call @sa_node_plugin_perf_hooks_mark(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_8929bc56, 0
+    !__m_status_8929bc56
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_MEASURE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_a5279c7b_0 = stack_alloc 8
+    __m_status_a5279c7b = call @sa_node_plugin_perf_hooks_measure(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_a5279c7b_0)
+    !%p_7
+    %p_7 = add __m_status_a5279c7b, 0
+    !__m_status_a5279c7b
+    __m_load_a5279c7b_p_6 = load __m_slot_a5279c7b_0+0 as u64
+    !%p_6
+    %p_6 = add __m_load_a5279c7b_p_6, 0
+    !__m_load_a5279c7b_p_6
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_ENTRIES_JSON %p_0, %p_1
+    __m_slot_506441a0_0 = stack_alloc 8
+    __m_slot_506441a0_1 = stack_alloc 8
+    __m_status_506441a0 = call @sa_node_plugin_perf_hooks_entries_json(&__m_slot_506441a0_0, &__m_slot_506441a0_1)
+    !__m_status_506441a0
+    __m_load_506441a0_p_0 = load __m_slot_506441a0_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_506441a0_p_0, 0
+    !__m_load_506441a0_p_0
+    __m_load_506441a0_p_1 = load __m_slot_506441a0_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_506441a0_p_1, 0
+    !__m_load_506441a0_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CLEAR_MARKS %p_0
+    __m_status_f9da07ff = call @sa_node_plugin_perf_hooks_clear_marks()
+    !%p_0
+    %p_0 = add __m_status_f9da07ff, 0
+    !__m_status_f9da07ff
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CLEAR_MEASURES %p_0
+    __m_status_3ff1a891 = call @sa_node_plugin_perf_hooks_clear_measures()
+    !%p_0
+    %p_0 = add __m_status_3ff1a891, 0
+    !__m_status_3ff1a891
+[END_MACRO]
+
+[MACRO] NODE_REPORT_STATUS_JSON %p_0, %p_1
+    __m_slot_32c1ecff_0 = stack_alloc 8
+    __m_slot_32c1ecff_1 = stack_alloc 8
+    __m_status_32c1ecff = call @sa_node_plugin_report_status_json(&__m_slot_32c1ecff_0, &__m_slot_32c1ecff_1)
+    !__m_status_32c1ecff
+    __m_load_32c1ecff_p_0 = load __m_slot_32c1ecff_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_32c1ecff_p_0, 0
+    !__m_load_32c1ecff_p_0
+    __m_load_32c1ecff_p_1 = load __m_slot_32c1ecff_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_32c1ecff_p_1, 0
+    !__m_load_32c1ecff_p_1
+[END_MACRO]
+
+[MACRO] NODE_REPORT_GET_JSON %p_0, %p_1, %p_2
+    __m_slot_fff2bbaa_0 = stack_alloc 8
+    __m_slot_fff2bbaa_1 = stack_alloc 8
+    __m_status_fff2bbaa = call @sa_node_plugin_report_get_json(&__m_slot_fff2bbaa_0, &__m_slot_fff2bbaa_1)
+    !%p_2
+    %p_2 = add __m_status_fff2bbaa, 0
+    !__m_status_fff2bbaa
+    __m_load_fff2bbaa_p_0 = load __m_slot_fff2bbaa_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_fff2bbaa_p_0, 0
+    !__m_load_fff2bbaa_p_0
+    __m_load_fff2bbaa_p_1 = load __m_slot_fff2bbaa_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_fff2bbaa_p_1, 0
+    !__m_load_fff2bbaa_p_1
+[END_MACRO]
+
+[MACRO] NODE_REPORT_WRITE_FILE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_11c53c33_0 = stack_alloc 8
+    __m_slot_11c53c33_1 = stack_alloc 8
+    __m_status_11c53c33 = call @sa_node_plugin_report_write_file(%p_0, %p_1, &__m_slot_11c53c33_0, &__m_slot_11c53c33_1)
+    !%p_4
+    %p_4 = add __m_status_11c53c33, 0
+    !__m_status_11c53c33
+    __m_load_11c53c33_p_2 = load __m_slot_11c53c33_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_11c53c33_p_2, 0
+    !__m_load_11c53c33_p_2
+    __m_load_11c53c33_p_3 = load __m_slot_11c53c33_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_11c53c33_p_3, 0
+    !__m_load_11c53c33_p_3
+[END_MACRO]
+
+[MACRO] NODE_SEA_IS_SEA %p_0
+    __m_slot_dee6fc6b_0 = stack_alloc 8
+    __m_status_dee6fc6b = call @sa_node_plugin_sea_is_sea(&__m_slot_dee6fc6b_0)
+    !__m_status_dee6fc6b
+    __m_load_dee6fc6b_p_0 = load __m_slot_dee6fc6b_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_dee6fc6b_p_0, 0
+    !__m_load_dee6fc6b_p_0
+[END_MACRO]
+
+[MACRO] NODE_SEA_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_795bed81_0 = stack_alloc 8
+    __m_slot_795bed81_1 = stack_alloc 8
+    __m_status_795bed81 = call @sa_node_plugin_sea_status_json(&__m_slot_795bed81_0, &__m_slot_795bed81_1)
+    !%p_2
+    %p_2 = add __m_status_795bed81, 0
+    !__m_status_795bed81
+    __m_load_795bed81_p_0 = load __m_slot_795bed81_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_795bed81_p_0, 0
+    !__m_load_795bed81_p_0
+    __m_load_795bed81_p_1 = load __m_slot_795bed81_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_795bed81_p_1, 0
+    !__m_load_795bed81_p_1
+[END_MACRO]
+
+[MACRO] NODE_SEA_ASSET_KEYS_JSON %p_0, %p_1
+    __m_slot_25753416_0 = stack_alloc 8
+    __m_slot_25753416_1 = stack_alloc 8
+    __m_status_25753416 = call @sa_node_plugin_sea_asset_keys_json(&__m_slot_25753416_0, &__m_slot_25753416_1)
+    !__m_status_25753416
+    __m_load_25753416_p_0 = load __m_slot_25753416_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_25753416_p_0, 0
+    !__m_load_25753416_p_0
+    __m_load_25753416_p_1 = load __m_slot_25753416_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_25753416_p_1, 0
+    !__m_load_25753416_p_1
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_ASSET %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_46ba710a_0 = stack_alloc 8
+    __m_slot_46ba710a_1 = stack_alloc 8
+    __m_status_46ba710a = call @sa_node_plugin_sea_get_asset(%p_0, %p_1, %p_2, %p_3, &__m_slot_46ba710a_0, &__m_slot_46ba710a_1)
+    !%p_6
+    %p_6 = add __m_status_46ba710a, 0
+    !__m_status_46ba710a
+    __m_load_46ba710a_p_4 = load __m_slot_46ba710a_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_46ba710a_p_4, 0
+    !__m_load_46ba710a_p_4
+    __m_load_46ba710a_p_5 = load __m_slot_46ba710a_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_46ba710a_p_5, 0
+    !__m_load_46ba710a_p_5
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_RAW_ASSET %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_30dd7754_0 = stack_alloc 8
+    __m_slot_30dd7754_1 = stack_alloc 8
+    __m_status_30dd7754 = call @sa_node_plugin_sea_get_raw_asset(%p_0, %p_1, &__m_slot_30dd7754_0, &__m_slot_30dd7754_1)
+    !%p_4
+    %p_4 = add __m_status_30dd7754, 0
+    !__m_status_30dd7754
+    __m_load_30dd7754_p_2 = load __m_slot_30dd7754_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_30dd7754_p_2, 0
+    !__m_load_30dd7754_p_2
+    __m_load_30dd7754_p_3 = load __m_slot_30dd7754_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_30dd7754_p_3, 0
+    !__m_load_30dd7754_p_3
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_ASSET_AS_BLOB %p_0, %p_1, %p_2, %p_3
+    __m_slot_1c5d5bd7_0 = stack_alloc 8
+    __m_status_1c5d5bd7 = call @sa_node_plugin_sea_get_asset_as_blob(%p_0, %p_1, &__m_slot_1c5d5bd7_0)
+    !%p_3
+    %p_3 = add __m_status_1c5d5bd7, 0
+    !__m_status_1c5d5bd7
+    __m_load_1c5d5bd7_p_2 = load __m_slot_1c5d5bd7_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_1c5d5bd7_p_2, 0
+    !__m_load_1c5d5bd7_p_2
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_CREATE_TRACING %p_0, %p_1, %p_2
+    __m_slot_58135d96_0 = stack_alloc 8
+    __m_status_58135d96 = call @sa_node_plugin_trace_events_create_tracing(%p_0, %p_1, &__m_slot_58135d96_0)
+    !__m_status_58135d96
+    __m_load_58135d96_p_2 = load __m_slot_58135d96_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_58135d96_p_2, 0
+    !__m_load_58135d96_p_2
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_ENABLE %p_0
+    __m_status_2977fb3b = call @sa_node_plugin_trace_events_tracing_enable(%p_0)
+    !__m_status_2977fb3b
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_DISABLE %p_0
+    __m_status_a79f1f06 = call @sa_node_plugin_trace_events_tracing_disable(%p_0)
+    !__m_status_a79f1f06
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_GET_ENABLED_CATEGORIES %p_0, %p_1, %p_2
+    __m_slot_b2f32703_0 = stack_alloc 8
+    __m_slot_b2f32703_1 = stack_alloc 8
+    __m_status_b2f32703 = call @sa_node_plugin_trace_events_get_enabled_categories(%p_0, &__m_slot_b2f32703_0, &__m_slot_b2f32703_1)
+    !__m_status_b2f32703
+    __m_load_b2f32703_p_1 = load __m_slot_b2f32703_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b2f32703_p_1, 0
+    !__m_load_b2f32703_p_1
+    __m_load_b2f32703_p_2 = load __m_slot_b2f32703_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_b2f32703_p_2, 0
+    !__m_load_b2f32703_p_2
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_FREE %p_0
+    __m_status_ca3f729a = call @sa_node_plugin_trace_events_tracing_free(%p_0)
+    !__m_status_ca3f729a
+[END_MACRO]
+
+[MACRO] NODE_TTY_ISATTY %p_0, %p_1, %p_2
+    __m_slot_a3cb15f6_0 = stack_alloc 8
+    __m_status_a3cb15f6 = call @sa_node_plugin_tty_isatty(%p_0, &__m_slot_a3cb15f6_0)
+    !%p_2
+    %p_2 = add __m_status_a3cb15f6, 0
+    !__m_status_a3cb15f6
+    __m_load_a3cb15f6_p_1 = load __m_slot_a3cb15f6_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_a3cb15f6_p_1, 0
+    !__m_load_a3cb15f6_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_READ_STREAM_NEW %p_0, %p_1, %p_2
+    __m_slot_da5bd6ae_0 = stack_alloc 8
+    __m_status_da5bd6ae = call @sa_node_plugin_tty_read_stream_new(%p_0, &__m_slot_da5bd6ae_0)
+    !%p_2
+    %p_2 = add __m_status_da5bd6ae, 0
+    !__m_status_da5bd6ae
+    __m_load_da5bd6ae_p_1 = load __m_slot_da5bd6ae_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_da5bd6ae_p_1, 0
+    !__m_load_da5bd6ae_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_WRITE_STREAM_NEW %p_0, %p_1, %p_2
+    __m_slot_65bab7bc_0 = stack_alloc 8
+    __m_status_65bab7bc = call @sa_node_plugin_tty_write_stream_new(%p_0, &__m_slot_65bab7bc_0)
+    !%p_2
+    %p_2 = add __m_status_65bab7bc, 0
+    !__m_status_65bab7bc
+    __m_load_65bab7bc_p_1 = load __m_slot_65bab7bc_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_65bab7bc_p_1, 0
+    !__m_load_65bab7bc_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_SET_RAW_MODE %p_0, %p_1, %p_2
+    __m_status_93c82c26 = call @sa_node_plugin_tty_stream_set_raw_mode(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_93c82c26, 0
+    !__m_status_93c82c26
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_GET_WINDOW_SIZE %p_0, %p_1, %p_2, %p_3
+    __m_slot_75c62735_0 = stack_alloc 8
+    __m_slot_75c62735_1 = stack_alloc 8
+    __m_status_75c62735 = call @sa_node_plugin_tty_stream_get_window_size(%p_0, &__m_slot_75c62735_0, &__m_slot_75c62735_1)
+    !%p_3
+    %p_3 = add __m_status_75c62735, 0
+    !__m_status_75c62735
+    __m_load_75c62735_p_1 = load __m_slot_75c62735_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_75c62735_p_1, 0
+    !__m_load_75c62735_p_1
+    __m_load_75c62735_p_2 = load __m_slot_75c62735_1+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_75c62735_p_2, 0
+    !__m_load_75c62735_p_2
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_GET_COLOR_DEPTH %p_0, %p_1, %p_2
+    __m_slot_7c63a83e_0 = stack_alloc 8
+    __m_status_7c63a83e = call @sa_node_plugin_tty_stream_get_color_depth(%p_0, &__m_slot_7c63a83e_0)
+    !%p_2
+    %p_2 = add __m_status_7c63a83e, 0
+    !__m_status_7c63a83e
+    __m_load_7c63a83e_p_1 = load __m_slot_7c63a83e_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_7c63a83e_p_1, 0
+    !__m_load_7c63a83e_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_HAS_COLORS %p_0, %p_1, %p_2
+    __m_slot_b191906d_0 = stack_alloc 8
+    __m_status_b191906d = call @sa_node_plugin_tty_stream_has_colors(%p_0, &__m_slot_b191906d_0)
+    !%p_2
+    %p_2 = add __m_status_b191906d, 0
+    !__m_status_b191906d
+    __m_load_b191906d_p_1 = load __m_slot_b191906d_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_b191906d_p_1, 0
+    !__m_load_b191906d_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_FREE %p_0, %p_1
+    __m_status_78c0e1e1 = call @sa_node_plugin_tty_stream_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_78c0e1e1, 0
+    !__m_status_78c0e1e1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_STATUS_JSON %p_0, %p_1
+    __m_slot_19355655_0 = stack_alloc 8
+    __m_slot_19355655_1 = stack_alloc 8
+    __m_status_19355655 = call @sa_node_plugin_worker_threads_status_json(&__m_slot_19355655_0, &__m_slot_19355655_1)
+    !__m_status_19355655
+    __m_load_19355655_p_0 = load __m_slot_19355655_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_19355655_p_0, 0
+    !__m_load_19355655_p_0
+    __m_load_19355655_p_1 = load __m_slot_19355655_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_19355655_p_1, 0
+    !__m_load_19355655_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_IS_MAIN_THREAD %p_0
+    __m_slot_1d3931d9_0 = stack_alloc 8
+    __m_status_1d3931d9 = call @sa_node_plugin_worker_threads_is_main_thread(&__m_slot_1d3931d9_0)
+    !__m_status_1d3931d9
+    __m_load_1d3931d9_p_0 = load __m_slot_1d3931d9_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_1d3931d9_p_0, 0
+    !__m_load_1d3931d9_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_IS_INTERNAL_THREAD %p_0, %p_1
+    __m_slot_a8cc05ef_0 = stack_alloc 8
+    __m_status_a8cc05ef = call @sa_node_plugin_worker_threads_is_internal_thread(&__m_slot_a8cc05ef_0)
+    !%p_1
+    %p_1 = add __m_status_a8cc05ef, 0
+    !__m_status_a8cc05ef
+    __m_load_a8cc05ef_p_0 = load __m_slot_a8cc05ef_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_a8cc05ef_p_0, 0
+    !__m_load_a8cc05ef_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_THREAD_ID %p_0
+    __m_slot_d7510226_0 = stack_alloc 8
+    __m_status_d7510226 = call @sa_node_plugin_worker_threads_thread_id(&__m_slot_d7510226_0)
+    !__m_status_d7510226
+    __m_load_d7510226_p_0 = load __m_slot_d7510226_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_d7510226_p_0, 0
+    !__m_load_d7510226_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_THREAD_NAME %p_0, %p_1, %p_2
+    __m_slot_c3bd95dd_0 = stack_alloc 8
+    __m_slot_c3bd95dd_1 = stack_alloc 8
+    __m_status_c3bd95dd = call @sa_node_plugin_worker_threads_thread_name(&__m_slot_c3bd95dd_0, &__m_slot_c3bd95dd_1)
+    !%p_2
+    %p_2 = add __m_status_c3bd95dd, 0
+    !__m_status_c3bd95dd
+    __m_load_c3bd95dd_p_0 = load __m_slot_c3bd95dd_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_c3bd95dd_p_0, 0
+    !__m_load_c3bd95dd_p_0
+    __m_load_c3bd95dd_p_1 = load __m_slot_c3bd95dd_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_c3bd95dd_p_1, 0
+    !__m_load_c3bd95dd_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_RESOURCE_LIMITS_JSON %p_0, %p_1, %p_2
+    __m_slot_f83d2e6a_0 = stack_alloc 8
+    __m_slot_f83d2e6a_1 = stack_alloc 8
+    __m_status_f83d2e6a = call @sa_node_plugin_worker_threads_resource_limits_json(&__m_slot_f83d2e6a_0, &__m_slot_f83d2e6a_1)
+    !%p_2
+    %p_2 = add __m_status_f83d2e6a, 0
+    !__m_status_f83d2e6a
+    __m_load_f83d2e6a_p_0 = load __m_slot_f83d2e6a_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f83d2e6a_p_0, 0
+    !__m_load_f83d2e6a_p_0
+    __m_load_f83d2e6a_p_1 = load __m_slot_f83d2e6a_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_f83d2e6a_p_1, 0
+    !__m_load_f83d2e6a_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_SET_ENVIRONMENT_DATA %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_f0eb1754 = call @sa_node_plugin_worker_threads_set_environment_data(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_f0eb1754, 0
+    !__m_status_f0eb1754
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_GET_ENVIRONMENT_DATA %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_b1e02675_0 = stack_alloc 8
+    __m_slot_b1e02675_1 = stack_alloc 8
+    __m_status_b1e02675 = call @sa_node_plugin_worker_threads_get_environment_data(%p_0, %p_1, &__m_slot_b1e02675_0, &__m_slot_b1e02675_1)
+    !%p_4
+    %p_4 = add __m_status_b1e02675, 0
+    !__m_status_b1e02675
+    __m_load_b1e02675_p_2 = load __m_slot_b1e02675_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_b1e02675_p_2, 0
+    !__m_load_b1e02675_p_2
+    __m_load_b1e02675_p_3 = load __m_slot_b1e02675_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_b1e02675_p_3, 0
+    !__m_load_b1e02675_p_3
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_CHANNEL_NEW %p_0, %p_1, %p_2
+    __m_slot_d9d8dac1_0 = stack_alloc 8
+    __m_slot_d9d8dac1_1 = stack_alloc 8
+    __m_status_d9d8dac1 = call @sa_node_plugin_worker_threads_message_channel_new(&__m_slot_d9d8dac1_0, &__m_slot_d9d8dac1_1)
+    !%p_2
+    %p_2 = add __m_status_d9d8dac1, 0
+    !__m_status_d9d8dac1
+    __m_load_d9d8dac1_p_0 = load __m_slot_d9d8dac1_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_d9d8dac1_p_0, 0
+    !__m_load_d9d8dac1_p_0
+    __m_load_d9d8dac1_p_1 = load __m_slot_d9d8dac1_1+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_d9d8dac1_p_1, 0
+    !__m_load_d9d8dac1_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_POST_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_status_b4dc3fae = call @sa_node_plugin_worker_threads_message_port_post_message(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_b4dc3fae, 0
+    !__m_status_b4dc3fae
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_RECEIVE_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_slot_a54ade15_0 = stack_alloc 8
+    __m_slot_a54ade15_1 = stack_alloc 8
+    __m_status_a54ade15 = call @sa_node_plugin_worker_threads_message_port_receive_message(%p_0, &__m_slot_a54ade15_0, &__m_slot_a54ade15_1)
+    !%p_3
+    %p_3 = add __m_status_a54ade15, 0
+    !__m_status_a54ade15
+    __m_load_a54ade15_p_1 = load __m_slot_a54ade15_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_a54ade15_p_1, 0
+    !__m_load_a54ade15_p_1
+    __m_load_a54ade15_p_2 = load __m_slot_a54ade15_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_a54ade15_p_2, 0
+    !__m_load_a54ade15_p_2
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_CLOSE %p_0, %p_1
+    __m_status_bf436d88 = call @sa_node_plugin_worker_threads_message_port_close(%p_0)
+    !%p_1
+    %p_1 = add __m_status_bf436d88, 0
+    !__m_status_bf436d88
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_FREE %p_0, %p_1
+    __m_status_e3504cae = call @sa_node_plugin_worker_threads_message_port_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_e3504cae, 0
+    !__m_status_e3504cae
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC_SYNC_JSON %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_91f7dfbb_0 = stack_alloc 8
+    __m_slot_91f7dfbb_1 = stack_alloc 8
+    __m_status_91f7dfbb = call @sa_node_plugin_child_process_exec_sync_json(%p_0, %p_1, %p_2, %p_3, &__m_slot_91f7dfbb_0, &__m_slot_91f7dfbb_1)
+    !%p_6
+    %p_6 = add __m_status_91f7dfbb, 0
+    !__m_status_91f7dfbb
+    __m_load_91f7dfbb_p_4 = load __m_slot_91f7dfbb_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_91f7dfbb_p_4, 0
+    !__m_load_91f7dfbb_p_4
+    __m_load_91f7dfbb_p_5 = load __m_slot_91f7dfbb_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_91f7dfbb_p_5, 0
+    !__m_load_91f7dfbb_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_STATUS_JSON %p_0, %p_1
+    __m_slot_9f8c1207_0 = stack_alloc 8
+    __m_slot_9f8c1207_1 = stack_alloc 8
+    __m_status_9f8c1207 = call @sa_node_plugin_child_process_status_json(&__m_slot_9f8c1207_0, &__m_slot_9f8c1207_1)
+    !__m_status_9f8c1207
+    __m_load_9f8c1207_p_0 = load __m_slot_9f8c1207_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_9f8c1207_p_0, 0
+    !__m_load_9f8c1207_p_0
+    __m_load_9f8c1207_p_1 = load __m_slot_9f8c1207_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_9f8c1207_p_1, 0
+    !__m_load_9f8c1207_p_1
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_STATUS_JSON %p_0, %p_1
+    __m_slot_6dfdb1cc_0 = stack_alloc 8
+    __m_slot_6dfdb1cc_1 = stack_alloc 8
+    __m_status_6dfdb1cc = call @sa_node_plugin_cluster_status_json(&__m_slot_6dfdb1cc_0, &__m_slot_6dfdb1cc_1)
+    !__m_status_6dfdb1cc
+    __m_load_6dfdb1cc_p_0 = load __m_slot_6dfdb1cc_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_6dfdb1cc_p_0, 0
+    !__m_load_6dfdb1cc_p_0
+    __m_load_6dfdb1cc_p_1 = load __m_slot_6dfdb1cc_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_6dfdb1cc_p_1, 0
+    !__m_load_6dfdb1cc_p_1
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_STATUS_JSON %p_0, %p_1
+    __m_slot_da7e6ad9_0 = stack_alloc 8
+    __m_slot_da7e6ad9_1 = stack_alloc 8
+    __m_status_da7e6ad9 = call @sa_node_plugin_domain_status_json(&__m_slot_da7e6ad9_0, &__m_slot_da7e6ad9_1)
+    !__m_status_da7e6ad9
+    __m_load_da7e6ad9_p_0 = load __m_slot_da7e6ad9_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_da7e6ad9_p_0, 0
+    !__m_load_da7e6ad9_p_0
+    __m_load_da7e6ad9_p_1 = load __m_slot_da7e6ad9_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_da7e6ad9_p_1, 0
+    !__m_load_da7e6ad9_p_1
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_STATUS_JSON %p_0, %p_1
+    __m_slot_a58d3c74_0 = stack_alloc 8
+    __m_slot_a58d3c74_1 = stack_alloc 8
+    __m_status_a58d3c74 = call @sa_node_plugin_inspector_status_json(&__m_slot_a58d3c74_0, &__m_slot_a58d3c74_1)
+    !__m_status_a58d3c74
+    __m_load_a58d3c74_p_0 = load __m_slot_a58d3c74_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_a58d3c74_p_0, 0
+    !__m_load_a58d3c74_p_0
+    __m_load_a58d3c74_p_1 = load __m_slot_a58d3c74_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_a58d3c74_p_1, 0
+    !__m_load_a58d3c74_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_STATUS_JSON %p_0, %p_1
+    __m_slot_e87a611f_0 = stack_alloc 8
+    __m_slot_e87a611f_1 = stack_alloc 8
+    __m_status_e87a611f = call @sa_node_plugin_http_status_json(&__m_slot_e87a611f_0, &__m_slot_e87a611f_1)
+    !__m_status_e87a611f
+    __m_load_e87a611f_p_0 = load __m_slot_e87a611f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_e87a611f_p_0, 0
+    !__m_load_e87a611f_p_0
+    __m_load_e87a611f_p_1 = load __m_slot_e87a611f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_e87a611f_p_1, 0
+    !__m_load_e87a611f_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_STATUS_JSON %p_0, %p_1
+    __m_slot_655d0146_0 = stack_alloc 8
+    __m_slot_655d0146_1 = stack_alloc 8
+    __m_status_655d0146 = call @sa_node_plugin_https_status_json(&__m_slot_655d0146_0, &__m_slot_655d0146_1)
+    !__m_status_655d0146
+    __m_load_655d0146_p_0 = load __m_slot_655d0146_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_655d0146_p_0, 0
+    !__m_load_655d0146_p_0
+    __m_load_655d0146_p_1 = load __m_slot_655d0146_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_655d0146_p_1, 0
+    !__m_load_655d0146_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_STATUS_JSON %p_0, %p_1
+    __m_slot_b27afb81_0 = stack_alloc 8
+    __m_slot_b27afb81_1 = stack_alloc 8
+    __m_status_b27afb81 = call @sa_node_plugin_http2_status_json(&__m_slot_b27afb81_0, &__m_slot_b27afb81_1)
+    !__m_status_b27afb81
+    __m_load_b27afb81_p_0 = load __m_slot_b27afb81_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_b27afb81_p_0, 0
+    !__m_load_b27afb81_p_0
+    __m_load_b27afb81_p_1 = load __m_slot_b27afb81_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_b27afb81_p_1, 0
+    !__m_load_b27afb81_p_1
+[END_MACRO]
+
+[MACRO] NODE_TLS_STATUS_JSON %p_0, %p_1
+    __m_slot_8adea0ed_0 = stack_alloc 8
+    __m_slot_8adea0ed_1 = stack_alloc 8
+    __m_status_8adea0ed = call @sa_node_plugin_tls_status_json(&__m_slot_8adea0ed_0, &__m_slot_8adea0ed_1)
+    !__m_status_8adea0ed
+    __m_load_8adea0ed_p_0 = load __m_slot_8adea0ed_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_8adea0ed_p_0, 0
+    !__m_load_8adea0ed_p_0
+    __m_load_8adea0ed_p_1 = load __m_slot_8adea0ed_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_8adea0ed_p_1, 0
+    !__m_load_8adea0ed_p_1
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_STATUS_JSON %p_0, %p_1
+    __m_slot_9a4d897f_0 = stack_alloc 8
+    __m_slot_9a4d897f_1 = stack_alloc 8
+    __m_status_9a4d897f = call @sa_node_plugin_dgram_status_json(&__m_slot_9a4d897f_0, &__m_slot_9a4d897f_1)
+    !__m_status_9a4d897f
+    __m_load_9a4d897f_p_0 = load __m_slot_9a4d897f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_9a4d897f_p_0, 0
+    !__m_load_9a4d897f_p_0
+    __m_load_9a4d897f_p_1 = load __m_slot_9a4d897f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_9a4d897f_p_1, 0
+    !__m_load_9a4d897f_p_1
+[END_MACRO]
+
+[MACRO] NODE_WASI_STATUS_JSON %p_0, %p_1
+    __m_slot_cb8f3a1b_0 = stack_alloc 8
+    __m_slot_cb8f3a1b_1 = stack_alloc 8
+    __m_status_cb8f3a1b = call @sa_node_plugin_wasi_status_json(&__m_slot_cb8f3a1b_0, &__m_slot_cb8f3a1b_1)
+    !__m_status_cb8f3a1b
+    __m_load_cb8f3a1b_p_0 = load __m_slot_cb8f3a1b_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_cb8f3a1b_p_0, 0
+    !__m_load_cb8f3a1b_p_0
+    __m_load_cb8f3a1b_p_1 = load __m_slot_cb8f3a1b_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_cb8f3a1b_p_1, 0
+    !__m_load_cb8f3a1b_p_1
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_STATUS_JSON %p_0, %p_1
+    __m_slot_69bdc633_0 = stack_alloc 8
+    __m_slot_69bdc633_1 = stack_alloc 8
+    __m_status_69bdc633 = call @sa_node_plugin_sqlite_status_json(&__m_slot_69bdc633_0, &__m_slot_69bdc633_1)
+    !__m_status_69bdc633
+    __m_load_69bdc633_p_0 = load __m_slot_69bdc633_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_69bdc633_p_0, 0
+    !__m_load_69bdc633_p_0
+    __m_load_69bdc633_p_1 = load __m_slot_69bdc633_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_69bdc633_p_1, 0
+    !__m_load_69bdc633_p_1
+[END_MACRO]
+
+[MACRO] NODE_TTY_STATUS_JSON %p_0, %p_1
+    __m_slot_b5ddde9f_0 = stack_alloc 8
+    __m_slot_b5ddde9f_1 = stack_alloc 8
+    __m_status_b5ddde9f = call @sa_node_plugin_tty_status_json(&__m_slot_b5ddde9f_0, &__m_slot_b5ddde9f_1)
+    !__m_status_b5ddde9f
+    __m_load_b5ddde9f_p_0 = load __m_slot_b5ddde9f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_b5ddde9f_p_0, 0
+    !__m_load_b5ddde9f_p_0
+    __m_load_b5ddde9f_p_1 = load __m_slot_b5ddde9f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_b5ddde9f_p_1, 0
+    !__m_load_b5ddde9f_p_1
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_STATUS_JSON %p_0, %p_1
+    __m_slot_d6b6fbf1_0 = stack_alloc 8
+    __m_slot_d6b6fbf1_1 = stack_alloc 8
+    __m_status_d6b6fbf1 = call @sa_node_plugin_diagnostics_channel_status_json(&__m_slot_d6b6fbf1_0, &__m_slot_d6b6fbf1_1)
+    !__m_status_d6b6fbf1
+    __m_load_d6b6fbf1_p_0 = load __m_slot_d6b6fbf1_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_d6b6fbf1_p_0, 0
+    !__m_load_d6b6fbf1_p_0
+    __m_load_d6b6fbf1_p_1 = load __m_slot_d6b6fbf1_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_d6b6fbf1_p_1, 0
+    !__m_load_d6b6fbf1_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_NEW %p_0, %p_1, %p_2
+    __m_slot_a602087f_0 = stack_alloc 8
+    __m_status_a602087f = call @sa_node_plugin_http_client_new(%p_0, &__m_slot_a602087f_0)
+    !%p_2
+    %p_2 = add __m_status_a602087f, 0
+    !__m_status_a602087f
+    __m_load_a602087f_p_1 = load __m_slot_a602087f_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_a602087f_p_1, 0
+    !__m_load_a602087f_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_NEW %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_77aa0a2f_0 = stack_alloc 8
+    __m_status_77aa0a2f = call @sa_node_plugin_http_client_req_new(%p_0, %p_1, %p_2, %p_3, &__m_slot_77aa0a2f_0)
+    !%p_5
+    %p_5 = add __m_status_77aa0a2f, 0
+    !__m_status_77aa0a2f
+    __m_load_77aa0a2f_p_4 = load __m_slot_77aa0a2f_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_77aa0a2f_p_4, 0
+    !__m_load_77aa0a2f_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_ADD_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_status_b35b1ecd = call @sa_node_plugin_http_client_req_add_header(%p_0, %p_1, %p_2, %p_3, %p_4)
+    !%p_5
+    %p_5 = add __m_status_b35b1ecd, 0
+    !__m_status_b35b1ecd
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_SET_BODY %p_0, %p_1, %p_2, %p_3
+    __m_status_55b771f8 = call @sa_node_plugin_http_client_req_set_body(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_55b771f8, 0
+    !__m_status_55b771f8
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_SEND %p_0, %p_1, %p_2
+    __m_slot_d907459c_0 = stack_alloc 8
+    __m_status_d907459c = call @sa_node_plugin_http_client_req_send(%p_0, &__m_slot_d907459c_0)
+    !%p_2
+    %p_2 = add __m_status_d907459c, 0
+    !__m_status_d907459c
+    __m_load_d907459c_p_1 = load __m_slot_d907459c_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_d907459c_p_1, 0
+    !__m_load_d907459c_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_STATUS %p_0, %p_1
+    __m_status_6dd54bbf = call @sa_node_plugin_http_client_resp_status(%p_0)
+    !%p_1
+    %p_1 = add __m_status_6dd54bbf, 0
+    !__m_status_6dd54bbf
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_GET_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_1a80e153_0 = stack_alloc 8
+    __m_slot_1a80e153_1 = stack_alloc 8
+    __m_status_1a80e153 = call @sa_node_plugin_http_client_resp_get_header(%p_0, %p_1, %p_2, &__m_slot_1a80e153_0, &__m_slot_1a80e153_1)
+    !%p_5
+    %p_5 = add __m_status_1a80e153, 0
+    !__m_status_1a80e153
+    __m_load_1a80e153_p_3 = load __m_slot_1a80e153_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_1a80e153_p_3, 0
+    !__m_load_1a80e153_p_3
+    __m_load_1a80e153_p_4 = load __m_slot_1a80e153_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_1a80e153_p_4, 0
+    !__m_load_1a80e153_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_BODY_SLICE %p_0, %p_1, %p_2, %p_3
+    __m_slot_b74bb03f_0 = stack_alloc 8
+    __m_slot_b74bb03f_1 = stack_alloc 8
+    __m_status_b74bb03f = call @sa_node_plugin_http_client_resp_body_slice(%p_0, &__m_slot_b74bb03f_0, &__m_slot_b74bb03f_1)
+    !%p_3
+    %p_3 = add __m_status_b74bb03f, 0
+    !__m_status_b74bb03f
+    __m_load_b74bb03f_p_1 = load __m_slot_b74bb03f_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b74bb03f_p_1, 0
+    !__m_load_b74bb03f_p_1
+    __m_load_b74bb03f_p_2 = load __m_slot_b74bb03f_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_b74bb03f_p_2, 0
+    !__m_load_b74bb03f_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_BODY_READER %p_0, %p_1, %p_2
+    __m_slot_3137b613_0 = stack_alloc 8
+    __m_status_3137b613 = call @sa_node_plugin_http_client_resp_body_reader(%p_0, &__m_slot_3137b613_0)
+    !%p_2
+    %p_2 = add __m_status_3137b613, 0
+    !__m_status_3137b613
+    __m_load_3137b613_p_1 = load __m_slot_3137b613_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3137b613_p_1, 0
+    !__m_load_3137b613_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_READ_CHUNK %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_355c07f7_0 = stack_alloc 8
+    __m_status_355c07f7 = call @sa_node_plugin_http_client_resp_read_chunk(%p_0, %p_1, %p_2, &__m_slot_355c07f7_0)
+    !%p_4
+    %p_4 = add __m_status_355c07f7, 0
+    !__m_status_355c07f7
+    __m_load_355c07f7_p_3 = load __m_slot_355c07f7_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_355c07f7_p_3, 0
+    !__m_load_355c07f7_p_3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_FREE %p_0, %p_1
+    __m_status_860f1871 = call @sa_node_plugin_http_client_resp_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_860f1871, 0
+    !__m_status_860f1871
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_BODY_READER_FREE %p_0, %p_1
+    __m_status_44e31f0b = call @sa_node_plugin_http_client_body_reader_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_44e31f0b, 0
+    !__m_status_44e31f0b
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_FREE %p_0, %p_1
+    __m_status_5f87f78d = call @sa_node_plugin_http_client_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_5f87f78d, 0
+    !__m_status_5f87f78d
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_FREE %p_0, %p_1
+    __m_status_c6ddb0cb = call @sa_node_plugin_http_client_req_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_c6ddb0cb, 0
+    !__m_status_c6ddb0cb
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_CONNECT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_650c6f5a_0 = stack_alloc 8
+    __m_status_650c6f5a = call @sa_node_plugin_http_websocket_connect(%p_0, %p_1, %p_2, &__m_slot_650c6f5a_0)
+    !%p_4
+    %p_4 = add __m_status_650c6f5a, 0
+    !__m_status_650c6f5a
+    __m_load_650c6f5a_p_3 = load __m_slot_650c6f5a_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_650c6f5a_p_3, 0
+    !__m_load_650c6f5a_p_3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_READ %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_a7de063d_0 = stack_alloc 8
+    __m_slot_a7de063d_1 = stack_alloc 8
+    __m_slot_a7de063d_2 = stack_alloc 8
+    __m_status_a7de063d = call @sa_node_plugin_http_websocket_read(%p_0, %p_1, &__m_slot_a7de063d_0, &__m_slot_a7de063d_1, &__m_slot_a7de063d_2)
+    !%p_5
+    %p_5 = add __m_status_a7de063d, 0
+    !__m_status_a7de063d
+    __m_load_a7de063d_p_2 = load __m_slot_a7de063d_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_a7de063d_p_2, 0
+    !__m_load_a7de063d_p_2
+    __m_load_a7de063d_p_3 = load __m_slot_a7de063d_1+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_a7de063d_p_3, 0
+    !__m_load_a7de063d_p_3
+    __m_load_a7de063d_p_4 = load __m_slot_a7de063d_2+0 as u64
+    !%p_4
+    %p_4 = add __m_load_a7de063d_p_4, 0
+    !__m_load_a7de063d_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_WRITE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_7911ee3e = call @sa_node_plugin_http_websocket_write(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_7911ee3e, 0
+    !__m_status_7911ee3e
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_FREE %p_0, %p_1
+    __m_status_4d16b47d = call @sa_node_plugin_http_websocket_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_4d16b47d, 0
+    !__m_status_4d16b47d
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_NEW %p_0, %p_1
+    __m_slot_f7c3ac10_0 = stack_alloc 8
+    __m_status_f7c3ac10 = call @sa_node_plugin_http_server_new(&__m_slot_f7c3ac10_0)
+    !%p_1
+    %p_1 = add __m_status_f7c3ac10, 0
+    !__m_status_f7c3ac10
+    __m_load_f7c3ac10_p_0 = load __m_slot_f7c3ac10_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f7c3ac10_p_0, 0
+    !__m_load_f7c3ac10_p_0
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_START %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_46378e69 = call @sa_node_plugin_http_server_start(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_46378e69, 0
+    !__m_status_46378e69
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_ACCEPT %p_0, %p_1, %p_2
+    __m_slot_fcdb8a80_0 = stack_alloc 8
+    __m_status_fcdb8a80 = call @sa_node_plugin_http_server_accept(%p_0, &__m_slot_fcdb8a80_0)
+    !%p_2
+    %p_2 = add __m_status_fcdb8a80, 0
+    !__m_status_fcdb8a80
+    __m_load_fcdb8a80_p_1 = load __m_slot_fcdb8a80_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_fcdb8a80_p_1, 0
+    !__m_load_fcdb8a80_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_METHOD %p_0, %p_1, %p_2, %p_3
+    __m_slot_faca02f0_0 = stack_alloc 8
+    __m_slot_faca02f0_1 = stack_alloc 8
+    __m_status_faca02f0 = call @sa_node_plugin_http_server_req_get_method(%p_0, &__m_slot_faca02f0_0, &__m_slot_faca02f0_1)
+    !%p_3
+    %p_3 = add __m_status_faca02f0, 0
+    !__m_status_faca02f0
+    __m_load_faca02f0_p_1 = load __m_slot_faca02f0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_faca02f0_p_1, 0
+    !__m_load_faca02f0_p_1
+    __m_load_faca02f0_p_2 = load __m_slot_faca02f0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_faca02f0_p_2, 0
+    !__m_load_faca02f0_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_PATH %p_0, %p_1, %p_2, %p_3
+    __m_slot_0e79d508_0 = stack_alloc 8
+    __m_slot_0e79d508_1 = stack_alloc 8
+    __m_status_0e79d508 = call @sa_node_plugin_http_server_req_get_path(%p_0, &__m_slot_0e79d508_0, &__m_slot_0e79d508_1)
+    !%p_3
+    %p_3 = add __m_status_0e79d508, 0
+    !__m_status_0e79d508
+    __m_load_0e79d508_p_1 = load __m_slot_0e79d508_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_0e79d508_p_1, 0
+    !__m_load_0e79d508_p_1
+    __m_load_0e79d508_p_2 = load __m_slot_0e79d508_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_0e79d508_p_2, 0
+    !__m_load_0e79d508_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_1142c9b0_0 = stack_alloc 8
+    __m_slot_1142c9b0_1 = stack_alloc 8
+    __m_status_1142c9b0 = call @sa_node_plugin_http_server_req_get_header(%p_0, %p_1, %p_2, &__m_slot_1142c9b0_0, &__m_slot_1142c9b0_1)
+    !%p_5
+    %p_5 = add __m_status_1142c9b0, 0
+    !__m_status_1142c9b0
+    __m_load_1142c9b0_p_3 = load __m_slot_1142c9b0_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_1142c9b0_p_3, 0
+    !__m_load_1142c9b0_p_3
+    __m_load_1142c9b0_p_4 = load __m_slot_1142c9b0_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_1142c9b0_p_4, 0
+    !__m_load_1142c9b0_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_BODY %p_0, %p_1, %p_2, %p_3
+    __m_slot_3f6448d2_0 = stack_alloc 8
+    __m_slot_3f6448d2_1 = stack_alloc 8
+    __m_status_3f6448d2 = call @sa_node_plugin_http_server_req_get_body(%p_0, &__m_slot_3f6448d2_0, &__m_slot_3f6448d2_1)
+    !%p_3
+    %p_3 = add __m_status_3f6448d2, 0
+    !__m_status_3f6448d2
+    __m_load_3f6448d2_p_1 = load __m_slot_3f6448d2_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3f6448d2_p_1, 0
+    !__m_load_3f6448d2_p_1
+    __m_load_3f6448d2_p_2 = load __m_slot_3f6448d2_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_3f6448d2_p_2, 0
+    !__m_load_3f6448d2_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_FREE %p_0, %p_1
+    __m_status_500ac474 = call @sa_node_plugin_http_server_req_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_500ac474, 0
+    !__m_status_500ac474
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_c718b44e_0 = stack_alloc 8
+    __m_status_c718b44e = call @sa_node_plugin_http_server_resp_new(%p_0, %p_1, &__m_slot_c718b44e_0)
+    !%p_3
+    %p_3 = add __m_status_c718b44e, 0
+    !__m_status_c718b44e
+    __m_load_c718b44e_p_2 = load __m_slot_c718b44e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_c718b44e_p_2, 0
+    !__m_load_c718b44e_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_SEND %p_0, %p_1, %p_2, %p_3
+    __m_status_151aaef3 = call @sa_node_plugin_http_server_resp_send(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_151aaef3, 0
+    !__m_status_151aaef3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_SET_CONTENT_TYPE %p_0, %p_1, %p_2, %p_3
+    __m_status_e0871e50 = call @sa_node_plugin_http_server_resp_set_content_type(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_e0871e50, 0
+    !__m_status_e0871e50
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_FREE %p_0, %p_1
+    __m_status_47c3e098 = call @sa_node_plugin_http_server_resp_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_47c3e098, 0
+    !__m_status_47c3e098
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_96bc99a5_0 = stack_alloc 8
+    __m_status_96bc99a5 = call @sa_node_plugin_http_server_resp_stream_new(%p_0, %p_1, &__m_slot_96bc99a5_0)
+    !%p_3
+    %p_3 = add __m_status_96bc99a5, 0
+    !__m_status_96bc99a5
+    __m_load_96bc99a5_p_2 = load __m_slot_96bc99a5_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_96bc99a5_p_2, 0
+    !__m_load_96bc99a5_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_WRITE %p_0, %p_1, %p_2, %p_3
+    __m_status_568b9b57 = call @sa_node_plugin_http_server_resp_stream_write(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_568b9b57, 0
+    !__m_status_568b9b57
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_FLUSH %p_0, %p_1
+    __m_status_7c79f894 = call @sa_node_plugin_http_server_resp_stream_flush(%p_0)
+    !%p_1
+    %p_1 = add __m_status_7c79f894, 0
+    !__m_status_7c79f894
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_END %p_0, %p_1
+    __m_status_172fa687 = call @sa_node_plugin_http_server_resp_stream_end(%p_0)
+    !%p_1
+    %p_1 = add __m_status_172fa687, 0
+    !__m_status_172fa687
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_FREE %p_0, %p_1
+    __m_status_a2471c51 = call @sa_node_plugin_http_server_resp_stream_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_a2471c51, 0
+    !__m_status_a2471c51
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_FREE %p_0, %p_1
+    __m_status_4a3b49fc = call @sa_node_plugin_http_server_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_4a3b49fc, 0
+    !__m_status_4a3b49fc
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_UPGRADE %p_0, %p_1, %p_2
+    __m_slot_b66431a6_0 = stack_alloc 8
+    __m_status_b66431a6 = call @sa_node_plugin_http_server_websocket_upgrade(%p_0, &__m_slot_b66431a6_0)
+    !%p_2
+    %p_2 = add __m_status_b66431a6, 0
+    !__m_status_b66431a6
+    __m_load_b66431a6_p_1 = load __m_slot_b66431a6_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b66431a6_p_1, 0
+    !__m_load_b66431a6_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_READ %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_6c9a271d_0 = stack_alloc 8
+    __m_slot_6c9a271d_1 = stack_alloc 8
+    __m_slot_6c9a271d_2 = stack_alloc 8
+    __m_status_6c9a271d = call @sa_node_plugin_http_server_websocket_read(%p_0, %p_1, &__m_slot_6c9a271d_0, &__m_slot_6c9a271d_1, &__m_slot_6c9a271d_2)
+    !%p_5
+    %p_5 = add __m_status_6c9a271d, 0
+    !__m_status_6c9a271d
+    __m_load_6c9a271d_p_2 = load __m_slot_6c9a271d_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_6c9a271d_p_2, 0
+    !__m_load_6c9a271d_p_2
+    __m_load_6c9a271d_p_3 = load __m_slot_6c9a271d_1+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_6c9a271d_p_3, 0
+    !__m_load_6c9a271d_p_3
+    __m_load_6c9a271d_p_4 = load __m_slot_6c9a271d_2+0 as u64
+    !%p_4
+    %p_4 = add __m_load_6c9a271d_p_4, 0
+    !__m_load_6c9a271d_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_WRITE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_b4a39243 = call @sa_node_plugin_http_server_websocket_write(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_b4a39243, 0
+    !__m_status_b4a39243
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_FREE %p_0, %p_1
+    __m_status_be3c9812 = call @sa_node_plugin_http_server_websocket_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_be3c9812, 0
+    !__m_status_be3c9812
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARGV_JSON %p_0, %p_1, %p_2
+    __m_slot_507b29e7_0 = stack_alloc 8
+    __m_slot_507b29e7_1 = stack_alloc 8
+    __m_status_507b29e7 = call @sa_node_plugin_process_argv_json(&__m_slot_507b29e7_0, &__m_slot_507b29e7_1)
+    !%p_2
+    %p_2 = add __m_status_507b29e7, 0
+    !__m_status_507b29e7
+    __m_load_507b29e7_p_0 = load __m_slot_507b29e7_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_507b29e7_p_0, 0
+    !__m_load_507b29e7_p_0
+    __m_load_507b29e7_p_1 = load __m_slot_507b29e7_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_507b29e7_p_1, 0
+    !__m_load_507b29e7_p_1
+[END_MACRO]
+

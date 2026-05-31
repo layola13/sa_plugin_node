@@ -1,0 +1,520 @@
+// Tests for all STATUS_JSON shim macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.async_hooks status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.async_context_tracking status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.command_line_options status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.dgram status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_DGRAM_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.domain status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_DOMAIN_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.environment_variables status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.errors status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ERRORS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.debugger status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DEBUGGER_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.deprecated status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DEPRECATED_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.https status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_HTTPS_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.inspector status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_INSPECTOR_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.internationalization status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.iterable_streams status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.permissions status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PERMISSIONS_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.repl status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_REPL_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.report status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_REPORT_STATUS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.report get_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_REPORT_GET_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.sea status_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_SEA_STATUS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.sea is_sea returns"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_SEA_IS_SEA v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.sea asset_keys_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_SEA_ASSET_KEYS_JSON p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+

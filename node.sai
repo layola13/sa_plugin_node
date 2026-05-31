@@ -134,6 +134,13 @@
 @extern sa_node_plugin_net_read(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_end(socket: ptr) -> u32
 
+// --- Phase 5: UDP/datagram module ---
+@extern sa_node_plugin_dgram_create() -> ptr
+@extern sa_node_plugin_dgram_bind(socket: ptr, &host: ptr, host_len: u64, port: u64) -> u32
+@extern sa_node_plugin_dgram_send(socket: ptr, &data: ptr, data_len: u64, &host: ptr, host_len: u64, port: u64) -> u32
+@extern sa_node_plugin_dgram_recv(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: ptr, &out_host_ptr: ptr, &out_host_len: ptr, &out_port: ptr) -> u32
+@extern sa_node_plugin_dgram_close(socket: ptr) -> u32
+
 // --- Phase 6: fs read-only utilities ---
 @extern sa_node_plugin_fs_stat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_fs_lstat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32

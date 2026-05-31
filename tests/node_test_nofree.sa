@@ -1,0 +1,16 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+@test "os.eol"():
+    EXPAND NODE_OS_EOL p l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return
+@test "os.constants"():
+    EXPAND NODE_OS_CONSTANTS p l
+    ok = gt l, 0
+    !ok
+    !p
+    !l
+    return

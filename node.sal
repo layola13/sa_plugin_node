@@ -625,6 +625,36 @@
     %out_status = call @sa_node_plugin_net_end(%socket)
 [END_MACRO]
 
+[MACRO] NODE_DGRAM_CREATE %out_socket
+    %out_socket = call @sa_node_plugin_dgram_create()
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_BIND %out_status, %socket, %host, %host_len, %port
+    %out_status = call @sa_node_plugin_dgram_bind(%socket, &%host, %host_len, %port)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SEND %out_status, %socket, %data, %data_len, %host, %host_len, %port
+    %out_status = call @sa_node_plugin_dgram_send(%socket, &%data, %data_len, &%host, %host_len, %port)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_RECV %out_status, %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %socket, %max_len
+    __dgram_ptr_slot = stack_alloc 8
+    __dgram_len_slot = stack_alloc 8
+    __dgram_host_ptr_slot = stack_alloc 8
+    __dgram_host_len_slot = stack_alloc 8
+    __dgram_port_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_recv(%socket, %max_len, &__dgram_ptr_slot, &__dgram_len_slot, &__dgram_host_ptr_slot, &__dgram_host_len_slot, &__dgram_port_slot)
+    %out_ptr = load __dgram_ptr_slot+0 as ptr
+    %out_len = load __dgram_len_slot+0 as u64
+    %out_host_ptr = load __dgram_host_ptr_slot+0 as ptr
+    %out_host_len = load __dgram_host_len_slot+0 as u64
+    %out_port = load __dgram_port_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_CLOSE %out_status, %socket
+    %out_status = call @sa_node_plugin_dgram_close(%socket)
+[END_MACRO]
+
 [MACRO] NODE_FS_STAT %out_ptr, %out_len, %out_status, %path, %path_len
     __fss_ptr_slot = stack_alloc 8
     __fss_len_slot = stack_alloc 8

@@ -1,0 +1,23 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_DATA = utf8:"hello"
+@test "test elu"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)

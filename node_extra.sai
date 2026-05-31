@@ -1,0 +1,292 @@
+// Auto-generated extra SAI
+@extern sa_node_plugin_crypto_create_hash(algo_ptr: ptr, algo_len: u64, &out_state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_hash_update(state_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_crypto_hash_final(state_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_hash_free(state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_create_hmac(algo_ptr: ptr, algo_len: u64, key_ptr: ptr, key_len: u64, &out_state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_hmac_update(state_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_crypto_hmac_final(state_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_hmac_free(state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_hkdf(digest_ptr: ptr, digest_len: u64, ikm_ptr: ptr, ikm_len: u64, salt_ptr: ptr, salt_len: u64, info_ptr: ptr, info_len: u64, keylen: u64, &out_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_scrypt(pass_ptr: ptr, pass_len: u64, salt_ptr: ptr, salt_len: u64, n: u64, r: u64, p: u64, keylen: u64, &out_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_random_int(min_val: u64, max_val: u64, &out_val: u64) -> u64
+@extern sa_node_plugin_crypto_random_fill(buf_ptr: ptr, buf_len: u64) -> u64
+@extern sa_node_plugin_crypto_create_cipher(algo_ptr: ptr, algo_len: u64, key_ptr: ptr, key_len: u64, iv_ptr: ptr, iv_len: u64, &out_state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_cipher_update(state_ptr: ptr, data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_cipher_final(state_ptr: ptr, &out_ptr: ptr, &out_len: u64, &tag_ptr: ptr, tag_len: u64) -> u64
+@extern sa_node_plugin_crypto_cipher_free(state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_create_decipher(algo_ptr: ptr, algo_len: u64, key_ptr: ptr, key_len: u64, iv_ptr: ptr, iv_len: u64, &out_state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_decipher_update(state_ptr: ptr, data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_decipher_final(state_ptr: ptr, tag_ptr: ptr, tag_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_decipher_free(state_ptr: ptr) -> u64
+@extern sa_node_plugin_crypto_sign(algo_ptr: ptr, algo_len: u64, key_ptr: ptr, key_len: u64, data_ptr: ptr, data_len: u64, &out_sig_ptr: ptr, &out_sig_len: u64) -> u64
+@extern sa_node_plugin_crypto_verify(algo_ptr: ptr, algo_len: u64, key_ptr: ptr, key_len: u64, data_ptr: ptr, data_len: u64, sig_ptr: ptr, sig_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_crypto_generate_key(algo_ptr: ptr, algo_len: u64, bits: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_get_hashes(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_chmod(path_ptr: ptr, path_len: u64, mode: u64) -> u64
+@extern sa_node_plugin_fs_chown(path_ptr: ptr, path_len: u64, uid: u64, gid: u64) -> u64
+@extern sa_node_plugin_fs_fchmod(fd: u64, mode: u64) -> u64
+@extern sa_node_plugin_fs_fchown(fd: u64, uid: u64, gid: u64) -> u64
+@extern sa_node_plugin_fs_fdatasync(fd: u64) -> u64
+@extern sa_node_plugin_fs_fstat(fd: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_fsync(fd: u64) -> u64
+@extern sa_node_plugin_fs_ftruncate(fd: u64, len: u64) -> u64
+@extern sa_node_plugin_fs_futimes(fd: u64, atime_ms: u64, mtime_ms: u64) -> u64
+@extern sa_node_plugin_fs_glob(pattern_ptr: ptr, pattern_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_link(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_mkdtemp(template_ptr: ptr, template_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_open(path_ptr: ptr, path_len: u64, flags: u64, mode: u64, &out_fd: u64) -> u64
+@extern sa_node_plugin_fs_close_fd(fd: u64) -> u64
+@extern sa_node_plugin_fs_read_fd(fd: u64, buf_ptr: ptr, len: u64, offset: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_write_fd(fd: u64, data_ptr: ptr, data_len: u64, offset: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_readv(fd: u64, iov_json_ptr: ptr, iov_json_len: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_writev(fd: u64, iov_json_ptr: ptr, iov_json_len: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_opendir(path_ptr: ptr, path_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_fs_opendir_next(handle_ptr: ptr, &out_name_ptr: ptr, &out_name_len: u64, &out_entry_type: u64) -> u64
+@extern sa_node_plugin_fs_opendir_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_fs_rm(path_ptr: ptr, path_len: u64, recursive: u64) -> u64
+@extern sa_node_plugin_fs_statfs(path_ptr: ptr, &out_json_ptr: ptr, &out_json_len: u64) -> u64
+@extern sa_node_plugin_fs_symlink(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_truncate(path_ptr: ptr, path_len: u64, len: u64) -> u64
+@extern sa_node_plugin_fs_utimes(path_ptr: ptr, path_len: u64, atime_ms: u64, mtime_ms: u64) -> u64
+@extern sa_node_plugin_events_once(ee_ptr: ptr, event_ptr: ptr, event_len: u64, callback: ptr) -> u64
+@extern sa_node_plugin_events_off(ee_ptr: ptr, event_ptr: ptr, event_len: u64, callback: ptr) -> u64
+@extern sa_node_plugin_events_remove_all_listeners(ee_ptr: ptr, event_ptr: ptr, event_len: u64) -> u64
+@extern sa_node_plugin_events_prepend_listener(ee_ptr: ptr, event_ptr: ptr, event_len: u64, callback: ptr) -> u64
+@extern sa_node_plugin_events_set_max_listeners(ee_ptr: ptr, max: u64) -> u64
+@extern sa_node_plugin_events_get_max_listeners(ee_ptr: ptr, &out_max: u64) -> u64
+@extern sa_node_plugin_events_get_event_listeners(ee_ptr: ptr, event_ptr: ptr, event_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_events_listener_count_by_event(ee_ptr: ptr, event_ptr: ptr, event_len: u64, &out_count: u64) -> u64
+@extern sa_node_plugin_events_emit_with_error(ee_ptr: ptr, event_ptr: ptr, event_len: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_warn(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_info(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_debug(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_dir(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_dirxml(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_time_log(label_ptr: ptr, label_len: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_count(label_ptr: ptr, label_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_console_count_reset(label_ptr: ptr, label_len: u64) -> u64
+@extern sa_node_plugin_console_assert(condition: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_trace(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_table(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_console_group() -> u64
+@extern sa_node_plugin_console_group_end() -> u64
+@extern sa_node_plugin_console_group_collapsed() -> u64
+@extern sa_node_plugin_console_time_stamp(data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve4(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve6(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_cname(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_mx(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_ns(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_txt(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_srv(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolve_ptr(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_reverse(ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_get_servers(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_set_servers(servers_ptr: ptr, servers_len: u64) -> u64
+@extern sa_node_plugin_dns_get_default_result_order(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_set_default_result_order(order_ptr: ptr, order_len: u64) -> u64
+@extern sa_node_plugin_child_process_exec(command_ptr: ptr, command_len: u64, options_json_ptr: ptr, options_json_len: u64, &out_pid: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_exec_file(file_ptr: ptr, file_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_execfile_sync(file_ptr: ptr, file_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_fork(module_ptr: ptr, module_len: u64, args_ptr: ptr, args_len: u64, &out_pid: u64) -> u64
+@extern sa_node_plugin_child_process_spawn(command_ptr: ptr, command_len: u64, args_ptr: ptr, args_len: u64, &out_pid: u64) -> u64
+@extern sa_node_plugin_child_process_spawn_sync(command_ptr: ptr, command_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_duplex_new(&out_handle: ptr) -> u64
+@extern sa_node_plugin_stream_transform_new(&out_handle: ptr) -> u64
+@extern sa_node_plugin_stream_passthrough_new(&out_handle: ptr) -> u64
+@extern sa_node_plugin_stream_pipeline(steps_ptr: ptr, steps_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_finished(handle_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_compose(streams_ptr: ptr, streams_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_stream_destroy(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_stream_duplex_pair(&out_h1: ptr, &out_h2: ptr) -> u64
+@extern sa_node_plugin_stream_readable_destroy(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_stream_writable_destroy(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_net_is_ip(str_ptr: ptr, str_len: u64, &out_version: u64) -> u64
+@extern sa_node_plugin_net_is_ipv4(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_net_is_ipv6(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_net_create_connection(host_ptr: ptr, host_len: u64, port: u64, &out_socket: ptr) -> u64
+@extern sa_node_plugin_net_create_server(&out_server: ptr) -> u64
+@extern sa_node_plugin_timers_set_timeout(ms: u64, callback: ptr, &out_id: u64) -> u64
+@extern sa_node_plugin_timers_set_interval(ms: u64, callback: ptr, &out_id: u64) -> u64
+@extern sa_node_plugin_timers_set_immediate(callback: ptr, &out_id: u64) -> u64
+@extern sa_node_plugin_timers_clear_timeout(id: u64) -> u64
+@extern sa_node_plugin_timers_clear_interval(id: u64) -> u64
+@extern sa_node_plugin_timers_clear_immediate(id: u64) -> u64
+@extern sa_node_plugin_buffer_atob(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_buffer_btoa(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_buffer_is_utf8(data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_buffer_is_ascii(data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_buffer_transcode(src_ptr: ptr, src_len: u64, from_enc_ptr: ptr, from_enc_len: u64, to_enc_ptr: ptr, to_enc_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_buffer_resolve_object_url(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_deflate_raw(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_inflate_raw(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_unzip(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_brotli_compress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_brotli_decompress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_crc32(data_ptr: ptr, data_len: u64, &out_val: u64) -> u64
+@extern sa_node_plugin_url_new(href_ptr: ptr, href_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_url_get_href(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_get_protocol(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_get_host(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_get_pathname(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_util_callbackify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_promisify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_inherits(c: ptr, c_len: u64, s: ptr, s_len: u64) -> u64
+@extern sa_node_plugin_util_debuglog(section_ptr: ptr, section_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_deprecate(fn_ptr: ptr, fn_len: u64, msg_ptr: ptr, msg_len: u64) -> u64
+@extern sa_node_plugin_util_diff(actual_ptr: ptr, actual_len: u64, expected_ptr: ptr, expected_len: u64, operator_ptr: ptr, operator_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_parse_args(config_ptr: ptr, config_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_mime_type(str_ptr: ptr, str_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_style_text(style_ptr: ptr, style_len: u64, text_ptr: ptr, text_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_readline_clear_line(fd: u64, dir: u64) -> u64
+@extern sa_node_plugin_readline_clear_screen_down(fd: u64) -> u64
+@extern sa_node_plugin_readline_cursor_to(fd: u64, x: u64, y: u64) -> u64
+@extern sa_node_plugin_readline_move_cursor(fd: u64, dx: u64, dy: u64) -> u64
+@extern sa_node_plugin_readline_emit_keypress_events(stream_ptr: ptr, stream_len: u64) -> u64
+@extern sa_node_plugin_path_sep(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_path_delimiter(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_path_matches_glob(pattern_ptr: ptr, pattern_len: u64, str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_punycode_to_ascii(domain_ptr: ptr, domain_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_punycode_to_unicode(domain_ptr: ptr, domain_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_querystring_unescape_buffer(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_os_eol(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_os_constants(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_os_get_priority(pid: u64, &out_priority: u64) -> u64
+@extern sa_node_plugin_os_set_priority(pid: u64, priority: u64) -> u64
+@extern sa_node_plugin_process_exit(code: u64) -> u64
+@extern sa_node_plugin_process_kill(pid: u64, signal: u64) -> u64
+@extern sa_node_plugin_worker_threads_worker_data(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_receive_message_on_port(port_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_post_message_to_thread(thread_id: u64, data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_perf_hooks_create_histogram(&out_handle: ptr) -> u64
+@extern sa_node_plugin_perf_hooks_histogram_record(handle_ptr: ptr, value: u64) -> u64
+@extern sa_node_plugin_perf_hooks_histogram_get_statistics(handle_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_histogram_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_perf_hooks_event_loop_utilization(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_timerify(name_ptr: ptr, name_len: u64, &out_id: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_tracing_channel(name_ptr: ptr, name_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_async_hooks_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_hooks_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_hooks_execution_async_id(&out_id: u64) -> u64
+@extern sa_node_plugin_async_hooks_trigger_async_id(&out_id: u64) -> u64
+@extern sa_node_plugin_async_hooks_async_resource_create(type_ptr: ptr, type_len: u64, trigger_async_id: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_async_hooks_async_resource_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_async_hooks_async_resource_snapshot_json(handle_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_create(name_ptr: ptr, name_len: u64, &out_channel: ptr) -> u64
+@extern sa_node_plugin_diagnostics_channel_subscribe(channel_ptr: ptr, callback: ptr) -> u64
+@extern sa_node_plugin_diagnostics_channel_unsubscribe(channel_ptr: ptr, callback: ptr) -> u64
+@extern sa_node_plugin_diagnostics_channel_publish(channel_ptr: ptr, data_ptr: ptr, data_len: u64, &out_count: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_has_subscribers(channel_ptr: ptr, &out_bool: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_free(channel_ptr: ptr) -> u64
+@extern sa_node_plugin_diagnostics_channel_snapshot_json(channel_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_command_line_options_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_debugger_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_deprecated_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_environment_variables_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_permissions_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_repl_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_now_ms(&out_ms: u64) -> u64
+@extern sa_node_plugin_perf_hooks_time_origin_ms(&out_ms: u64) -> u64
+@extern sa_node_plugin_perf_hooks_mark(name_ptr: ptr, name_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_measure(name_ptr: ptr, name_len: u64, start_ptr: ptr, start_len: u64, end_ptr: ptr, end_len: u64, &out_ms: u64) -> u64
+@extern sa_node_plugin_perf_hooks_entries_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_clear_marks() -> u64
+@extern sa_node_plugin_perf_hooks_clear_measures() -> u64
+@extern sa_node_plugin_report_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_report_get_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_report_write_file(filename_ptr: ptr, filename_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_is_sea(&out_bool: u64) -> u64
+@extern sa_node_plugin_sea_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_asset_keys_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_get_asset(key_ptr: ptr, key_len: u64, encoding_ptr: ptr, encoding_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_get_raw_asset(key_ptr: ptr, key_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_get_asset_as_blob(key_ptr: ptr, key_len: u64, &out_ptr: ptr) -> u64
+@extern sa_node_plugin_trace_events_create_tracing(categories_ptr: ptr, categories_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_trace_events_tracing_enable(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_trace_events_tracing_disable(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_trace_events_get_enabled_categories(handle_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_trace_events_tracing_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_tty_isatty(fd: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_tty_read_stream_new(fd: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_tty_write_stream_new(fd: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_tty_stream_set_raw_mode(handle_ptr: ptr, flag: u64) -> u64
+@extern sa_node_plugin_tty_stream_get_window_size(handle_ptr: ptr, &out_cols: u64, &out_rows: ptr) -> u64
+@extern sa_node_plugin_tty_stream_get_color_depth(handle_ptr: ptr, &out_depth: u64) -> u64
+@extern sa_node_plugin_tty_stream_has_colors(handle_ptr: ptr, &out_bool: u64) -> u64
+@extern sa_node_plugin_tty_stream_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_worker_threads_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_is_main_thread(&out_bool: u64) -> u64
+@extern sa_node_plugin_worker_threads_is_internal_thread(&out_bool: u64) -> u64
+@extern sa_node_plugin_worker_threads_thread_id(&out_id: u64) -> u64
+@extern sa_node_plugin_worker_threads_thread_name(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_resource_limits_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_set_environment_data(key_ptr: ptr, key_len: u64, value_ptr: ptr, value_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_get_environment_data(key_ptr: ptr, key_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_message_channel_new(&out_port1: ptr, &out_port2: ptr) -> u64
+@extern sa_node_plugin_worker_threads_message_port_post_message(port_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_message_port_receive_message(port_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_message_port_close(port_ptr: ptr) -> u64
+@extern sa_node_plugin_worker_threads_message_port_free(port_ptr: ptr) -> u64
+@extern sa_node_plugin_child_process_exec_sync_json(argv_ptr: ptr, argv_len: u64, cwd_ptr: ptr, cwd_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_domain_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_https_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dgram_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tty_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_client_new(use_tls: u64, &out_client: ptr) -> u64
+@extern sa_node_plugin_http_client_req_new(client: ptr, method: u64, url_ptr: ptr, url_len: u64, &out_req: ptr) -> u64
+@extern sa_node_plugin_http_client_req_add_header(req: ptr, key_ptr: ptr, key_len: u64, val_ptr: ptr, val_len: u64) -> u64
+@extern sa_node_plugin_http_client_req_set_body(req: ptr, body_ptr: ptr, body_len: u64) -> u64
+@extern sa_node_plugin_http_client_req_send(req: ptr, &out_resp: ptr) -> u64
+@extern sa_node_plugin_http_client_resp_status(resp: ptr) -> u64
+@extern sa_node_plugin_http_client_resp_get_header(resp: ptr, key_ptr: ptr, key_len: u64, &out_val_ptr: ptr, &out_val_len: u64) -> u64
+@extern sa_node_plugin_http_client_resp_body_slice(resp: ptr, &out_body_ptr: ptr, &out_body_len: u64) -> u64
+@extern sa_node_plugin_http_client_resp_body_reader(resp: ptr, &out_reader: ptr) -> u64
+@extern sa_node_plugin_http_client_resp_read_chunk(reader: ptr, buf_ptr: ptr, cap: u64, &out_len: u64) -> u64
+@extern sa_node_plugin_http_client_resp_free(resp: ptr) -> u64
+@extern sa_node_plugin_http_client_body_reader_free(reader: ptr) -> u64
+@extern sa_node_plugin_http_client_free(client: ptr) -> u64
+@extern sa_node_plugin_http_client_req_free(req: ptr) -> u64
+@extern sa_node_plugin_http_websocket_connect(client: ptr, url_ptr: ptr, url_len: u64, &out_ws: ptr) -> u64
+@extern sa_node_plugin_http_websocket_read(ws: ptr, max_len: u64, &out_opcode: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_websocket_write(ws: ptr, opcode: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_http_websocket_free(ws: ptr) -> u64
+@extern sa_node_plugin_http_server_new(&out_server: ptr) -> u64
+@extern sa_node_plugin_http_server_start(server: ptr, host_ptr: ptr, host_len: u64, port: u64) -> u64
+@extern sa_node_plugin_http_server_accept(server: ptr, &out_req: ptr) -> u64
+@extern sa_node_plugin_http_server_req_get_method(req: ptr, &out_method_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_server_req_get_path(req: ptr, &out_path_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_server_req_get_header(req: ptr, key_ptr: ptr, key_len: u64, &out_val_ptr: ptr, &out_val_len: u64) -> u64
+@extern sa_node_plugin_http_server_req_get_body(req: ptr, &out_body_ptr: ptr, &out_body_len: u64) -> u64
+@extern sa_node_plugin_http_server_req_free(req: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_new(req: ptr, status: u64, &out_resp: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_send(resp: ptr, body_ptr: ptr, body_len: u64) -> u64
+@extern sa_node_plugin_http_server_resp_set_content_type(resp: ptr, content_type_ptr: ptr, content_type_len: u64) -> u64
+@extern sa_node_plugin_http_server_resp_free(resp: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_stream_new(req: ptr, status: u64, &out_resp: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_stream_write(resp: ptr, body_ptr: ptr, body_len: u64) -> u64
+@extern sa_node_plugin_http_server_resp_stream_flush(resp: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_stream_end(resp: ptr) -> u64
+@extern sa_node_plugin_http_server_resp_stream_free(resp: ptr) -> u64
+@extern sa_node_plugin_http_server_free(server: ptr) -> u64
+@extern sa_node_plugin_http_server_websocket_upgrade(req: ptr, &out_ws: ptr) -> u64
+@extern sa_node_plugin_http_server_websocket_read(ws: ptr, max_len: u64, &out_opcode: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_server_websocket_write(ws: ptr, opcode: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_http_server_websocket_free(ws: ptr) -> u64

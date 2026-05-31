@@ -1,0 +1,80 @@
+// Auto-generated smoke tests
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "smoke node console clear"():
+L_ENTRY:
+    out_status = add 0, 0
+    EXPAND NODE_CONSOLE_CLEAR out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node console error"():
+L_ENTRY:
+    out_status = add 0, 0
+    EXPAND NODE_CONSOLE_ERROR out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs read file"():
+L_ENTRY:
+    out_ptr = add 0, 0
+    out_len = add 0, 0
+    out_status = add 0, 0
+    EXPAND NODE_FS_READ_FILE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs write file"():
+L_ENTRY:
+    out_status = add 0, 0
+    EXPAND NODE_FS_WRITE_FILE out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node punycode decode"():
+L_ENTRY:
+    out_ptr = add 0, 0
+    out_len = add 0, 0
+    out_status = add 0, 0
+    EXPAND NODE_PUNYCODE_DECODE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok

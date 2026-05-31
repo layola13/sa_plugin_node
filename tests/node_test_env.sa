@@ -1,0 +1,21 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_KEY = utf8:"SA_TEST_KEY"
+@const S_VAL = utf8:"test_value"
+@test "process.env roundtrip"():
+    EXPAND NODE_PROCESS_ENV_SET S_KEY, 11, S_VAL, 10, s1
+    ok1 = eq s1, 0
+    !ok1
+    EXPAND NODE_PROCESS_ENV_GET S_KEY, 11, gp, gl, s2
+    ok2 = eq s2, 0
+    !ok2
+    call @sa_node_plugin_free_buffer(gp, gl)
+    !gp
+    !gl
+    !s2
+    EXPAND NODE_PROCESS_ENV_DELETE S_KEY, 11, s3
+    ok3 = eq s3, 0
+    !ok3
+    !s1
+    !s3
+    return

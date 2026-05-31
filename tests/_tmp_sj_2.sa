@@ -1,0 +1,162 @@
+// Tests for all STATUS_JSON shim macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.worker_threads worker_data returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_WORKER_THREADS_WORKER_DATA p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.worker_threads thread_name returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_WORKER_THREADS_THREAD_NAME p, l
+    has = ugt l, 0
+    br has -> L_OK, L_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.worker_threads resource_limits_json returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_RESOURCE_LIMITS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)
+
+@test "node.dns set_default_result_order returns"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.dns set_servers returns"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_DNS_SET_SERVERS S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.os get_priority returns"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_OS_GET_PRIORITY 0, v, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !v
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    panic(103)
+
+@test "node.os set_priority returns"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_OS_SET_PRIORITY 0, 0, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.trace_events get_enabled_categories returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TRACE_EVENTS_GET_ENABLED_CATEGORIES p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)

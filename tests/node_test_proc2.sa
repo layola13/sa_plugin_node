@@ -1,0 +1,59 @@
+// sa_plugin_node/tests/node_plugin_unit_test.sa
+// SA native @test unit tests for the Node.js API compatibility plugin.
+// Run: sa test sa_plugin_node/tests/node_plugin_unit_test.sa
+
+@import "../node.sal"
+@import "../node_extra.sal"
+
+// ---- String constants ----
+    return
+
+@test "os.eol"():
+    EXPAND NODE_OS_EOL p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+@test "os.constants"():
+    EXPAND NODE_OS_CONSTANTS p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+// ============================================================
+// Process
+// ============================================================
+
+@test "process.pid"():
+    EXPAND NODE_PROCESS_PID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.ppid"():
+    EXPAND NODE_PROCESS_PPID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getuid"():
+    EXPAND NODE_PROCESS_GETUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getgid"():
+    EXPAND NODE_PROCESS_GETGID v, s
+    ok = eq s, 0

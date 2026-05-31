@@ -1,0 +1,170 @@
+// sa_plugin_node/tests/node_plugin_unit_test.sa
+// SA native @test unit tests for the Node.js API compatibility plugin.
+// Run: sa test sa_plugin_node/tests/node_plugin_unit_test.sa
+
+@import "../node.sal"
+@import "../node_extra.sal"
+
+// ---- String constants ----
+@const S_SHA256 = utf8:"sha256"
+@const S_HELLO = utf8:"hello"
+@const S_SECRET = utf8:"secret123"
+@const S_MSG = utf8:"test msg"
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_DOMAIN = utf8:"example.com"
+@const S_ENCODED = utf8:"hello%20world"
+@const S_KEY = utf8:"SA_TEST_KEY"
+@const S_VAL = utf8:"test_value"
+@const S_IP4 = utf8:"127.0.0.1"
+@const S_IP6 = utf8:"::1"
+@const S_NOTIP = utf8:"not-ip"
+@const S_PATH = utf8:"/usr/local/bin/test.txt"
+@const S_SLASH = utf8:"/"
+@const S_FROM = utf8:"/usr/local/bin"
+@const S_TO = utf8:"/usr/local/share"
+@const S_FMT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"world\"]"
+@const S_JSON7 = utf8:"{\"a\":1}"
+@const S_VT = utf8:"\x1b[31mred\x1b[0m"
+@const S_LOG = utf8:"log msg"
+@const S_WARN4 = utf8:"warn"
+@const S_ERR5 = utf8:"error"
+@const S_DBG = utf8:"debug"
+@const S_INF = utf8:"info"
+@const S_DIR = utf8:"obj"
+@const S_TRC = utf8:"trace"
+@const S_TBL = utf8:"{}"
+@const S_LBL = utf8:"cnt1"
+@const S_CAT = utf8:"test"
+@const S_CHAN = utf8:"test.ch"
+@const S_ORD = utf8:"ipv4first"
+
+// ============================================================
+// OS
+// ============================================================
+
+@test "os.cpus"():
+    EXPAND NODE_OS_CPUS p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.totalmem"():
+    EXPAND NODE_OS_TOTALMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.freemem"():
+    EXPAND NODE_OS_FREEMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.homedir"():
+    EXPAND NODE_OS_HOMEDIR p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.tmpdir"():
+    EXPAND NODE_OS_TMPDIR p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.platform"():
+    EXPAND NODE_OS_PLATFORM p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.arch"():
+    EXPAND NODE_OS_ARCH p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.release"():
+    EXPAND NODE_OS_RELEASE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.type"():
+    EXPAND NODE_OS_TYPE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.hostname"():
+    EXPAND NODE_OS_HOSTNAME p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.userInfo"():
+    EXPAND NODE_OS_USER_INFO p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.networkInterfaces"():
+    EXPAND NODE_OS_NETWORK_INTERFACES p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.endianness"():
+    EXPAND NODE_OS_ENDIANNESS p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return

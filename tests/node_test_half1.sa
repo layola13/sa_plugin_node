@@ -1,0 +1,350 @@
+// sa_plugin_node/tests/node_plugin_unit_test.sa
+// SA native @test unit tests for the Node.js API compatibility plugin.
+// Run: sa test sa_plugin_node/tests/node_plugin_unit_test.sa
+
+@import "../node.sal"
+@import "../node_extra.sal"
+
+// ---- String constants ----
+@const S_SHA256 = utf8:"sha256"
+@const S_HELLO = utf8:"hello"
+@const S_SECRET = utf8:"secret123"
+@const S_MSG = utf8:"test msg"
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_DOMAIN = utf8:"example.com"
+@const S_ENCODED = utf8:"hello%20world"
+@const S_KEY = utf8:"SA_TEST_KEY"
+@const S_VAL = utf8:"test_value"
+@const S_IP4 = utf8:"127.0.0.1"
+@const S_IP6 = utf8:"::1"
+@const S_NOTIP = utf8:"not-ip"
+@const S_PATH = utf8:"/usr/local/bin/test.txt"
+@const S_SLASH = utf8:"/"
+@const S_FROM = utf8:"/usr/local/bin"
+@const S_TO = utf8:"/usr/local/share"
+@const S_FMT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"world\"]"
+@const S_JSON7 = utf8:"{\"a\":1}"
+@const S_VT = utf8:"\x1b[31mred\x1b[0m"
+@const S_LOG = utf8:"log msg"
+@const S_WARN4 = utf8:"warn"
+@const S_ERR5 = utf8:"error"
+@const S_DBG = utf8:"debug"
+@const S_INF = utf8:"info"
+@const S_DIR = utf8:"obj"
+@const S_TRC = utf8:"trace"
+@const S_TBL = utf8:"{}"
+@const S_LBL = utf8:"cnt1"
+@const S_CAT = utf8:"test"
+@const S_CHAN = utf8:"test.ch"
+@const S_ORD = utf8:"ipv4first"
+
+// ============================================================
+// OS
+// ============================================================
+
+@test "os.cpus"():
+    EXPAND NODE_OS_CPUS p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.totalmem"():
+    EXPAND NODE_OS_TOTALMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.freemem"():
+    EXPAND NODE_OS_FREEMEM m, s
+    ok = eq s, 0
+    !ok
+    !m
+    !s
+    return
+
+@test "os.homedir"():
+    EXPAND NODE_OS_HOMEDIR p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.tmpdir"():
+    EXPAND NODE_OS_TMPDIR p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.platform"():
+    EXPAND NODE_OS_PLATFORM p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.arch"():
+    EXPAND NODE_OS_ARCH p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.release"():
+    EXPAND NODE_OS_RELEASE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.type"():
+    EXPAND NODE_OS_TYPE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.hostname"():
+    EXPAND NODE_OS_HOSTNAME p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.userInfo"():
+    EXPAND NODE_OS_USER_INFO p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.networkInterfaces"():
+    EXPAND NODE_OS_NETWORK_INTERFACES p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.endianness"():
+    EXPAND NODE_OS_ENDIANNESS p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "os.eol"():
+    EXPAND NODE_OS_EOL p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+@test "os.constants"():
+    EXPAND NODE_OS_CONSTANTS p, l
+    ok = gt l, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    return
+
+// ============================================================
+// Process
+// ============================================================
+
+@test "process.pid"():
+    EXPAND NODE_PROCESS_PID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.ppid"():
+    EXPAND NODE_PROCESS_PPID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getuid"():
+    EXPAND NODE_PROCESS_GETUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getgid"():
+    EXPAND NODE_PROCESS_GETGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.geteuid"():
+    EXPAND NODE_PROCESS_GETEUID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.getegid"():
+    EXPAND NODE_PROCESS_GETEGID v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.hrtime.bigint"():
+    EXPAND NODE_PROCESS_HRTIME_BIGINT v, s
+    ok = eq s, 0
+    !ok
+    !v
+    !s
+    return
+
+@test "process.cpuUsage"():
+    EXPAND NODE_PROCESS_CPU_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.memoryUsage"():
+    EXPAND NODE_PROCESS_MEMORY_USAGE p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.cwd"():
+    EXPAND NODE_PROCESS_CWD p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.version"():
+    EXPAND NODE_PROCESS_VERSION p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.versions.json"():
+    EXPAND NODE_PROCESS_VERSIONS_JSON p, l, s
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "process.env roundtrip"():
+    EXPAND NODE_PROCESS_ENV_SET S_KEY, 11, S_VAL, 10, s1
+    ok1 = eq s1, 0
+    !ok1
+    EXPAND NODE_PROCESS_ENV_GET S_KEY, 11, gp, gl, s2
+    ok2 = eq s2, 0
+    !ok2
+    call @sa_node_plugin_free_buffer(gp, gl)
+    !gp
+    !gl
+    !s2
+    EXPAND NODE_PROCESS_ENV_DELETE S_KEY, 11, s3
+    ok3 = eq s3, 0
+    !ok3
+    !s1
+    !s3
+    return
+
+// ============================================================
+// Path
+// ============================================================
+
+@test "path.basename"():
+    EXPAND NODE_PATH_BASENAME p, l, s, S_PATH 22, 0, 0
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "path.dirname"():
+    EXPAND NODE_PATH_DIRNAME p, l, s, S_PATH 22
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return
+
+@test "path.extname"():
+    EXPAND NODE_PATH_EXTNAME p, l, s, S_PATH 22
+    ok = eq s, 0
+    !ok
+    call @sa_node_plugin_free_buffer(p, l)
+    !p
+    !l
+    !s
+    return

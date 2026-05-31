@@ -1,0 +1,541 @@
+// Auto-generated smoke tests
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "smoke node console time stamp"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_CONSOLE_TIME_STAMP 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node console trace"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TRACE 0, 0
+    return
+
+@test "smoke node console warn"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_WARN 0, 0
+    return
+
+@test "smoke node debugger status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DEBUGGER_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node deprecated status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DEPRECATED_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node dgram status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DGRAM_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node dns get default result order"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DNS_GET_DEFAULT_RESULT_ORDER p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node dns get servers"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DNS_GET_SERVERS p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node dns resolve4"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE4 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve6"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE6 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve cname"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_CNAME 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve mx"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_MX 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve ns"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_NS 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve ptr"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_PTR 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve srv"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_SRV 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve txt"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_TXT 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns reverse"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_REVERSE 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns set default result order"():
+L_ENTRY:
+    EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER 0, 0
+    return
+
+@test "smoke node dns set servers"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_DNS_SET_SERVERS 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node domain status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DOMAIN_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node environment variables status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node errors status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ERRORS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node events get event listeners"():
+L_ENTRY:
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    p_5 = add 0, 0
+    EXPAND NODE_EVENTS_GET_EVENT_LISTENERS 0, 0, 0, p_3, p_4, p_5
+    ok = eq p_5, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_5
+    !p_3
+    !p_4
+    return
+L_ERR:
+    !ok
+    !p_3
+    !p_4
+    !p_5
+    panic(103)
+
+@test "smoke node events get max listeners"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_EVENTS_GET_MAX_LISTENERS 0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node events listener count by event"():
+L_ENTRY:
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_EVENTS_LISTENER_COUNT_BY_EVENT 0, 0, 0, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node events remove all listeners"():
+L_ENTRY:
+    p_3 = add 0, 0
+    EXPAND NODE_EVENTS_REMOVE_ALL_LISTENERS 0, 0, 0, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_3
+    panic(103)
+
+@test "smoke node events set max listeners"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_EVENTS_SET_MAX_LISTENERS 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node https status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_HTTPS_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node inspector status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_INSPECTOR_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node internationalization status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+

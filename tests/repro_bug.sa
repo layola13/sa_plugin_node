@@ -1,0 +1,12 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "repro"():
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_OS_CPUS p, l, s
+    !p
+    !l
+    !s
+    return

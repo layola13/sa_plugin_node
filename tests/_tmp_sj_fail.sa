@@ -1,0 +1,33 @@
+// Tests for all STATUS_JSON shim macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.trace_events get_enabled_categories returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TRACE_EVENTS_GET_ENABLED_CATEGORIES p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
+    has = ugt l, 0
+    br has -> L_OK, L_LEN_ERR
+L_OK:
+    !has
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has
+    !p
+    !l
+    panic(103)

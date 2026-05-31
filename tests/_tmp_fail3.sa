@@ -1,0 +1,17 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_DATA = utf8:"hello"
+@test "test dns ss"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_DNS_SET_SERVERS S_DATA, 5, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)

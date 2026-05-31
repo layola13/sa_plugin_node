@@ -1,0 +1,2006 @@
+// Auto-generated smoke tests
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "smoke node console clear"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_CLEAR out_status
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node console error"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_ERROR out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node fs read file"():
+L_ENTRY:
+    EXPAND NODE_FS_READ_FILE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node fs write file"():
+L_ENTRY:
+    EXPAND NODE_FS_WRITE_FILE out_status, S_DATA, 5, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    return
+L_ERR:
+    !ok
+    !out_status
+    panic(103)
+
+@test "smoke node punycode decode"():
+L_ENTRY:
+    EXPAND NODE_PUNYCODE_DECODE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node punycode encode"():
+L_ENTRY:
+    EXPAND NODE_PUNYCODE_ENCODE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node util inspect"():
+L_ENTRY:
+    EXPAND NODE_UTIL_INSPECT out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node zlib gunzip"():
+L_ENTRY:
+    EXPAND NODE_ZLIB_GUNZIP out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node zlib inflate"():
+L_ENTRY:
+    EXPAND NODE_ZLIB_INFLATE out_ptr, out_len, out_status, S_DATA, 5
+    ok = eq out_status, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !out_status
+    !out_ptr
+    !out_len
+    return
+L_ERR:
+    !ok
+    !out_ptr
+    !out_len
+    !out_status
+    panic(103)
+
+@test "smoke node async context tracking status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node async hooks execution async id"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node async hooks snapshot json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_SNAPSHOT_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node async hooks status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node async hooks trigger async id"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_TRIGGER_ASYNC_ID p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node buffer atob"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_BUFFER_ATOB 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node buffer resolve object url"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node child process status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node command line options status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node console assert"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_ASSERT 0, 0, 0
+    return
+
+@test "smoke node console count"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_CONSOLE_COUNT 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node console count reset"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_CONSOLE_COUNT_RESET 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node console debug"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_DEBUG 0, 0
+    return
+
+@test "smoke node console dir"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_DIR 0, 0
+    return
+
+@test "smoke node console dirxml"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_CONSOLE_DIRXML 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node console group"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node console group collapsed"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP_COLLAPSED p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node console group end"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP_END p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node console info"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_INFO 0, 0
+    return
+
+@test "smoke node console table"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TABLE 0, 0
+    return
+
+@test "smoke node console time log"():
+L_ENTRY:
+    p_4 = add 0, 0
+    EXPAND NODE_CONSOLE_TIME_LOG 0, 0, 0, 0, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    return
+L_ERR:
+    !ok
+    !p_4
+    panic(103)
+
+@test "smoke node console time stamp"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_CONSOLE_TIME_STAMP 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node console trace"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TRACE 0, 0
+    return
+
+@test "smoke node console warn"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_WARN 0, 0
+    return
+
+@test "smoke node debugger status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DEBUGGER_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node deprecated status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DEPRECATED_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node dgram status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DGRAM_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node dns get default result order"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_DNS_GET_DEFAULT_RESULT_ORDER p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node dns get servers"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DNS_GET_SERVERS p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node dns resolve4"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE4 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve6"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE6 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve cname"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_CNAME 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve mx"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_MX 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve ns"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_NS 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve ptr"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_PTR 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve srv"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_SRV 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns resolve txt"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_TXT 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns reverse"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_DNS_REVERSE 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node dns set default result order"():
+L_ENTRY:
+    EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER 0, 0
+    return
+
+@test "smoke node dns set servers"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_DNS_SET_SERVERS 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node domain status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_DOMAIN_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node environment variables status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node errors status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ERRORS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node events get event listeners"():
+L_ENTRY:
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    p_5 = add 0, 0
+    EXPAND NODE_EVENTS_GET_EVENT_LISTENERS 0, 0, 0, p_3, p_4, p_5
+    ok = eq p_5, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_5
+    !p_3
+    !p_4
+    return
+L_ERR:
+    !ok
+    !p_3
+    !p_4
+    !p_5
+    panic(103)
+
+@test "smoke node events get max listeners"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_EVENTS_GET_MAX_LISTENERS 0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node events listener count by event"():
+L_ENTRY:
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_EVENTS_LISTENER_COUNT_BY_EVENT 0, 0, 0, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node events remove all listeners"():
+L_ENTRY:
+    p_3 = add 0, 0
+    EXPAND NODE_EVENTS_REMOVE_ALL_LISTENERS 0, 0, 0, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_3
+    panic(103)
+
+@test "smoke node events set max listeners"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_EVENTS_SET_MAX_LISTENERS 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node https status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_HTTPS_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node inspector status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_INSPECTOR_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node internationalization status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node iterable streams status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node net is ipv4"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_NET_IS_IPV4 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node os get priority"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_OS_GET_PRIORITY 0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node os set priority"():
+L_ENTRY:
+    p_2 = add 0, 0
+    EXPAND NODE_OS_SET_PRIORITY 0, 0, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    panic(103)
+
+@test "smoke node path matches glob"():
+L_ENTRY:
+    p_4 = add 0, 0
+    p_5 = add 0, 0
+    EXPAND NODE_PATH_MATCHES_GLOB 0, 0, 0, 0, p_4, p_5
+    ok = eq p_5, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_5
+    !p_4
+    return
+L_ERR:
+    !ok
+    !p_4
+    !p_5
+    panic(103)
+
+@test "smoke node perf hooks entries json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_ENTRIES_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node perf hooks event loop utilization"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node perf hooks now ms"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_NOW_MS p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node perf hooks time origin ms"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_TIME_ORIGIN_MS p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node permissions status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_PERMISSIONS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node punycode to unicode"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_PUNYCODE_TO_UNICODE 0, 0, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node querystring unescape buffer"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_QUERYSTRING_UNESCAPE_BUFFER 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node repl status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_REPL_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node report get json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_REPORT_GET_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node report status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_REPORT_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node sea asset keys json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_SEA_ASSET_KEYS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node sea is sea"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_SEA_IS_SEA p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node sea status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_SEA_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node sqlite status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_SQLITE_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node test runner status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_TEST_RUNNER_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node timers clear immediate"():
+L_ENTRY:
+    p_1 = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_IMMEDIATE 0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    panic(103)
+
+@test "smoke node timers clear interval"():
+L_ENTRY:
+    p_1 = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_INTERVAL 0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    panic(103)
+
+@test "smoke node timers clear timeout"():
+L_ENTRY:
+    p_1 = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_TIMEOUT 0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    panic(103)
+
+@test "smoke node timers set immediate"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_TIMERS_SET_IMMEDIATE 0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node timers set interval"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_TIMERS_SET_INTERVAL 0, 0, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node timers set timeout"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_TIMERS_SET_TIMEOUT 0, 0, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node tls status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_TLS_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node trace events get enabled categories"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_TRACE_EVENTS_GET_ENABLED_CATEGORIES 0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node trace events tracing disable"():
+L_ENTRY:
+    EXPAND NODE_TRACE_EVENTS_TRACING_DISABLE 0
+    return
+
+@test "smoke node trace events tracing enable"():
+L_ENTRY:
+    EXPAND NODE_TRACE_EVENTS_TRACING_ENABLE 0
+    return
+
+@test "smoke node url free"():
+L_ENTRY:
+    p_1 = add 0, 0
+    EXPAND NODE_URL_FREE 0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_1
+    panic(103)
+
+@test "smoke node url get host"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_URL_GET_HOST 0, p_1, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_1
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node url get href"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_URL_GET_HREF 0, p_1, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_1
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node url get pathname"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_URL_GET_PATHNAME 0, p_1, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_1
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node url get protocol"():
+L_ENTRY:
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    EXPAND NODE_URL_GET_PROTOCOL 0, p_1, p_2, p_3
+    ok = eq p_3, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_3
+    !p_1
+    !p_2
+    return
+L_ERR:
+    !ok
+    !p_1
+    !p_2
+    !p_3
+    panic(103)
+
+@test "smoke node util diff"():
+L_ENTRY:
+    p_6 = add 0, 0
+    p_7 = add 0, 0
+    p_8 = add 0, 0
+    EXPAND NODE_UTIL_DIFF 0, 0, 0, 0, 0, 0, p_6, p_7, p_8
+    ok = eq p_8, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_8
+    !p_6
+    !p_7
+    return
+L_ERR:
+    !ok
+    !p_6
+    !p_7
+    !p_8
+    panic(103)
+
+@test "smoke node util inherits"():
+L_ENTRY:
+    p_4 = add 0, 0
+    EXPAND NODE_UTIL_INHERITS 0, 0, 0, 0, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    return
+L_ERR:
+    !ok
+    !p_4
+    panic(103)
+
+@test "smoke node util mime type"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_UTIL_MIME_TYPE 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node util parse args"():
+L_ENTRY:
+    p_4 = add 0, 0
+    p_5 = add 0, 0
+    p_6 = add 0, 0
+    EXPAND NODE_UTIL_PARSE_ARGS 0, 0, 0, 0, p_4, p_5, p_6
+    ok = eq p_6, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_6
+    !p_4
+    !p_5
+    return
+L_ERR:
+    !ok
+    !p_4
+    !p_5
+    !p_6
+    panic(103)
+
+@test "smoke node util style text"():
+L_ENTRY:
+    p_4 = add 0, 0
+    p_5 = add 0, 0
+    p_6 = add 0, 0
+    EXPAND NODE_UTIL_STYLE_TEXT 0, 0, 0, 0, p_4, p_5, p_6
+    ok = eq p_6, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_6
+    !p_4
+    !p_5
+    return
+L_ERR:
+    !ok
+    !p_4
+    !p_5
+    !p_6
+    panic(103)
+
+@test "smoke node wasi status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_WASI_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node web crypto status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node web streams status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_WEB_STREAMS_STATUS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node worker threads is internal thread"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_IS_INTERNAL_THREAD p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node worker threads is main thread"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_IS_MAIN_THREAD p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node worker threads resource limits json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_RESOURCE_LIMITS_JSON p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node worker threads status json"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_STATUS_JSON p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node worker threads thread id"():
+L_ENTRY:
+    p_0 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_THREAD_ID p_0
+    ok = eq p_0, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    panic(103)
+
+@test "smoke node worker threads thread name"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    p_2 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_THREAD_NAME p_0, p_1, p_2
+    ok = eq p_2, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_2
+    !p_0
+    !p_1
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    !p_2
+    panic(103)
+
+@test "smoke node worker threads worker data"():
+L_ENTRY:
+    p_0 = add 0, 0
+    p_1 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_WORKER_DATA p_0, p_1
+    ok = eq p_1, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_1
+    !p_0
+    return
+L_ERR:
+    !ok
+    !p_0
+    !p_1
+    panic(103)
+
+@test "smoke node zlib brotli compress"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_ZLIB_BROTLI_COMPRESS 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node zlib brotli decompress"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_ZLIB_BROTLI_DECOMPRESS 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node zlib deflate raw"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_ZLIB_DEFLATE_RAW 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node zlib inflate raw"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_ZLIB_INFLATE_RAW 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)
+
+@test "smoke node zlib unzip"():
+L_ENTRY:
+    p_2 = add 0, 0
+    p_3 = add 0, 0
+    p_4 = add 0, 0
+    EXPAND NODE_ZLIB_UNZIP 0, 0, p_2, p_3, p_4
+    ok = eq p_4, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !p_4
+    !p_2
+    !p_3
+    return
+L_ERR:
+    !ok
+    !p_2
+    !p_3
+    !p_4
+    panic(103)

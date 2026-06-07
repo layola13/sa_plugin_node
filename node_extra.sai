@@ -625,6 +625,8 @@
 @extern sa_node_plugin_wasi_import_modules_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_is_allowed(&out_bool: u64) -> u64
 @extern sa_node_plugin_wasi_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_vfs_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_vfs_new(&out_vfs: ptr) -> u64
 @extern sa_node_plugin_vfs_free(vfs_ptr: ptr) -> u64

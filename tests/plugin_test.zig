@@ -2688,6 +2688,44 @@ test "node plugin wasi reports native config introspection" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"stderr\":5") != null);
 }
 
+test "node plugin wasi top-level facade helpers" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--permission --allow-wasi --experimental-wasi-unstable-preview1", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullWasiTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"wasi\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-wasi-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"WASI\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"supportedVersions\":true") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    try std.testing.expectEqualStrings("[\"WASI\"]", (exports_ptr orelse return error.NullWasiTopExports)[0..@intCast(exports_len)]);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullWasiTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"bindingName\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"permissionRequired\":true") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullWasiTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"WASI\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"config\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"start\":{\"supported\":false") != null);
+}
+
 test "node plugin errors and permissions report native compatibility status" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_ENV_TEST", "demo-value", 1));
     defer _ = unsetenv("SA_NODE_ENV_TEST");

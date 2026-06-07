@@ -6396,6 +6396,10 @@ pub export fn sa_node_plugin_wasi_is_allowed(out_bool: ?*u64) u32 {
     return 0;
 }
 
+const wasi_export_names = [_][]const u8{
+    "WASI",
+};
+
 pub export fn sa_node_plugin_wasi_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const allocator = std.heap.page_allocator;
     const version = wasiVersion();
@@ -6457,7 +6461,9 @@ pub export fn sa_node_plugin_wasi_status_json(out_ptr: ?*?[*]const u8, out_len: 
 
     var out = std.ArrayList(u8).init(allocator);
     defer out.deinit();
-    out.appendSlice("{\"module\":\"wasi\",\"supported\":true,\"mode\":\"native-config-introspection\",\"versions\":") catch return fail();
+    out.appendSlice("{\"module\":\"wasi\",\"supported\":true,\"mode\":\"top-level-native-wasi-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &wasi_export_names) catch return fail();
+    out.appendSlice(",\"versions\":") catch return fail();
     out.appendSlice(versions) catch return fail();
     out.appendSlice(",\"importModules\":") catch return fail();
     out.appendSlice(imports) catch return fail();
@@ -6467,8 +6473,19 @@ pub export fn sa_node_plugin_wasi_status_json(out_ptr: ?*?[*]const u8, out_len: 
     out.appendSlice(if (wasiExperimentalFlag()) "true" else "false") catch return fail();
     out.appendSlice(",\"config\":") catch return fail();
     out.appendSlice(config) catch return fail();
-    out.appendSlice(",\"capabilities\":[\"supported version metadata\",\"import module name metadata\",\"host-config args/env/preopens/stdio snapshot\",\"permission and experimental flag introspection\"],\"limitations\":[\"no WebAssembly instantiation or execution\",\"no uvwasi syscall bridge or wasiImport object model\",\"preopens are reported as configuration only, not enforced sandbox mounts\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"WASI\":false,\"supportedVersions\":true,\"importModules\":true,\"config\":true,\"permissionIntrospection\":true,\"experimentalFlag\":true,\"wasiImportObject\":false,\"start\":false,\"initialize\":false,\"finalizeBindings\":false,\"getImportObject\":false},\"capabilities\":[\"supported version metadata\",\"import module name metadata\",\"host-config args/env/preopens/stdio snapshot\",\"permission and experimental flag introspection\"],\"limitations\":[\"no WebAssembly instantiation or execution\",\"no uvwasi syscall bridge or wasiImport object model\",\"preopens are reported as configuration only, not enforced sandbox mounts\",\"top-level WASI export is metadata only rather than a constructible JavaScript class\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_wasi_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &wasi_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_wasi_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"WASI\":{\"supported\":false,\"reason\":\"constructible JavaScript WASI class instances are not modeled without a WebAssembly runtime\"},\"supportedVersions\":{\"supported\":true,\"mode\":\"native version metadata JSON\"},\"importModules\":{\"supported\":true,\"mode\":\"native module-name metadata JSON\"},\"config\":{\"supported\":true,\"mode\":\"environment-backed args/env/preopens/stdio snapshot JSON\"},\"permissionIntrospection\":{\"supported\":true,\"mode\":\"host NODE_OPTIONS permission flag introspection\"},\"experimentalFlag\":{\"supported\":true,\"mode\":\"host NODE_OPTIONS experimental flag introspection\"},\"wasiImportObject\":{\"supported\":false,\"reason\":\"live wasiImport objects require a WebAssembly runtime binding surface\"},\"start\":{\"supported\":false,\"reason\":\"WebAssembly instance start execution is not modeled\"},\"initialize\":{\"supported\":false,\"reason\":\"WebAssembly instance initialize execution is not modeled\"},\"finalizeBindings\":{\"supported\":false,\"reason\":\"memory binding to a live WebAssembly instance is not modeled\"},\"getImportObject\":{\"supported\":false,\"reason\":\"constructing binding-name keyed import objects is not modeled without a WASM runtime\"}}");
 }
 
 pub export fn sa_node_plugin_vfs_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

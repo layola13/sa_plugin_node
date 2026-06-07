@@ -586,6 +586,23 @@
     !__fsp_stat_len
 [END_MACRO]
 
+[MACRO] NODE_FS_PROMISES_LSTAT %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsp_lstat_ptr_slot = stack_alloc 8
+    __fsp_lstat_len_slot = stack_alloc 8
+    __fsp_lstat_status = call @sa_node_plugin_fs_promises_lstat(%path, %path_len, &__fsp_lstat_ptr_slot, &__fsp_lstat_len_slot)
+    !%out_status
+    %out_status = add __fsp_lstat_status, 0
+    !__fsp_lstat_status
+    __fsp_lstat_ptr = load __fsp_lstat_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_lstat_ptr, 0
+    !__fsp_lstat_ptr
+    __fsp_lstat_len = load __fsp_lstat_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_lstat_len, 0
+    !__fsp_lstat_len
+[END_MACRO]
+
 [MACRO] NODE_FS_PROMISES_READDIR %out_ptr, %out_len, %out_status, %path, %path_len
     __fsp_readdir_ptr_slot = stack_alloc 8
     __fsp_readdir_len_slot = stack_alloc 8
@@ -601,6 +618,81 @@
     !%out_len
     %out_len = add __fsp_readdir_len, 0
     !__fsp_readdir_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_READDIR_WITH_TYPES %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsp_readdir_types_ptr_slot = stack_alloc 8
+    __fsp_readdir_types_len_slot = stack_alloc 8
+    __fsp_readdir_types_status = call @sa_node_plugin_fs_promises_readdir_with_types(%path, %path_len, &__fsp_readdir_types_ptr_slot, &__fsp_readdir_types_len_slot)
+    !%out_status
+    %out_status = add __fsp_readdir_types_status, 0
+    !__fsp_readdir_types_status
+    __fsp_readdir_types_ptr = load __fsp_readdir_types_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_readdir_types_ptr, 0
+    !__fsp_readdir_types_ptr
+    __fsp_readdir_types_len = load __fsp_readdir_types_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_readdir_types_len, 0
+    !__fsp_readdir_types_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_READLINK %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsp_readlink_ptr_slot = stack_alloc 8
+    __fsp_readlink_len_slot = stack_alloc 8
+    __fsp_readlink_status = call @sa_node_plugin_fs_promises_readlink(%path, %path_len, &__fsp_readlink_ptr_slot, &__fsp_readlink_len_slot)
+    !%out_status
+    %out_status = add __fsp_readlink_status, 0
+    !__fsp_readlink_status
+    __fsp_readlink_ptr = load __fsp_readlink_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_readlink_ptr, 0
+    !__fsp_readlink_ptr
+    __fsp_readlink_len = load __fsp_readlink_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_readlink_len, 0
+    !__fsp_readlink_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_REALPATH %out_ptr, %out_len, %out_status, %path, %path_len
+    __fsp_realpath_ptr_slot = stack_alloc 8
+    __fsp_realpath_len_slot = stack_alloc 8
+    __fsp_realpath_status = call @sa_node_plugin_fs_promises_realpath(%path, %path_len, &__fsp_realpath_ptr_slot, &__fsp_realpath_len_slot)
+    !%out_status
+    %out_status = add __fsp_realpath_status, 0
+    !__fsp_realpath_status
+    __fsp_realpath_ptr = load __fsp_realpath_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_realpath_ptr, 0
+    !__fsp_realpath_ptr
+    __fsp_realpath_len = load __fsp_realpath_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_realpath_len, 0
+    !__fsp_realpath_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_EXISTS %out_bool, %out_status, %path, %path_len
+    __fsp_exists_slot = stack_alloc 4
+    __fsp_exists_status = call @sa_node_plugin_fs_promises_exists(%path, %path_len, &__fsp_exists_slot)
+    !%out_status
+    %out_status = add __fsp_exists_status, 0
+    !__fsp_exists_status
+    __fsp_exists = load __fsp_exists_slot+0 as u32
+    !%out_bool
+    %out_bool = add __fsp_exists, 0
+    !__fsp_exists
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_ACCESS %out_bool, %out_status, %path, %path_len, %mode
+    __fsp_access_slot = stack_alloc 4
+    __fsp_access_status = call @sa_node_plugin_fs_promises_access(%path, %path_len, %mode, &__fsp_access_slot)
+    !%out_status
+    %out_status = add __fsp_access_status, 0
+    !__fsp_access_status
+    __fsp_access = load __fsp_access_slot+0 as u32
+    !%out_bool
+    %out_bool = add __fsp_access, 0
+    !__fsp_access
 [END_MACRO]
 
 [MACRO] NODE_FS_PROMISES_READ_FILE %out_ptr, %out_len, %out_status, %path, %path_len
@@ -634,6 +726,13 @@
     !__fsp_mkdir_status
 [END_MACRO]
 
+[MACRO] NODE_FS_PROMISES_RMDIR %out_status, %path, %path_len
+    __fsp_rmdir_status = call @sa_node_plugin_fs_promises_rmdir(%path, %path_len)
+    !%out_status
+    %out_status = add __fsp_rmdir_status, 0
+    !__fsp_rmdir_status
+[END_MACRO]
+
 [MACRO] NODE_FS_PROMISES_RM %out_status, %path, %path_len, %recursive
     __fsp_rm_status = call @sa_node_plugin_fs_promises_rm(%path, %path_len, %recursive)
     !%out_status
@@ -660,6 +759,82 @@
     !%out_status
     %out_status = add __fsp_copy_file_status, 0
     !__fsp_copy_file_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_CHMOD %out_status, %path, %path_len, %mode
+    __fsp_chmod_status = call @sa_node_plugin_fs_promises_chmod(%path, %path_len, %mode)
+    !%out_status
+    %out_status = add __fsp_chmod_status, 0
+    !__fsp_chmod_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_CHOWN %out_status, %path, %path_len, %uid, %gid
+    __fsp_chown_status = call @sa_node_plugin_fs_promises_chown(%path, %path_len, %uid, %gid)
+    !%out_status
+    %out_status = add __fsp_chown_status, 0
+    !__fsp_chown_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_LINK %out_status, %src, %src_len, %dst, %dst_len
+    __fsp_link_status = call @sa_node_plugin_fs_promises_link(%src, %src_len, %dst, %dst_len)
+    !%out_status
+    %out_status = add __fsp_link_status, 0
+    !__fsp_link_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_MKDTEMP %out_ptr, %out_len, %out_status, %template, %template_len
+    __fsp_mkdtemp_ptr_slot = stack_alloc 8
+    __fsp_mkdtemp_len_slot = stack_alloc 8
+    __fsp_mkdtemp_status = call @sa_node_plugin_fs_promises_mkdtemp(%template, %template_len, &__fsp_mkdtemp_ptr_slot, &__fsp_mkdtemp_len_slot)
+    !%out_status
+    %out_status = add __fsp_mkdtemp_status, 0
+    !__fsp_mkdtemp_status
+    __fsp_mkdtemp_ptr = load __fsp_mkdtemp_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_mkdtemp_ptr, 0
+    !__fsp_mkdtemp_ptr
+    __fsp_mkdtemp_len = load __fsp_mkdtemp_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_mkdtemp_len, 0
+    !__fsp_mkdtemp_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_STATFS %out_ptr, %out_len, %out_status, %path
+    __fsp_statfs_ptr_slot = stack_alloc 8
+    __fsp_statfs_len_slot = stack_alloc 8
+    __fsp_statfs_status = call @sa_node_plugin_fs_promises_statfs(%path, &__fsp_statfs_ptr_slot, &__fsp_statfs_len_slot)
+    !%out_status
+    %out_status = add __fsp_statfs_status, 0
+    !__fsp_statfs_status
+    __fsp_statfs_ptr = load __fsp_statfs_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_statfs_ptr, 0
+    !__fsp_statfs_ptr
+    __fsp_statfs_len = load __fsp_statfs_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_statfs_len, 0
+    !__fsp_statfs_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_SYMLINK %out_status, %src, %src_len, %dst, %dst_len
+    __fsp_symlink_status = call @sa_node_plugin_fs_promises_symlink(%src, %src_len, %dst, %dst_len)
+    !%out_status
+    %out_status = add __fsp_symlink_status, 0
+    !__fsp_symlink_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_TRUNCATE %out_status, %path, %path_len, %len
+    __fsp_truncate_status = call @sa_node_plugin_fs_promises_truncate(%path, %path_len, %len)
+    !%out_status
+    %out_status = add __fsp_truncate_status, 0
+    !__fsp_truncate_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_UTIMES %out_status, %path, %path_len, %atime_ms, %mtime_ms
+    __fsp_utimes_status = call @sa_node_plugin_fs_promises_utimes(%path, %path_len, %atime_ms, %mtime_ms)
+    !%out_status
+    %out_status = add __fsp_utimes_status, 0
+    !__fsp_utimes_status
 [END_MACRO]
 
 [MACRO] NODE_FS_PROMISES_OPEN %out_fd, %out_status, %path, %path_len, %flags, %mode
@@ -703,6 +878,89 @@
     !%out_n
     %out_n = add __fsp_write_n, 0
     !__fsp_write_n
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_READV %out_n, %out_status, %fd, %iov_json, %iov_json_len
+    __fsp_readv_n_slot = stack_alloc 8
+    __fsp_readv_status = call @sa_node_plugin_fs_promises_readv(%fd, %iov_json, %iov_json_len, &__fsp_readv_n_slot)
+    !%out_status
+    %out_status = add __fsp_readv_status, 0
+    !__fsp_readv_status
+    __fsp_readv_n = load __fsp_readv_n_slot+0 as u64
+    !%out_n
+    %out_n = add __fsp_readv_n, 0
+    !__fsp_readv_n
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_WRITEV %out_n, %out_status, %fd, %iov_json, %iov_json_len
+    __fsp_writev_n_slot = stack_alloc 8
+    __fsp_writev_status = call @sa_node_plugin_fs_promises_writev(%fd, %iov_json, %iov_json_len, &__fsp_writev_n_slot)
+    !%out_status
+    %out_status = add __fsp_writev_status, 0
+    !__fsp_writev_status
+    __fsp_writev_n = load __fsp_writev_n_slot+0 as u64
+    !%out_n
+    %out_n = add __fsp_writev_n, 0
+    !__fsp_writev_n
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FSTAT %out_ptr, %out_len, %out_status, %fd
+    __fsp_fstat_ptr_slot = stack_alloc 8
+    __fsp_fstat_len_slot = stack_alloc 8
+    __fsp_fstat_status = call @sa_node_plugin_fs_promises_fstat(%fd, &__fsp_fstat_ptr_slot, &__fsp_fstat_len_slot)
+    !%out_status
+    %out_status = add __fsp_fstat_status, 0
+    !__fsp_fstat_status
+    __fsp_fstat_ptr = load __fsp_fstat_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fsp_fstat_ptr, 0
+    !__fsp_fstat_ptr
+    __fsp_fstat_len = load __fsp_fstat_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fsp_fstat_len, 0
+    !__fsp_fstat_len
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FSYNC %out_status, %fd
+    __fsp_fsync_status = call @sa_node_plugin_fs_promises_fsync(%fd)
+    !%out_status
+    %out_status = add __fsp_fsync_status, 0
+    !__fsp_fsync_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FDATASYNC %out_status, %fd
+    __fsp_fdatasync_status = call @sa_node_plugin_fs_promises_fdatasync(%fd)
+    !%out_status
+    %out_status = add __fsp_fdatasync_status, 0
+    !__fsp_fdatasync_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FTRUNCATE %out_status, %fd, %len
+    __fsp_ftruncate_status = call @sa_node_plugin_fs_promises_ftruncate(%fd, %len)
+    !%out_status
+    %out_status = add __fsp_ftruncate_status, 0
+    !__fsp_ftruncate_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FCHMOD %out_status, %fd, %mode
+    __fsp_fchmod_status = call @sa_node_plugin_fs_promises_fchmod(%fd, %mode)
+    !%out_status
+    %out_status = add __fsp_fchmod_status, 0
+    !__fsp_fchmod_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FCHOWN %out_status, %fd, %uid, %gid
+    __fsp_fchown_status = call @sa_node_plugin_fs_promises_fchown(%fd, %uid, %gid)
+    !%out_status
+    %out_status = add __fsp_fchown_status, 0
+    !__fsp_fchown_status
+[END_MACRO]
+
+[MACRO] NODE_FS_PROMISES_FUTIMES %out_status, %fd, %atime_ms, %mtime_ms
+    __fsp_futimes_status = call @sa_node_plugin_fs_promises_futimes(%fd, %atime_ms, %mtime_ms)
+    !%out_status
+    %out_status = add __fsp_futimes_status, 0
+    !__fsp_futimes_status
 [END_MACRO]
 
 [MACRO] NODE_FS_PROMISES_OPENDIR %out_handle, %out_status, %path, %path_len
@@ -1502,6 +1760,108 @@
     !%out_len
     %out_len = add __dns_promises_resolve6_len, 0
     !__dns_promises_resolve6_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_CNAME %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_cname_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_cname_len_slot = stack_alloc 8
+    __dns_promises_resolve_cname_status = call @sa_node_plugin_dns_promises_resolve_cname(%hostname, %hostname_len, &__dns_promises_resolve_cname_ptr_slot, &__dns_promises_resolve_cname_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_cname_status, 0
+    !__dns_promises_resolve_cname_status
+    __dns_promises_resolve_cname_ptr = load __dns_promises_resolve_cname_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_cname_ptr, 0
+    !__dns_promises_resolve_cname_ptr
+    __dns_promises_resolve_cname_len = load __dns_promises_resolve_cname_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_cname_len, 0
+    !__dns_promises_resolve_cname_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_MX %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_mx_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_mx_len_slot = stack_alloc 8
+    __dns_promises_resolve_mx_status = call @sa_node_plugin_dns_promises_resolve_mx(%hostname, %hostname_len, &__dns_promises_resolve_mx_ptr_slot, &__dns_promises_resolve_mx_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_mx_status, 0
+    !__dns_promises_resolve_mx_status
+    __dns_promises_resolve_mx_ptr = load __dns_promises_resolve_mx_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_mx_ptr, 0
+    !__dns_promises_resolve_mx_ptr
+    __dns_promises_resolve_mx_len = load __dns_promises_resolve_mx_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_mx_len, 0
+    !__dns_promises_resolve_mx_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_NS %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_ns_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_ns_len_slot = stack_alloc 8
+    __dns_promises_resolve_ns_status = call @sa_node_plugin_dns_promises_resolve_ns(%hostname, %hostname_len, &__dns_promises_resolve_ns_ptr_slot, &__dns_promises_resolve_ns_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_ns_status, 0
+    !__dns_promises_resolve_ns_status
+    __dns_promises_resolve_ns_ptr = load __dns_promises_resolve_ns_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_ns_ptr, 0
+    !__dns_promises_resolve_ns_ptr
+    __dns_promises_resolve_ns_len = load __dns_promises_resolve_ns_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_ns_len, 0
+    !__dns_promises_resolve_ns_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_TXT %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_txt_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_txt_len_slot = stack_alloc 8
+    __dns_promises_resolve_txt_status = call @sa_node_plugin_dns_promises_resolve_txt(%hostname, %hostname_len, &__dns_promises_resolve_txt_ptr_slot, &__dns_promises_resolve_txt_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_txt_status, 0
+    !__dns_promises_resolve_txt_status
+    __dns_promises_resolve_txt_ptr = load __dns_promises_resolve_txt_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_txt_ptr, 0
+    !__dns_promises_resolve_txt_ptr
+    __dns_promises_resolve_txt_len = load __dns_promises_resolve_txt_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_txt_len, 0
+    !__dns_promises_resolve_txt_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_SRV %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_srv_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_srv_len_slot = stack_alloc 8
+    __dns_promises_resolve_srv_status = call @sa_node_plugin_dns_promises_resolve_srv(%hostname, %hostname_len, &__dns_promises_resolve_srv_ptr_slot, &__dns_promises_resolve_srv_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_srv_status, 0
+    !__dns_promises_resolve_srv_status
+    __dns_promises_resolve_srv_ptr = load __dns_promises_resolve_srv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_srv_ptr, 0
+    !__dns_promises_resolve_srv_ptr
+    __dns_promises_resolve_srv_len = load __dns_promises_resolve_srv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_srv_len, 0
+    !__dns_promises_resolve_srv_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_PTR %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_ptr_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_ptr_len_slot = stack_alloc 8
+    __dns_promises_resolve_ptr_status = call @sa_node_plugin_dns_promises_resolve_ptr(%hostname, %hostname_len, &__dns_promises_resolve_ptr_ptr_slot, &__dns_promises_resolve_ptr_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_ptr_status, 0
+    !__dns_promises_resolve_ptr_status
+    __dns_promises_resolve_ptr_ptr = load __dns_promises_resolve_ptr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_ptr_ptr, 0
+    !__dns_promises_resolve_ptr_ptr
+    __dns_promises_resolve_ptr_len = load __dns_promises_resolve_ptr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_ptr_len, 0
+    !__dns_promises_resolve_ptr_len
 [END_MACRO]
 
 [MACRO] NODE_DNS_PROMISES_RESOLVE_ANY %out_ptr, %out_len, %out_status, %hostname, %hostname_len
@@ -5513,6 +5873,18 @@
     !__ffi_has_symbol
 [END_MACRO]
 
+[MACRO] NODE_FFI_CALL_I64_0 %out_value, %out_status, %library, %symbol, %symbol_len
+    __ffi_i64_0_slot = stack_alloc 8
+    __ffi_i64_0_status = call @sa_node_plugin_ffi_call_i64_0(%library, %symbol, %symbol_len, &__ffi_i64_0_slot)
+    !%out_status
+    %out_status = add __ffi_i64_0_status, 0
+    !__ffi_i64_0_status
+    __ffi_i64_0 = load __ffi_i64_0_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_i64_0, 0
+    !__ffi_i64_0
+[END_MACRO]
+
 [MACRO] NODE_FFI_CALL_I64_1 %out_value, %out_status, %library, %symbol, %symbol_len, %a0
     __ffi_i64_1_slot = stack_alloc 8
     __ffi_i64_1_status = call @sa_node_plugin_ffi_call_i64_1(%library, %symbol, %symbol_len, %a0, &__ffi_i64_1_slot)
@@ -5523,6 +5895,18 @@
     !%out_value
     %out_value = add __ffi_i64_1, 0
     !__ffi_i64_1
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_I64_2 %out_value, %out_status, %library, %symbol, %symbol_len, %a0, %a1
+    __ffi_i64_2_slot = stack_alloc 8
+    __ffi_i64_2_status = call @sa_node_plugin_ffi_call_i64_2(%library, %symbol, %symbol_len, %a0, %a1, &__ffi_i64_2_slot)
+    !%out_status
+    %out_status = add __ffi_i64_2_status, 0
+    !__ffi_i64_2_status
+    __ffi_i64_2 = load __ffi_i64_2_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_i64_2, 0
+    !__ffi_i64_2
 [END_MACRO]
 
 [MACRO] NODE_FFI_CALL_STRLEN %out_value, %out_status, %library, %symbol, %symbol_len, %value, %value_len

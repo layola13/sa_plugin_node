@@ -294,14 +294,74 @@ L_PROMISES_ANY:
     pas = add 0, 0
     EXPAND NODE_DNS_PROMISES_RESOLVE_ANY pap, pal, pas, S_LOCALHOST, 9
     promises_any_ok = eq pas, 0
-    br promises_any_ok -> L_OK, L_ERR_PROMISES_ANY
-L_OK:
+    br promises_any_ok -> L_PROMISES_CNAME, L_ERR_PROMISES_ANY
+L_PROMISES_CNAME:
     !promises_any_ok
+    pcp = add 0, 0
+    pcl = add 0, 0
+    pcs = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_CNAME pcp, pcl, pcs, S_HOST, 11
+    promises_cname_ok = eq pcs, 0
+    br promises_cname_ok -> L_PROMISES_MX, L_ERR_PROMISES_CNAME
+L_PROMISES_MX:
+    !promises_cname_ok
+    pmp = add 0, 0
+    pml = add 0, 0
+    pms = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_MX pmp, pml, pms, S_HOST, 11
+    promises_mx_ok = eq pms, 0
+    br promises_mx_ok -> L_PROMISES_NS, L_ERR_PROMISES_MX
+L_PROMISES_NS:
+    !promises_mx_ok
+    pnp = add 0, 0
+    pnl = add 0, 0
+    pns = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_NS pnp, pnl, pns, S_HOST, 11
+    promises_ns_ok = eq pns, 0
+    br promises_ns_ok -> L_PROMISES_TXT, L_ERR_PROMISES_NS
+L_PROMISES_TXT:
+    !promises_ns_ok
+    ptp = add 0, 0
+    ptl = add 0, 0
+    pts = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_TXT ptp, ptl, pts, S_HOST, 11
+    promises_txt_ok = eq pts, 0
+    br promises_txt_ok -> L_PROMISES_SRV, L_ERR_PROMISES_TXT
+L_PROMISES_SRV:
+    !promises_txt_ok
+    psp = add 0, 0
+    psl = add 0, 0
+    pss = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_SRV psp, psl, pss, S_HOST, 11
+    promises_srv_ok = eq pss, 0
+    br promises_srv_ok -> L_PROMISES_PTR, L_ERR_PROMISES_SRV
+L_PROMISES_PTR:
+    !promises_srv_ok
+    ppp = add 0, 0
+    ppl = add 0, 0
+    pps = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_PTR ppp, ppl, pps, S_IP, 9
+    promises_ptr_ok = eq pps, 0
+    br promises_ptr_ok -> L_OK, L_ERR_PROMISES_PTR
+L_OK:
+    !promises_ptr_ok
     free_p = call @sa_node_plugin_free_buffer(p, l)
     free_pp = call @sa_node_plugin_free_buffer(pp, pl)
     free_hp = call @sa_node_plugin_free_buffer(hp, hl)
     free_php = call @sa_node_plugin_free_buffer(php, phl)
     free_pap = call @sa_node_plugin_free_buffer(pap, pal)
+    free_pcp = call @sa_node_plugin_free_buffer(pcp, pcl)
+    free_pmp = call @sa_node_plugin_free_buffer(pmp, pml)
+    free_pnp = call @sa_node_plugin_free_buffer(pnp, pnl)
+    free_ptp = call @sa_node_plugin_free_buffer(ptp, ptl)
+    free_psp = call @sa_node_plugin_free_buffer(psp, psl)
+    free_ppp = call @sa_node_plugin_free_buffer(ppp, ppl)
+    !free_ppp
+    !free_psp
+    !free_ptp
+    !free_pnp
+    !free_pmp
+    !free_pcp
     !free_pap
     !free_php
     !free_hp
@@ -310,6 +370,24 @@ L_OK:
     !pas
     !pal
     !pap
+    !pps
+    !ppl
+    !ppp
+    !pss
+    !psl
+    !psp
+    !pts
+    !ptl
+    !ptp
+    !pns
+    !pnl
+    !pnp
+    !pms
+    !pml
+    !pmp
+    !pcs
+    !pcl
+    !pcp
     !phs
     !phl
     !php
@@ -337,4 +415,22 @@ L_ERR_PROMISES_HINTS:
     panic(103)
 L_ERR_PROMISES_ANY:
     !promises_any_ok
+    panic(103)
+L_ERR_PROMISES_CNAME:
+    !promises_cname_ok
+    panic(103)
+L_ERR_PROMISES_MX:
+    !promises_mx_ok
+    panic(103)
+L_ERR_PROMISES_NS:
+    !promises_ns_ok
+    panic(103)
+L_ERR_PROMISES_TXT:
+    !promises_txt_ok
+    panic(103)
+L_ERR_PROMISES_SRV:
+    !promises_srv_ok
+    panic(103)
+L_ERR_PROMISES_PTR:
+    !promises_ptr_ok
     panic(103)

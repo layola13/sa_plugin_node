@@ -374,6 +374,44 @@ test "node plugin dns promises helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(any_ptr, any_len);
     try std.testing.expect(std.mem.startsWith(u8, (any_ptr orelse return error.NullDnsPromisesResolveAny)[0..@intCast(any_len)], "["));
 
+    var cname_ptr: ?[*]const u8 = null;
+    var cname_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_cname("www.github.com", 14, &cname_ptr, &cname_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cname_ptr, cname_len);
+    try std.testing.expect(std.mem.startsWith(u8, (cname_ptr orelse return error.NullDnsPromisesResolveCname)[0..@intCast(cname_len)], "["));
+
+    var mx_ptr: ?[*]const u8 = null;
+    var mx_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_mx("gmail.com", 9, &mx_ptr, &mx_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(mx_ptr, mx_len);
+    try std.testing.expect(std.mem.indexOf(u8, (mx_ptr orelse return error.NullDnsPromisesResolveMx)[0..@intCast(mx_len)], "\"exchange\":") != null);
+
+    var ns_ptr: ?[*]const u8 = null;
+    var ns_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_ns("nodejs.org", 10, &ns_ptr, &ns_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(ns_ptr, ns_len);
+    try std.testing.expect(std.mem.startsWith(u8, (ns_ptr orelse return error.NullDnsPromisesResolveNs)[0..@intCast(ns_len)], "["));
+
+    var txt_ptr: ?[*]const u8 = null;
+    var txt_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_txt("gmail.com", 9, &txt_ptr, &txt_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(txt_ptr, txt_len);
+    try std.testing.expect(std.mem.startsWith(u8, (txt_ptr orelse return error.NullDnsPromisesResolveTxt)[0..@intCast(txt_len)], "["));
+
+    const srv_name = "_xmpp-server._tcp.gmail.com";
+    var srv_ptr: ?[*]const u8 = null;
+    var srv_len: u64 = 0;
+    _ = plugin.sa_node_plugin_dns_promises_resolve_srv(srv_name, srv_name.len, &srv_ptr, &srv_len);
+    if (srv_ptr != null) {
+        defer _ = plugin.sa_node_plugin_free_buffer(srv_ptr, srv_len);
+    }
+
+    var ptr_ptr: ?[*]const u8 = null;
+    var ptr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_ptr("8.8.8.8", 7, &ptr_ptr, &ptr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(ptr_ptr, ptr_len);
+    try std.testing.expect(std.mem.startsWith(u8, (ptr_ptr orelse return error.NullDnsPromisesResolvePtr)[0..@intCast(ptr_len)], "["));
+
     var soa_ptr: ?[*]const u8 = null;
     var soa_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_soa("nodejs.org", 10, &soa_ptr, &soa_len));
@@ -1009,6 +1047,10 @@ test "node plugin ffi native helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_ffi_has_symbol(lib, "strlen".ptr, 6, &has_strlen));
     try std.testing.expectEqual(@as(u32, 1), has_strlen);
 
+    var pid_value: i64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_ffi_call_i64_0(lib, "getpid".ptr, 6, &pid_value));
+    try std.testing.expect(pid_value > 0);
+
     var strlen_value: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_ffi_call_strlen(lib, "strlen".ptr, 6, "hello".ptr, 5, &strlen_value));
     try std.testing.expectEqual(@as(u64, 5), strlen_value);
@@ -1016,6 +1058,10 @@ test "node plugin ffi native helpers" {
     var abs_value: i64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_ffi_call_i64_1(lib, "abs".ptr, 3, -42, &abs_value));
     try std.testing.expectEqual(@as(i64, 42), abs_value);
+
+    var kill_value: i64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_ffi_call_i64_2(lib, "kill".ptr, 4, pid_value, 0, &kill_value));
+    try std.testing.expectEqual(@as(i64, 0), kill_value);
 
     var getenv_ptr: ?[*]const u8 = null;
     var getenv_len: u64 = 0;
@@ -1949,8 +1995,17 @@ test "node plugin fs promises helpers" {
     const file_path = "zig-cache-fs-promises-test/a.txt";
     const copy_path = "zig-cache-fs-promises-test/b.txt";
     const renamed_path = "zig-cache-fs-promises-test/c.txt";
+    const hardlink_path = "zig-cache-fs-promises-test/d.txt";
+    const symlink_path = "zig-cache-fs-promises-test/e.txt";
+    const mkdtemp_template = "zig-cache-fs-promises-temp-XXXXXX";
     _ = plugin.sa_node_plugin_fs_rm(dir_path.ptr, dir_path.len, 1);
     defer _ = plugin.sa_node_plugin_fs_rm(dir_path.ptr, dir_path.len, 1);
+    var temp_dir_ptr: ?[*]const u8 = null;
+    var temp_dir_len: u64 = 0;
+    defer if (temp_dir_ptr != null) {
+        _ = plugin.sa_node_plugin_fs_promises_rmdir(temp_dir_ptr, temp_dir_len);
+        _ = plugin.sa_node_plugin_free_buffer(temp_dir_ptr, temp_dir_len);
+    };
 
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_mkdir(dir_path.ptr, dir_path.len, 1));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_write_file(file_path.ptr, file_path.len, "hello".ptr, 5));
@@ -1968,6 +2023,12 @@ test "node plugin fs promises helpers" {
     const stat = (stat_ptr orelse return error.NullFsPromisesStat)[0..@intCast(stat_len)];
     try std.testing.expect(std.mem.indexOf(u8, stat, "\"size\":5") != null);
 
+    var lstat_ptr: ?[*]const u8 = null;
+    var lstat_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_lstat(file_path.ptr, file_path.len, &lstat_ptr, &lstat_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(lstat_ptr, lstat_len);
+    try std.testing.expect(std.mem.indexOf(u8, (lstat_ptr orelse return error.NullFsPromisesLstat)[0..@intCast(lstat_len)], "\"mode\":") != null);
+
     var entries_ptr: ?[*]const u8 = null;
     var entries_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_readdir(dir_path.ptr, dir_path.len, &entries_ptr, &entries_len));
@@ -1975,12 +2036,57 @@ test "node plugin fs promises helpers" {
     const entries = (entries_ptr orelse return error.NullFsPromisesReaddir)[0..@intCast(entries_len)];
     try std.testing.expect(std.mem.indexOf(u8, entries, "a.txt") != null);
 
+    var typed_entries_ptr: ?[*]const u8 = null;
+    var typed_entries_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_readdir_with_types(dir_path.ptr, dir_path.len, &typed_entries_ptr, &typed_entries_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(typed_entries_ptr, typed_entries_len);
+    const typed_entries = (typed_entries_ptr orelse return error.NullFsPromisesReaddirWithTypes)[0..@intCast(typed_entries_len)];
+    try std.testing.expect(std.mem.indexOf(u8, typed_entries, "a.txt") != null);
+    try std.testing.expect(std.mem.indexOf(u8, typed_entries, "\"type\":") != null);
+
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_copy_file(file_path.ptr, file_path.len, copy_path.ptr, copy_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_rename(copy_path.ptr, copy_path.len, renamed_path.ptr, renamed_path.len));
 
     var exists: u32 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_exists(renamed_path.ptr, renamed_path.len, &exists));
     try std.testing.expectEqual(@as(u32, 1), exists);
+
+    var access: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_access(renamed_path.ptr, renamed_path.len, 0, &access));
+    try std.testing.expectEqual(@as(u32, 1), access);
+
+    var realpath_ptr: ?[*]const u8 = null;
+    var realpath_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_realpath(renamed_path.ptr, renamed_path.len, &realpath_ptr, &realpath_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(realpath_ptr, realpath_len);
+    const realpath = (realpath_ptr orelse return error.NullFsPromisesRealpath)[0..@intCast(realpath_len)];
+    try std.testing.expect(realpath.len > 0);
+    try std.testing.expect(std.mem.indexOf(u8, realpath, "c.txt") != null);
+
+    var uid: u32 = 0;
+    var gid: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_getuid(&uid));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_getgid(&gid));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_chmod(renamed_path.ptr, renamed_path.len, 0o644));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_chown(renamed_path.ptr, renamed_path.len, uid, gid));
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_link(renamed_path.ptr, renamed_path.len, hardlink_path.ptr, hardlink_path.len));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_symlink(renamed_path.ptr, renamed_path.len, symlink_path.ptr, symlink_path.len));
+
+    var readlink_ptr: ?[*]const u8 = null;
+    var readlink_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_readlink(symlink_path.ptr, symlink_path.len, &readlink_ptr, &readlink_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(readlink_ptr, readlink_len);
+    try std.testing.expect(std.mem.indexOf(u8, (readlink_ptr orelse return error.NullFsPromisesReadlink)[0..@intCast(readlink_len)], "c.txt") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_mkdtemp(mkdtemp_template.ptr, mkdtemp_template.len, &temp_dir_ptr, &temp_dir_len));
+    try std.testing.expect(temp_dir_len >= mkdtemp_template.len - 6);
+
+    var statfs_ptr: ?[*]const u8 = null;
+    var statfs_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_statfs(dir_path.ptr, &statfs_ptr, &statfs_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(statfs_ptr, statfs_len);
+    try std.testing.expect(std.mem.indexOf(u8, (statfs_ptr orelse return error.NullFsPromisesStatfs)[0..@intCast(statfs_len)], "\"bsize\":") != null);
 
     var fd: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_open(renamed_path.ptr, renamed_path.len, 2, 0o644, &fd));
@@ -1996,6 +2102,28 @@ test "node plugin fs promises helpers" {
     try std.testing.expectEqual(@as(u64, 6), nread);
     try std.testing.expectEqualStrings("hello!", buf[0..@intCast(nread)]);
 
+    var fstat_ptr: ?[*]const u8 = null;
+    var fstat_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_fstat(fd, &fstat_ptr, &fstat_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(fstat_ptr, fstat_len);
+    try std.testing.expect(std.mem.indexOf(u8, (fstat_ptr orelse return error.NullFsPromisesFstat)[0..@intCast(fstat_len)], "\"size\":6") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_fsync(fd));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_fdatasync(fd));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_fchmod(fd, 0o644));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_fchown(fd, uid, gid));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_futimes(fd, 1000, 2000));
+
+    var readv_n: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_readv(fd, null, 0, &readv_n));
+    try std.testing.expectEqual(@as(u64, 0), readv_n);
+
+    var writev_n: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_writev(fd, null, 0, &writev_n));
+    try std.testing.expectEqual(@as(u64, 0), writev_n);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_ftruncate(fd, 0));
+
     var dir_handle: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_opendir(dir_path.ptr, dir_path.len, &dir_handle));
     defer _ = plugin.sa_node_plugin_fs_promises_opendir_free(dir_handle);
@@ -2008,6 +2136,8 @@ test "node plugin fs promises helpers" {
 
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(file_path.ptr, file_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(renamed_path.ptr, renamed_path.len));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(hardlink_path.ptr, hardlink_path.len));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(symlink_path.ptr, symlink_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_rmdir(dir_path.ptr, dir_path.len));
 }
 

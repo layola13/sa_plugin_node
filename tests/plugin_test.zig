@@ -5264,6 +5264,44 @@ test "node plugin http top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"WebSocket\":{\"supported\":false") != null);
 }
 
+test "node plugin https top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_https_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullHttpsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"https\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-https-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"request\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createServer\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_https_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullHttpsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"request\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"get\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Agent\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_https_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullHttpsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"agentModel\":\"not-modeled\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"transport\":\"HTTP client bridge over native TLS when available in the build\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_https_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullHttpsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"request\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Agent\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createServer\":{\"supported\":false") != null);
+}
+
 test "node plugin tls client round trip against local self-signed server" {
     var tmp = std.testing.tmpDir(.{ .iterate = true });
     defer tmp.cleanup();

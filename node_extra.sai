@@ -536,6 +536,9 @@
 @extern sa_node_plugin_http_validate_header_name(name_ptr: ptr, name_len: u64) -> u64
 @extern sa_node_plugin_http_validate_header_value(name_ptr: ptr, name_len: u64, value_ptr: ptr, value_len: u64) -> u64
 @extern sa_node_plugin_https_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_https_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_https_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_https_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_https_request_json(method_ptr: ptr, method_len: u64, url_ptr: ptr, url_len: u64, body_ptr: ptr, body_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_https_get_json(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_status_json(&out_ptr: ptr, &out_len: u64) -> u64

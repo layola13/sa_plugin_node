@@ -5623,6 +5623,15 @@ const http_export_names = [_][]const u8{
     "WebSocket",
 };
 
+const https_export_names = [_][]const u8{
+    "Agent",
+    "globalAgent",
+    "Server",
+    "createServer",
+    "get",
+    "request",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6406,13 +6415,27 @@ pub export fn sa_node_plugin_http_validate_header_value(name_ptr: ?[*]const u8, 
 }
 
 pub export fn sa_node_plugin_https_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(
-        out_ptr,
-        out_len,
-        "https",
-        true,
-        "HTTPS client requests are exposed through the HTTP client bridge",
-    );
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"https\",\"supported\":true,\"mode\":\"top-level-native-https-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &https_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"request\":true,\"get\":true,\"Agent\":false,\"globalAgent\":false,\"Server\":false,\"createServer\":false},\"capabilities\":[\"HTTPS request and get one-shot JSON helpers\",\"TLS-backed client requests through the HTTP client bridge\"],\"limitations\":[\"no JavaScript Agent, globalAgent, or Server object model\",\"no HTTPS createServer listener support at the top-level facade\",\"request and get return completed native response JSON rather than asynchronous ClientRequest objects\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_https_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &https_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_https_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"requestModel\":\"one-shot completed-response JSON helpers\",\"transport\":\"HTTP client bridge over native TLS when available in the build\",\"agentModel\":\"not-modeled\",\"serverModel\":\"not-modeled at the https top-level facade\"}");
+}
+
+pub export fn sa_node_plugin_https_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"request\":{\"supported\":true,\"mode\":\"one-shot completed-response JSON helper over the native HTTP/TLS bridge\",\"limitations\":[\"no JavaScript ClientRequest event emitter object\",\"no callback scheduling or streaming event lifecycle\"]},\"get\":{\"supported\":true,\"mode\":\"one-shot completed-response JSON helper over the native HTTP/TLS bridge\",\"limitations\":[\"returns native response JSON rather than a JavaScript request object\"]},\"Agent\":{\"supported\":false,\"reason\":\"JavaScript HTTPS Agent pooling objects are not modeled\"},\"globalAgent\":{\"supported\":false,\"reason\":\"global HTTPS Agent object identity is not modeled\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript HTTPS Server class instances are not modeled\"},\"createServer\":{\"supported\":false,\"reason\":\"HTTPS server listener and JavaScript event-emitter semantics are not modeled at the top-level facade\"}}");
 }
 
 pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

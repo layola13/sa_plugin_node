@@ -1234,6 +1234,100 @@ pub export fn sa_node_plugin_errors_out_of_range_json(name_ptr: ?[*]const u8, na
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+const internationalization_supported_encodings = [_][]const u8{
+    "utf-8",
+    "utf8",
+    "utf-16le",
+    "utf16le",
+    "ucs-2",
+    "ucs2",
+    "latin1",
+    "binary",
+    "ascii",
+    "base64",
+    "base64url",
+    "hex",
+};
+
+fn internationalizationFlagValue(token: []const u8, prefix: []const u8) ?[]const u8 {
+    if (!std.mem.startsWith(u8, token, prefix)) return null;
+    if (token.len <= prefix.len or token[prefix.len] != '=') return null;
+    return token[prefix.len + 1 ..];
+}
+
+fn internationalizationOwnedLocale(allocator: std.mem.Allocator) ![]u8 {
+    if (std.posix.getenv("LC_ALL")) |value| return allocator.dupe(u8, value);
+    if (std.posix.getenv("LC_CTYPE")) |value| return allocator.dupe(u8, value);
+    if (std.posix.getenv("LANG")) |value| return allocator.dupe(u8, value);
+    return allocator.dupe(u8, "C");
+}
+
+fn internationalizationConfiguredIcuDataDir(allocator: std.mem.Allocator) ?[]u8 {
+    const argv = std.process.argsAlloc(allocator) catch return null;
+    defer std.process.argsFree(allocator, argv);
+    if (argv.len > 1) {
+        var i: usize = 1;
+        while (i < argv.len) : (i += 1) {
+            if (internationalizationFlagValue(argv[i], "--icu-data-dir")) |value| {
+                return allocator.dupe(u8, value) catch null;
+            }
+            if (std.mem.eql(u8, argv[i], "--icu-data-dir") and i + 1 < argv.len) {
+                return allocator.dupe(u8, argv[i + 1]) catch null;
+            }
+        }
+    }
+
+    const node_options = std.posix.getenv("NODE_OPTIONS") orelse return null;
+    var tokens = std.mem.tokenizeAny(u8, node_options, " \t\r\n");
+    var pending: ?[]const u8 = tokens.next();
+    while (pending) |token| {
+        const next = tokens.next();
+        if (internationalizationFlagValue(token, "--icu-data-dir")) |value| {
+            return allocator.dupe(u8, value) catch null;
+        }
+        if (std.mem.eql(u8, token, "--icu-data-dir") and next != null) {
+            return allocator.dupe(u8, next.?) catch null;
+        }
+        pending = next;
+    }
+    return null;
+}
+
+fn internationalizationHasEncodingInternal(name: []const u8) bool {
+    for (internationalization_supported_encodings) |entry| {
+        if (std.ascii.eqlIgnoreCase(entry, name)) return true;
+    }
+    return false;
+}
+
+fn internationalizationWriteConfigJson(out: *std.ArrayList(u8)) !void {
+    const allocator = std.heap.page_allocator;
+    const locale = try internationalizationOwnedLocale(allocator);
+    defer allocator.free(locale);
+    const icu_data_dir = internationalizationConfiguredIcuDataDir(allocator);
+    defer if (icu_data_dir) |value| allocator.free(value);
+
+    try out.appendSlice("{\"icu\":false,\"effectiveLocale\":");
+    try appendJsonString(out, locale);
+    try out.appendSlice(",\"defaultEncoding\":\"utf-8\"");
+    try appendEnvStringField(out, "lang", "LANG");
+    try appendEnvStringField(out, "lcAll", "LC_ALL");
+    try appendEnvStringField(out, "lcCtype", "LC_CTYPE");
+    try appendEnvStringField(out, "timezone", "TZ");
+    try appendEnvStringField(out, "nodeIcuData", "NODE_ICU_DATA");
+    try out.appendSlice(",\"icuDataDirFlag\":");
+    if (icu_data_dir) |value| {
+        try appendJsonString(out, value);
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"icuConfigured\":");
+    try out.appendSlice(if (std.posix.getenv("NODE_ICU_DATA") != null or icu_data_dir != null) "true" else "false");
+    try out.appendSlice(",\"supportedEncodings\":");
+    try appendStringArray(out, &internationalization_supported_encodings);
+    try out.append('}');
+}
+
 pub export fn sa_node_plugin_internationalization_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
@@ -1242,8 +1336,50 @@ pub export fn sa_node_plugin_internationalization_status_json(out_ptr: ?*?[*]con
     appendEnvStringField(&out, "lcAll", "LC_ALL") catch return fail();
     appendEnvStringField(&out, "lcCtype", "LC_CTYPE") catch return fail();
     appendEnvStringField(&out, "timezone", "TZ") catch return fail();
-    out.appendSlice(",\"encoding\":\"utf-8\",\"capabilities\":[\"UTF-8 string/byte conversion\",\"TextEncoder/TextDecoder compatible helpers\",\"locale and timezone discovery from process environment\"],\"limitations\":[\"full ICU collation/date/number formatting is not bundled\",\"Intl JavaScript constructors are outside this native plugin surface\"]}") catch return fail();
+    appendEnvStringField(&out, "nodeIcuData", "NODE_ICU_DATA") catch return fail();
+    const icu_data_dir = internationalizationConfiguredIcuDataDir(std.heap.page_allocator);
+    defer if (icu_data_dir) |value| std.heap.page_allocator.free(value);
+    out.appendSlice(",\"icuDataDirFlag\":") catch return fail();
+    if (icu_data_dir) |value| {
+        appendJsonString(&out, value) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"encoding\":\"utf-8\",\"capabilities\":[\"UTF-8 string/byte conversion\",\"TextEncoder/TextDecoder compatible helpers\",\"locale and timezone discovery from process environment\",\"NODE_ICU_DATA and --icu-data-dir configuration introspection\",\"encoding support queries\"],\"limitations\":[\"full ICU collation/date/number formatting is not bundled\",\"Intl JavaScript constructors are outside this native plugin surface\",\"ICU configuration is reported but does not imply bundled Intl runtime support\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_internationalization_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    internationalizationWriteConfigJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_internationalization_effective_locale_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const locale = internationalizationOwnedLocale(std.heap.page_allocator) catch return fail();
+    defer std.heap.page_allocator.free(locale);
+    return writeJsonValue(out_ptr, out_len, locale);
+}
+
+pub export fn sa_node_plugin_internationalization_supported_encodings_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &internationalization_supported_encodings) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_internationalization_has_encoding(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    out_bool.?.* = if (internationalizationHasEncodingInternal(name)) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_internationalization_has_icu_config(out_bool: ?*u64) u32 {
+    const icu_data_dir = internationalizationConfiguredIcuDataDir(std.heap.page_allocator);
+    defer if (icu_data_dir) |value| std.heap.page_allocator.free(value);
+    out_bool.?.* = if (std.posix.getenv("NODE_ICU_DATA") != null or icu_data_dir != null) 1 else 0;
+    return 0;
 }
 
 pub export fn sa_node_plugin_iterable_streams_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

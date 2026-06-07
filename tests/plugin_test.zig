@@ -2339,6 +2339,61 @@ test "node plugin status reports native command line i18n deprecation and iterab
     try std.testing.expect(std.mem.indexOf(u8, iter, "pipeline state tracking") != null);
 }
 
+test "node plugin internationalization reports native config introspection" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--icu-data-dir=/opt/demo-icu", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_ICU_DATA", "/env/icu", 1));
+    defer _ = unsetenv("NODE_ICU_DATA");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("LC_ALL", "zh_CN.UTF-8", 1));
+    defer _ = unsetenv("LC_ALL");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("TZ", "Asia/Shanghai", 1));
+    defer _ = unsetenv("TZ");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullInternationalizationStatus2)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"internationalization\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"nodeIcuData\":\"/env/icu\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"icuDataDirFlag\":\"/opt/demo-icu\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullInternationalizationConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"effectiveLocale\":\"zh_CN.UTF-8\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"icuConfigured\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"supportedEncodings\":") != null);
+
+    var locale_ptr: ?[*]const u8 = null;
+    var locale_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_effective_locale_json(&locale_ptr, &locale_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(locale_ptr, locale_len);
+    try std.testing.expectEqualStrings("\"zh_CN.UTF-8\"", (locale_ptr orelse return error.NullInternationalizationLocale)[0..@intCast(locale_len)]);
+
+    var encodings_ptr: ?[*]const u8 = null;
+    var encodings_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_supported_encodings_json(&encodings_ptr, &encodings_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(encodings_ptr, encodings_len);
+    const encodings = (encodings_ptr orelse return error.NullInternationalizationEncodings)[0..@intCast(encodings_len)];
+    try std.testing.expect(std.mem.indexOf(u8, encodings, "utf-8") != null);
+    try std.testing.expect(std.mem.indexOf(u8, encodings, "utf16le") != null);
+
+    var has_utf8: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_has_encoding("utf-8".ptr, 5, &has_utf8));
+    try std.testing.expectEqual(@as(u64, 1), has_utf8);
+
+    var has_fake: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_has_encoding("shift-jis".ptr, 9, &has_fake));
+    try std.testing.expectEqual(@as(u64, 0), has_fake);
+
+    var has_icu: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_internationalization_has_icu_config(&has_icu));
+    try std.testing.expectEqual(@as(u64, 1), has_icu);
+}
+
 test "node plugin deprecated registry helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_clear());
 

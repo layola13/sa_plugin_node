@@ -3855,6 +3855,42 @@
     !__m_load_bc858a78_p_1
 [END_MACRO]
 
+[MACRO] NODE_INTERNATIONALIZATION_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_internationalization_config_ptr_slot = stack_alloc 8
+    __m_internationalization_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_config_json(&__m_internationalization_config_ptr_slot, &__m_internationalization_config_len_slot)
+    %out_ptr = load __m_internationalization_config_ptr_slot+0 as ptr
+    %out_len = load __m_internationalization_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_EFFECTIVE_LOCALE_JSON %out_ptr, %out_len, %out_status
+    __m_internationalization_locale_ptr_slot = stack_alloc 8
+    __m_internationalization_locale_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_effective_locale_json(&__m_internationalization_locale_ptr_slot, &__m_internationalization_locale_len_slot)
+    %out_ptr = load __m_internationalization_locale_ptr_slot+0 as ptr
+    %out_len = load __m_internationalization_locale_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_SUPPORTED_ENCODINGS_JSON %out_ptr, %out_len, %out_status
+    __m_internationalization_encodings_ptr_slot = stack_alloc 8
+    __m_internationalization_encodings_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_supported_encodings_json(&__m_internationalization_encodings_ptr_slot, &__m_internationalization_encodings_len_slot)
+    %out_ptr = load __m_internationalization_encodings_ptr_slot+0 as ptr
+    %out_len = load __m_internationalization_encodings_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_HAS_ENCODING %out_bool, %out_status, %name, %name_len
+    __m_internationalization_has_encoding_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_has_encoding(%name, %name_len, &__m_internationalization_has_encoding_slot)
+    %out_bool = load __m_internationalization_has_encoding_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_HAS_ICU_CONFIG %out_bool, %out_status
+    __m_internationalization_has_icu_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_has_icu_config(&__m_internationalization_has_icu_slot)
+    %out_bool = load __m_internationalization_has_icu_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_ITERABLE_STREAMS_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_4eec8950_0 = stack_alloc 8
     __m_slot_4eec8950_1 = stack_alloc 8

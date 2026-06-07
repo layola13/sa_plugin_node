@@ -1,0 +1,97 @@
+// SA tests for Node internationalization native helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_UTF8 = utf8:"utf-8"
+
+@test "node.internationalization native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_CONFIG, L_ERR_STATUS
+L_CONFIG:
+    !ok1
+    config_ptr = add 0, 0
+    config_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_CONFIG_JSON config_ptr, config_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_LOCALE, L_ERR_CONFIG
+L_LOCALE:
+    !ok2
+    locale_ptr = add 0, 0
+    locale_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_EFFECTIVE_LOCALE_JSON locale_ptr, locale_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_ENCODINGS, L_ERR_LOCALE
+L_ENCODINGS:
+    !ok3
+    enc_ptr = add 0, 0
+    enc_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_SUPPORTED_ENCODINGS_JSON enc_ptr, enc_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_HAS, L_ERR_ENCODINGS
+L_HAS:
+    !ok4
+    has_utf8 = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_HAS_ENCODING has_utf8, s5, S_UTF8, 5
+    ok5 = eq s5, 0
+    br ok5 -> L_ICU, L_ERR_HAS
+L_ICU:
+    !ok5
+    has_icu = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_INTERNATIONALIZATION_HAS_ICU_CONFIG has_icu, s6
+    ok6 = eq s6, 0
+    br ok6 -> L_FREE, L_ERR_ICU
+L_FREE:
+    !ok6
+    free_enc = call @sa_node_plugin_free_buffer(enc_ptr, enc_len)
+    free_locale = call @sa_node_plugin_free_buffer(locale_ptr, locale_len)
+    free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_config
+    !free_locale
+    !free_enc
+    !s6
+    !has_icu
+    !s5
+    !has_utf8
+    !s4
+    !enc_len
+    !enc_ptr
+    !s3
+    !locale_len
+    !locale_ptr
+    !s2
+    !config_len
+    !config_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_CONFIG:
+    !ok2
+    panic(103)
+L_ERR_LOCALE:
+    !ok3
+    panic(103)
+L_ERR_ENCODINGS:
+    !ok4
+    panic(103)
+L_ERR_HAS:
+    !ok5
+    panic(103)
+L_ERR_ICU:
+    !ok6
+    panic(103)

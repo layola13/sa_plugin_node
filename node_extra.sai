@@ -323,6 +323,11 @@
 @extern sa_node_plugin_errors_invalid_arg_value_json(name_ptr: ptr, name_len: u64, value_ptr: ptr, value_len: u64, reason_ptr: ptr, reason_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_out_of_range_json(name_ptr: ptr, name_len: u64, range_ptr: ptr, range_len: u64, received_ptr: ptr, received_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_internationalization_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_internationalization_effective_locale_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_internationalization_supported_encodings_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_internationalization_has_encoding(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_internationalization_has_icu_config(&out_bool: u64) -> u64
 @extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_permissions_is_enabled(&out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_is_audit_mode(&out_bool: u64) -> u64

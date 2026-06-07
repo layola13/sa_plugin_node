@@ -2308,6 +2308,21 @@ pub export fn sa_node_plugin_repl_free(session_ptr: ?*anyopaque) u32 {
 }
 
 const test_runner_builtin_reporters = [_][]const u8{ "spec", "tap", "dot", "junit", "lcov" };
+const test_module_export_names = [_][]const u8{
+    "test",
+    "it",
+    "suite",
+    "describe",
+    "before",
+    "after",
+    "beforeEach",
+    "afterEach",
+    "run",
+    "getTestContext",
+    "assert",
+    "mock",
+    "snapshot",
+};
 
 const TestRunnerConfig = struct {
     allocator: std.mem.Allocator,
@@ -2558,6 +2573,41 @@ pub export fn sa_node_plugin_test_runner_status_json(out_ptr: ?*?[*]const u8, ou
     testRunnerWriteConfigJson(&config, &out) catch return fail();
     out.appendSlice(",\"capabilities\":[\"built-in reporter metadata\",\"host argv and NODE_OPTIONS test flag introspection\",\"coverage/watch/only/isolation/concurrency/timeout snapshot\"],\"limitations\":[\"no JavaScript callback scheduling\",\"no TAP or TestsStream object model\",\"NODE_OPTIONS parsing is whitespace-based and does not emulate shell quoting\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_test_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var config = testRunnerReadConfig(allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"test\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"top-level-native-test-module\",\"exports\":") catch return fail();
+    appendStringArray(&out, &test_module_export_names) catch return fail();
+    out.appendSlice(",\"aliases\":{\"describe\":\"suite\",\"it\":\"test\"},\"reporters\":") catch return fail();
+    appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
+    out.appendSlice(",\"config\":") catch return fail();
+    testRunnerWriteConfigJson(&config, &out) catch return fail();
+    out.appendSlice(",\"assert\":{\"module\":\"assert\",\"supported\":true,\"register\":false,\"reason\":\"native assert compatibility helpers are exposed separately without node:test registration callbacks\"},\"mock\":{\"supported\":false,\"reason\":\"MockTracker and JavaScript function interception are not modeled\"},\"snapshot\":{\"supported\":false,\"reason\":\"snapshot serializer hooks and path resolution callbacks are not modeled\"},\"capabilities\":[\"top-level export and alias metadata\",\"built-in reporter metadata\",\"host argv and NODE_OPTIONS test flag introspection\",\"separate assert compatibility integration metadata\"],\"limitations\":[\"no JavaScript callback scheduling or subtest execution\",\"no TestContext, Suite, or MockTracker object model\",\"no snapshot serializer/path hook callbacks\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_test_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &test_module_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_test_reporters_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return sa_node_plugin_test_runner_builtin_reporters_json(out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_test_assert_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"module\":\"assert\",\"supported\":true,\"register\":false,\"ok\":true,\"equal\":true,\"deepStrictEqual\":true,\"fail\":true,\"reason\":\"native assert compatibility helpers are available, but node:test assert.register callbacks are not modeled\"}");
+}
+
+pub export fn sa_node_plugin_test_property_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"mock\":{\"supported\":false,\"reason\":\"MockTracker and JS interception are not modeled\"},\"snapshot\":{\"supported\":false,\"reason\":\"snapshot serializer and resolve path callbacks are not modeled\"},\"getTestContext\":{\"supported\":false,\"reason\":\"JavaScript TestContext objects are not modeled\"},\"run\":{\"supported\":false,\"reason\":\"node:test run() callback/object model is not modeled; use sa test and test_runner metadata instead\"}}");
 }
 
 // --- Domain ---

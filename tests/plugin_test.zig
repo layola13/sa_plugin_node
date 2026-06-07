@@ -2037,6 +2037,50 @@ test "node plugin test runner reports native harness support" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
     defer _ = unsetenv("NODE_OPTIONS");
 
+    var test_status_ptr: ?[*]const u8 = null;
+    var test_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_status_json(&test_status_ptr, &test_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(test_status_ptr, test_status_len);
+    const test_status = (test_status_ptr orelse return error.NullTestStatus)[0..@intCast(test_status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"module\":\"test\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"mode\":\"top-level-native-test-module\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"describe\":\"suite\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"it\":\"test\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"mock\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_status, "\"snapshot\":{\"supported\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullTestExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"test\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"suite\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"assert\"") != null);
+
+    var top_reporters_ptr: ?[*]const u8 = null;
+    var top_reporters_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_reporters_json(&top_reporters_ptr, &top_reporters_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(top_reporters_ptr, top_reporters_len);
+    try std.testing.expectEqualStrings("[\"spec\",\"tap\",\"dot\",\"junit\",\"lcov\"]", (top_reporters_ptr orelse return error.NullTestReporters)[0..@intCast(top_reporters_len)]);
+
+    var test_assert_ptr: ?[*]const u8 = null;
+    var test_assert_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_assert_support_json(&test_assert_ptr, &test_assert_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(test_assert_ptr, test_assert_len);
+    const test_assert = (test_assert_ptr orelse return error.NullTestAssertSupport)[0..@intCast(test_assert_len)];
+    try std.testing.expect(std.mem.indexOf(u8, test_assert, "\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_assert, "\"register\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, test_assert, "deepStrictEqual") != null);
+
+    var property_ptr: ?[*]const u8 = null;
+    var property_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_property_support_json(&property_ptr, &property_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(property_ptr, property_len);
+    const property_json = (property_ptr orelse return error.NullTestPropertySupport)[0..@intCast(property_len)];
+    try std.testing.expect(std.mem.indexOf(u8, property_json, "\"getTestContext\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, property_json, "\"run\":{\"supported\":false") != null);
+
     var ptr: ?[*]const u8 = null;
     var len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_status_json(&ptr, &len));

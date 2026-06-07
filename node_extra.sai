@@ -369,6 +369,11 @@
 @extern sa_node_plugin_repl_snapshot_json(session_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_repl_close(session_ptr: ptr) -> u64
 @extern sa_node_plugin_repl_free(session_ptr: ptr) -> u64
+@extern sa_node_plugin_test_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_assert_support_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_property_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_builtin_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_config_json(&out_ptr: ptr, &out_len: u64) -> u64

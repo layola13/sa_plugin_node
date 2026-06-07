@@ -1,0 +1,87 @@
+// SA tests for Node top-level test module compatibility helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.test top level helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_TEST_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_EXPORTS, L_ERR_STATUS
+L_EXPORTS:
+    !ok1
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TEST_EXPORTS_JSON exports_ptr, exports_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_REPORTERS, L_ERR_EXPORTS
+L_REPORTERS:
+    !ok2
+    reporters_ptr = add 0, 0
+    reporters_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_TEST_REPORTERS_JSON reporters_ptr, reporters_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_ASSERT, L_ERR_REPORTERS
+L_ASSERT:
+    !ok3
+    assert_ptr = add 0, 0
+    assert_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_TEST_ASSERT_SUPPORT_JSON assert_ptr, assert_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_PROPERTY, L_ERR_ASSERT
+L_PROPERTY:
+    !ok4
+    property_ptr = add 0, 0
+    property_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_TEST_PROPERTY_SUPPORT_JSON property_ptr, property_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_FREE, L_ERR_PROPERTY
+L_FREE:
+    !ok5
+    free_property = call @sa_node_plugin_free_buffer(property_ptr, property_len)
+    free_assert = call @sa_node_plugin_free_buffer(assert_ptr, assert_len)
+    free_reporters = call @sa_node_plugin_free_buffer(reporters_ptr, reporters_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_reporters
+    !free_assert
+    !free_property
+    !s5
+    !property_len
+    !property_ptr
+    !s4
+    !assert_len
+    !assert_ptr
+    !s3
+    !reporters_len
+    !reporters_ptr
+    !s2
+    !exports_len
+    !exports_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_EXPORTS:
+    !ok2
+    panic(103)
+L_ERR_REPORTERS:
+    !ok3
+    panic(103)
+L_ERR_ASSERT:
+    !ok4
+    panic(103)
+L_ERR_PROPERTY:
+    !ok5
+    panic(103)

@@ -3895,6 +3895,23 @@ const cluster_sched_rr: u64 = 2;
 
 var cluster_scheduling_policy: u64 = cluster_sched_rr;
 
+const cluster_export_names = [_][]const u8{
+    "isPrimary",
+    "isMaster",
+    "isWorker",
+    "SCHED_NONE",
+    "SCHED_RR",
+    "schedulingPolicy",
+    "setupPrimary",
+    "setupMaster",
+    "fork",
+    "settings",
+    "Worker",
+    "worker",
+    "workers",
+    "disconnect",
+};
+
 const ClusterPrimaryConfig = struct {
     allocator: std.mem.Allocator,
     exec: ?[]u8 = null,
@@ -5500,10 +5517,34 @@ pub export fn sa_node_plugin_http2_nghttp2_version_json(out_ptr: ?*?[*]const u8,
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.appendSlice("{\"module\":\"cluster\",\"supported\":true,\"mode\":\"native-subprocess-workers\",\"isPrimary\":true,\"isWorker\":false,\"schedulingPolicy\":") catch return fail();
+    var primary_ptr: ?[*]const u8 = null;
+    var primary_len: u64 = 0;
+    if (clusterPrimarySnapshotJson(&primary_ptr, &primary_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(primary_ptr, primary_len);
+
+    out.appendSlice("{\"module\":\"cluster\",\"supported\":true,\"mode\":\"top-level-native-cluster-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &cluster_export_names) catch return fail();
+    out.appendSlice(",\"isPrimary\":true,\"isMaster\":true,\"isWorker\":false,\"schedulingPolicy\":") catch return fail();
     out.writer().print("{d}", .{cluster_scheduling_policy}) catch return fail();
-    out.appendSlice(",\"capabilities\":[\"setupPrimary metadata\",\"fork subprocess worker handles\",\"stdin/stdout message exchange\",\"worker pid/alive/connected snapshot\",\"worker disconnect/kill/free\"],\"limitations\":[\"no JavaScript EventEmitter object model\",\"no shared libuv server handle distribution\",\"no Node internal IPC framing or serialization\"]}") catch return fail();
+    out.appendSlice(",\"constants\":{\"SCHED_NONE\":1,\"SCHED_RR\":2},\"settings\":") catch return fail();
+    out.appendSlice((primary_ptr orelse return fail())[0..@intCast(primary_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"setupPrimary\":true,\"setupMaster\":true,\"fork\":true,\"disconnect\":false,\"WorkerClass\":false,\"workerProperty\":false,\"workersMap\":false,\"send\":true,\"kill\":true,\"wait\":true,\"sharedServerHandles\":false,\"internalSerialization\":false},\"capabilities\":[\"setupPrimary and setupMaster config metadata\",\"fork subprocess worker handles\",\"stdin/stdout message exchange\",\"worker pid/alive/connected snapshot\",\"worker disconnect/kill/wait/free\"],\"limitations\":[\"no JavaScript EventEmitter primary or worker object model\",\"no shared libuv server handle distribution\",\"no Node internal IPC framing or structured serialization\",\"workers and worker are exposed as metadata only, not live JavaScript objects\",\"disconnect is only available on explicit native worker handles, not as a top-level cluster object method\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_cluster_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &cluster_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_cluster_primary_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return clusterPrimarySnapshotJson(out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_cluster_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"isPrimary\":{\"supported\":true,\"mode\":\"always true in the primary native process\"},\"isMaster\":{\"supported\":true,\"mode\":\"legacy alias of isPrimary\"},\"isWorker\":{\"supported\":true,\"mode\":\"always false in the primary native process\"},\"SCHED_NONE\":{\"supported\":true,\"value\":1},\"SCHED_RR\":{\"supported\":true,\"value\":2},\"schedulingPolicy\":{\"supported\":true,\"mode\":\"native stored policy metadata\"},\"setupPrimary\":{\"supported\":true,\"mode\":\"store exec/args/cwd/env metadata for native forks\"},\"setupMaster\":{\"supported\":true,\"mode\":\"alias of setupPrimary for legacy cluster API naming\"},\"fork\":{\"supported\":true,\"mode\":\"spawn subprocess worker handle with stdin/stdout pipes\"},\"settings\":{\"supported\":true,\"mode\":\"returns stored primary config snapshot JSON\"},\"Worker\":{\"supported\":false,\"reason\":\"JavaScript Worker class construction and EventEmitter prototype semantics are not modeled\"},\"worker\":{\"supported\":false,\"reason\":\"current-process worker object identity is not modeled\"},\"workers\":{\"supported\":false,\"reason\":\"live worker registry object map is not modeled\"},\"disconnect\":{\"supported\":false,\"reason\":\"top-level cluster disconnect across worker registry is not modeled; explicit worker handles can disconnect individually\"},\"send\":{\"supported\":true,\"mode\":\"stdin write on explicit worker handle\"},\"receiveMessage\":{\"supported\":true,\"mode\":\"stdout read on explicit worker handle\"},\"sharedServerHandles\":{\"supported\":false,\"reason\":\"shared libuv server distribution is not modeled\"},\"internalSerialization\":{\"supported\":false,\"reason\":\"Node cluster internal IPC framing and advancedHandle passing are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

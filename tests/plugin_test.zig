@@ -2141,6 +2141,50 @@ test "node plugin cluster setup_primary_json and signal wait helpers" {
     try std.testing.expectEqual(@as(u64, 0), exited_after_disconnect);
 }
 
+test "node plugin cluster top-level facade helpers" {
+    const config = "{\"exec\":\"/bin/cat\",\"cwd\":\".\",\"env\":{\"CLUSTER_TOP\":\"1\"}}";
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_setup_primary_json(config.ptr, config.len));
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullClusterStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"cluster\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-cluster-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"isMaster\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"WorkerClass\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullClusterExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"setupPrimary\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"setupMaster\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"fork\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Worker\"") != null);
+
+    var primary_ptr: ?[*]const u8 = null;
+    var primary_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_primary_config_json(&primary_ptr, &primary_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(primary_ptr, primary_len);
+    const primary_json = (primary_ptr orelse return error.NullClusterPrimaryConfig)[0..@intCast(primary_len)];
+    try std.testing.expect(std.mem.indexOf(u8, primary_json, "\"exec\":\"/bin/cat\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, primary_json, "\"cwd\":\".\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, primary_json, "\"CLUSTER_TOP\":\"1\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullClusterFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"setupPrimary\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"setupMaster\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Worker\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"internalSerialization\":{\"supported\":false") != null);
+}
+
 test "node plugin domain handle helpers" {
     var domain: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_create(&domain));

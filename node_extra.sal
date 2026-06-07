@@ -3833,6 +3833,28 @@
     !__m_load_b7993a1c_p_1
 [END_MACRO]
 
+[MACRO] NODE_TEST_RUNNER_BUILTIN_REPORTERS_JSON %out_ptr, %out_len, %out_status
+    __m_test_runner_reporters_ptr_slot = stack_alloc 8
+    __m_test_runner_reporters_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_builtin_reporters_json(&__m_test_runner_reporters_ptr_slot, &__m_test_runner_reporters_len_slot)
+    %out_ptr = load __m_test_runner_reporters_ptr_slot+0 as ptr
+    %out_len = load __m_test_runner_reporters_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_test_runner_config_ptr_slot = stack_alloc 8
+    __m_test_runner_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_config_json(&__m_test_runner_config_ptr_slot, &__m_test_runner_config_len_slot)
+    %out_ptr = load __m_test_runner_config_ptr_slot+0 as ptr
+    %out_len = load __m_test_runner_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_HAS_BUILTIN_REPORTER %out_bool, %out_status, %name, %name_len
+    __m_test_runner_has_reporter_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_has_builtin_reporter(%name, %name_len, &__m_test_runner_has_reporter_slot)
+    %out_bool = load __m_test_runner_has_reporter_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_WEB_CRYPTO_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_931d5555_0 = stack_alloc 8
     __m_slot_931d5555_1 = stack_alloc 8

@@ -316,6 +316,9 @@
 @extern sa_node_plugin_permissions_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_repl_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_runner_builtin_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_runner_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_runner_has_builtin_reporter(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_web_crypto_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_web_crypto_get_random_values(buf_ptr: ptr, buf_len: u64) -> u64
 @extern sa_node_plugin_web_crypto_random_uuid(&out_ptr: ptr, &out_len: u64) -> u64

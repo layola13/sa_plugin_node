@@ -1970,6 +1970,9 @@ test "node plugin timers create and clear registry entries" {
 }
 
 test "node plugin test runner reports native harness support" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+
     var ptr: ?[*]const u8 = null;
     var len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_status_json(&ptr, &len));
@@ -1978,6 +1981,38 @@ test "node plugin test runner reports native harness support" {
     try std.testing.expect(std.mem.indexOf(u8, json, "\"module\":\"test_runner\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"backend\":\"sa test\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"mode\":\"sync-native-config-introspection\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"builtinReporters\":[\"spec\",\"tap\",\"dot\",\"junit\",\"lcov\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"coverage\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"only\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"concurrency\":4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"timeout\":250") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"isolation\":\"none\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"tap\"") != null);
+
+    var reporters_ptr: ?[*]const u8 = null;
+    var reporters_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_builtin_reporters_json(&reporters_ptr, &reporters_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(reporters_ptr, reporters_len);
+    const reporters = (reporters_ptr orelse return error.NullTestRunnerReporters)[0..@intCast(reporters_len)];
+    try std.testing.expectEqualStrings("[\"spec\",\"tap\",\"dot\",\"junit\",\"lcov\"]", reporters);
+
+    var has_spec: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_has_builtin_reporter("spec".ptr, 4, &has_spec));
+    try std.testing.expectEqual(@as(u64, 1), has_spec);
+
+    var has_fake: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_has_builtin_reporter("fake".ptr, 4, &has_fake));
+    try std.testing.expectEqual(@as(u64, 0), has_fake);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_test_runner_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullTestRunnerConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"coverage\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"reporters\":[\"tap\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"reporterDestinations\":[\"stdout\"]") != null);
 }
 
 test "node plugin errors and permissions report native compatibility status" {

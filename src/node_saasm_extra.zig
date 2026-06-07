@@ -726,8 +726,257 @@ pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: 
     return writeStatusJson(out_ptr, out_len, "repl", false, "interactive REPL is not modeled");
 }
 
+const test_runner_builtin_reporters = [_][]const u8{ "spec", "tap", "dot", "junit", "lcov" };
+
+const TestRunnerConfig = struct {
+    allocator: std.mem.Allocator,
+    coverage: bool = false,
+    watch: bool = false,
+    only: bool = false,
+    force_exit: bool = false,
+    concurrency: ?u64 = null,
+    timeout: ?u64 = null,
+    isolation: ?[]u8 = null,
+    rerun_failures_path: ?[]u8 = null,
+    reporters: std.ArrayList([]u8),
+    reporter_destinations: std.ArrayList([]u8),
+    saw_node_options: bool = false,
+    saw_argv: bool = false,
+
+    fn init(allocator: std.mem.Allocator) TestRunnerConfig {
+        return .{
+            .allocator = allocator,
+            .reporters = std.ArrayList([]u8).init(allocator),
+            .reporter_destinations = std.ArrayList([]u8).init(allocator),
+        };
+    }
+
+    fn deinit(self: *TestRunnerConfig) void {
+        for (self.reporters.items) |item| self.allocator.free(item);
+        self.reporters.deinit();
+        for (self.reporter_destinations.items) |item| self.allocator.free(item);
+        self.reporter_destinations.deinit();
+        if (self.isolation) |value| self.allocator.free(value);
+        if (self.rerun_failures_path) |value| self.allocator.free(value);
+    }
+};
+
+fn testRunnerFlagValue(token: []const u8, prefix: []const u8) ?[]const u8 {
+    if (!std.mem.startsWith(u8, token, prefix)) return null;
+    if (token.len <= prefix.len or token[prefix.len] != '=') return null;
+    return token[prefix.len + 1 ..];
+}
+
+fn testRunnerConfigPush(list: *std.ArrayList([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
+    try list.append(try allocator.dupe(u8, value));
+}
+
+fn testRunnerConfigSetOwned(slot: *?[]u8, allocator: std.mem.Allocator, value: []const u8) !void {
+    if (slot.*) |existing| allocator.free(existing);
+    slot.* = try allocator.dupe(u8, value);
+}
+
+fn testRunnerParseToken(config: *TestRunnerConfig, token: []const u8, next: ?[]const u8) !bool {
+    if (std.mem.eql(u8, token, "--experimental-test-coverage")) {
+        config.coverage = true;
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--watch")) {
+        config.watch = true;
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-only")) {
+        config.only = true;
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-force-exit")) {
+        config.force_exit = true;
+        return false;
+    }
+    if (testRunnerFlagValue(token, "--test-concurrency")) |value| {
+        config.concurrency = std.fmt.parseInt(u64, value, 10) catch config.concurrency;
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-concurrency") and next != null) {
+        config.concurrency = std.fmt.parseInt(u64, next.?, 10) catch config.concurrency;
+        return true;
+    }
+    if (testRunnerFlagValue(token, "--test-timeout")) |value| {
+        config.timeout = std.fmt.parseInt(u64, value, 10) catch config.timeout;
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-timeout") and next != null) {
+        config.timeout = std.fmt.parseInt(u64, next.?, 10) catch config.timeout;
+        return true;
+    }
+    if (testRunnerFlagValue(token, "--test-isolation")) |value| {
+        try testRunnerConfigSetOwned(&config.isolation, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-isolation") and next != null) {
+        try testRunnerConfigSetOwned(&config.isolation, config.allocator, next.?);
+        return true;
+    }
+    if (testRunnerFlagValue(token, "--test-reporter")) |value| {
+        try testRunnerConfigPush(&config.reporters, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-reporter") and next != null) {
+        try testRunnerConfigPush(&config.reporters, config.allocator, next.?);
+        return true;
+    }
+    if (testRunnerFlagValue(token, "--test-reporter-destination")) |value| {
+        try testRunnerConfigPush(&config.reporter_destinations, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-reporter-destination") and next != null) {
+        try testRunnerConfigPush(&config.reporter_destinations, config.allocator, next.?);
+        return true;
+    }
+    if (testRunnerFlagValue(token, "--test-rerun-failures")) |value| {
+        try testRunnerConfigSetOwned(&config.rerun_failures_path, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--test-rerun-failures") and next != null) {
+        try testRunnerConfigSetOwned(&config.rerun_failures_path, config.allocator, next.?);
+        return true;
+    }
+    return false;
+}
+
+fn testRunnerParseNodeOptions(config: *TestRunnerConfig) !void {
+    const options = std.posix.getenv("NODE_OPTIONS") orelse return;
+    config.saw_node_options = true;
+    var tokens = std.mem.tokenizeAny(u8, options, " \t\r\n");
+    var pending: ?[]const u8 = tokens.next();
+    while (pending) |token| {
+        const next = tokens.next();
+        const consumed_next = try testRunnerParseToken(config, token, next);
+        pending = if (consumed_next) tokens.next() else next;
+    }
+}
+
+fn testRunnerParseArgv(config: *TestRunnerConfig) !void {
+    const allocator = config.allocator;
+    const argv = std.process.argsAlloc(allocator) catch return;
+    defer std.process.argsFree(allocator, argv);
+    if (argv.len <= 1) return;
+    config.saw_argv = true;
+    var i: usize = 1;
+    while (i < argv.len) : (i += 1) {
+        const consumed_next = try testRunnerParseToken(config, argv[i], if (i + 1 < argv.len) argv[i + 1] else null);
+        if (consumed_next) i += 1;
+    }
+}
+
+fn testRunnerReadConfig(allocator: std.mem.Allocator) !TestRunnerConfig {
+    var config = TestRunnerConfig.init(allocator);
+    errdefer config.deinit();
+    try testRunnerParseNodeOptions(&config);
+    try testRunnerParseArgv(&config);
+    if (config.reporters.items.len == 0) {
+        try testRunnerConfigPush(&config.reporters, allocator, "spec");
+    }
+    if (config.isolation == null) {
+        try testRunnerConfigSetOwned(&config.isolation, allocator, "process");
+    }
+    return config;
+}
+
+fn testRunnerAppendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8) !void {
+    try out.append('[');
+    for (items, 0..) |item, i| {
+        if (i != 0) try out.append(',');
+        try appendJsonString(out, item);
+    }
+    try out.append(']');
+}
+
+fn testRunnerWriteConfigJson(config: *const TestRunnerConfig, out: *std.ArrayList(u8)) !void {
+    try out.appendSlice("{\"coverage\":");
+    try out.appendSlice(if (config.coverage) "true" else "false");
+    try out.appendSlice(",\"watch\":");
+    try out.appendSlice(if (config.watch) "true" else "false");
+    try out.appendSlice(",\"only\":");
+    try out.appendSlice(if (config.only) "true" else "false");
+    try out.appendSlice(",\"forceExit\":");
+    try out.appendSlice(if (config.force_exit) "true" else "false");
+    try out.appendSlice(",\"concurrency\":");
+    if (config.concurrency) |value| {
+        try out.writer().print("{d}", .{value});
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"timeout\":");
+    if (config.timeout) |value| {
+        try out.writer().print("{d}", .{value});
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"isolation\":");
+    if (config.isolation) |value| {
+        try appendJsonString(out, value);
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"rerunFailuresPath\":");
+    if (config.rerun_failures_path) |value| {
+        try appendJsonString(out, value);
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"reporters\":");
+    try testRunnerAppendOwnedStringArray(out, config.reporters.items);
+    try out.appendSlice(",\"reporterDestinations\":");
+    try testRunnerAppendOwnedStringArray(out, config.reporter_destinations.items);
+    try out.appendSlice(",\"source\":{\"nodeOptions\":");
+    try out.appendSlice(if (config.saw_node_options) "true" else "false");
+    try out.appendSlice(",\"argv\":");
+    try out.appendSlice(if (config.saw_argv) "true" else "false");
+    try out.appendSlice("}}");
+}
+
+pub export fn sa_node_plugin_test_runner_builtin_reporters_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_test_runner_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var config = testRunnerReadConfig(allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    testRunnerWriteConfigJson(&config, &out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_test_runner_has_builtin_reporter(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) "" else (name_ptr orelse return fail())[0..name_len];
+    for (test_runner_builtin_reporters) |reporter| {
+        if (std.mem.eql(u8, reporter, name)) {
+            out_bool.?.* = 1;
+            return 0;
+        }
+    }
+    out_bool.?.* = 0;
+    return 0;
+}
+
 pub export fn sa_node_plugin_test_runner_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"module\":\"test_runner\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"sync-native-harness\",\"capabilities\":[\"status\",\"tests\",\"assertions\"],\"limitations\":[\"no JavaScript callback scheduling\",\"no TAP stream object model\"]}");
+    const allocator = std.heap.page_allocator;
+    var config = testRunnerReadConfig(allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"test_runner\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"sync-native-config-introspection\",\"builtinReporters\":") catch return fail();
+    appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
+    out.appendSlice(",\"config\":") catch return fail();
+    testRunnerWriteConfigJson(&config, &out) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"built-in reporter metadata\",\"host argv and NODE_OPTIONS test flag introspection\",\"coverage/watch/only/isolation/concurrency/timeout snapshot\"],\"limitations\":[\"no JavaScript callback scheduling\",\"no TAP or TestsStream object model\",\"NODE_OPTIONS parsing is whitespace-based and does not emulate shell quoting\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 // --- Domain ---

@@ -1707,6 +1707,46 @@ test "node plugin perf hooks and diagnostics channel" {
     defer _ = plugin.sa_node_plugin_free_buffer(@ptrCast(tracing), 1);
 }
 
+test "node plugin diagnostics_channel top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_diagnostics_channel_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullDiagnosticsChannelStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"diagnostics_channel\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-channel-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"boundedChannel\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"tracingChannel\":true") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_diagnostics_channel_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullDiagnosticsChannelExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"channel\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"tracingChannel\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Channel\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"BoundedChannel\"") != null);
+
+    var factories_ptr: ?[*]const u8 = null;
+    var factories_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_diagnostics_channel_factories_json(&factories_ptr, &factories_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(factories_ptr, factories_len);
+    const factories_json = (factories_ptr orelse return error.NullDiagnosticsChannelFactories)[0..@intCast(factories_len)];
+    try std.testing.expect(std.mem.indexOf(u8, factories_json, "\"channel\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, factories_json, "\"tracingChannel\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, factories_json, "\"boundedChannel\":{\"supported\":false") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_diagnostics_channel_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullDiagnosticsChannelFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"channel\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Channel\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"tracingChannel\":{\"supported\":true") != null);
+}
+
 test "node plugin perf hooks histogram extended statistics" {
     var hist: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_create_histogram(&hist));

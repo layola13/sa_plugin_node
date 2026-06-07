@@ -694,6 +694,9 @@
 @extern sa_node_plugin_sqlite_tagstore_free(store_ptr: ptr) -> u64
 @extern sa_node_plugin_tty_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_diagnostics_channel_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_factories_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_diagnostics_channel_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_client_new(use_tls: u64, &out_client: ptr) -> u64
 @extern sa_node_plugin_http_client_req_new(client: ptr, method: u64, url_ptr: ptr, url_len: u64, &out_req: ptr) -> u64
 @extern sa_node_plugin_http_client_req_add_header(req: ptr, key_ptr: ptr, key_len: u64, val_ptr: ptr, val_len: u64) -> u64

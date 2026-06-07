@@ -3578,6 +3578,38 @@
     !__m_load_3b071334_p_2
 [END_MACRO]
 
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_diag_status_ptr_slot = stack_alloc 8
+    __m_diag_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_status_json(&__m_diag_status_ptr_slot, &__m_diag_status_len_slot)
+    %out_ptr = load __m_diag_status_ptr_slot+0 as ptr
+    %out_len = load __m_diag_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_diag_exports_ptr_slot = stack_alloc 8
+    __m_diag_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_exports_json(&__m_diag_exports_ptr_slot, &__m_diag_exports_len_slot)
+    %out_ptr = load __m_diag_exports_ptr_slot+0 as ptr
+    %out_len = load __m_diag_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_FACTORIES_JSON %out_ptr, %out_len, %out_status
+    __m_diag_factories_ptr_slot = stack_alloc 8
+    __m_diag_factories_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_factories_json(&__m_diag_factories_ptr_slot, &__m_diag_factories_len_slot)
+    %out_ptr = load __m_diag_factories_ptr_slot+0 as ptr
+    %out_len = load __m_diag_factories_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_diag_feature_ptr_slot = stack_alloc 8
+    __m_diag_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_feature_support_json(&__m_diag_feature_ptr_slot, &__m_diag_feature_len_slot)
+    %out_ptr = load __m_diag_feature_ptr_slot+0 as ptr
+    %out_len = load __m_diag_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_15917300_0 = stack_alloc 8
     __m_slot_15917300_1 = stack_alloc 8

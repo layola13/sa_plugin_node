@@ -8194,6 +8194,38 @@ pub export fn sa_node_plugin_sqlite_tagstore_free(store_ptr: ?*anyopaque) u32 {
 pub export fn sa_node_plugin_tty_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"tty\":{\"isatty\":true}}");
 }
+
+const diagnostics_channel_export_names = [_][]const u8{
+    "channel",
+    "hasSubscribers",
+    "subscribe",
+    "tracingChannel",
+    "unsubscribe",
+    "boundedChannel",
+    "Channel",
+    "BoundedChannel",
+};
+
 pub export fn sa_node_plugin_diagnostics_channel_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"diagnostics_channel\":{\"supported\":true}}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"diagnostics_channel\",\"supported\":true,\"mode\":\"top-level-native-channel-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &diagnostics_channel_export_names) catch return fail();
+    out.appendSlice(",\"factories\":{\"channel\":{\"supported\":true,\"mode\":\"native channel handle\"},\"tracingChannel\":{\"supported\":true,\"mode\":\"opaque tracing handle placeholder\"},\"boundedChannel\":{\"supported\":false,\"reason\":\"bounded channel window composition is not modeled as a first-class native handle\"}},\"channelOps\":{\"subscribe\":true,\"unsubscribe\":true,\"hasSubscribers\":true,\"publish\":true,\"snapshot\":true},\"featureSupport\":{\"ChannelClass\":false,\"BoundedChannelClass\":false,\"WeakRefMapLifecycle\":false,\"storeBinding\":false,\"runStores\":false,\"traceSync\":false,\"tracePromise\":false,\"traceCallback\":false,\"channel\":true,\"subscribe\":true,\"unsubscribe\":true,\"hasSubscribers\":true,\"tracingChannel\":true},\"limitations\":[\"channel handles are explicit native allocations rather than JavaScript Channel or ActiveChannel instances\",\"boundedChannel windows, store binding, and tracing callback wrappers are not modeled\",\"tracingChannel currently exposes opaque handle allocation metadata only and does not implement sync/promise/callback tracing flows\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_diagnostics_channel_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &diagnostics_channel_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_diagnostics_channel_factories_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"channel\":{\"supported\":true,\"returns\":\"native DiagnosticsChannel handle\",\"operations\":[\"subscribe\",\"unsubscribe\",\"hasSubscribers\",\"publish\",\"snapshot\",\"free\"]},\"tracingChannel\":{\"supported\":true,\"returns\":\"opaque tracing handle placeholder\",\"operations\":[\"allocate\",\"free via generic buffer free compatibility path\"],\"limitations\":[\"no sync/callback/promise trace wrappers\",\"no error/start/end/asyncStart/asyncEnd channel fanout\"]},\"boundedChannel\":{\"supported\":false,\"reason\":\"bounded multi-channel window handles are not modeled\"}}");
+}
+
+pub export fn sa_node_plugin_diagnostics_channel_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"channel\":{\"supported\":true,\"mode\":\"native channel handle\"},\"hasSubscribers\":{\"supported\":true,\"mode\":\"subscriber count boolean\"},\"subscribe\":{\"supported\":true,\"mode\":\"opaque callback token registry\"},\"unsubscribe\":{\"supported\":true,\"mode\":\"opaque callback token registry\"},\"publish\":{\"supported\":true,\"mode\":\"payload passthrough with subscriber count result\"},\"snapshot\":{\"supported\":true,\"mode\":\"channel metadata JSON\"},\"tracingChannel\":{\"supported\":true,\"mode\":\"opaque tracing handle placeholder\",\"limitations\":[\"no traceSync\",\"no tracePromise\",\"no traceCallback\"]},\"boundedChannel\":{\"supported\":false,\"reason\":\"bounded channel composition is not modeled\"},\"Channel\":{\"supported\":false,\"reason\":\"JavaScript Channel class instances and prototype switching are not modeled\"},\"BoundedChannel\":{\"supported\":false,\"reason\":\"JavaScript BoundedChannel class instances are not modeled\"},\"storeBinding\":{\"supported\":false,\"reason\":\"AsyncLocalStorage-style store scopes are not modeled\"}}");
 }

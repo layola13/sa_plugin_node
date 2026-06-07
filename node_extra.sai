@@ -495,6 +495,12 @@
 @extern sa_node_plugin_module_set_source_maps_support(enabled: u64, node_modules: u64, generated_code: u64) -> u64
 @extern sa_node_plugin_module_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_inspector_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_inspector_is_enabled(&out_bool: u64) -> u64
+@extern sa_node_plugin_inspector_is_allowed(&out_bool: u64) -> u64
+@extern sa_node_plugin_inspector_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_inspector_url_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_inspector_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_max_header_size(&out_size: ptr) -> u64
 @extern sa_node_plugin_http_set_max_idle_http_parsers(max: u64) -> u64

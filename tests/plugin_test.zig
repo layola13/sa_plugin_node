@@ -2284,6 +2284,71 @@ test "node plugin module top level native facade" {
     try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"stripTypeScriptTypes\":{\"supported\":false") != null);
 }
 
+test "node plugin inspector top-level facade helpers" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--permission --allow-inspector --inspect-wait=127.0.0.1:9333", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullInspectorStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"inspector\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-config-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"allowed\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"configuredPort\":9333") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"waitForDebugger\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Session\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullInspectorExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"open\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"url\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Session\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"DOMStorage\"") != null);
+
+    var enabled: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_is_enabled(&enabled));
+    try std.testing.expectEqual(@as(u64, 1), enabled);
+
+    var allowed: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_is_allowed(&allowed));
+    try std.testing.expectEqual(@as(u64, 1), allowed);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullInspectorConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"selectedFlag\":\"--inspect-wait=127.0.0.1:9333\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"kind\":\"inspect-wait\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"host\":\"127.0.0.1\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"port\":9333") != null);
+
+    var url_ptr: ?[*]const u8 = null;
+    var url_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_url_json(&url_ptr, &url_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(url_ptr, url_len);
+    const url_json = (url_ptr orelse return error.NullInspectorUrl)[0..@intCast(url_len)];
+    try std.testing.expect(std.mem.indexOf(u8, url_json, "\"active\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, url_json, "\"configured\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, url_json, "\"host\":\"127.0.0.1\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, url_json, "\"port\":9333") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_inspector_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullInspectorFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"url\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"open\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Session\":{\"supported\":false") != null);
+}
+
 test "node plugin wasi reports native config introspection" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--permission --allow-wasi --experimental-wasi-unstable-preview1", 1));
     defer _ = unsetenv("NODE_OPTIONS");

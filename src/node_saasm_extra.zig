@@ -5689,8 +5689,253 @@ pub export fn sa_node_plugin_module_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"createRequire\":{\"supported\":false,\"reason\":\"CommonJS loader instances are not modeled\"},\"register\":{\"supported\":false,\"reason\":\"ESM loader registration hooks are not modeled\"},\"registerHooks\":{\"supported\":false,\"reason\":\"ESM hook chaining is not modeled\"},\"runMain\":{\"supported\":false,\"reason\":\"Node main-module bootstrap is not modeled\"},\"syncBuiltinESMExports\":{\"supported\":false,\"reason\":\"builtin ESM/CJS export synchronization is not modeled\"},\"findSourceMap\":{\"supported\":false,\"reason\":\"source map cache lookup is not modeled\"},\"SourceMap\":{\"supported\":false,\"reason\":\"SourceMap object construction is not modeled\"},\"stripTypeScriptTypes\":{\"supported\":false,\"reason\":\"TypeScript syntax stripping is not yet modeled in this native facade\"}}");
 }
 
+const inspector_export_names = [_][]const u8{
+    "open",
+    "close",
+    "url",
+    "waitForDebugger",
+    "console",
+    "Session",
+    "Network",
+    "NetworkResources",
+    "DOMStorage",
+};
+
+const InspectorConfigSnapshot = struct {
+    allocator: std.mem.Allocator,
+    enabled: bool,
+    allowed: bool,
+    host: []const u8,
+    port: u16,
+    flag: ?[]const u8,
+    kind: ?[]const u8,
+    wait_for_debugger: bool,
+    break_first_line: bool,
+
+    fn deinit(self: *InspectorConfigSnapshot) void {
+        self.allocator.free(self.host);
+        if (self.flag) |flag| self.allocator.free(flag);
+    }
+};
+
+fn inspectorAllowedInternal() bool {
+    return !permissionsIsEnabledInternal() or nodeOptionsHasFlag("--allow-inspector");
+}
+
+fn inspectorParsePort(text: []const u8) ?u16 {
+    if (text.len == 0) return null;
+    const port = std.fmt.parseInt(u16, text, 10) catch return null;
+    return port;
+}
+
+fn inspectorApplyEndpointValue(snapshot: *InspectorConfigSnapshot, value: []const u8) void {
+    if (value.len == 0) return;
+    if (inspectorParsePort(value)) |port| {
+        snapshot.port = port;
+        return;
+    }
+
+    if (value[0] == '[') {
+        if (std.mem.indexOfScalar(u8, value, ']')) |close_index| {
+            snapshot.host = value[1..close_index];
+            if (close_index + 1 < value.len and value[close_index + 1] == ':') {
+                if (inspectorParsePort(value[close_index + 2 ..])) |port| snapshot.port = port;
+            }
+            return;
+        }
+    }
+
+    const colon_count = std.mem.count(u8, value, ":");
+    if (colon_count == 1) {
+        if (std.mem.lastIndexOfScalar(u8, value, ':')) |colon_index| {
+            const host = value[0..colon_index];
+            const port_text = value[colon_index + 1 ..];
+            if (host.len != 0) {
+                if (inspectorParsePort(port_text)) |port| {
+                    snapshot.host = host;
+                    snapshot.port = port;
+                    return;
+                }
+            }
+        }
+    }
+
+    snapshot.host = value;
+}
+
+fn inspectorConfigSnapshot(allocator: std.mem.Allocator) !InspectorConfigSnapshot {
+    var config = try commandLineOptionsReadConfig(allocator);
+    defer config.deinit();
+
+    var snapshot = InspectorConfigSnapshot{
+        .allocator = allocator,
+        .enabled = config.inspect_flags.items.len != 0,
+        .allowed = inspectorAllowedInternal(),
+        .host = try allocator.dupe(u8, "127.0.0.1"),
+        .port = 9229,
+        .flag = null,
+        .kind = null,
+        .wait_for_debugger = false,
+        .break_first_line = false,
+    };
+    errdefer snapshot.deinit();
+    if (config.inspect_flags.items.len == 0) return snapshot;
+
+    const flag = config.inspect_flags.items[config.inspect_flags.items.len - 1];
+    snapshot.flag = try allocator.dupe(u8, flag);
+    if (std.mem.startsWith(u8, flag, "--inspect-brk")) {
+        snapshot.kind = "inspect-brk";
+        snapshot.wait_for_debugger = true;
+        snapshot.break_first_line = true;
+    } else if (std.mem.startsWith(u8, flag, "--inspect-wait")) {
+        snapshot.kind = "inspect-wait";
+        snapshot.wait_for_debugger = true;
+    } else {
+        snapshot.kind = "inspect";
+    }
+
+    if (std.mem.indexOfScalar(u8, flag, '=')) |eq_index| {
+        const endpoint = flag[eq_index + 1 ..];
+        var host = snapshot.host;
+        var port = snapshot.port;
+        var temp = InspectorConfigSnapshot{
+            .allocator = allocator,
+            .enabled = snapshot.enabled,
+            .allowed = snapshot.allowed,
+            .host = host,
+            .port = port,
+            .flag = snapshot.flag,
+            .kind = snapshot.kind,
+            .wait_for_debugger = snapshot.wait_for_debugger,
+            .break_first_line = snapshot.break_first_line,
+        };
+        inspectorApplyEndpointValue(&temp, endpoint);
+        host = temp.host;
+        port = temp.port;
+        if (host.ptr != snapshot.host.ptr) {
+            const owned_host = try allocator.dupe(u8, host);
+            snapshot.allocator.free(snapshot.host);
+            snapshot.host = owned_host;
+        }
+        snapshot.port = port;
+    }
+    return snapshot;
+}
+
 pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "inspector", false, "inspector protocol is not modeled");
+    var snapshot = inspectorConfigSnapshot(std.heap.page_allocator) catch return fail();
+    defer snapshot.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"inspector\",\"supported\":true,\"mode\":\"top-level-config-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &inspector_export_names) catch return fail();
+    out.appendSlice(",\"enabled\":") catch return fail();
+    out.appendSlice(if (snapshot.enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"allowed\":") catch return fail();
+    out.appendSlice(if (snapshot.allowed) "true" else "false") catch return fail();
+    out.appendSlice(",\"permissionModelEnabled\":") catch return fail();
+    out.appendSlice(if (permissionsIsEnabledInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"permissionAuditMode\":") catch return fail();
+    out.appendSlice(if (permissionsIsAuditModeInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"configuredHost\":") catch return fail();
+    appendJsonString(&out, snapshot.host) catch return fail();
+    out.appendSlice(",\"configuredPort\":") catch return fail();
+    out.writer().print("{d}", .{snapshot.port}) catch return fail();
+    out.appendSlice(",\"waitForDebugger\":") catch return fail();
+    out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
+    out.appendSlice(",\"breakFirstLine\":") catch return fail();
+    out.appendSlice(if (snapshot.break_first_line) "true" else "false") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"urlMetadata\":true,\"open\":false,\"close\":false,\"waitForDebugger\":false,\"console\":false,\"Session\":false,\"Network\":false,\"NetworkResources\":false,\"DOMStorage\":false},\"limitations\":[\"live inspector activation and the Chrome DevTools Protocol are not modeled\",\"url metadata is derived from host CLI flags only and does not imply an active backend\",\"Session, console, Network, NetworkResources, and DOMStorage object models require a JavaScript runtime\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_inspector_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &inspector_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_inspector_is_enabled(out_bool: ?*u64) u32 {
+    var snapshot = inspectorConfigSnapshot(std.heap.page_allocator) catch return fail();
+    defer snapshot.deinit();
+    out_bool.?.* = if (snapshot.enabled) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_inspector_is_allowed(out_bool: ?*u64) u32 {
+    out_bool.?.* = if (inspectorAllowedInternal()) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_inspector_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var config = commandLineOptionsReadConfig(allocator) catch return fail();
+    defer config.deinit();
+    var snapshot = inspectorConfigSnapshot(allocator) catch return fail();
+    defer snapshot.deinit();
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"enabled\":") catch return fail();
+    out.appendSlice(if (snapshot.enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"allowed\":") catch return fail();
+    out.appendSlice(if (snapshot.allowed) "true" else "false") catch return fail();
+    out.appendSlice(",\"inspectFlags\":") catch return fail();
+    appendOwnedStringArray(&out, config.inspect_flags.items) catch return fail();
+    out.appendSlice(",\"selectedFlag\":") catch return fail();
+    if (snapshot.flag) |flag| {
+        appendJsonString(&out, flag) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"kind\":") catch return fail();
+    if (snapshot.kind) |kind| {
+        appendJsonString(&out, kind) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"host\":") catch return fail();
+    appendJsonString(&out, snapshot.host) catch return fail();
+    out.appendSlice(",\"port\":") catch return fail();
+    out.writer().print("{d}", .{snapshot.port}) catch return fail();
+    out.appendSlice(",\"waitForDebugger\":") catch return fail();
+    out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
+    out.appendSlice(",\"breakFirstLine\":") catch return fail();
+    out.appendSlice(if (snapshot.break_first_line) "true" else "false") catch return fail();
+    out.appendSlice(",\"permissionModelEnabled\":") catch return fail();
+    out.appendSlice(if (permissionsIsEnabledInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"permissionAuditMode\":") catch return fail();
+    out.appendSlice(if (permissionsIsAuditModeInternal()) "true" else "false") catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_inspector_url_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var snapshot = inspectorConfigSnapshot(std.heap.page_allocator) catch return fail();
+    defer snapshot.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"active\":false,\"configured\":") catch return fail();
+    out.appendSlice(if (snapshot.enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"url\":null,\"host\":") catch return fail();
+    if (snapshot.enabled) {
+        appendJsonString(&out, snapshot.host) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"port\":") catch return fail();
+    if (snapshot.enabled) {
+        out.writer().print("{d}", .{snapshot.port}) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"reason\":\"live WebSocket inspector URLs require an active backend session id; this facade only reports host CLI configuration\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_inspector_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"open\":{\"supported\":false,\"reason\":\"activating a live inspector backend is not modeled\"},\"close\":{\"supported\":false,\"reason\":\"closing a live inspector backend is not modeled\"},\"url\":{\"supported\":true,\"mode\":\"configured host/port metadata only\",\"liveBackendRequired\":true},\"waitForDebugger\":{\"supported\":false,\"reason\":\"blocking for debugger attach requires a live inspector backend\"},\"console\":{\"supported\":false,\"reason\":\"inspector console frontend hooks are not modeled\"},\"Session\":{\"supported\":false,\"reason\":\"Chrome DevTools Protocol sessions are not modeled\"},\"Network\":{\"supported\":false,\"reason\":\"frontend protocol event emission is not modeled\"},\"NetworkResources\":{\"supported\":false,\"reason\":\"frontend network resource bridging is not modeled\"},\"DOMStorage\":{\"supported\":false,\"reason\":\"frontend DOMStorage protocol event emission is not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_http_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

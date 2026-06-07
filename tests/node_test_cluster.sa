@@ -1,0 +1,132 @@
+// SA tests for Node cluster native compatibility subset
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_CAT = utf8:"/bin/cat"
+@const S_SIGTERM = utf8:"SIGTERM"
+@const S_CLUSTER_JSON = utf8:"{\"exec\":\"/bin/cat\",\"cwd\":\".\",\"env\":{\"CLUSTER_TEST\":\"1\"}}"
+
+@test "node.cluster basic helpers"():
+L_ENTRY:
+    primary = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_CLUSTER_IS_PRIMARY primary, s1
+
+    worker = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_CLUSTER_IS_WORKER worker, s2
+
+    policy = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_CLUSTER_GET_SCHEDULING_POLICY policy, s3
+
+    s4 = add 0, 0
+    EXPAND NODE_CLUSTER_SET_SCHEDULING_POLICY 1, s4
+
+    policy2 = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_CLUSTER_GET_SCHEDULING_POLICY policy2, s5
+
+    s6 = add 0, 0
+    EXPAND NODE_CLUSTER_SET_SCHEDULING_POLICY 2, s6
+
+    s7 = add 0, 0
+    EXPAND NODE_CLUSTER_SETUP_PRIMARY S_CAT, 8, 0, 0, s7
+
+    ok1 = eq s1, 0
+    ok2 = eq s2, 0
+    ok3 = eq s3, 0
+    ok4 = eq s4, 0
+    ok5 = eq s5, 0
+    ok6 = eq s6, 0
+    ok7 = eq s7, 0
+    !ok7
+    !ok6
+    !ok5
+    !ok4
+    !ok3
+    !ok2
+    !ok1
+    !policy2
+    !policy
+    !worker
+    !primary
+    return
+
+@test "node.cluster status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_CLUSTER_STATUS_JSON op, ol
+    !ol
+    !op
+    return
+
+@test "node.cluster setup_primary_json and wait_json"():
+L_ENTRY:
+    setup_status = add 0, 0
+    EXPAND NODE_CLUSTER_SETUP_PRIMARY_JSON S_CLUSTER_JSON, 56, setup_status
+    setup_ok = eq setup_status, 0
+    br setup_ok -> L_SNAPSHOT, L_ERR_SETUP
+L_SNAPSHOT:
+    !setup_ok
+    primary_ptr = add 0, 0
+    primary_len = add 0, 0
+    primary_status = add 0, 0
+    EXPAND NODE_CLUSTER_PRIMARY_SNAPSHOT_JSON primary_ptr, primary_len, primary_status
+    primary_ok = eq primary_status, 0
+    br primary_ok -> L_FORK, L_ERR_SNAPSHOT
+L_FORK:
+    !primary_ok
+    worker = add 0, 0
+    fork_status = add 0, 0
+    EXPAND NODE_CLUSTER_FORK worker, fork_status, 0, 0, 0, 0
+    fork_ok = eq fork_status, 0
+    br fork_ok -> L_KILL, L_ERR_FORK
+L_KILL:
+    !fork_ok
+    kill_status = add 0, 0
+    EXPAND NODE_CLUSTER_WORKER_KILL_SIGNAL kill_status, worker, S_SIGTERM, 7
+    kill_ok = eq kill_status, 0
+    br kill_ok -> L_WAIT, L_ERR_KILL
+L_WAIT:
+    !kill_ok
+    wait_ptr = add 0, 0
+    wait_len = add 0, 0
+    wait_status = add 0, 0
+    EXPAND NODE_CLUSTER_WORKER_WAIT_JSON wait_ptr, wait_len, wait_status, worker
+    wait_ok = eq wait_status, 0
+    br wait_ok -> L_FREE, L_ERR_WAIT
+L_FREE:
+    !wait_ok
+    free_primary = call @sa_node_plugin_free_buffer(primary_ptr, primary_len)
+    free_wait = call @sa_node_plugin_free_buffer(wait_ptr, wait_len)
+    free_worker = call @sa_node_plugin_cluster_worker_free(worker)
+    !free_worker
+    !free_wait
+    !free_primary
+    !wait_status
+    !wait_len
+    !wait_ptr
+    !kill_status
+    !worker
+    !fork_status
+    !primary_status
+    !primary_len
+    !primary_ptr
+    !setup_status
+    return
+L_ERR_SETUP:
+    !setup_ok
+    panic(103)
+L_ERR_SNAPSHOT:
+    !primary_ok
+    panic(103)
+L_ERR_FORK:
+    !fork_ok
+    panic(103)
+L_ERR_KILL:
+    !kill_ok
+    panic(103)
+L_ERR_WAIT:
+    !wait_ok
+    panic(103)

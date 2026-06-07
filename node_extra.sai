@@ -373,6 +373,26 @@
 @extern sa_node_plugin_worker_threads_message_port_free(port_ptr: ptr) -> u64
 @extern sa_node_plugin_child_process_exec_sync_json(argv_ptr: ptr, argv_len: u64, cwd_ptr: ptr, cwd_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_child_process_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_is_primary(&out_bool: u64) -> u64
+@extern sa_node_plugin_cluster_is_worker(&out_bool: u64) -> u64
+@extern sa_node_plugin_cluster_get_scheduling_policy(&out_policy: u64) -> u64
+@extern sa_node_plugin_cluster_set_scheduling_policy(policy: u64) -> u64
+@extern sa_node_plugin_cluster_setup_primary(exec_ptr: ptr, exec_len: u64, args_ptr: ptr, args_len: u64) -> u64
+@extern sa_node_plugin_cluster_setup_primary_json(config_ptr: ptr, config_len: u64) -> u64
+@extern sa_node_plugin_cluster_primary_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_fork(exec_ptr: ptr, exec_len: u64, args_ptr: ptr, args_len: u64, &out_worker: ptr) -> u64
+@extern sa_node_plugin_cluster_worker_pid(worker_ptr: ptr, &out_pid: u64) -> u64
+@extern sa_node_plugin_cluster_worker_send_message(worker_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_cluster_worker_receive_message(worker_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_worker_disconnect(worker_ptr: ptr) -> u64
+@extern sa_node_plugin_cluster_worker_kill(worker_ptr: ptr, signal: u64) -> u64
+@extern sa_node_plugin_cluster_worker_kill_signal(worker_ptr: ptr, signal_ptr: ptr, signal_len: u64) -> u64
+@extern sa_node_plugin_cluster_worker_is_connected(worker_ptr: ptr, &out_bool: u64) -> u64
+@extern sa_node_plugin_cluster_worker_is_alive(worker_ptr: ptr, &out_bool: u64) -> u64
+@extern sa_node_plugin_cluster_worker_exited_after_disconnect(worker_ptr: ptr, &out_bool: u64) -> u64
+@extern sa_node_plugin_cluster_worker_wait_json(worker_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_worker_snapshot_json(worker_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_cluster_worker_free(worker_ptr: ptr) -> u64
 @extern sa_node_plugin_cluster_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_domain_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64

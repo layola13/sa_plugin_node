@@ -1200,6 +1200,569 @@ pub export fn sa_node_plugin_child_process_status_json(out_ptr: ?*?[*]const u8, 
     return writeStatusJson(out_ptr, out_len, "child_process", true, "sync exec wrapper over process_exec");
 }
 
+// --- Cluster ---
+const cluster_sched_none: u64 = 1;
+const cluster_sched_rr: u64 = 2;
+
+var cluster_scheduling_policy: u64 = cluster_sched_rr;
+
+const ClusterPrimaryConfig = struct {
+    allocator: std.mem.Allocator,
+    exec: ?[]u8 = null,
+    args: std.ArrayList([]u8),
+    cwd: ?[]u8 = null,
+    env: std.process.EnvMap,
+    use_custom_env: bool = false,
+
+    fn init(allocator: std.mem.Allocator) ClusterPrimaryConfig {
+        return .{
+            .allocator = allocator,
+            .args = std.ArrayList([]u8).init(allocator),
+            .env = std.process.EnvMap.init(allocator),
+        };
+    }
+
+    fn clear(self: *ClusterPrimaryConfig) void {
+        if (self.exec) |exec| {
+            self.allocator.free(exec);
+            self.exec = null;
+        }
+        if (self.cwd) |cwd| {
+            self.allocator.free(cwd);
+            self.cwd = null;
+        }
+        for (self.args.items) |arg| self.allocator.free(arg);
+        self.args.clearRetainingCapacity();
+        self.env.deinit();
+        self.env = std.process.EnvMap.init(self.allocator);
+        self.use_custom_env = false;
+    }
+};
+
+var cluster_primary_config = ClusterPrimaryConfig.init(std.heap.page_allocator);
+
+const ClusterWorkerHandle = struct {
+    allocator: std.mem.Allocator,
+    child: std.process.Child,
+    command: []u8,
+    args: std.ArrayList([]u8),
+    cwd: ?[]u8 = null,
+    env_count: u64 = 0,
+    connected: bool = true,
+    disconnected_requested: bool = false,
+    exited: bool = false,
+    exit_code: ?u8 = null,
+    signal_code: ?u32 = null,
+
+    fn deinit(self: *ClusterWorkerHandle) void {
+        if (!self.exited) {
+            if (self.child.stdin) |*stdin_file| {
+                stdin_file.close();
+                self.child.stdin = null;
+            }
+            if (self.child.stdout) |*stdout_file| {
+                stdout_file.close();
+                self.child.stdout = null;
+            }
+            if (self.child.stderr) |*stderr_file| {
+                stderr_file.close();
+                self.child.stderr = null;
+            }
+            std.posix.kill(self.child.id, std.posix.SIG.KILL) catch {};
+            const waited = std.posix.waitpid(self.child.id, 0);
+            clusterWorkerDecodeStatus(self, waited.status);
+        } else {
+            if (self.child.stdin) |*stdin_file| {
+                stdin_file.close();
+                self.child.stdin = null;
+            }
+            if (self.child.stdout) |*stdout_file| {
+                stdout_file.close();
+                self.child.stdout = null;
+            }
+            if (self.child.stderr) |*stderr_file| {
+                stderr_file.close();
+                self.child.stderr = null;
+            }
+        }
+        self.allocator.free(self.command);
+        if (self.cwd) |cwd| self.allocator.free(cwd);
+        for (self.args.items) |arg| self.allocator.free(arg);
+        self.args.deinit();
+        self.allocator.destroy(self);
+    }
+};
+
+fn clusterSignalNameToNumber(name: []const u8) ?u8 {
+    if (name.len == 0) return std.posix.SIG.TERM;
+    if (std.ascii.eqlIgnoreCase(name, "0")) return 0;
+    if (std.ascii.eqlIgnoreCase(name, "SIGTERM") or std.ascii.eqlIgnoreCase(name, "TERM")) return std.posix.SIG.TERM;
+    if (std.ascii.eqlIgnoreCase(name, "SIGKILL") or std.ascii.eqlIgnoreCase(name, "KILL")) return std.posix.SIG.KILL;
+    if (std.ascii.eqlIgnoreCase(name, "SIGINT") or std.ascii.eqlIgnoreCase(name, "INT")) return std.posix.SIG.INT;
+    if (std.ascii.eqlIgnoreCase(name, "SIGHUP") or std.ascii.eqlIgnoreCase(name, "HUP")) return std.posix.SIG.HUP;
+    if (std.ascii.eqlIgnoreCase(name, "SIGQUIT") or std.ascii.eqlIgnoreCase(name, "QUIT")) return std.posix.SIG.QUIT;
+    if (std.ascii.eqlIgnoreCase(name, "SIGABRT") or std.ascii.eqlIgnoreCase(name, "ABRT")) return std.posix.SIG.ABRT;
+    if (std.ascii.eqlIgnoreCase(name, "SIGALRM") or std.ascii.eqlIgnoreCase(name, "ALRM")) return std.posix.SIG.ALRM;
+    if (std.ascii.eqlIgnoreCase(name, "SIGUSR1") or std.ascii.eqlIgnoreCase(name, "USR1")) return std.posix.SIG.USR1;
+    if (std.ascii.eqlIgnoreCase(name, "SIGUSR2") or std.ascii.eqlIgnoreCase(name, "USR2")) return std.posix.SIG.USR2;
+    if (std.ascii.eqlIgnoreCase(name, "SIGPIPE") or std.ascii.eqlIgnoreCase(name, "PIPE")) return std.posix.SIG.PIPE;
+    if (std.ascii.eqlIgnoreCase(name, "SIGCHLD") or std.ascii.eqlIgnoreCase(name, "CHLD")) return std.posix.SIG.CHLD;
+    if (std.ascii.eqlIgnoreCase(name, "SIGCONT") or std.ascii.eqlIgnoreCase(name, "CONT")) return std.posix.SIG.CONT;
+    if (std.ascii.eqlIgnoreCase(name, "SIGSTOP") or std.ascii.eqlIgnoreCase(name, "STOP")) return std.posix.SIG.STOP;
+    if (std.ascii.eqlIgnoreCase(name, "SIGTSTP") or std.ascii.eqlIgnoreCase(name, "TSTP")) return std.posix.SIG.TSTP;
+    if (std.ascii.eqlIgnoreCase(name, "SIGTTIN") or std.ascii.eqlIgnoreCase(name, "TTIN")) return std.posix.SIG.TTIN;
+    if (std.ascii.eqlIgnoreCase(name, "SIGTTOU") or std.ascii.eqlIgnoreCase(name, "TTOU")) return std.posix.SIG.TTOU;
+    return null;
+}
+
+fn clusterSignalFromNumber(signal: u64) ?u8 {
+    if (signal > std.math.maxInt(u8)) return null;
+    return @intCast(signal);
+}
+
+fn clusterParseStoredArgs(args_ptr: ?[*]const u8, args_len: u64, out: *std.ArrayList([]u8), allocator: std.mem.Allocator) !void {
+    if (args_len == 0) return;
+    const ptr = args_ptr orelse return error.InvalidArgs;
+    if (args_len <= 64) {
+        const first_ptr = std.mem.readInt(usize, ptr[0..@sizeOf(usize)], .little);
+        const first_len = std.mem.readInt(u64, ptr[8..16], .little);
+        if (first_ptr > 4096 and first_len > 0 and first_len <= 1024 * 1024) {
+            var i: usize = 0;
+            while (i < args_len) : (i += 1) {
+                const off = i * 16;
+                const arg_ptr_int = std.mem.readInt(usize, ptr[off..][0..@sizeOf(usize)], .little);
+                const arg_len = std.mem.readInt(u64, ptr[off + 8 ..][0..8], .little);
+                if (arg_ptr_int == 0 or arg_len > 1024 * 1024) return error.InvalidArgs;
+                const arg_ptr: [*]const u8 = @ptrFromInt(arg_ptr_int);
+                try out.append(try allocator.dupe(u8, arg_ptr[0..@intCast(arg_len)]));
+            }
+            return;
+        }
+    }
+    try out.append(try allocator.dupe(u8, ptr[0..args_len]));
+}
+
+fn clusterSetNonBlocking(file: std.fs.File) u32 {
+    const flags = std.posix.fcntl(file.handle, std.posix.F.GETFL, 0) catch return fail();
+    const new_flags = flags | (@as(usize, 1) << @bitOffsetOf(std.posix.O, "NONBLOCK"));
+    _ = std.posix.fcntl(file.handle, std.posix.F.SETFL, new_flags) catch return fail();
+    return 0;
+}
+
+fn clusterCloseStreams(worker: *ClusterWorkerHandle) void {
+    if (worker.child.stdin) |*stdin_file| {
+        stdin_file.close();
+        worker.child.stdin = null;
+    }
+    if (worker.child.stdout) |*stdout_file| {
+        stdout_file.close();
+        worker.child.stdout = null;
+    }
+    if (worker.child.stderr) |*stderr_file| {
+        stderr_file.close();
+        worker.child.stderr = null;
+    }
+}
+
+fn clusterWorkerDecodeStatus(worker: *ClusterWorkerHandle, status: u32) void {
+    worker.exited = true;
+    worker.connected = false;
+    if (std.c.W.IFEXITED(status)) {
+        worker.exit_code = std.c.W.EXITSTATUS(status);
+        worker.signal_code = null;
+    } else if (std.c.W.IFSIGNALED(status)) {
+        worker.exit_code = null;
+        worker.signal_code = std.c.W.TERMSIG(status);
+    } else {
+        worker.exit_code = null;
+        worker.signal_code = null;
+    }
+}
+
+fn clusterPrimarySnapshotJson(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"exec\":") catch return fail();
+    if (cluster_primary_config.exec) |exec| {
+        appendJsonString(&out, exec) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"args\":[") catch return fail();
+    for (cluster_primary_config.args.items, 0..) |arg, i| {
+        if (i != 0) out.append(',') catch return fail();
+        appendJsonString(&out, arg) catch return fail();
+    }
+    out.appendSlice("],\"cwd\":") catch return fail();
+    if (cluster_primary_config.cwd) |cwd| {
+        appendJsonString(&out, cwd) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"useCustomEnv\":") catch return fail();
+    out.appendSlice(if (cluster_primary_config.use_custom_env) "true" else "false") catch return fail();
+    out.appendSlice(",\"env\":{") catch return fail();
+    var first = true;
+    var it = cluster_primary_config.env.iterator();
+    while (it.next()) |entry| {
+        if (!first) out.append(',') catch return fail();
+        first = false;
+        appendJsonString(&out, entry.key_ptr.*) catch return fail();
+        out.append(':') catch return fail();
+        appendJsonString(&out, entry.value_ptr.*) catch return fail();
+    }
+    out.appendSlice("}}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn clusterSetupPrimaryJson(config_ptr: ?[*]const u8, config_len: u64) u32 {
+    const config_text = (config_ptr orelse return fail())[0..config_len];
+    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, config_text, .{}) catch return fail();
+    defer parsed.deinit();
+    if (parsed.value != .object) return fail();
+
+    cluster_primary_config.clear();
+    errdefer cluster_primary_config.clear();
+
+    if (parsed.value.object.get("exec")) |exec_value| {
+        if (exec_value != .string) return fail();
+        cluster_primary_config.exec = std.heap.page_allocator.dupe(u8, exec_value.string) catch return fail();
+    }
+
+    if (parsed.value.object.get("args")) |args_value| {
+        if (args_value != .array) return fail();
+        for (args_value.array.items) |item| {
+            if (item != .string) return fail();
+            cluster_primary_config.args.append(std.heap.page_allocator.dupe(u8, item.string) catch return fail()) catch return fail();
+        }
+    }
+
+    if (parsed.value.object.get("cwd")) |cwd_value| {
+        if (cwd_value == .null) {
+            cluster_primary_config.cwd = null;
+        } else {
+            if (cwd_value != .string) return fail();
+            cluster_primary_config.cwd = std.heap.page_allocator.dupe(u8, cwd_value.string) catch return fail();
+        }
+    }
+
+    if (parsed.value.object.get("env")) |env_value| {
+        if (env_value != .object) return fail();
+        cluster_primary_config.use_custom_env = true;
+        var env_it = env_value.object.iterator();
+        while (env_it.next()) |entry| {
+            if (entry.value_ptr.* != .string) return fail();
+            cluster_primary_config.env.put(entry.key_ptr.*, entry.value_ptr.*.string) catch return fail();
+        }
+    }
+
+    return 0;
+}
+
+fn clusterWorkerRefresh(worker: *ClusterWorkerHandle) void {
+    if (worker.exited) return;
+    const waited = std.posix.waitpid(worker.child.id, std.c.W.NOHANG);
+    if (waited.pid == 0) return;
+    clusterWorkerDecodeStatus(worker, waited.status);
+}
+
+fn clusterWorkerHandle(worker_ptr: ?*anyopaque) ?*ClusterWorkerHandle {
+    return if (worker_ptr) |ptr| @ptrCast(@alignCast(ptr)) else null;
+}
+
+fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    clusterWorkerRefresh(worker);
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"pid\":") catch return fail();
+    out.writer().print("{d}", .{worker.child.id}) catch return fail();
+    out.appendSlice(",\"connected\":") catch return fail();
+    out.appendSlice(if (worker.connected) "true" else "false") catch return fail();
+    out.appendSlice(",\"exited\":") catch return fail();
+    out.appendSlice(if (worker.exited) "true" else "false") catch return fail();
+    out.appendSlice(",\"command\":") catch return fail();
+    appendJsonString(&out, worker.command) catch return fail();
+    out.appendSlice(",\"args\":[") catch return fail();
+    for (worker.args.items, 0..) |arg, i| {
+        if (i != 0) out.append(',') catch return fail();
+        appendJsonString(&out, arg) catch return fail();
+    }
+    out.append(']') catch return fail();
+    out.appendSlice(",\"cwd\":") catch return fail();
+    if (worker.cwd) |cwd| {
+        appendJsonString(&out, cwd) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"envCount\":") catch return fail();
+    out.writer().print("{d}", .{worker.env_count}) catch return fail();
+    out.appendSlice(",\"disconnectRequested\":") catch return fail();
+    out.appendSlice(if (worker.disconnected_requested) "true" else "false") catch return fail();
+    out.appendSlice(",\"exitCode\":") catch return fail();
+    if (worker.exit_code) |code| {
+        out.writer().print("{d}", .{code}) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"signalCode\":") catch return fail();
+    if (worker.signal_code) |sig| {
+        out.writer().print("{d}", .{sig}) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn clusterSpawnWorker(exec: []const u8, args: []const []const u8, cwd: ?[]const u8, env_map: ?*const std.process.EnvMap, env_count: u64, out_worker: ?*?*anyopaque) u32 {
+    const allocator = std.heap.page_allocator;
+    const argv = allocator.alloc([]const u8, args.len + 1) catch return fail();
+    defer allocator.free(argv);
+    argv[0] = exec;
+    for (args, 0..) |arg, i| argv[i + 1] = arg;
+
+    var child = std.process.Child.init(argv, allocator);
+    child.stdin_behavior = .Pipe;
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Ignore;
+    child.cwd = cwd;
+    child.env_map = env_map;
+    child.spawn() catch return fail();
+    if (clusterSetNonBlocking(child.stdout.?) != 0) {
+        _ = child.kill() catch {};
+        return fail();
+    }
+
+    const worker = allocator.create(ClusterWorkerHandle) catch {
+        _ = child.kill() catch {};
+        return fail();
+    };
+    errdefer allocator.destroy(worker);
+
+    const command = allocator.dupe(u8, exec) catch {
+        _ = child.kill() catch {};
+        return fail();
+    };
+    errdefer allocator.free(command);
+
+    var owned_args = std.ArrayList([]u8).init(allocator);
+    errdefer {
+        for (owned_args.items) |arg| allocator.free(arg);
+        owned_args.deinit();
+    }
+    for (args) |arg| owned_args.append(allocator.dupe(u8, arg) catch {
+        _ = child.kill() catch {};
+        return fail();
+    }) catch {
+        _ = child.kill() catch {};
+        return fail();
+    };
+
+    worker.* = .{
+        .allocator = allocator,
+        .child = child,
+        .command = command,
+        .args = owned_args,
+        .cwd = if (cwd) |dir| allocator.dupe(u8, dir) catch {
+            _ = child.kill() catch {};
+            return fail();
+        } else null,
+        .env_count = env_count,
+    };
+    out_worker.?.* = @ptrCast(worker);
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_is_primary(out_bool: ?*u64) u32 {
+    out_bool.?.* = 1;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_is_worker(out_bool: ?*u64) u32 {
+    out_bool.?.* = 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_get_scheduling_policy(out_policy: ?*u64) u32 {
+    out_policy.?.* = cluster_scheduling_policy;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_set_scheduling_policy(policy: u64) u32 {
+    if (policy != cluster_sched_none and policy != cluster_sched_rr) return fail();
+    cluster_scheduling_policy = policy;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_setup_primary(exec_ptr: ?[*]const u8, exec_len: u64, args_ptr: ?[*]const u8, args_len: u64) u32 {
+    const exec = if (exec_len == 0) "" else (exec_ptr orelse return fail())[0..exec_len];
+    cluster_primary_config.clear();
+    errdefer cluster_primary_config.clear();
+    if (exec.len > 0) {
+        cluster_primary_config.exec = std.heap.page_allocator.dupe(u8, exec) catch return fail();
+    }
+    clusterParseStoredArgs(args_ptr, args_len, &cluster_primary_config.args, std.heap.page_allocator) catch {
+        cluster_primary_config.clear();
+        return fail();
+    };
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_setup_primary_json(config_ptr: ?[*]const u8, config_len: u64) u32 {
+    return clusterSetupPrimaryJson(config_ptr, config_len);
+}
+
+pub export fn sa_node_plugin_cluster_primary_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return clusterPrimarySnapshotJson(out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_cluster_fork(exec_ptr: ?[*]const u8, exec_len: u64, args_ptr: ?[*]const u8, args_len: u64, out_worker: ?*?*anyopaque) u32 {
+    const allocator = std.heap.page_allocator;
+    var effective_args = std.ArrayList([]u8).init(allocator);
+    defer {
+        for (effective_args.items) |arg| allocator.free(arg);
+        effective_args.deinit();
+    }
+
+    const exec = blk: {
+        if (exec_len > 0) break :blk (exec_ptr orelse return fail())[0..exec_len];
+        if (cluster_primary_config.exec) |configured| break :blk configured;
+        return fail();
+    };
+
+    if (args_len > 0) {
+        clusterParseStoredArgs(args_ptr, args_len, &effective_args, allocator) catch return fail();
+    } else {
+        for (cluster_primary_config.args.items) |arg| effective_args.append(allocator.dupe(u8, arg) catch return fail()) catch return fail();
+    }
+
+    const args_view = allocator.alloc([]const u8, effective_args.items.len) catch return fail();
+    defer allocator.free(args_view);
+    for (effective_args.items, 0..) |arg, i| args_view[i] = arg;
+    const cwd = if (cluster_primary_config.cwd) |configured| configured else null;
+    const env_map: ?*const std.process.EnvMap = if (cluster_primary_config.use_custom_env) &cluster_primary_config.env else null;
+    const env_count: u64 = if (cluster_primary_config.use_custom_env) cluster_primary_config.env.count() else 0;
+    return clusterSpawnWorker(exec, args_view, cwd, env_map, env_count, out_worker);
+}
+
+pub export fn sa_node_plugin_cluster_worker_pid(worker_ptr: ?*anyopaque, out_pid: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    out_pid.?.* = @intCast(worker.child.id);
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_send_message(worker_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    if (!worker.connected or worker.exited) return fail();
+    const stdin_file = worker.child.stdin orelse return fail();
+    const data = if (data_len == 0) "" else (data_ptr orelse return fail())[0..data_len];
+    stdin_file.writeAll(data) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_receive_message(worker_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    const stdout_file = worker.child.stdout orelse {
+        out_ptr.?.* = null;
+        out_len.?.* = 0;
+        return 0;
+    };
+
+    var buf: [4096]u8 = undefined;
+    const n = stdout_file.read(&buf) catch |err| switch (err) {
+        error.WouldBlock => {
+            out_ptr.?.* = null;
+            out_len.?.* = 0;
+            return 0;
+        },
+        else => return fail(),
+    };
+    if (n == 0) {
+        clusterWorkerRefresh(worker);
+        out_ptr.?.* = null;
+        out_len.?.* = 0;
+        return 0;
+    }
+    return writeOwnedBytes(out_ptr, out_len, buf[0..n]);
+}
+
+pub export fn sa_node_plugin_cluster_worker_disconnect(worker_ptr: ?*anyopaque) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    worker.disconnected_requested = true;
+    if (worker.child.stdin) |*stdin_file| {
+        stdin_file.close();
+        worker.child.stdin = null;
+    }
+    worker.connected = false;
+    clusterWorkerRefresh(worker);
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_kill(worker_ptr: ?*anyopaque, signal: u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    if (worker.exited) return 0;
+    const sig = clusterSignalFromNumber(if (signal == 0) std.posix.SIG.TERM else signal) orelse return fail();
+    std.posix.kill(worker.child.id, sig) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_kill_signal(worker_ptr: ?*anyopaque, signal_ptr: ?[*]const u8, signal_len: u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    if (worker.exited) return 0;
+    const signal = if (signal_ptr) |ptr| ptr[0..signal_len] else "SIGTERM";
+    const sig = clusterSignalNameToNumber(signal) orelse return fail();
+    std.posix.kill(worker.child.id, sig) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_is_connected(worker_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    out_bool.?.* = if (worker.connected and !worker.exited) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_is_alive(worker_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    out_bool.?.* = if (worker.exited) 0 else 1;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_exited_after_disconnect(worker_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    clusterWorkerRefresh(worker);
+    out_bool.?.* = if (worker.disconnected_requested and worker.exited) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_cluster_worker_wait_json(worker_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    if (!worker.exited) {
+        const waited = std.posix.waitpid(worker.child.id, 0);
+        clusterWorkerDecodeStatus(worker, waited.status);
+        clusterCloseStreams(worker);
+    }
+    return clusterWorkerSnapshotJson(worker, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_cluster_worker_snapshot_json(worker_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
+    return clusterWorkerSnapshotJson(worker, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_cluster_worker_free(worker_ptr: ?*anyopaque) u32 {
+    if (worker_ptr) |ptr| {
+        const worker: *ClusterWorkerHandle = @ptrCast(@alignCast(ptr));
+        worker.deinit();
+    }
+    return 0;
+}
+
 // --- Timers promises ---
 const TimersPromisesIntervalHandle = struct {
     allocator: std.mem.Allocator,
@@ -1927,7 +2490,12 @@ pub export fn sa_node_plugin_http2_nghttp2_version_json(out_ptr: ?*?[*]const u8,
 
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "cluster", false, "not modeled; use worker_threads or child_process");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"cluster\",\"supported\":true,\"mode\":\"native-subprocess-workers\",\"isPrimary\":true,\"isWorker\":false,\"schedulingPolicy\":") catch return fail();
+    out.writer().print("{d}", .{cluster_scheduling_policy}) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"setupPrimary metadata\",\"fork subprocess worker handles\",\"stdin/stdout message exchange\",\"worker pid/alive/connected snapshot\",\"worker disconnect/kill/free\"],\"limitations\":[\"no JavaScript EventEmitter object model\",\"no shared libuv server handle distribution\",\"no Node internal IPC framing or serialization\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

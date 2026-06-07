@@ -1726,6 +1726,135 @@ test "node plugin worker_threads message ports and u64 bools" {
     try std.testing.expectEqual(@as(u64, 0), posted);
 }
 
+test "node plugin cluster subprocess worker helpers" {
+    var is_primary: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_is_primary(&is_primary));
+    try std.testing.expectEqual(@as(u64, 1), is_primary);
+
+    var is_worker: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_is_worker(&is_worker));
+    try std.testing.expectEqual(@as(u64, 0), is_worker);
+
+    var policy: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_get_scheduling_policy(&policy));
+    try std.testing.expect(policy == 1 or policy == 2);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_set_scheduling_policy(1));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_get_scheduling_policy(&policy));
+    try std.testing.expectEqual(@as(u64, 1), policy);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_set_scheduling_policy(2));
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_setup_primary("/bin/cat".ptr, 8, null, 0));
+
+    var primary_snapshot_ptr: ?[*]const u8 = null;
+    var primary_snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_primary_snapshot_json(&primary_snapshot_ptr, &primary_snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(primary_snapshot_ptr, primary_snapshot_len);
+    const primary_snapshot = (primary_snapshot_ptr orelse return error.NullClusterPrimarySnapshot)[0..@intCast(primary_snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, primary_snapshot, "\"exec\":\"/bin/cat\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, primary_snapshot, "\"useCustomEnv\":false") != null);
+
+    var worker: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_fork(null, 0, null, 0, &worker));
+    defer _ = plugin.sa_node_plugin_cluster_worker_free(worker);
+
+    var pid: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_pid(worker, &pid));
+    try std.testing.expect(pid > 1);
+
+    var connected: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_is_connected(worker, &connected));
+    try std.testing.expectEqual(@as(u64, 1), connected);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_send_message(worker, "cluster-echo\n", 13));
+
+    var recv_ptr: ?[*]const u8 = null;
+    var recv_len: u64 = 0;
+    var got_message = false;
+    var attempts: usize = 0;
+    while (attempts < 50) : (attempts += 1) {
+        try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_receive_message(worker, &recv_ptr, &recv_len));
+        if (recv_ptr != null and recv_len > 0) {
+            got_message = true;
+            break;
+        }
+        std.time.sleep(10 * std.time.ns_per_ms);
+    }
+    try std.testing.expect(got_message);
+    defer {
+        if (got_message) _ = plugin.sa_node_plugin_free_buffer(recv_ptr, recv_len);
+    }
+    try std.testing.expect(std.mem.indexOf(u8, (recv_ptr orelse return error.NullClusterWorkerMessage)[0..@intCast(recv_len)], "cluster-echo") != null);
+
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_snapshot_json(worker, &snapshot_ptr, &snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+    const snapshot = (snapshot_ptr orelse return error.NullClusterWorkerSnapshot)[0..@intCast(snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"pid\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"command\":\"/bin/cat\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"envCount\":0") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_disconnect(worker));
+
+    var waited_ptr: ?[*]const u8 = null;
+    var waited_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_wait_json(worker, &waited_ptr, &waited_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(waited_ptr, waited_len);
+    const waited = (waited_ptr orelse return error.NullClusterWorkerWait)[0..@intCast(waited_len)];
+    try std.testing.expect(std.mem.indexOf(u8, waited, "\"disconnectRequested\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, waited, "\"exited\":true") != null);
+
+    var disconnected_exit: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_exited_after_disconnect(worker, &disconnected_exit));
+    try std.testing.expectEqual(@as(u64, 1), disconnected_exit);
+
+    var alive: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_is_alive(worker, &alive));
+    try std.testing.expectEqual(@as(u64, 0), alive);
+}
+
+test "node plugin cluster setup_primary_json and signal wait helpers" {
+    const config = "{\"exec\":\"/bin/cat\",\"cwd\":\".\",\"env\":{\"CLUSTER_TEST\":\"1\"}}";
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_setup_primary_json(config.ptr, config.len));
+
+    var primary_ptr: ?[*]const u8 = null;
+    var primary_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_primary_snapshot_json(&primary_ptr, &primary_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(primary_ptr, primary_len);
+    const primary = (primary_ptr orelse return error.NullClusterPrimaryJsonSnapshot)[0..@intCast(primary_len)];
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, primary, .{});
+    defer parsed.deinit();
+    try std.testing.expectEqualStrings("/bin/cat", parsed.value.object.get("exec").?.string);
+    try std.testing.expectEqualStrings(".", parsed.value.object.get("cwd").?.string);
+    try std.testing.expectEqual(true, parsed.value.object.get("useCustomEnv").?.bool);
+    try std.testing.expectEqualStrings("1", parsed.value.object.get("env").?.object.get("CLUSTER_TEST").?.string);
+
+    var worker: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_fork(null, 0, null, 0, &worker));
+    defer _ = plugin.sa_node_plugin_cluster_worker_free(worker);
+
+    var worker_snapshot_ptr: ?[*]const u8 = null;
+    var worker_snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_snapshot_json(worker, &worker_snapshot_ptr, &worker_snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(worker_snapshot_ptr, worker_snapshot_len);
+    const worker_snapshot = (worker_snapshot_ptr orelse return error.NullClusterWorkerJsonSnapshot)[0..@intCast(worker_snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, worker_snapshot, "\"cwd\":\".\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, worker_snapshot, "\"envCount\":1") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_kill_signal(worker, "SIGTERM".ptr, 7));
+
+    var waited_ptr: ?[*]const u8 = null;
+    var waited_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_wait_json(worker, &waited_ptr, &waited_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(waited_ptr, waited_len);
+    const waited = (waited_ptr orelse return error.NullClusterKilledWait)[0..@intCast(waited_len)];
+    try std.testing.expect(std.mem.indexOf(u8, waited, "\"signalCode\":15") != null);
+
+    var exited_after_disconnect: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_cluster_worker_exited_after_disconnect(worker, &exited_after_disconnect));
+    try std.testing.expectEqual(@as(u64, 0), exited_after_disconnect);
+}
+
 test "node plugin timers promises helpers" {
     var timeout_ptr: ?[*]const u8 = null;
     var timeout_len: u64 = 0;

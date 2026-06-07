@@ -5632,6 +5632,27 @@ const https_export_names = [_][]const u8{
     "request",
 };
 
+const tls_export_names = [_][]const u8{
+    "CLIENT_RENEG_LIMIT",
+    "CLIENT_RENEG_WINDOW",
+    "DEFAULT_CIPHERS",
+    "DEFAULT_ECDH_CURVE",
+    "DEFAULT_MIN_VERSION",
+    "DEFAULT_MAX_VERSION",
+    "getCiphers",
+    "rootCertificates",
+    "getCACertificates",
+    "setDefaultCACertificates",
+    "convertALPNProtocols",
+    "checkServerIdentity",
+    "createSecureContext",
+    "SecureContext",
+    "TLSSocket",
+    "Server",
+    "createServer",
+    "connect",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6524,7 +6545,62 @@ pub export fn sa_node_plugin_http3_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_tls_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "tls", true, "TLS default constants, native cipher helpers, native-system CA/root certificate helpers, SecureContext CA handles, client connect/write/read/close plus protocol, cipher, address, timeout, ref, and byte metadata are exposed; server and full TLSSocket event semantics are not modeled");
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (ext.sa_node_plugin_tls_default_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var ciphers_ptr: ?[*]const u8 = null;
+    var ciphers_len: u64 = 0;
+    if (ext.sa_node_plugin_tls_get_ciphers_json(&ciphers_ptr, &ciphers_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(ciphers_ptr, ciphers_len);
+
+    var root_ptr: ?[*]const u8 = null;
+    var root_len: u64 = 0;
+    if (ext.sa_node_plugin_tls_root_certificates_json(&root_ptr, &root_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(root_ptr, root_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"tls\",\"supported\":true,\"mode\":\"top-level-native-tls-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &tls_export_names) catch return fail();
+    out.appendSlice(",\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"ciphers\":") catch return fail();
+    out.appendSlice((ciphers_ptr orelse return fail())[0..@intCast(ciphers_len)]) catch return fail();
+    out.appendSlice(",\"rootCertificates\":") catch return fail();
+    out.appendSlice((root_ptr orelse return fail())[0..@intCast(root_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"getCiphers\":true,\"rootCertificates\":true,\"getCACertificates\":true,\"setDefaultCACertificates\":true,\"convertALPNProtocols\":true,\"createSecureContext\":true,\"connect\":true,\"checkServerIdentity\":false,\"SecureContext\":false,\"TLSSocket\":false,\"Server\":false,\"createServer\":false},\"capabilities\":[\"default TLS constant metadata\",\"native cipher catalog and detailed metadata\",\"native system/default/extra CA certificate snapshots\",\"SecureContext create/snapshot/free handles\",\"TLS client connect/write/read/close plus protocol/cipher/address/timeout/ref metadata\",\"ALPN wire-format conversion helper\"],\"limitations\":[\"no JavaScript TLSSocket, SecureContext, or Server class instances\",\"no HTTPS/TLS server listener object model at the top-level tls facade\",\"checkServerIdentity hostname validation semantics are not modeled as a public top-level helper\",\"connect returns explicit native socket handles rather than JavaScript event-emitter objects\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_tls_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &tls_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_tls_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (ext.sa_node_plugin_tls_default_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"defaults\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"caModel\":\"native system/default/extra certificate snapshot helpers\",\"secureContextModel\":\"explicit native SecureContext handle\",\"socketModel\":\"explicit native TLS client handle\",\"serverModel\":\"not-modeled at the tls top-level facade\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_tls_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"CLIENT_RENEG_LIMIT\":{\"supported\":true,\"mode\":\"static constant metadata value 3\"},\"CLIENT_RENEG_WINDOW\":{\"supported\":true,\"mode\":\"static constant metadata value 600\"},\"DEFAULT_CIPHERS\":{\"supported\":true,\"mode\":\"static default cipher string metadata\"},\"DEFAULT_ECDH_CURVE\":{\"supported\":true,\"mode\":\"static default ECDH curve string metadata\"},\"DEFAULT_MIN_VERSION\":{\"supported\":true,\"mode\":\"static default minimum TLS version metadata\"},\"DEFAULT_MAX_VERSION\":{\"supported\":true,\"mode\":\"static default maximum TLS version metadata\"},\"getCiphers\":{\"supported\":true,\"mode\":\"native cipher list and detailed metadata JSON\"},\"rootCertificates\":{\"supported\":true,\"mode\":\"native system root certificate PEM array JSON snapshot\"},\"getCACertificates\":{\"supported\":true,\"mode\":\"native default/system/bundled/extra CA certificate PEM array JSON snapshot\"},\"setDefaultCACertificates\":{\"supported\":true,\"mode\":\"replace native default CA PEM bundle used by this facade\"},\"convertALPNProtocols\":{\"supported\":true,\"mode\":\"encode JSON protocol array into TLS ALPN wire format\"},\"createSecureContext\":{\"supported\":true,\"mode\":\"explicit native SecureContext handle with snapshot/free helpers\"},\"connect\":{\"supported\":true,\"mode\":\"explicit native TLS client socket handle\",\"limitations\":[\"no JavaScript TLSSocket event emitter object\",\"operations are exposed through explicit native read/write/close/state helpers\"]},\"checkServerIdentity\":{\"supported\":false,\"reason\":\"Node's JavaScript hostname/certificate validation helper is not exposed as a separate top-level ABI helper\"},\"SecureContext\":{\"supported\":false,\"reason\":\"JavaScript SecureContext class instances are not modeled; use explicit native handles instead\"},\"TLSSocket\":{\"supported\":false,\"reason\":\"JavaScript TLSSocket class instances are not modeled; use explicit native handles instead\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript TLS Server class instances are not modeled\"},\"createServer\":{\"supported\":false,\"reason\":\"TLS server listener and JavaScript event-emitter semantics are not modeled at the top-level facade\"}}");
 }
 
 pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

@@ -583,6 +583,9 @@
 @extern sa_node_plugin_dtls_close(endpoint: ptr) -> u64
 @extern sa_node_plugin_dtls_free(endpoint: ptr) -> u64
 @extern sa_node_plugin_tls_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_get_ciphers_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_get_ciphers_detailed_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_default_constants_json(&out_ptr: ptr, &out_len: u64) -> u64

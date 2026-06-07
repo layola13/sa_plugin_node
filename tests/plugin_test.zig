@@ -2155,6 +2155,60 @@ test "node plugin errors and permissions report native compatibility status" {
     try std.testing.expect(std.mem.indexOf(u8, errors, "ERR_INVALID_ARG_TYPE") != null);
     try std.testing.expect(std.mem.indexOf(u8, errors, "ECONNRESET") != null);
 
+    var codes_ptr: ?[*]const u8 = null;
+    var codes_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_codes_json(&codes_ptr, &codes_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(codes_ptr, codes_len);
+    const codes = (codes_ptr orelse return error.NullErrorsCodes)[0..@intCast(codes_len)];
+    try std.testing.expect(std.mem.indexOf(u8, codes, "\"node\":[\"ERR_INVALID_ARG_TYPE\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, codes, "\"ENOENT\":2") != null);
+
+    var enoent_name_ptr: ?[*]const u8 = null;
+    var enoent_name_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_get_system_error_name(2, &enoent_name_ptr, &enoent_name_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(enoent_name_ptr, enoent_name_len);
+    try std.testing.expectEqualStrings("ENOENT", (enoent_name_ptr orelse return error.NullErrorsSystemName)[0..@intCast(enoent_name_len)]);
+
+    var enoent_msg_ptr: ?[*]const u8 = null;
+    var enoent_msg_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_get_system_error_message(2, &enoent_msg_ptr, &enoent_msg_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(enoent_msg_ptr, enoent_msg_len);
+    const enoent_msg = (enoent_msg_ptr orelse return error.NullErrorsSystemMessage)[0..@intCast(enoent_msg_len)];
+    try std.testing.expect(enoent_msg.len > 0);
+
+    var sys_ptr: ?[*]const u8 = null;
+    var sys_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_system_error_json(2, "open".ptr, 4, "/tmp/missing".ptr, 12, null, 0, &sys_ptr, &sys_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_ptr, sys_len);
+    const sys = (sys_ptr orelse return error.NullErrorsSystemJson)[0..@intCast(sys_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys, "\"code\":\"ENOENT\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys, "\"syscall\":\"open\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys, "\"path\":\"/tmp/missing\"") != null);
+
+    var type_ptr: ?[*]const u8 = null;
+    var type_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_invalid_arg_type_json("path".ptr, 4, "string".ptr, 6, "number".ptr, 6, &type_ptr, &type_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(type_ptr, type_len);
+    const type_json = (type_ptr orelse return error.NullErrorsInvalidArgType)[0..@intCast(type_len)];
+    try std.testing.expect(std.mem.indexOf(u8, type_json, "ERR_INVALID_ARG_TYPE") != null);
+    try std.testing.expect(std.mem.indexOf(u8, type_json, "Received type number") != null);
+
+    var value_ptr: ?[*]const u8 = null;
+    var value_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_invalid_arg_value_json("mode".ptr, 4, "weird".ptr, 5, "is invalid".ptr, 10, &value_ptr, &value_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(value_ptr, value_len);
+    const value_json = (value_ptr orelse return error.NullErrorsInvalidArgValue)[0..@intCast(value_len)];
+    try std.testing.expect(std.mem.indexOf(u8, value_json, "ERR_INVALID_ARG_VALUE") != null);
+    try std.testing.expect(std.mem.indexOf(u8, value_json, "\"value\":\"weird\"") != null);
+
+    var range_ptr: ?[*]const u8 = null;
+    var range_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_out_of_range_json("port".ptr, 4, ">= 0 and <= 65535".ptr, 19, "99999".ptr, 5, &range_ptr, &range_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(range_ptr, range_len);
+    const range_json = (range_ptr orelse return error.NullErrorsOutOfRange)[0..@intCast(range_len)];
+    try std.testing.expect(std.mem.indexOf(u8, range_json, "ERR_OUT_OF_RANGE") != null);
+    try std.testing.expect(std.mem.indexOf(u8, range_json, "\"received\":\"99999\"") != null);
+
     var perm_ptr: ?[*]const u8 = null;
     var perm_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_status_json(&perm_ptr, &perm_len));

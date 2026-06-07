@@ -1,0 +1,109 @@
+// SA tests for Node errors native helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SYSCALL = utf8:"open"
+@const S_PATH = utf8:"/tmp/missing"
+@const S_NAME = utf8:"path"
+@const S_EXPECTED = utf8:"string"
+@const S_ACTUAL = utf8:"number"
+
+@test "node.errors native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ERRORS_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_CODES, L_ERR_STATUS
+L_CODES:
+    !ok1
+    codes_ptr = add 0, 0
+    codes_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ERRORS_CODES_JSON codes_ptr, codes_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_NAME, L_ERR_CODES
+L_NAME:
+    !ok2
+    name_ptr = add 0, 0
+    name_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_ERRORS_GET_SYSTEM_ERROR_NAME name_ptr, name_len, s3, 2
+    ok3 = eq s3, 0
+    br ok3 -> L_MESSAGE, L_ERR_NAME
+L_MESSAGE:
+    !ok3
+    message_ptr = add 0, 0
+    message_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_ERRORS_GET_SYSTEM_ERROR_MESSAGE message_ptr, message_len, s4, 2
+    ok4 = eq s4, 0
+    br ok4 -> L_SYSTEM, L_ERR_MESSAGE
+L_SYSTEM:
+    !ok4
+    system_ptr = add 0, 0
+    system_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_ERRORS_SYSTEM_ERROR_JSON system_ptr, system_len, s5, 2, S_SYSCALL, 4, S_PATH, 12, 0, 0
+    ok5 = eq s5, 0
+    br ok5 -> L_TYPE, L_ERR_SYSTEM
+L_TYPE:
+    !ok5
+    type_ptr = add 0, 0
+    type_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_ERRORS_INVALID_ARG_TYPE_JSON type_ptr, type_len, s6, S_NAME, 4, S_EXPECTED, 6, S_ACTUAL, 6
+    ok6 = eq s6, 0
+    br ok6 -> L_FREE, L_ERR_TYPE
+L_FREE:
+    !ok6
+    free_type = call @sa_node_plugin_free_buffer(type_ptr, type_len)
+    free_system = call @sa_node_plugin_free_buffer(system_ptr, system_len)
+    free_message = call @sa_node_plugin_free_buffer(message_ptr, message_len)
+    free_name = call @sa_node_plugin_free_buffer(name_ptr, name_len)
+    free_codes = call @sa_node_plugin_free_buffer(codes_ptr, codes_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_codes
+    !free_name
+    !free_message
+    !free_system
+    !free_type
+    !s6
+    !type_len
+    !type_ptr
+    !s5
+    !system_len
+    !system_ptr
+    !s4
+    !message_len
+    !message_ptr
+    !s3
+    !name_len
+    !name_ptr
+    !s2
+    !codes_len
+    !codes_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_CODES:
+    !ok2
+    panic(103)
+L_ERR_NAME:
+    !ok3
+    panic(103)
+L_ERR_MESSAGE:
+    !ok4
+    panic(103)
+L_ERR_SYSTEM:
+    !ok5
+    panic(103)
+L_ERR_TYPE:
+    !ok6
+    panic(103)

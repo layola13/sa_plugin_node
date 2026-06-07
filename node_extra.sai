@@ -315,6 +315,13 @@
 @extern sa_node_plugin_environment_variables_parse_env_json(content_ptr: ptr, content_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_environment_variables_load_env_file_json(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_codes_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_get_system_error_name(errnum: i64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_get_system_error_message(errnum: i64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_system_error_json(errnum: i64, syscall_ptr: ptr, syscall_len: u64, path_ptr: ptr, path_len: u64, dest_ptr: ptr, dest_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_invalid_arg_type_json(name_ptr: ptr, name_len: u64, expected_ptr: ptr, expected_len: u64, actual_type_ptr: ptr, actual_type_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_invalid_arg_value_json(name_ptr: ptr, name_len: u64, value_ptr: ptr, value_len: u64, reason_ptr: ptr, reason_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_errors_out_of_range_json(name_ptr: ptr, name_len: u64, range_ptr: ptr, range_len: u64, received_ptr: ptr, received_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_permissions_is_enabled(&out_bool: u64) -> u64

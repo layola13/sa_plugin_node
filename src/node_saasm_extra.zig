@@ -12,6 +12,7 @@ const SaSlice = extern struct {
 };
 
 extern fn setenv(name: [*:0]const u8, value: [*:0]const u8, overwrite: c_int) c_int;
+extern fn strerror(errnum: c_int) ?[*:0]const u8;
 
 const UnsupportedStatus = @intFromEnum(plugin_api.AbiStatus.failed);
 
@@ -1012,8 +1013,225 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+const ErrorCodeEntry = struct {
+    name: []const u8,
+    number: i32,
+};
+
+const node_error_codes = [_][]const u8{
+    "ERR_INVALID_ARG_TYPE",
+    "ERR_INVALID_ARG_VALUE",
+    "ERR_OUT_OF_RANGE",
+    "ERR_SYSTEM_ERROR",
+};
+
+const common_system_error_names = [_][]const u8{
+    "ENOENT",
+    "EACCES",
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "ETIMEDOUT",
+};
+
+const system_error_codes = [_]ErrorCodeEntry{
+    .{ .name = "E2BIG", .number = 7 },
+    .{ .name = "EACCES", .number = 13 },
+    .{ .name = "EADDRINUSE", .number = 98 },
+    .{ .name = "EADDRNOTAVAIL", .number = 99 },
+    .{ .name = "EAFNOSUPPORT", .number = 97 },
+    .{ .name = "EAGAIN", .number = 11 },
+    .{ .name = "EALREADY", .number = 114 },
+    .{ .name = "EBADF", .number = 9 },
+    .{ .name = "EBUSY", .number = 16 },
+    .{ .name = "ECANCELED", .number = 125 },
+    .{ .name = "ECONNABORTED", .number = 103 },
+    .{ .name = "ECONNREFUSED", .number = 111 },
+    .{ .name = "ECONNRESET", .number = 104 },
+    .{ .name = "EEXIST", .number = 17 },
+    .{ .name = "EHOSTUNREACH", .number = 113 },
+    .{ .name = "EINPROGRESS", .number = 115 },
+    .{ .name = "EINTR", .number = 4 },
+    .{ .name = "EINVAL", .number = 22 },
+    .{ .name = "EIO", .number = 5 },
+    .{ .name = "EISCONN", .number = 106 },
+    .{ .name = "EISDIR", .number = 21 },
+    .{ .name = "EMFILE", .number = 24 },
+    .{ .name = "ENAMETOOLONG", .number = 36 },
+    .{ .name = "ENETDOWN", .number = 100 },
+    .{ .name = "ENETRESET", .number = 102 },
+    .{ .name = "ENETUNREACH", .number = 101 },
+    .{ .name = "ENOENT", .number = 2 },
+    .{ .name = "ENOMEM", .number = 12 },
+    .{ .name = "ENOSPC", .number = 28 },
+    .{ .name = "ENOTCONN", .number = 107 },
+    .{ .name = "ENOTDIR", .number = 20 },
+    .{ .name = "ENOTEMPTY", .number = 39 },
+    .{ .name = "ENOTSOCK", .number = 88 },
+    .{ .name = "ENOTSUP", .number = 95 },
+    .{ .name = "EPERM", .number = 1 },
+    .{ .name = "EPIPE", .number = 32 },
+    .{ .name = "EPROTONOSUPPORT", .number = 93 },
+    .{ .name = "EPROTOTYPE", .number = 91 },
+    .{ .name = "ERANGE", .number = 34 },
+    .{ .name = "EROFS", .number = 30 },
+    .{ .name = "ESRCH", .number = 3 },
+    .{ .name = "ETIMEDOUT", .number = 110 },
+};
+
+fn errorsLookupSystemName(errnum: i32) []const u8 {
+    for (system_error_codes) |entry| {
+        if (entry.number == errnum) return entry.name;
+    }
+    return "UNKNOWN";
+}
+
+fn errorsSystemMessage(errnum: i32) []const u8 {
+    const msg_z = strerror(@intCast(errnum)) orelse return "unknown error";
+    return std.mem.span(msg_z);
+}
+
+fn errorsAppendQuotedField(out: *std.ArrayList(u8), name: []const u8, value: []const u8) !void {
+    try out.appendSlice(",\"");
+    try out.appendSlice(name);
+    try out.appendSlice("\":");
+    try appendJsonString(out, value);
+}
+
+fn errorsAppendQuotedMessage(out: *std.ArrayList(u8), name: []const u8, comptime fmt: []const u8, args: anytype) !void {
+    const text = try std.fmt.allocPrint(std.heap.page_allocator, fmt, args);
+    defer std.heap.page_allocator.free(text);
+    try errorsAppendQuotedField(out, name, text);
+}
+
+fn errorsBuildSystemErrorJson(out: *std.ArrayList(u8), errnum: i32, syscall: []const u8, path: ?[]const u8, dest: ?[]const u8) !void {
+    const code = errorsLookupSystemName(errnum);
+    const message = errorsSystemMessage(errnum);
+    try out.appendSlice("{\"code\":");
+    try appendJsonString(out, code);
+    try out.appendSlice(",\"errno\":");
+    try out.writer().print("{d}", .{errnum});
+    try errorsAppendQuotedField(out, "message", message);
+    try errorsAppendQuotedField(out, "syscall", syscall);
+    if (path) |file_path| {
+        if (dest) |dest_path| {
+            try errorsAppendQuotedMessage(out, "summary", "{s}: {s}, {s} '{s}' -> '{s}'", .{ code, message, syscall, file_path, dest_path });
+        } else {
+            try errorsAppendQuotedMessage(out, "summary", "{s}: {s}, {s} '{s}'", .{ code, message, syscall, file_path });
+        }
+    } else {
+        try errorsAppendQuotedMessage(out, "summary", "{s}: {s}, {s}", .{ code, message, syscall });
+    }
+    try out.appendSlice(",\"path\":");
+    if (path) |file_path| {
+        try appendJsonString(out, file_path);
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.appendSlice(",\"dest\":");
+    if (dest) |dest_path| {
+        try appendJsonString(out, dest_path);
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.append('}');
+}
+
 pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"module\":\"errors\",\"supported\":true,\"mode\":\"native-error-codes\",\"codes\":[\"ERR_INVALID_ARG_TYPE\",\"ERR_INVALID_ARG_VALUE\",\"ERR_OUT_OF_RANGE\",\"ERR_SYSTEM_ERROR\",\"ENOENT\",\"EACCES\",\"ECONNREFUSED\",\"ECONNRESET\",\"ETIMEDOUT\"],\"limitations\":[\"no JavaScript Error subclass prototypes\",\"native APIs return status codes and JSON diagnostics\"]}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"errors\",\"supported\":true,\"mode\":\"native-error-codes\",\"nodeCodes\":") catch return fail();
+    appendStringArray(&out, &node_error_codes) catch return fail();
+    out.appendSlice(",\"commonSystemCodes\":") catch return fail();
+    appendStringArray(&out, &common_system_error_names) catch return fail();
+    out.appendSlice(",\"systemCodeCount\":") catch return fail();
+    out.writer().print("{d}", .{system_error_codes.len}) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"system errno lookup\",\"native system error JSON\",\"common argument validation diagnostic JSON\"],\"limitations\":[\"no JavaScript Error subclass prototypes\",\"no stack capture or cause chaining\",\"native APIs return status codes and JSON diagnostics\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_errors_codes_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"node\":") catch return fail();
+    appendStringArray(&out, &node_error_codes) catch return fail();
+    out.appendSlice(",\"system\":{") catch return fail();
+    for (system_error_codes, 0..) |entry, i| {
+        if (i != 0) out.append(',') catch return fail();
+        appendJsonString(&out, entry.name) catch return fail();
+        out.append(':') catch return fail();
+        out.writer().print("{d}", .{entry.number}) catch return fail();
+    }
+    out.appendSlice("}}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_errors_get_system_error_name(errnum: i64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, errorsLookupSystemName(@intCast(errnum)));
+}
+
+pub export fn sa_node_plugin_errors_get_system_error_message(errnum: i64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, errorsSystemMessage(@intCast(errnum)));
+}
+
+pub export fn sa_node_plugin_errors_system_error_json(errnum: i64, syscall_ptr: ?[*]const u8, syscall_len: u64, path_ptr: ?[*]const u8, path_len: u64, dest_ptr: ?[*]const u8, dest_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const syscall = if (syscall_len == 0) "unknown" else (syscall_ptr orelse return fail())[0..syscall_len];
+    const path = if (path_len == 0) null else (path_ptr orelse return fail())[0..path_len];
+    const dest = if (dest_len == 0) null else (dest_ptr orelse return fail())[0..dest_len];
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    errorsBuildSystemErrorJson(&out, @intCast(errnum), syscall, path, dest) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_errors_invalid_arg_type_json(name_ptr: ?[*]const u8, name_len: u64, expected_ptr: ?[*]const u8, expected_len: u64, actual_type_ptr: ?[*]const u8, actual_type_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    const expected = if (expected_len == 0) return fail() else (expected_ptr orelse return fail())[0..expected_len];
+    const actual_type = if (actual_type_len == 0) return fail() else (actual_type_ptr orelse return fail())[0..actual_type_len];
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"code\":\"ERR_INVALID_ARG_TYPE\",\"name\":") catch return fail();
+    appendJsonString(&out, name) catch return fail();
+    out.appendSlice(",\"expected\":") catch return fail();
+    appendJsonString(&out, expected) catch return fail();
+    out.appendSlice(",\"actualType\":") catch return fail();
+    appendJsonString(&out, actual_type) catch return fail();
+    errorsAppendQuotedMessage(&out, "message", "The '{s}' argument must be of type {s}. Received type {s}", .{ name, expected, actual_type }) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_errors_invalid_arg_value_json(name_ptr: ?[*]const u8, name_len: u64, value_ptr: ?[*]const u8, value_len: u64, reason_ptr: ?[*]const u8, reason_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    const value = if (value_len == 0) "" else (value_ptr orelse return fail())[0..value_len];
+    const reason = if (reason_len == 0) "is invalid" else (reason_ptr orelse return fail())[0..reason_len];
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"code\":\"ERR_INVALID_ARG_VALUE\",\"name\":") catch return fail();
+    appendJsonString(&out, name) catch return fail();
+    out.appendSlice(",\"value\":") catch return fail();
+    appendJsonString(&out, value) catch return fail();
+    out.appendSlice(",\"reason\":") catch return fail();
+    appendJsonString(&out, reason) catch return fail();
+    errorsAppendQuotedMessage(&out, "message", "The argument '{s}' {s}. Received {s}", .{ name, reason, value }) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_errors_out_of_range_json(name_ptr: ?[*]const u8, name_len: u64, range_ptr: ?[*]const u8, range_len: u64, received_ptr: ?[*]const u8, received_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    const range = if (range_len == 0) return fail() else (range_ptr orelse return fail())[0..range_len];
+    const received = if (received_len == 0) "" else (received_ptr orelse return fail())[0..received_len];
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"code\":\"ERR_OUT_OF_RANGE\",\"name\":") catch return fail();
+    appendJsonString(&out, name) catch return fail();
+    out.appendSlice(",\"range\":") catch return fail();
+    appendJsonString(&out, range) catch return fail();
+    out.appendSlice(",\"received\":") catch return fail();
+    appendJsonString(&out, received) catch return fail();
+    errorsAppendQuotedMessage(&out, "message", "The value of '{s}' is out of range. It must be {s}. Received {s}", .{ name, range, received }) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_internationalization_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

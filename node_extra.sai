@@ -530,6 +530,9 @@
 @extern sa_node_plugin_http_set_max_idle_http_parsers(max: u64) -> u64
 @extern sa_node_plugin_http_methods_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_status_codes_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_validate_header_name(name_ptr: ptr, name_len: u64) -> u64
 @extern sa_node_plugin_http_validate_header_value(name_ptr: ptr, name_len: u64, value_ptr: ptr, value_len: u64) -> u64
 @extern sa_node_plugin_https_status_json(&out_ptr: ptr, &out_len: u64) -> u64

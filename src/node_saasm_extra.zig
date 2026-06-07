@@ -5602,6 +5602,27 @@ const http2_export_names = [_][]const u8{
     "Http2ServerResponse",
 };
 
+const http_export_names = [_][]const u8{
+    "_connectionListener",
+    "METHODS",
+    "STATUS_CODES",
+    "Agent",
+    "ClientRequest",
+    "IncomingMessage",
+    "OutgoingMessage",
+    "Server",
+    "ServerResponse",
+    "createServer",
+    "validateHeaderName",
+    "validateHeaderValue",
+    "get",
+    "request",
+    "setMaxIdleHTTPParsers",
+    "maxHeaderSize",
+    "globalAgent",
+    "WebSocket",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6266,13 +6287,30 @@ pub export fn sa_node_plugin_inspector_feature_support_json(out_ptr: ?*?[*]const
 }
 
 pub export fn sa_node_plugin_http_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(
-        out_ptr,
-        out_len,
-        "http",
-        true,
-        "HTTP/1 client/server, streaming, and WebSocket bridge are exposed",
-    );
+    const allocator = std.heap.page_allocator;
+
+    var methods_ptr: ?[*]const u8 = null;
+    var methods_len: u64 = 0;
+    if (sa_node_plugin_http_methods_json(&methods_ptr, &methods_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(methods_ptr, methods_len);
+
+    var status_codes_ptr: ?[*]const u8 = null;
+    var status_codes_len: u64 = 0;
+    if (sa_node_plugin_http_status_codes_json(&status_codes_ptr, &status_codes_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(status_codes_ptr, status_codes_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"http\",\"supported\":true,\"mode\":\"top-level-native-http1-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &http_export_names) catch return fail();
+    out.appendSlice(",\"methods\":") catch return fail();
+    out.appendSlice((methods_ptr orelse return fail())[0..@intCast(methods_len)]) catch return fail();
+    out.appendSlice(",\"statusCodes\":") catch return fail();
+    out.appendSlice((status_codes_ptr orelse return fail())[0..@intCast(status_codes_len)]) catch return fail();
+    out.appendSlice(",\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
+    out.writer().print("{d}", .{http_max_idle_parsers}) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"request\":true,\"get\":true,\"createServer\":true,\"validateHeaderName\":true,\"validateHeaderValue\":true,\"setMaxIdleHTTPParsers\":true,\"METHODS\":true,\"STATUS_CODES\":true,\"maxHeaderSize\":true,\"ClientRequest\":false,\"IncomingMessage\":false,\"OutgoingMessage\":false,\"Server\":false,\"ServerResponse\":false,\"Agent\":false,\"globalAgent\":false,\"WebSocket\":false},\"capabilities\":[\"HTTP/1 request and get JSON helpers\",\"explicit native client/request/response handles\",\"explicit native server/request/response handles\",\"header validation helpers\",\"HTTP metadata for methods, status codes, and max header size\",\"WebSocket bridge helpers through explicit native handles\"],\"limitations\":[\"no JavaScript ClientRequest, IncomingMessage, OutgoingMessage, Server, or ServerResponse class instances\",\"request and get return completed native response JSON rather than asynchronous event emitter objects\",\"no Agent or globalAgent object model\",\"WebSocket is available through explicit bridge helpers rather than the top-level undici WebSocket class export\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 var http_max_idle_parsers: u64 = 1000;
@@ -6302,6 +6340,42 @@ pub export fn sa_node_plugin_http_status_codes_json(out_ptr: ?*?[*]const u8, out
         out_len,
         "{\"100\":\"Continue\",\"101\":\"Switching Protocols\",\"102\":\"Processing\",\"103\":\"Early Hints\",\"200\":\"OK\",\"201\":\"Created\",\"202\":\"Accepted\",\"203\":\"Non-Authoritative Information\",\"204\":\"No Content\",\"205\":\"Reset Content\",\"206\":\"Partial Content\",\"207\":\"Multi-Status\",\"208\":\"Already Reported\",\"226\":\"IM Used\",\"300\":\"Multiple Choices\",\"301\":\"Moved Permanently\",\"302\":\"Found\",\"303\":\"See Other\",\"304\":\"Not Modified\",\"305\":\"Use Proxy\",\"307\":\"Temporary Redirect\",\"308\":\"Permanent Redirect\",\"400\":\"Bad Request\",\"401\":\"Unauthorized\",\"402\":\"Payment Required\",\"403\":\"Forbidden\",\"404\":\"Not Found\",\"405\":\"Method Not Allowed\",\"406\":\"Not Acceptable\",\"407\":\"Proxy Authentication Required\",\"408\":\"Request Timeout\",\"409\":\"Conflict\",\"410\":\"Gone\",\"411\":\"Length Required\",\"412\":\"Precondition Failed\",\"413\":\"Payload Too Large\",\"414\":\"URI Too Long\",\"415\":\"Unsupported Media Type\",\"416\":\"Range Not Satisfiable\",\"417\":\"Expectation Failed\",\"418\":\"I'm a Teapot\",\"421\":\"Misdirected Request\",\"422\":\"Unprocessable Entity\",\"423\":\"Locked\",\"424\":\"Failed Dependency\",\"425\":\"Too Early\",\"426\":\"Upgrade Required\",\"428\":\"Precondition Required\",\"429\":\"Too Many Requests\",\"431\":\"Request Header Fields Too Large\",\"451\":\"Unavailable For Legal Reasons\",\"500\":\"Internal Server Error\",\"501\":\"Not Implemented\",\"502\":\"Bad Gateway\",\"503\":\"Service Unavailable\",\"504\":\"Gateway Timeout\",\"505\":\"HTTP Version Not Supported\",\"506\":\"Variant Also Negotiates\",\"507\":\"Insufficient Storage\",\"508\":\"Loop Detected\",\"509\":\"Bandwidth Limit Exceeded\",\"510\":\"Not Extended\",\"511\":\"Network Authentication Required\"}",
     );
+}
+
+pub export fn sa_node_plugin_http_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &http_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var methods_ptr: ?[*]const u8 = null;
+    var methods_len: u64 = 0;
+    if (sa_node_plugin_http_methods_json(&methods_ptr, &methods_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(methods_ptr, methods_len);
+
+    var status_codes_ptr: ?[*]const u8 = null;
+    var status_codes_len: u64 = 0;
+    if (sa_node_plugin_http_status_codes_json(&status_codes_ptr, &status_codes_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(status_codes_ptr, status_codes_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
+    out.writer().print("{d}", .{http_max_idle_parsers}) catch return fail();
+    out.appendSlice(",\"methods\":") catch return fail();
+    out.appendSlice((methods_ptr orelse return fail())[0..@intCast(methods_len)]) catch return fail();
+    out.appendSlice(",\"statusCodes\":") catch return fail();
+    out.appendSlice((status_codes_ptr orelse return fail())[0..@intCast(status_codes_len)]) catch return fail();
+    out.appendSlice(",\"requestModel\":\"one-shot completed-response JSON or explicit native client handles\",\"serverModel\":\"explicit native server/request/response handles\",\"agentModel\":\"not-modeled\",\"websocketModel\":\"explicit bridge handle helpers outside the top-level WebSocket class export\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"_connectionListener\":{\"supported\":false,\"reason\":\"Node internal connection listener hooks are not modeled as a public JS callback export\"},\"METHODS\":{\"supported\":true,\"mode\":\"static method name array JSON\"},\"STATUS_CODES\":{\"supported\":true,\"mode\":\"static status code catalog JSON\"},\"request\":{\"supported\":true,\"mode\":\"one-shot completed-response JSON helper and explicit native client/request handles\",\"limitations\":[\"no JavaScript ClientRequest event emitter object\",\"no callback scheduling or implicit streaming lifecycle\"]},\"get\":{\"supported\":true,\"mode\":\"one-shot completed-response JSON helper\",\"limitations\":[\"returns native response JSON rather than a JavaScript request object\"]},\"createServer\":{\"supported\":true,\"mode\":\"explicit native server/request/response handles\",\"limitations\":[\"no JavaScript Server event emitter object\",\"accept/respond flow is explicit through native handles\"]},\"validateHeaderName\":{\"supported\":true,\"mode\":\"native RFC token validation\"},\"validateHeaderValue\":{\"supported\":true,\"mode\":\"native visible-ASCII and tab validation\"},\"setMaxIdleHTTPParsers\":{\"supported\":true,\"mode\":\"native stored parser-pool limit metadata\"},\"maxHeaderSize\":{\"supported\":true,\"mode\":\"static native max header size metadata\"},\"Agent\":{\"supported\":false,\"reason\":\"JavaScript Agent pooling objects are not modeled\"},\"globalAgent\":{\"supported\":false,\"reason\":\"global Agent object identity is not modeled\"},\"ClientRequest\":{\"supported\":false,\"reason\":\"JavaScript ClientRequest class instances are not modeled\"},\"IncomingMessage\":{\"supported\":false,\"reason\":\"JavaScript IncomingMessage class instances are not modeled\"},\"OutgoingMessage\":{\"supported\":false,\"reason\":\"JavaScript OutgoingMessage class instances are not modeled\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript Server class instances are not modeled\"},\"ServerResponse\":{\"supported\":false,\"reason\":\"JavaScript ServerResponse class instances are not modeled\"},\"WebSocket\":{\"supported\":false,\"reason\":\"the top-level undici WebSocket class export is not modeled; use explicit native WebSocket bridge helpers instead\"}}");
 }
 
 fn isHttpTokenByte(byte: u8) bool {

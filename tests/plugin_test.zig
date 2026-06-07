@@ -3057,6 +3057,45 @@ test "node plugin status reports native command line i18n deprecation and iterab
     try std.testing.expect(std.mem.indexOf(u8, iter, "pipeline state tracking") != null);
 }
 
+test "node plugin report top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_report_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullReportStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"report\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-report-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"writeReport\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"directory\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_report_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullReportExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"writeReport\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getReport\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"signal\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_report_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullReportConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"defaultFilename\":\"sa-report.json\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"pathResolution\":\"relative paths resolve against cwd before write\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"directory\":false") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_report_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullReportFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"writeReport\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"getReport\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"reportOnSignal\":{\"supported\":false") != null);
+}
+
 test "node plugin internationalization reports native config introspection" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--icu-data-dir=/opt/demo-icu", 1));
     defer _ = unsetenv("NODE_OPTIONS");

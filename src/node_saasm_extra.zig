@@ -3146,8 +3146,34 @@ pub export fn sa_node_plugin_perf_hooks_feature_support_json(out_ptr: ?*?[*]cons
 }
 
 // --- Report ---
+const report_export_names = [_][]const u8{
+    "writeReport",
+    "getReport",
+    "directory",
+    "filename",
+    "compact",
+    "excludeNetwork",
+    "signal",
+    "reportOnFatalError",
+    "reportOnSignal",
+    "reportOnUncaughtException",
+    "excludeEnv",
+};
+
 pub export fn sa_node_plugin_report_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "report", true, "diagnostic report shim");
+    var report_ptr: ?[*]const u8 = null;
+    var report_len: u64 = 0;
+    if (sa_node_plugin_report_get_json(&report_ptr, &report_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(report_ptr, report_len);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"report\",\"supported\":true,\"mode\":\"top-level-native-report-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &report_export_names) catch return fail();
+    out.appendSlice(",\"sampleReport\":") catch return fail();
+    out.appendSlice((report_ptr orelse return fail())[0..@intCast(report_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"writeReport\":true,\"getReport\":true,\"directory\":false,\"filename\":false,\"compact\":false,\"excludeNetwork\":false,\"signal\":false,\"reportOnFatalError\":false,\"reportOnSignal\":false,\"reportOnUncaughtException\":false,\"excludeEnv\":false},\"capabilities\":[\"generate native diagnostic report JSON snapshot\",\"write report JSON to explicit absolute or resolved file path\",\"report current pid/ppid/cwd/platform/arch metadata\"],\"limitations\":[\"no JavaScript process.report object with live getters and setters\",\"no signal-triggered, fatal-error, or uncaught-exception automatic report hooks\",\"no compact, excludeNetwork, or excludeEnv toggles\",\"writeReport persists the native JSON snapshot only and does not accept JavaScript Error objects\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_report_get_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3190,6 +3216,21 @@ pub export fn sa_node_plugin_report_write_file(filename_ptr: ?[*]const u8, filen
     defer dir_file.close();
     dir_file.writeAll(report_ptr.?[0..report_len]) catch return fail();
     return writeOwnedString(out_ptr, out_len, file_path);
+}
+
+pub export fn sa_node_plugin_report_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &report_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_report_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"defaultFilename\":\"sa-report.json\",\"pathResolution\":\"relative paths resolve against cwd before write\",\"writeReport\":{\"supported\":true,\"mode\":\"write native diagnostic snapshot to explicit file path\"},\"getReport\":{\"supported\":true,\"mode\":\"return native diagnostic snapshot JSON\"},\"liveProperties\":{\"directory\":false,\"filename\":false,\"compact\":false,\"excludeNetwork\":false,\"signal\":false,\"reportOnFatalError\":false,\"reportOnSignal\":false,\"reportOnUncaughtException\":false,\"excludeEnv\":false}}");
+}
+
+pub export fn sa_node_plugin_report_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"writeReport\":{\"supported\":true,\"mode\":\"write explicit-path diagnostic JSON file\",\"limitations\":[\"does not accept JavaScript Error objects\",\"does not classify API vs signal vs fatal error origins\"]},\"getReport\":{\"supported\":true,\"mode\":\"return current native diagnostic JSON snapshot\"},\"directory\":{\"supported\":false,\"reason\":\"mutable process.report output directory state is not modeled\"},\"filename\":{\"supported\":false,\"reason\":\"mutable process.report filename state is not modeled\"},\"compact\":{\"supported\":false,\"reason\":\"compact formatting toggle is not modeled\"},\"excludeNetwork\":{\"supported\":false,\"reason\":\"network elision toggle is not modeled\"},\"signal\":{\"supported\":false,\"reason\":\"signal-triggered report configuration is not modeled\"},\"reportOnFatalError\":{\"supported\":false,\"reason\":\"fatal-error automatic reporting requires runtime exception integration\"},\"reportOnSignal\":{\"supported\":false,\"reason\":\"signal-triggered automatic reporting is not modeled\"},\"reportOnUncaughtException\":{\"supported\":false,\"reason\":\"uncaught-exception automatic reporting requires runtime exception integration\"},\"excludeEnv\":{\"supported\":false,\"reason\":\"environment elision toggle is not modeled\"}}");
 }
 
 // --- SEA ---

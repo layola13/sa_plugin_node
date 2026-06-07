@@ -2273,6 +2273,116 @@ test "node plugin errors and permissions report native compatibility status" {
     try std.testing.expect(std.mem.indexOf(u8, range_json, "ERR_OUT_OF_RANGE") != null);
     try std.testing.expect(std.mem.indexOf(u8, range_json, "\"received\":\"99999\"") != null);
 
+    var assert_status_ptr: ?[*]const u8 = null;
+    var assert_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_status_json(&assert_status_ptr, &assert_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_status_ptr, assert_status_len);
+    const assert_status = (assert_status_ptr orelse return error.NullAssertStatus)[0..@intCast(assert_status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, assert_status, "\"module\":\"assert\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_status, "deepStrictEqual") != null);
+
+    var assert_ok_ptr: ?[*]const u8 = null;
+    var assert_ok_len: u64 = 0;
+    var assert_ok: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_ok(1, null, 0, &assert_ok_ptr, &assert_ok_len, &assert_ok));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_ok_ptr, assert_ok_len);
+    try std.testing.expectEqual(@as(u64, 1), assert_ok);
+    try std.testing.expectEqualStrings("null", (assert_ok_ptr orelse return error.NullAssertOkSuccess)[0..@intCast(assert_ok_len)]);
+
+    var assert_fail_ptr: ?[*]const u8 = null;
+    var assert_fail_len: u64 = 0;
+    var assert_fail_ok: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_ok(0, "boom".ptr, 4, &assert_fail_ptr, &assert_fail_len, &assert_fail_ok));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_fail_ptr, assert_fail_len);
+    try std.testing.expectEqual(@as(u64, 0), assert_fail_ok);
+    const assert_fail_json = (assert_fail_ptr orelse return error.NullAssertOkFailure)[0..@intCast(assert_fail_len)];
+    try std.testing.expect(std.mem.indexOf(u8, assert_fail_json, "ERR_ASSERTION") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_fail_json, "\"message\":\"boom\"") != null);
+
+    var equal_ptr: ?[*]const u8 = null;
+    var equal_len: u64 = 0;
+    var equal_ok: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_equal("1".ptr, 1, "1".ptr, 1, 1, null, 0, &equal_ptr, &equal_len, &equal_ok));
+    defer _ = plugin.sa_node_plugin_free_buffer(equal_ptr, equal_len);
+    try std.testing.expectEqual(@as(u64, 1), equal_ok);
+
+    var deep_ptr: ?[*]const u8 = null;
+    var deep_len: u64 = 0;
+    var deep_ok: u64 = 0;
+    const same_json = "{\"a\":1,\"b\":[2,3]}";
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_deep_strict_equal(same_json.ptr, same_json.len, same_json.ptr, same_json.len, null, 0, &deep_ptr, &deep_len, &deep_ok));
+    defer _ = plugin.sa_node_plugin_free_buffer(deep_ptr, deep_len);
+    try std.testing.expectEqual(@as(u64, 1), deep_ok);
+
+    var fail_json_ptr: ?[*]const u8 = null;
+    var fail_json_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_fail_json("forced".ptr, 6, "1".ptr, 1, "2".ptr, 1, "fail".ptr, 4, &fail_json_ptr, &fail_json_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(fail_json_ptr, fail_json_len);
+    const forced_fail_json = (fail_json_ptr orelse return error.NullAssertFailJson)[0..@intCast(fail_json_len)];
+    try std.testing.expect(std.mem.indexOf(u8, forced_fail_json, "\"operator\":\"fail\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, forced_fail_json, "\"message\":\"forced\"") != null);
+
+    var strict_cfg_ptr: ?[*]const u8 = null;
+    var strict_cfg_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_strict_config_json(&strict_cfg_ptr, &strict_cfg_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(strict_cfg_ptr, strict_cfg_len);
+    const strict_cfg = (strict_cfg_ptr orelse return error.NullAssertStrictConfig)[0..@intCast(strict_cfg_len)];
+    try std.testing.expect(std.mem.indexOf(u8, strict_cfg, "\"strict\":true") != null);
+
+    var constants_status_ptr: ?[*]const u8 = null;
+    var constants_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_constants_status_json(&constants_status_ptr, &constants_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_status_ptr, constants_status_len);
+    const constants_status = (constants_status_ptr orelse return error.NullConstantsStatus)[0..@intCast(constants_status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants_status, "\"module\":\"constants\"") != null);
+
+    var constants_ptr2: ?[*]const u8 = null;
+    var constants_len2: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_constants_json(&constants_ptr2, &constants_len2));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_ptr2, constants_len2);
+    const constants_json2 = (constants_ptr2 orelse return error.NullConstantsJson)[0..@intCast(constants_len2)];
+    var constants2 = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, constants_json2, .{});
+    defer constants2.deinit();
+    try std.testing.expectEqual(@as(i64, 0), constants2.value.object.get("F_OK").?.integer);
+    try std.testing.expectEqual(@as(i64, 4), constants2.value.object.get("COPYFILE_FICLONE_FORCE").?.integer);
+    try std.testing.expect(constants2.value.object.get("CRYPTO_HASHES").?.array.items.len > 0);
+    try std.testing.expect(constants2.value.object.get("SIGTERM") != null);
+
+    var sys_status_ptr2: ?[*]const u8 = null;
+    var sys_status_len2: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_status_json(&sys_status_ptr2, &sys_status_len2));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_status_ptr2, sys_status_len2);
+    const sys_status2 = (sys_status_ptr2 orelse return error.NullSysStatus)[0..@intCast(sys_status_len2)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_status2, "DEP0025") != null);
+
+    var sys_deprecation_ptr: ?[*]const u8 = null;
+    var sys_deprecation_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_deprecation_json(&sys_deprecation_ptr, &sys_deprecation_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_deprecation_ptr, sys_deprecation_len);
+    const sys_deprecation = (sys_deprecation_ptr orelse return error.NullSysDeprecation)[0..@intCast(sys_deprecation_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_deprecation, "node:util") != null);
+
+    var sys_format_ptr: ?[*]const u8 = null;
+    var sys_format_len: u64 = 0;
+    const sys_args = "[\"world\",7]";
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_format("hello %s %d".ptr, 11, sys_args.ptr, sys_args.len, &sys_format_ptr, &sys_format_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_format_ptr, sys_format_len);
+    try std.testing.expectEqualStrings("hello world 7", (sys_format_ptr orelse return error.NullSysFormat)[0..@intCast(sys_format_len)]);
+
+    var sys_inspect_ptr: ?[*]const u8 = null;
+    var sys_inspect_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_inspect(same_json.ptr, same_json.len, &sys_inspect_ptr, &sys_inspect_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_inspect_ptr, sys_inspect_len);
+    const sys_inspect = (sys_inspect_ptr orelse return error.NullSysInspect)[0..@intCast(sys_inspect_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_inspect, "a") != null);
+
+    var sys_debug_ptr: ?[*]const u8 = null;
+    var sys_debug_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_debuglog("http".ptr, 4, &sys_debug_ptr, &sys_debug_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_debug_ptr, sys_debug_len);
+    const sys_debug = (sys_debug_ptr orelse return error.NullSysDebuglog)[0..@intCast(sys_debug_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_debug, "\"section\":\"http\"") != null);
+
     var perm_ptr: ?[*]const u8 = null;
     var perm_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_status_json(&perm_ptr, &perm_len));

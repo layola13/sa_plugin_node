@@ -1,0 +1,248 @@
+// SA tests for Node assert/constants/sys compatibility helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_MSG = utf8:"boom"
+@const S_ACTUAL = utf8:"1"
+@const S_EXPECTED = utf8:"2"
+@const S_OPERATOR = utf8:"strictEqual"
+@const S_JSON = utf8:"{\"a\":1}"
+@const S_FORMAT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"sa\"]"
+@const S_SECTION = utf8:"net"
+
+@test "node.assert constants sys helpers"():
+L_ENTRY:
+    assert_status_ptr = add 0, 0
+    assert_status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ASSERT_STATUS_JSON assert_status_ptr, assert_status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_ASSERT_OK_TRUE, L_ERR_ASSERT_STATUS
+L_ASSERT_OK_TRUE:
+    !ok1
+    ok_ptr = add 0, 0
+    ok_len = add 0, 0
+    ok_status = add 0, 0
+    ok_bool = add 0, 0
+    EXPAND NODE_ASSERT_OK ok_ptr, ok_len, ok_status, ok_bool, 1, 0, 0
+    ok2 = eq ok_status, 0
+    br ok2 -> L_ASSERT_OK_FALSE, L_ERR_ASSERT_OK_TRUE
+L_ASSERT_OK_FALSE:
+    !ok2
+    fail_ptr = add 0, 0
+    fail_len = add 0, 0
+    fail_status = add 0, 0
+    fail_bool = add 0, 0
+    EXPAND NODE_ASSERT_OK fail_ptr, fail_len, fail_status, fail_bool, 0, S_MSG, 4
+    ok3 = eq fail_status, 0
+    br ok3 -> L_ASSERT_EQUAL, L_ERR_ASSERT_OK_FALSE
+L_ASSERT_EQUAL:
+    !ok3
+    equal_ptr = add 0, 0
+    equal_len = add 0, 0
+    equal_status = add 0, 0
+    equal_bool = add 0, 0
+    EXPAND NODE_ASSERT_EQUAL equal_ptr, equal_len, equal_status, equal_bool, S_ACTUAL, 1, S_ACTUAL, 1, 1, 0, 0
+    ok4 = eq equal_status, 0
+    br ok4 -> L_ASSERT_DEEP, L_ERR_ASSERT_EQUAL
+L_ASSERT_DEEP:
+    !ok4
+    deep_ptr = add 0, 0
+    deep_len = add 0, 0
+    deep_status = add 0, 0
+    deep_bool = add 0, 0
+    EXPAND NODE_ASSERT_DEEP_STRICT_EQUAL deep_ptr, deep_len, deep_status, deep_bool, S_JSON, 7, S_JSON, 7, 0, 0
+    ok5 = eq deep_status, 0
+    br ok5 -> L_ASSERT_FAIL_JSON, L_ERR_ASSERT_DEEP
+L_ASSERT_FAIL_JSON:
+    !ok5
+    fail_json_ptr = add 0, 0
+    fail_json_len = add 0, 0
+    fail_json_status = add 0, 0
+    EXPAND NODE_ASSERT_FAIL_JSON fail_json_ptr, fail_json_len, fail_json_status, S_MSG, 4, S_ACTUAL, 1, S_EXPECTED, 1, S_OPERATOR, 11
+    ok6 = eq fail_json_status, 0
+    br ok6 -> L_ASSERT_CONFIG, L_ERR_ASSERT_FAIL_JSON
+L_ASSERT_CONFIG:
+    !ok6
+    config_ptr = add 0, 0
+    config_len = add 0, 0
+    config_status = add 0, 0
+    EXPAND NODE_ASSERT_STRICT_CONFIG_JSON config_ptr, config_len, config_status
+    ok7 = eq config_status, 0
+    br ok7 -> L_CONSTANTS_STATUS, L_ERR_ASSERT_CONFIG
+L_CONSTANTS_STATUS:
+    !ok7
+    constants_status_ptr = add 0, 0
+    constants_status_len = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_CONSTANTS_STATUS_JSON constants_status_ptr, constants_status_len, s8
+    ok8 = eq s8, 0
+    br ok8 -> L_CONSTANTS_JSON, L_ERR_CONSTANTS_STATUS
+L_CONSTANTS_JSON:
+    !ok8
+    constants_ptr = add 0, 0
+    constants_len = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_CONSTANTS_JSON constants_ptr, constants_len, s9
+    ok9 = eq s9, 0
+    br ok9 -> L_SYS_STATUS, L_ERR_CONSTANTS_JSON
+L_SYS_STATUS:
+    !ok9
+    sys_status_ptr = add 0, 0
+    sys_status_len = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_SYS_STATUS_JSON sys_status_ptr, sys_status_len, s10
+    ok10 = eq s10, 0
+    br ok10 -> L_SYS_DEPRECATION, L_ERR_SYS_STATUS
+L_SYS_DEPRECATION:
+    !ok10
+    sys_dep_ptr = add 0, 0
+    sys_dep_len = add 0, 0
+    s11 = add 0, 0
+    EXPAND NODE_SYS_DEPRECATION_JSON sys_dep_ptr, sys_dep_len, s11
+    ok11 = eq s11, 0
+    br ok11 -> L_SYS_FORMAT, L_ERR_SYS_DEPRECATION
+L_SYS_FORMAT:
+    !ok11
+    sys_format_ptr = add 0, 0
+    sys_format_len = add 0, 0
+    s12 = add 0, 0
+    EXPAND NODE_SYS_FORMAT sys_format_ptr, sys_format_len, s12, S_FORMAT, 8, S_ARGS, 6
+    ok12 = eq s12, 0
+    br ok12 -> L_SYS_INSPECT, L_ERR_SYS_FORMAT
+L_SYS_INSPECT:
+    !ok12
+    sys_inspect_ptr = add 0, 0
+    sys_inspect_len = add 0, 0
+    s13 = add 0, 0
+    EXPAND NODE_SYS_INSPECT sys_inspect_ptr, sys_inspect_len, s13, S_JSON, 7
+    ok13 = eq s13, 0
+    br ok13 -> L_SYS_DEBUGLOG, L_ERR_SYS_INSPECT
+L_SYS_DEBUGLOG:
+    !ok13
+    sys_debug_ptr = add 0, 0
+    sys_debug_len = add 0, 0
+    s14 = add 0, 0
+    EXPAND NODE_SYS_DEBUGLOG sys_debug_ptr, sys_debug_len, s14, S_SECTION, 3
+    ok14 = eq s14, 0
+    br ok14 -> L_FREE, L_ERR_SYS_DEBUGLOG
+L_FREE:
+    !ok14
+    free_sys_debug = call @sa_node_plugin_free_buffer(sys_debug_ptr, sys_debug_len)
+    free_sys_inspect = call @sa_node_plugin_free_buffer(sys_inspect_ptr, sys_inspect_len)
+    free_sys_format = call @sa_node_plugin_free_buffer(sys_format_ptr, sys_format_len)
+    free_sys_dep = call @sa_node_plugin_free_buffer(sys_dep_ptr, sys_dep_len)
+    free_sys_status = call @sa_node_plugin_free_buffer(sys_status_ptr, sys_status_len)
+    free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_constants_status = call @sa_node_plugin_free_buffer(constants_status_ptr, constants_status_len)
+    free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
+    free_fail_json = call @sa_node_plugin_free_buffer(fail_json_ptr, fail_json_len)
+    free_deep = call @sa_node_plugin_free_buffer(deep_ptr, deep_len)
+    free_equal = call @sa_node_plugin_free_buffer(equal_ptr, equal_len)
+    free_fail = call @sa_node_plugin_free_buffer(fail_ptr, fail_len)
+    free_ok = call @sa_node_plugin_free_buffer(ok_ptr, ok_len)
+    free_assert_status = call @sa_node_plugin_free_buffer(assert_status_ptr, assert_status_len)
+    !free_sys_debug
+    !free_sys_inspect
+    !free_sys_format
+    !free_sys_dep
+    !free_sys_status
+    !free_constants
+    !free_constants_status
+    !free_config
+    !free_fail_json
+    !free_deep
+    !free_equal
+    !free_fail
+    !free_ok
+    !free_assert_status
+    !s14
+    !sys_debug_len
+    !sys_debug_ptr
+    !s13
+    !sys_inspect_len
+    !sys_inspect_ptr
+    !s12
+    !sys_format_len
+    !sys_format_ptr
+    !s11
+    !sys_dep_len
+    !sys_dep_ptr
+    !s10
+    !sys_status_len
+    !sys_status_ptr
+    !s9
+    !constants_len
+    !constants_ptr
+    !s8
+    !constants_status_len
+    !constants_status_ptr
+    !config_status
+    !config_len
+    !config_ptr
+    !fail_json_status
+    !fail_json_len
+    !fail_json_ptr
+    !deep_status
+    !deep_bool
+    !deep_len
+    !deep_ptr
+    !equal_status
+    !equal_bool
+    !equal_len
+    !equal_ptr
+    !fail_status
+    !fail_bool
+    !fail_len
+    !fail_ptr
+    !ok_status
+    !ok_bool
+    !ok_len
+    !ok_ptr
+    !s1
+    !assert_status_len
+    !assert_status_ptr
+    return
+L_ERR_ASSERT_STATUS:
+    !ok1
+    panic(103)
+L_ERR_ASSERT_OK_TRUE:
+    !ok2
+    panic(103)
+L_ERR_ASSERT_OK_FALSE:
+    !ok3
+    panic(103)
+L_ERR_ASSERT_EQUAL:
+    !ok4
+    panic(103)
+L_ERR_ASSERT_DEEP:
+    !ok5
+    panic(103)
+L_ERR_ASSERT_FAIL_JSON:
+    !ok6
+    panic(103)
+L_ERR_ASSERT_CONFIG:
+    !ok7
+    panic(103)
+L_ERR_CONSTANTS_STATUS:
+    !ok8
+    panic(103)
+L_ERR_CONSTANTS_JSON:
+    !ok9
+    panic(103)
+L_ERR_SYS_STATUS:
+    !ok10
+    panic(103)
+L_ERR_SYS_DEPRECATION:
+    !ok11
+    panic(103)
+L_ERR_SYS_FORMAT:
+    !ok12
+    panic(103)
+L_ERR_SYS_INSPECT:
+    !ok13
+    panic(103)
+L_ERR_SYS_DEBUGLOG:
+    !ok14
+    panic(103)

@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const build_options = @import("build_options");
 const plugin_api = @import("plugin_api");
 const base = @import("node_saasm_api.zig");
+const ext = @import("node_saasm_api_ext.zig");
 const linux = std.os.linux;
 const posix = std.posix;
 
@@ -117,6 +118,46 @@ fn envTruthy(name: []const u8) bool {
 
 fn nodeOptionsHasFlag(flag: []const u8) bool {
     return std.mem.indexOf(u8, std.posix.getenv("NODE_OPTIONS") orelse "", flag) != null;
+}
+
+fn appendJsonFieldSeparator(out: *std.ArrayList(u8), first: *bool) !void {
+    if (!first.*) try out.append(',');
+    first.* = false;
+}
+
+fn appendJsonFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: std.json.Value) !void {
+    try appendJsonFieldSeparator(out, first);
+    try appendJsonString(out, name);
+    try out.append(':');
+    try std.json.stringify(value, .{}, out.writer());
+}
+
+fn appendJsonStringFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: []const u8) !void {
+    try appendJsonFieldSeparator(out, first);
+    try appendJsonString(out, name);
+    try out.append(':');
+    try appendJsonString(out, value);
+}
+
+fn appendJsonRawFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, raw_json: []const u8) !void {
+    try appendJsonFieldSeparator(out, first);
+    try appendJsonString(out, name);
+    try out.append(':');
+    try out.appendSlice(raw_json);
+}
+
+fn appendJsonIntFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: i64) !void {
+    try appendJsonFieldSeparator(out, first);
+    try appendJsonString(out, name);
+    try out.append(':');
+    try out.writer().print("{d}", .{value});
+}
+
+fn appendJsonObjectMembers(out: *std.ArrayList(u8), first: *bool, object: std.json.ObjectMap) !void {
+    var it = object.iterator();
+    while (it.next()) |entry| {
+        try appendJsonFieldValue(out, first, entry.key_ptr.*, entry.value_ptr.*);
+    }
 }
 
 fn appendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8) !void {
@@ -353,6 +394,150 @@ pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]c
     out.writer().print("{d}", .{async_context_stack.items.len}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn assertBuildFailureJson(actual: []const u8, expected: []const u8, operator: []const u8, message: ?[]const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var diff_ptr: ?[*]const u8 = null;
+    var diff_len: u64 = 0;
+    if (ext.sa_node_plugin_util_diff(actual.ptr, actual.len, expected.ptr, expected.len, operator.ptr, operator.len, &diff_ptr, &diff_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(diff_ptr, diff_len);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"name\":\"AssertionError\",\"code\":\"ERR_ASSERTION\",\"actual\":") catch return fail();
+    out.appendSlice(actual) catch return fail();
+    out.appendSlice(",\"expected\":") catch return fail();
+    out.appendSlice(expected) catch return fail();
+    out.appendSlice(",\"operator\":") catch return fail();
+    appendJsonString(&out, operator) catch return fail();
+    out.appendSlice(",\"generatedMessage\":") catch return fail();
+    out.appendSlice(if (message == null or message.?.len == 0) "true" else "false") catch return fail();
+    out.appendSlice(",\"message\":") catch return fail();
+    if (message) |text| {
+        appendJsonString(&out, text) catch return fail();
+    } else {
+        appendJsonString(&out, "Assertion failed") catch return fail();
+    }
+    out.appendSlice(",\"diff\":") catch return fail();
+    out.appendSlice((diff_ptr orelse return fail())[0..@intCast(diff_len)]) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_assert_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"assert\",\"supported\":true,\"mode\":\"native-json-assertions\",\"capabilities\":[\"ok/equal/strictEqual style result checks\",\"deepStrictEqual via existing util JSON comparison\",\"AssertionError JSON payloads with diff metadata\",\"strict Assert options snapshot metadata\"],\"limitations\":[\"no JavaScript throw/catch integration\",\"no Promise/rejects callback semantics\",\"results are explicit status codes and JSON diagnostics\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_assert_ok(value: u64, message_ptr: ?[*]const u8, message_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_ok: ?*u64) u32 {
+    const message = if (message_len == 0) null else (message_ptr orelse return fail())[0..message_len];
+    out_ok.?.* = if (value != 0) 1 else 0;
+    if (value != 0) return writeOwnedString(out_ptr, out_len, "null");
+    return assertBuildFailureJson("false", "true", "==", message, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_assert_equal(actual_ptr: ?[*]const u8, actual_len: u64, expected_ptr: ?[*]const u8, expected_len: u64, strict: u32, message_ptr: ?[*]const u8, message_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_ok: ?*u64) u32 {
+    const actual = if (actual_ptr) |ptr| ptr[0..actual_len] else "null";
+    const expected = if (expected_ptr) |ptr| ptr[0..expected_len] else "null";
+    const message = if (message_len == 0) null else (message_ptr orelse return fail())[0..message_len];
+    const equal = if (strict != 0) std.mem.eql(u8, actual, expected) else blk: {
+        const trimmed_actual = std.mem.trim(u8, actual, " \t\r\n");
+        const trimmed_expected = std.mem.trim(u8, expected, " \t\r\n");
+        break :blk std.mem.eql(u8, trimmed_actual, trimmed_expected);
+    };
+    out_ok.?.* = if (equal) 1 else 0;
+    if (equal) return writeOwnedString(out_ptr, out_len, "null");
+    return assertBuildFailureJson(actual, expected, if (strict != 0) "strictEqual" else "equal", message, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_assert_deep_strict_equal(actual_ptr: ?[*]const u8, actual_len: u64, expected_ptr: ?[*]const u8, expected_len: u64, message_ptr: ?[*]const u8, message_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_ok: ?*u64) u32 {
+    const actual = if (actual_ptr) |ptr| ptr[0..actual_len] else "null";
+    const expected = if (expected_ptr) |ptr| ptr[0..expected_len] else "null";
+    const message = if (message_len == 0) null else (message_ptr orelse return fail())[0..message_len];
+    var deep_equal: u64 = 0;
+    if (base.sa_node_plugin_util_is_deep_strict_equal(actual.ptr, actual.len, expected.ptr, expected.len, &deep_equal) != 0) return fail();
+    out_ok.?.* = deep_equal;
+    if (deep_equal != 0) return writeOwnedString(out_ptr, out_len, "null");
+    return assertBuildFailureJson(actual, expected, "deepStrictEqual", message, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_assert_fail_json(message_ptr: ?[*]const u8, message_len: u64, actual_ptr: ?[*]const u8, actual_len: u64, expected_ptr: ?[*]const u8, expected_len: u64, operator_ptr: ?[*]const u8, operator_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const message = if (message_len == 0) null else (message_ptr orelse return fail())[0..message_len];
+    const actual = if (actual_ptr) |ptr| ptr[0..actual_len] else "null";
+    const expected = if (expected_ptr) |ptr| ptr[0..expected_len] else "null";
+    const operator = if (operator_len == 0) "fail" else (operator_ptr orelse return fail())[0..operator_len];
+    return assertBuildFailureJson(actual, expected, operator, message, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_assert_strict_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"strict\":true,\"diff\":\"simple\",\"skipPrototype\":false,\"alias\":[\"strictEqual\",\"deepStrictEqual\",\"notStrictEqual\",\"notDeepStrictEqual\"]}");
+}
+
+pub export fn sa_node_plugin_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var os_ptr: ?[*]const u8 = null;
+    var os_len: u64 = 0;
+    if (ext.sa_node_plugin_os_constants(&os_ptr, &os_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(os_ptr, os_len);
+
+    var crypto_ptr: ?[*]const u8 = null;
+    var crypto_len: u64 = 0;
+    if (ext.sa_node_plugin_crypto_get_hashes(&crypto_ptr, &crypto_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(crypto_ptr, crypto_len);
+
+    const os_json = (os_ptr orelse return fail())[0..@intCast(os_len)];
+    var os_parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, os_json, .{}) catch return fail();
+    defer os_parsed.deinit();
+    if (os_parsed.value != .object) return fail();
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.append('{') catch return fail();
+    var first = true;
+    const os_object = os_parsed.value.object;
+    inline for ([_][]const u8{ "dlopen", "errno", "priority", "signals", "uv" }) |group_name| {
+        if (os_object.get(group_name)) |group| {
+            if (group == .object) {
+                appendJsonObjectMembers(&out, &first, group.object) catch return fail();
+            }
+        }
+    }
+    appendJsonIntFieldValue(&out, &first, "F_OK", 0) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "R_OK", 4) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "W_OK", 2) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "X_OK", 1) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "COPYFILE_EXCL", 1) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "COPYFILE_FICLONE", 2) catch return fail();
+    appendJsonIntFieldValue(&out, &first, "COPYFILE_FICLONE_FORCE", 4) catch return fail();
+    appendJsonStringFieldValue(&out, &first, "DEFAULT_ENCODING", "buffer") catch return fail();
+    appendJsonRawFieldValue(&out, &first, "CRYPTO_HASHES", (crypto_ptr orelse return fail())[0..@intCast(crypto_len)]) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_constants_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"module\":\"constants\",\"supported\":true,\"mode\":\"native-aggregated-json\",\"sources\":[\"os.constants\",\"fs access/copyfile flags\",\"crypto hash catalog metadata\"],\"limitations\":[\"not a frozen JavaScript object\",\"exports JSON rather than property descriptors\"]}");
+}
+
+pub export fn sa_node_plugin_sys_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"module\":\"sys\",\"supported\":true,\"mode\":\"deprecated-util-alias\",\"aliasTarget\":\"util\",\"deprecationCode\":\"DEP0025\"}");
+}
+
+pub export fn sa_node_plugin_sys_deprecation_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"code\":\"DEP0025\",\"type\":\"DeprecationWarning\",\"message\":\"sys is deprecated. Use `node:util` instead.\",\"runtimeWarningEmitted\":false}");
+}
+
+pub export fn sa_node_plugin_sys_format(format_ptr: ?[*]const u8, format_len: u64, args_json_ptr: ?[*]const u8, args_json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return base.sa_node_plugin_util_format(format_ptr, format_len, args_json_ptr, args_json_len, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_sys_inspect(json_ptr: ?[*]const u8, json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return base.sa_node_plugin_util_inspect(json_ptr, json_len, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_sys_debuglog(section_ptr: ?[*]const u8, section_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return ext.sa_node_plugin_util_debuglog(section_ptr, section_len, out_ptr, out_len);
 }
 
 pub export fn sa_node_plugin_async_context_tracking_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

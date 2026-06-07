@@ -3809,6 +3809,116 @@
     %out_len = load __m_environment_variables_load_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_ASSERT_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_assert_status_ptr_slot = stack_alloc 8
+    __m_assert_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_status_json(&__m_assert_status_ptr_slot, &__m_assert_status_len_slot)
+    %out_ptr = load __m_assert_status_ptr_slot+0 as ptr
+    %out_len = load __m_assert_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_OK %out_ptr, %out_len, %out_status, %out_ok, %value, %message, %message_len
+    __m_assert_ok_ptr_slot = stack_alloc 8
+    __m_assert_ok_len_slot = stack_alloc 8
+    __m_assert_ok_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_ok(%value, %message, %message_len, &__m_assert_ok_ptr_slot, &__m_assert_ok_len_slot, &__m_assert_ok_bool_slot)
+    %out_ptr = load __m_assert_ok_ptr_slot+0 as ptr
+    %out_len = load __m_assert_ok_len_slot+0 as u64
+    %out_ok = load __m_assert_ok_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_EQUAL %out_ptr, %out_len, %out_status, %out_ok, %actual, %actual_len, %expected, %expected_len, %strict, %message, %message_len
+    __m_assert_equal_ptr_slot = stack_alloc 8
+    __m_assert_equal_len_slot = stack_alloc 8
+    __m_assert_equal_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_equal(%actual, %actual_len, %expected, %expected_len, %strict, %message, %message_len, &__m_assert_equal_ptr_slot, &__m_assert_equal_len_slot, &__m_assert_equal_bool_slot)
+    %out_ptr = load __m_assert_equal_ptr_slot+0 as ptr
+    %out_len = load __m_assert_equal_len_slot+0 as u64
+    %out_ok = load __m_assert_equal_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_DEEP_STRICT_EQUAL %out_ptr, %out_len, %out_status, %out_ok, %actual, %actual_len, %expected, %expected_len, %message, %message_len
+    __m_assert_deep_ptr_slot = stack_alloc 8
+    __m_assert_deep_len_slot = stack_alloc 8
+    __m_assert_deep_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_deep_strict_equal(%actual, %actual_len, %expected, %expected_len, %message, %message_len, &__m_assert_deep_ptr_slot, &__m_assert_deep_len_slot, &__m_assert_deep_bool_slot)
+    %out_ptr = load __m_assert_deep_ptr_slot+0 as ptr
+    %out_len = load __m_assert_deep_len_slot+0 as u64
+    %out_ok = load __m_assert_deep_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_FAIL_JSON %out_ptr, %out_len, %out_status, %message, %message_len, %actual, %actual_len, %expected, %expected_len, %operator, %operator_len
+    __m_assert_fail_ptr_slot = stack_alloc 8
+    __m_assert_fail_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_fail_json(%message, %message_len, %actual, %actual_len, %expected, %expected_len, %operator, %operator_len, &__m_assert_fail_ptr_slot, &__m_assert_fail_len_slot)
+    %out_ptr = load __m_assert_fail_ptr_slot+0 as ptr
+    %out_len = load __m_assert_fail_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_STRICT_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_assert_config_ptr_slot = stack_alloc 8
+    __m_assert_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_strict_config_json(&__m_assert_config_ptr_slot, &__m_assert_config_len_slot)
+    %out_ptr = load __m_assert_config_ptr_slot+0 as ptr
+    %out_len = load __m_assert_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __m_constants_ptr_slot = stack_alloc 8
+    __m_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_json(&__m_constants_ptr_slot, &__m_constants_len_slot)
+    %out_ptr = load __m_constants_ptr_slot+0 as ptr
+    %out_len = load __m_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_constants_status_ptr_slot = stack_alloc 8
+    __m_constants_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_status_json(&__m_constants_status_ptr_slot, &__m_constants_status_len_slot)
+    %out_ptr = load __m_constants_status_ptr_slot+0 as ptr
+    %out_len = load __m_constants_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SYS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_sys_status_ptr_slot = stack_alloc 8
+    __m_sys_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sys_status_json(&__m_sys_status_ptr_slot, &__m_sys_status_len_slot)
+    %out_ptr = load __m_sys_status_ptr_slot+0 as ptr
+    %out_len = load __m_sys_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SYS_DEPRECATION_JSON %out_ptr, %out_len, %out_status
+    __m_sys_deprecation_ptr_slot = stack_alloc 8
+    __m_sys_deprecation_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sys_deprecation_json(&__m_sys_deprecation_ptr_slot, &__m_sys_deprecation_len_slot)
+    %out_ptr = load __m_sys_deprecation_ptr_slot+0 as ptr
+    %out_len = load __m_sys_deprecation_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SYS_FORMAT %out_ptr, %out_len, %out_status, %format, %format_len, %args_json, %args_json_len
+    __m_sys_format_ptr_slot = stack_alloc 8
+    __m_sys_format_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sys_format(%format, %format_len, %args_json, %args_json_len, &__m_sys_format_ptr_slot, &__m_sys_format_len_slot)
+    %out_ptr = load __m_sys_format_ptr_slot+0 as ptr
+    %out_len = load __m_sys_format_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SYS_INSPECT %out_ptr, %out_len, %out_status, %json, %json_len
+    __m_sys_inspect_ptr_slot = stack_alloc 8
+    __m_sys_inspect_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sys_inspect(%json, %json_len, &__m_sys_inspect_ptr_slot, &__m_sys_inspect_len_slot)
+    %out_ptr = load __m_sys_inspect_ptr_slot+0 as ptr
+    %out_len = load __m_sys_inspect_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SYS_DEBUGLOG %out_ptr, %out_len, %out_status, %section, %section_len
+    __m_sys_debuglog_ptr_slot = stack_alloc 8
+    __m_sys_debuglog_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sys_debuglog(%section, %section_len, &__m_sys_debuglog_ptr_slot, &__m_sys_debuglog_len_slot)
+    %out_ptr = load __m_sys_debuglog_ptr_slot+0 as ptr
+    %out_len = load __m_sys_debuglog_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_ERRORS_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_7ac24375_0 = stack_alloc 8
     __m_slot_7ac24375_1 = stack_alloc 8

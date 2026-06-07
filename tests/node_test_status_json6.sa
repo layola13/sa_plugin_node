@@ -1,0 +1,25 @@
+// SA tests for 3-param STATUS_JSON macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.command_line_options status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.debugger status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DEBUGGER_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return

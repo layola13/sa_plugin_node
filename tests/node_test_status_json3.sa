@@ -1,0 +1,21 @@
+// SA tests for more 2-param STATUS_JSON macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.inspector status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_INSPECTOR_STATUS_JSON op, ol
+    !ol
+    !op
+    return
+
+@test "node.dgram status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_DGRAM_STATUS_JSON op, ol
+    !ol
+    !op
+    return

@@ -1,0 +1,318 @@
+// SA tests for Node net extras
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_HOST = utf8:"127.0.0.1"
+
+@test "node.net create_server"():
+L_ENTRY:
+    srv = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_NET_CREATE_SERVER srv, s
+    !s
+    !srv
+    return
+
+@test "node.net is_ipv4"():
+L_ENTRY:
+    r = add 0, 0
+    EXPAND NODE_NET_IS_IPV4 S_HOST, 9, r
+    !r
+    return
+
+@test "node.net auto_select_family defaults"():
+L_ENTRY:
+    enabled = add 0, 0
+    sGet = add 0, 0
+    EXPAND NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY enabled, sGet
+    sSetOff = add 0, 0
+    EXPAND NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY 0, sSetOff
+    disabled = add 0, 0
+    sGetDisabled = add 0, 0
+    EXPAND NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY disabled, sGetDisabled
+    sSetOn = add 0, 0
+    EXPAND NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY 1, sSetOn
+    timeout = add 0, 0
+    sGetTimeout = add 0, 0
+    EXPAND NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT timeout, sGetTimeout
+    sSetClamp = add 0, 0
+    EXPAND NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT 7, sSetClamp
+    clamped = add 0, 0
+    sGetClamped = add 0, 0
+    EXPAND NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT clamped, sGetClamped
+    sSetReset = add 0, 0
+    EXPAND NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT 500, sSetReset
+    !sSetReset
+    !sGetClamped
+    !clamped
+    !sSetClamp
+    !sGetTimeout
+    !timeout
+    !sSetOn
+    !sGetDisabled
+    !disabled
+    !sSetOff
+    !sGet
+    !enabled
+    return
+
+@const S_LOOP = utf8:"127.0.0.1"
+@const S_RANGE_START = utf8:"10.0.0.10"
+@const S_RANGE_END = utf8:"10.0.0.20"
+@const S_RANGE_HIT = utf8:"10.0.0.15"
+@const S_SUBNET = utf8:"192.168.1.0"
+@const S_SUBNET_HIT = utf8:"192.168.1.44"
+@const S_PUBLIC = utf8:"8.8.8.8"
+@const S_IPV4 = utf8:"ipv4"
+@const S_SOCKET_LOOP = utf8:"127.0.0.1:8080"
+@const S_SOCKET_RANGE_START = utf8:"10.0.0.10:0"
+@const S_SOCKET_RANGE_END = utf8:"10.0.0.20:0"
+@const S_SOCKET_RANGE_HIT = utf8:"10.0.0.15:0"
+
+@test "node.net socket_address"():
+L_ENTRY:
+    addr = add 0, 0
+    sNew = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_NEW addr, sNew, S_LOOP, 9, 8080, S_IPV4, 4, 0
+    addrPtr = add 0, 0
+    addrLen = add 0, 0
+    sAddress = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_ADDRESS addr, addrPtr, addrLen, sAddress
+    familyPtr = add 0, 0
+    familyLen = add 0, 0
+    sFamily = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FAMILY addr, familyPtr, familyLen, sFamily
+    port = add 0, 0
+    sPort = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PORT addr, port, sPort
+    flowlabel = add 0, 0
+    sFlowlabel = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FLOWLABEL addr, flowlabel, sFlowlabel
+    jsonPtr = add 0, 0
+    jsonLen = add 0, 0
+    sJson = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_JSON addr, jsonPtr, jsonLen, sJson
+    parsed = add 0, 0
+    sParse = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PARSE parsed, sParse, S_SOCKET_LOOP, 14
+    bl = add 0, 0
+    sBl = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sBl
+    sAdd = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS_HANDLE bl, parsed, sAdd
+    hit = add 0, 0
+    sCheck = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK_HANDLE bl, parsed, hit, sCheck
+    sFreeBl = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFreeBl
+    sFreeParsed = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE parsed, sFreeParsed
+    sFreeAddr = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE addr, sFreeAddr
+    sFreeJson = call @sa_node_plugin_free_buffer(jsonPtr, jsonLen)
+    sFreeFamily = call @sa_node_plugin_free_buffer(familyPtr, familyLen)
+    sFreeAddress = call @sa_node_plugin_free_buffer(addrPtr, addrLen)
+    !sFreeAddress
+    !sFreeFamily
+    !sFreeJson
+    !sFreeAddr
+    !sFreeParsed
+    !sFreeBl
+    !sCheck
+    !hit
+    !sAdd
+    !sBl
+    !sParse
+    !sJson
+    !jsonLen
+    !jsonPtr
+    !sFlowlabel
+    !flowlabel
+    !sPort
+    !port
+    !sFamily
+    !familyLen
+    !familyPtr
+    !sAddress
+    !addrLen
+    !addrPtr
+    !sNew
+    !addr
+    return
+
+@test "node.net blocklist socket_address range"():
+L_ENTRY:
+    bl = add 0, 0
+    sBl = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sBl
+    rangeStart = add 0, 0
+    sStart = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PARSE rangeStart, sStart, S_SOCKET_RANGE_START, 11
+    rangeEnd = add 0, 0
+    sEnd = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PARSE rangeEnd, sEnd, S_SOCKET_RANGE_END, 11
+    rangeHit = add 0, 0
+    sHitAddr = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PARSE rangeHit, sHitAddr, S_SOCKET_RANGE_HIT, 11
+    sAddRange = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_RANGE_HANDLE bl, rangeStart, rangeEnd, sAddRange
+    hit = add 0, 0
+    sCheck = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK_HANDLE bl, rangeHit, hit, sCheck
+    sFreeHit = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE rangeHit, sFreeHit
+    sFreeEnd = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE rangeEnd, sFreeEnd
+    sFreeStart = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE rangeStart, sFreeStart
+    sFreeBl = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFreeBl
+    !sFreeBl
+    !sFreeStart
+    !sFreeEnd
+    !sFreeHit
+    !sCheck
+    !hit
+    !sAddRange
+    !sHitAddr
+    !rangeHit
+    !sEnd
+    !rangeEnd
+    !sStart
+    !rangeStart
+    !sBl
+    !bl
+    return
+
+@test "node.net blocklist"():
+L_ENTRY:
+    bl = add 0, 0
+    sNew = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sNew
+    sAddr = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS bl, S_LOOP, 9, sAddr
+    sRange = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_RANGE bl, S_RANGE_START, 9, S_RANGE_END, 9, sRange
+    sSubnet = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_SUBNET bl, S_SUBNET, 11, 24, sSubnet
+    hitLoop = add 0, 0
+    sHitLoop = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_LOOP, 9, hitLoop, sHitLoop
+    hitRange = add 0, 0
+    sHitRange = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_RANGE_HIT, 9, hitRange, sHitRange
+    hitSubnet = add 0, 0
+    sHitSubnet = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_SUBNET_HIT, 12, hitSubnet, sHitSubnet
+    missPublic = add 0, 0
+    sMissPublic = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_PUBLIC, 7, missPublic, sMissPublic
+    rulesPtr = add 0, 0
+    rulesLen = add 0, 0
+    sRules = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_RULES bl, rulesPtr, rulesLen, sRules
+    sFree = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFree
+    !sFree
+    !sRules
+    !rulesLen
+    !rulesPtr
+    !sMissPublic
+    !missPublic
+    !sHitSubnet
+    !hitSubnet
+    !sHitRange
+    !hitRange
+    !sHitLoop
+    !hitLoop
+    !sSubnet
+    !sRange
+    !sAddr
+    !sNew
+    !bl
+    return
+
+@test "node.net tcp blocklist abi"():
+L_ENTRY:
+    bl = add 0, 0
+    sNew = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sNew
+    sAddr = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS bl, S_LOOP, 9, sAddr
+    blockedCli = add 0, 0
+    sBlockedConnect = add 0, 0
+    EXPAND NODE_NET_CONNECT_BLOCKLIST S_LOOP, 9, 9, bl, blockedCli, sBlockedConnect
+    srv = add 0, 0
+    sListen = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18768, srv, sListen
+    sSet = add 0, 0
+    EXPAND NODE_NET_SERVER_SET_BLOCKLIST srv, bl, sSet
+    sClear = add 0, 0
+    EXPAND NODE_NET_SERVER_SET_BLOCKLIST srv, 0, sClear
+    sEnd = add 0, 0
+    EXPAND NODE_NET_END srv, sEnd
+    sFree = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFree
+    !sFree
+    !sEnd
+    !sClear
+    !sSet
+    !sListen
+    !srv
+    !sBlockedConnect
+    !blockedCli
+    !sAddr
+    !sNew
+    !bl
+    return
+
+@test "node.net connect options blocklist abi"():
+L_ENTRY:
+    bl = add 0, 0
+    sNew = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sNew
+    sAddr = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS bl, S_LOOP, 9, sAddr
+    cli = add 0, 0
+    sConnect = add 0, 0
+    EXPAND NODE_NET_CONNECT_OPTIONS S_LOOP, 9, 9, 4, S_LOOP, 0, 0, 1, 1, 1, 250, bl, cli, sConnect
+    sFree = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFree
+    !sFree
+    !sConnect
+    !cli
+    !sAddr
+    !sNew
+    !bl
+    return
+
+@test "node.net listen and end"():
+L_ENTRY:
+    srv = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18766, srv, s1
+    EXPAND NODE_NET_END srv, s2
+    !s2
+    !s1
+    !srv
+    return
+
+@test "node.net reset_and_destroy"():
+L_ENTRY:
+    srv = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18767, srv, s1
+    cli = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_NET_CONNECT S_HOST, 9, 18767, cli, s2
+    s3 = add 0, 0
+    EXPAND NODE_NET_RESET_AND_DESTROY cli, s3
+    s4 = add 0, 0
+    EXPAND NODE_NET_END srv, s4
+    !s4
+    !s3
+    !s2
+    !cli
+    !s1
+    !srv
+    return

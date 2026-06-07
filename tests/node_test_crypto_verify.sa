@@ -1,0 +1,14 @@
+// SA tests for Node crypto extras: verify (simple - just test the macro compiles and runs)
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_ED = utf8:"ed25519"
+@const S_DATA = utf8:"test-data-for-verify-which-is-long-enough"
+
+@test "node.crypto verify with dummy sig"():
+L_ENTRY:
+    bl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CRYPTO_VERIFY S_ED, 6, S_DATA, 39, S_DATA, 39, S_DATA, 39, bl, s
+    !s
+    !bl
+    return

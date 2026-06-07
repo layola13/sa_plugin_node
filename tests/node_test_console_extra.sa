@@ -1,0 +1,201 @@
+// SA-native unit tests for Node console extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_MSG = utf8:"test msg"
+@const S_LABEL = utf8:"unit_test"
+
+@test "node.console warn succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_WARN S_MSG, 8
+    return
+
+@test "node.console info succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_INFO S_MSG, 8
+    return
+
+@test "node.console debug succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_DEBUG S_MSG, 8
+    return
+
+@test "node.console dir succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_DIR S_MSG, 8
+    return
+
+@test "node.console table succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TABLE S_MSG, 8
+    return
+
+@test "node.console trace succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_TRACE S_MSG, 8
+    return
+
+@test "node.console clear succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_CLEAR s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console error succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_ERROR s, S_MSG, 8
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console assert true succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_ASSERT 1, S_MSG, 8
+    return
+
+@test "node.console assert false succeeds"():
+L_ENTRY:
+    EXPAND NODE_CONSOLE_ASSERT 0, S_MSG, 8
+    return
+
+@test "node.console count succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_COUNT S_LABEL, 9, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.console count_reset succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_COUNT_RESET S_LABEL, 9, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console group succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console group_collapsed succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP_COLLAPSED s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console group_end succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_GROUP_END s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console time_log succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_TIME_LOG S_LABEL, 9, 0, 0, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console time_stamp succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_TIME_STAMP S_LABEL, 9, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.console dirxml succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_DIRXML S_MSG, 8, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)

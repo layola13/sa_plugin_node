@@ -1,0 +1,25 @@
+// SA tests for Node worker_threads: receive_message_on_port
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_MSG = utf8:"hi"
+
+@test "node.worker_threads receive_message_on_port"():
+L_ENTRY:
+    ch1 = add 0, 0
+    ch2 = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_MESSAGE_CHANNEL_NEW ch1, ch2, s1
+    s2 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_MESSAGE_PORT_POST_MESSAGE ch1, S_MSG, 2, s2
+    op = add 0, 0
+    ol = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_RECEIVE_MESSAGE_ON_PORT ch2, op, ol, s3
+    !s3
+    !ol
+    !op
+    !s2
+    !s1
+    !ch2
+    !ch1
+    return

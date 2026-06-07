@@ -1,0 +1,21 @@
+// SA tests for more STATUS_JSON macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.tls status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_TLS_STATUS_JSON op, ol
+    !ol
+    !op
+    return
+
+@test "node.sqlite status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_SQLITE_STATUS_JSON op, ol
+    !ol
+    !op
+    return

@@ -1,0 +1,30 @@
+// SA tests for Node async_hooks extras
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_TYPE = utf8:"test-resource"
+
+@test "node.async_hooks execution_async_id"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID v
+    !v
+    return
+
+@test "node.async_hooks trigger_async_id"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_TRIGGER_ASYNC_ID v
+    !v
+    return
+
+@test "node.async_hooks async_resource create and free"():
+L_ENTRY:
+    r = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_ASYNC_RESOURCE_CREATE S_TYPE, 13, 0, r
+    EXPAND NODE_ASYNC_HOOKS_ASYNC_RESOURCE_FREE r
+    !s2
+    !s1
+    !r
+    return

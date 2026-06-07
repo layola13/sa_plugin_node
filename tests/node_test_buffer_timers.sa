@@ -1,0 +1,264 @@
+// SA-native unit tests for Node buffer extras + timers + readline + punycode + querystring
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_B64 = utf8:"aGVsbG8="
+@const S_URL_OBJ = utf8:"blob:https://example.com/uuid"
+@const S_UTF8 = utf8:"hello"
+@const S_ENCODING = utf8:"utf8"
+
+@test "node.buffer atob succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_ATOB S_B64, 8, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.buffer is_utf8 succeeds"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_BUFFER_IS_UTF8 S_UTF8, 5, v
+    !v
+    return
+
+@test "node.buffer resolve_object_url succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL S_URL_OBJ, 28, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.buffer transcode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_TRANSCODE S_UTF8, 5, S_ENCODING, 4, S_ENCODING, 4, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.timers set_timeout and clear"():
+L_ENTRY:
+    tid = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TIMERS_SET_TIMEOUT 100, 0, tid, s1
+    ok = eq s1, 0
+    br ok -> L_CLEAR, L_ERR
+L_CLEAR:
+    !ok
+    !s1
+    EXPAND NODE_TIMERS_CLEAR_TIMEOUT tid, s2
+    !s2
+    !tid
+    return
+L_ERR:
+    !ok
+    !s1
+    !s2
+    !tid
+    panic(103)
+
+@test "node.timers set_interval and clear"():
+L_ENTRY:
+    tid = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TIMERS_SET_INTERVAL 100, 0, tid, s1
+    ok = eq s1, 0
+    br ok -> L_CLEAR, L_ERR
+L_CLEAR:
+    !ok
+    !s1
+    EXPAND NODE_TIMERS_CLEAR_INTERVAL tid, s2
+    !s2
+    !tid
+    return
+L_ERR:
+    !ok
+    !s1
+    !s2
+    !tid
+    panic(103)
+
+@test "node.timers set_immediate and clear"():
+L_ENTRY:
+    tid = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TIMERS_SET_IMMEDIATE 0, tid, s1
+    ok = eq s1, 0
+    br ok -> L_CLEAR, L_ERR
+L_CLEAR:
+    !ok
+    !s1
+    EXPAND NODE_TIMERS_CLEAR_IMMEDIATE tid, s2
+    !s2
+    !tid
+    return
+L_ERR:
+    !ok
+    !s1
+    !s2
+    !tid
+    panic(103)
+
+@test "node.readline create and free succeeds"():
+L_ENTRY:
+    rl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_READLINE_CREATE rl
+    EXPAND NODE_READLINE_FREE rl, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !rl
+    return
+L_ERR:
+    !ok
+    !s
+    !rl
+    panic(103)
+
+@test "node.readline clear_line succeeds"():
+L_ENTRY:
+    EXPAND NODE_READLINE_CLEAR_LINE 0, 0
+    return
+
+@test "node.readline clear_screen_down succeeds"():
+L_ENTRY:
+    EXPAND NODE_READLINE_CLEAR_SCREEN_DOWN 0
+    return
+
+@test "node.readline cursor_to succeeds"():
+L_ENTRY:
+    EXPAND NODE_READLINE_CURSOR_TO 0, 0, 0
+    return
+
+@test "node.readline move_cursor succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_READLINE_MOVE_CURSOR 0, 0, 0, s
+    !s
+    return
+
+@test "node.readline emit_keypress_events succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_READLINE_EMIT_KEYPRESS_EVENTS 0, 0, s
+    !s
+    return
+
+@test "node.querystring unescape_buffer succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_QUERYSTRING_UNESCAPE_BUFFER S_B64, 8, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.punycode to_unicode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PUNYCODE_TO_UNICODE S_UTF8, 5, p, l
+    !p
+    !l
+    return
+
+@test "node.punycode decode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PUNYCODE_DECODE p, l, s, S_UTF8, 5
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.punycode encode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PUNYCODE_ENCODE p, l, s, S_UTF8, 5
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)

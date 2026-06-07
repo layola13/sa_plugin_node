@@ -1,0 +1,14 @@
+// SA tests for Node path extras: matches_glob
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_GLOB = utf8:"*.txt"
+@const S_FILE = utf8:"test.txt"
+
+@test "node.path matches_glob"():
+L_ENTRY:
+    bl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_MATCHES_GLOB S_GLOB, 5, S_FILE, 8, bl, s
+    !s
+    !bl
+    return

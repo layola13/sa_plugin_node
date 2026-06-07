@@ -2,6 +2,10 @@
 @import "../node.sal"
 @import "../node_extra.sal"
 
+@const S_DATA = utf8:"test data"
+@const S_READ_FILE = utf8:"/tmp/sa_test_read.txt"
+@const S_WRITE_FILE = utf8:"/tmp/sa_test_write.txt"
+
 @test "smoke node console clear"():
 L_ENTRY:
     EXPAND NODE_CONSOLE_CLEAR out_status

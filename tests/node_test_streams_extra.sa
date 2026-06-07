@@ -1,0 +1,48 @@
+// SA tests for Node stream extras: duplex_new, transform_new, passthrough_new, duplex_pair, destroy
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.stream duplex_new and destroy"():
+L_ENTRY:
+    d = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_STREAM_DUPLEX_NEW d
+    EXPAND NODE_STREAM_DESTROY d
+    !s2
+    !s1
+    !d
+    return
+
+@test "node.stream transform_new and destroy"():
+L_ENTRY:
+    t = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_STREAM_TRANSFORM_NEW t
+    EXPAND NODE_STREAM_DESTROY t
+    !s1
+    !t
+    return
+
+@test "node.stream passthrough_new and destroy"():
+L_ENTRY:
+    p = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_STREAM_PASSTHROUGH_NEW p
+    EXPAND NODE_STREAM_DESTROY p
+    !s1
+    !p
+    return
+
+@test "node.stream duplex_pair"():
+L_ENTRY:
+    a = add 0, 0
+    b = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_STREAM_DUPLEX_PAIR a, b, s
+    EXPAND NODE_STREAM_DESTROY a
+    EXPAND NODE_STREAM_DESTROY b
+    !s
+    !b
+    !a
+    return

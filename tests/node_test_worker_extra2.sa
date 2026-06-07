@@ -1,0 +1,23 @@
+// SA tests for worker_threads: message_channel, status_json
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.worker_threads message_channel_new"():
+L_ENTRY:
+    ch1 = add 0, 0
+    ch2 = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_MESSAGE_CHANNEL_NEW ch1, ch2, s
+    !s
+    !ch2
+    !ch1
+    return
+
+@test "node.worker_threads status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_WORKER_THREADS_STATUS_JSON op, ol
+    !ol
+    !op
+    return

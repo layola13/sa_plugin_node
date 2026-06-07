@@ -17,13 +17,32 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
 
+    const http_client_module = b.createModule(.{
+        .root_source_file = b.path("../sa_plugin_http_client/src/http_saasm_api.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
+    const http_server_module = b.createModule(.{
+        .root_source_file = b.path("../sa_plugin_http_server/src/http_saasm_api.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
     root_module.addImport("plugin_api", plugin_api);
+    http_client_module.addImport("plugin_api", plugin_api);
+    http_server_module.addImport("plugin_api", plugin_api);
+    root_module.addImport("http_client", http_client_module);
+    root_module.addImport("http_server", http_server_module);
 
     const lib = b.addLibrary(.{
         .name = "node",
         .root_module = root_module,
         .linkage = .dynamic,
     });
+    lib.linkSystemLibrary("resolv");
 
     b.installArtifact(lib);
 

@@ -1,0 +1,27 @@
+// SA tests for Node FS: copy_file, readlink
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_SRC = utf8:"/tmp/sa_fs6_src.txt"
+@const S_DST = utf8:"/tmp/sa_fs6_dst.txt"
+@const S_TMPDIR = utf8:"/tmp"
+
+@test "node.fs copy_file"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_COPY_FILE s1, S_SRC, 18, S_DST, 18
+    EXPAND NODE_FS_RM S_DST, 18, 0, s2
+    !s2
+    !s1
+    return
+
+@test "node.fs readlink"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_READLINK p, l, s, S_TMPDIR, 5
+    !s
+    !l
+    !p
+    return

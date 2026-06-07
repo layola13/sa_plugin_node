@@ -49,6 +49,46 @@
 @extern sa_node_plugin_fs_symlink(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
 @extern sa_node_plugin_fs_truncate(path_ptr: ptr, path_len: u64, len: u64) -> u64
 @extern sa_node_plugin_fs_utimes(path_ptr: ptr, path_len: u64, atime_ms: u64, mtime_ms: u64) -> u64
+@extern sa_node_plugin_fs_promises_stat(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_lstat(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_readdir(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_readdir_with_types(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_readlink(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_realpath(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_exists(path_ptr: ptr, path_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_fs_promises_access(path_ptr: ptr, path_len: u64, mode: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_fs_promises_read_file(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_write_file(path_ptr: ptr, path_len: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_mkdir(path_ptr: ptr, path_len: u64, recursive: u64) -> u64
+@extern sa_node_plugin_fs_promises_rmdir(path_ptr: ptr, path_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_unlink(path_ptr: ptr, path_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_rename(old_ptr: ptr, old_len: u64, new_ptr: ptr, new_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_copy_file(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_chmod(path_ptr: ptr, path_len: u64, mode: u64) -> u64
+@extern sa_node_plugin_fs_promises_chown(path_ptr: ptr, path_len: u64, uid: u64, gid: u64) -> u64
+@extern sa_node_plugin_fs_promises_link(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_mkdtemp(template_ptr: ptr, template_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_rm(path_ptr: ptr, path_len: u64, recursive: u64) -> u64
+@extern sa_node_plugin_fs_promises_statfs(path_ptr: ptr, &out_json_ptr: ptr, &out_json_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_symlink(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_truncate(path_ptr: ptr, path_len: u64, len: u64) -> u64
+@extern sa_node_plugin_fs_promises_utimes(path_ptr: ptr, path_len: u64, atime_ms: u64, mtime_ms: u64) -> u64
+@extern sa_node_plugin_fs_promises_open(path_ptr: ptr, path_len: u64, flags: u64, mode: u64, &out_fd: u64) -> u64
+@extern sa_node_plugin_fs_promises_close_file(fd: u64) -> u64
+@extern sa_node_plugin_fs_promises_read(fd: u64, buf_ptr: ptr, len: u64, offset: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_promises_write(fd: u64, data_ptr: ptr, data_len: u64, offset: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_promises_readv(fd: u64, iov_json_ptr: ptr, iov_json_len: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_promises_writev(fd: u64, iov_json_ptr: ptr, iov_json_len: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_fs_promises_fstat(fd: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_fsync(fd: u64) -> u64
+@extern sa_node_plugin_fs_promises_fdatasync(fd: u64) -> u64
+@extern sa_node_plugin_fs_promises_ftruncate(fd: u64, len: u64) -> u64
+@extern sa_node_plugin_fs_promises_fchmod(fd: u64, mode: u64) -> u64
+@extern sa_node_plugin_fs_promises_fchown(fd: u64, uid: u64, gid: u64) -> u64
+@extern sa_node_plugin_fs_promises_futimes(fd: u64, atime_ms: u64, mtime_ms: u64) -> u64
+@extern sa_node_plugin_fs_promises_opendir(path_ptr: ptr, path_len: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_fs_promises_opendir_next(handle_ptr: ptr, &out_name_ptr: ptr, &out_name_len: u64, &out_entry_type: u64) -> u64
+@extern sa_node_plugin_fs_promises_opendir_free(handle_ptr: ptr) -> u64
 @extern sa_node_plugin_events_once(ee_ptr: ptr, event_ptr: ptr, event_len: u64, callback: ptr) -> u64
 @extern sa_node_plugin_events_off(ee_ptr: ptr, event_ptr: ptr, event_len: u64, callback: ptr) -> u64
 @extern sa_node_plugin_events_remove_all_listeners(ee_ptr: ptr, event_ptr: ptr, event_len: u64) -> u64
@@ -82,10 +122,59 @@
 @extern sa_node_plugin_dns_resolve_srv(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_resolve_ptr(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_reverse(ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_get_servers(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_set_servers(servers_ptr: ptr, servers_len: u64) -> u64
 @extern sa_node_plugin_dns_get_default_result_order(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_set_default_result_order(order_ptr: ptr, order_len: u64) -> u64
+@extern sa_node_plugin_dns_lookup_options(hostname_ptr: ptr, hostname_len: u64, family: u32, all: u32, order_ptr: ptr, order_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ptr, hostname_len: u64, family: u32, all: u32, hints: u32, order_ptr: ptr, order_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_new(timeout_ms: u64, tries: u64, &out_resolver: ptr) -> u64
+@extern sa_node_plugin_dns_resolver_free(resolver_ptr: ptr) -> u64
+@extern sa_node_plugin_dns_resolver_set_servers(resolver_ptr: ptr, servers_ptr: ptr, servers_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_get_servers(resolver_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_set_local_address(resolver_ptr: ptr, ipv4_ptr: ptr, ipv4_len: u64, ipv6_ptr: ptr, ipv6_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_cancel(resolver_ptr: ptr) -> u64
+@extern sa_node_plugin_dns_resolver_resolve4(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_resolve6(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_resolve(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, rrtype_ptr: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_reverse(resolver_ptr: ptr, ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_lookup(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_get_servers(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_set_servers(servers_ptr: ptr, servers_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_get_default_result_order(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_set_default_result_order(order_ptr: ptr, order_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_lookup_options(hostname_ptr: ptr, hostname_len: u64, family: u32, all: u32, order_ptr: ptr, order_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_lookup_options_hints(hostname_ptr: ptr, hostname_len: u64, family: u32, all: u32, hints: u32, order_ptr: ptr, order_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_lookup_service(address_ptr: ptr, address_len: u64, port: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve(hostname_ptr: ptr, hostname_len: u64, rrtype_ptr: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve4(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve6(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_cname(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_mx(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_ns(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_txt(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_srv(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_ptr(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_any(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_caa(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_naptr(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_soa(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolve_tlsa(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_reverse(ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_new(timeout_ms: u64, tries: u64, &out_resolver: ptr) -> u64
+@extern sa_node_plugin_dns_promises_resolver_free(resolver_ptr: ptr) -> u64
+@extern sa_node_plugin_dns_promises_resolver_set_servers(resolver_ptr: ptr, servers_ptr: ptr, servers_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_get_servers(resolver_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_set_local_address(resolver_ptr: ptr, ipv4_ptr: ptr, ipv4_len: u64, ipv6_ptr: ptr, ipv6_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_cancel(resolver_ptr: ptr) -> u64
+@extern sa_node_plugin_dns_promises_resolver_resolve(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, rrtype_ptr: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_resolve4(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_resolve6(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_reverse(resolver_ptr: ptr, ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_promises_resolver_snapshot_json(resolver_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_child_process_exec(command_ptr: ptr, command_len: u64, options_json_ptr: ptr, options_json_len: u64, &out_pid: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_child_process_exec_file(file_ptr: ptr, file_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_child_process_execfile_sync(file_ptr: ptr, file_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
@@ -105,6 +194,10 @@
 @extern sa_node_plugin_net_is_ip(str_ptr: ptr, str_len: u64, &out_version: u64) -> u64
 @extern sa_node_plugin_net_is_ipv4(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_net_is_ipv6(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_net_get_default_auto_select_family(&out_bool: u64) -> u64
+@extern sa_node_plugin_net_set_default_auto_select_family(value: u64) -> u64
+@extern sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&out_timeout: u64) -> u64
+@extern sa_node_plugin_net_set_default_auto_select_family_attempt_timeout(value: u64) -> u64
 @extern sa_node_plugin_net_create_connection(host_ptr: ptr, host_len: u64, port: u64, &out_socket: ptr) -> u64
 @extern sa_node_plugin_net_create_server(&out_server: ptr) -> u64
 @extern sa_node_plugin_timers_set_timeout(ms: u64, callback: ptr, &out_id: u64) -> u64
@@ -113,6 +206,15 @@
 @extern sa_node_plugin_timers_clear_timeout(id: u64) -> u64
 @extern sa_node_plugin_timers_clear_interval(id: u64) -> u64
 @extern sa_node_plugin_timers_clear_immediate(id: u64) -> u64
+@extern sa_node_plugin_timers_promises_set_timeout(ms: u64, value_ptr: ptr, value_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_promises_set_immediate(value_ptr: ptr, value_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_promises_scheduler_wait(ms: u64) -> u64
+@extern sa_node_plugin_timers_promises_scheduler_yield() -> u64
+@extern sa_node_plugin_timers_promises_set_interval(ms: u64, value_ptr: ptr, value_len: u64, &out_interval: ptr) -> u64
+@extern sa_node_plugin_timers_promises_interval_next(interval_ptr: ptr, &out_ptr: ptr, &out_len: u64, &out_done: u64) -> u64
+@extern sa_node_plugin_timers_promises_interval_return(interval_ptr: ptr) -> u64
+@extern sa_node_plugin_timers_promises_interval_snapshot_json(interval_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_promises_interval_free(interval_ptr: ptr) -> u64
 @extern sa_node_plugin_buffer_atob(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_btoa(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_is_utf8(data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64
@@ -124,6 +226,8 @@
 @extern sa_node_plugin_zlib_unzip(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_brotli_compress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_brotli_decompress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_zstd_compress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_zstd_decompress(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_crc32(data_ptr: ptr, data_len: u64, &out_val: u64) -> u64
 @extern sa_node_plugin_url_new(href_ptr: ptr, href_len: u64, &out_handle: ptr) -> u64
 @extern sa_node_plugin_url_get_href(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
@@ -145,6 +249,11 @@
 @extern sa_node_plugin_readline_cursor_to(fd: u64, x: u64, y: u64) -> u64
 @extern sa_node_plugin_readline_move_cursor(fd: u64, dx: u64, dy: u64) -> u64
 @extern sa_node_plugin_readline_emit_keypress_events(stream_ptr: ptr, stream_len: u64) -> u64
+@extern sa_node_plugin_readline_promises_create_interface(input_ptr: ptr, input_len: u64, &out_interface: ptr) -> u64
+@extern sa_node_plugin_readline_promises_question(interface_ptr: ptr, query_ptr: ptr, query_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_readline_promises_close(interface_ptr: ptr) -> u64
+@extern sa_node_plugin_readline_promises_snapshot_json(interface_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_readline_promises_free(interface_ptr: ptr) -> u64
 @extern sa_node_plugin_path_sep(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_path_delimiter(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_path_matches_glob(pattern_ptr: ptr, pattern_len: u64, str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
@@ -157,6 +266,11 @@
 @extern sa_node_plugin_os_set_priority(pid: u64, priority: u64) -> u64
 @extern sa_node_plugin_process_exit(code: u64) -> u64
 @extern sa_node_plugin_process_kill(pid: u64, signal: u64) -> u64
+@extern sa_node_plugin_process_kill_signal(pid: u64, signal_ptr: ptr, signal_len: u64) -> u64
+@extern sa_node_plugin_process_resource_usage_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_available_memory(&out_bytes: u64) -> u64
+@extern sa_node_plugin_process_constrained_memory(&out_bytes: u64) -> u64
+@extern sa_node_plugin_process_features_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_worker_threads_worker_data(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_worker_threads_receive_message_on_port(port_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_worker_threads_post_message_to_thread(thread_id: u64, data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64
@@ -193,7 +307,28 @@
 @extern sa_node_plugin_repl_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_web_crypto_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_get_random_values(buf_ptr: ptr, buf_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_random_uuid(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_digest(algo_ptr: ptr, algo_len: u64, data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_import_key_raw(algorithm_ptr: ptr, algorithm_len: u64, usage_ptr: ptr, usage_len: u64, key_ptr: ptr, key_len: u64, &out_key: ptr) -> u64
+@extern sa_node_plugin_web_crypto_generate_key(algorithm_ptr: ptr, algorithm_len: u64, usage_ptr: ptr, usage_len: u64, bits: u64, &out_key: ptr) -> u64
+@extern sa_node_plugin_web_crypto_export_key_raw(key_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_export_public_key_raw(key_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_sign(key_ptr: ptr, data_ptr: ptr, data_len: u64, &out_sig_ptr: ptr, &out_sig_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_verify(key_ptr: ptr, data_ptr: ptr, data_len: u64, sig_ptr: ptr, sig_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_web_crypto_encrypt(key_ptr: ptr, iv_ptr: ptr, iv_len: u64, aad_ptr: ptr, aad_len: u64, data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_decrypt(key_ptr: ptr, iv_ptr: ptr, iv_len: u64, aad_ptr: ptr, aad_len: u64, data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_crypto_key_free(key_ptr: ptr) -> u64
 @extern sa_node_plugin_web_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_streams_readable_new(&out_handle: ptr) -> u64
+@extern sa_node_plugin_web_streams_writable_new(&out_handle: ptr) -> u64
+@extern sa_node_plugin_web_streams_transform_new(&out_readable: ptr, &out_writable: ptr) -> u64
+@extern sa_node_plugin_web_streams_enqueue(handle_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_web_streams_write(handle_ptr: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_web_streams_read(handle_ptr: ptr, max_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_streams_snapshot_json(handle_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_web_streams_close(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_web_streams_free(handle_ptr: ptr) -> u64
 @extern sa_node_plugin_perf_hooks_now_ms(&out_ms: u64) -> u64
 @extern sa_node_plugin_perf_hooks_time_origin_ms(&out_ms: u64) -> u64
 @extern sa_node_plugin_perf_hooks_mark(name_ptr: ptr, name_len: u64) -> u64
@@ -242,12 +377,158 @@
 @extern sa_node_plugin_domain_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_max_header_size(&out_size: ptr) -> u64
+@extern sa_node_plugin_http_set_max_idle_http_parsers(max: u64) -> u64
+@extern sa_node_plugin_http_methods_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_status_codes_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_validate_header_name(name_ptr: ptr, name_len: u64) -> u64
+@extern sa_node_plugin_http_validate_header_value(name_ptr: ptr, name_len: u64, value_ptr: ptr, value_len: u64) -> u64
 @extern sa_node_plugin_https_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_client_request(url_ptr: ptr, url_len: u64, method_ptr: ptr, method_len: u64, body_ptr: ptr, body_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_nghttp2_version_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_get_default_settings_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_get_packed_settings(settings_json_ptr: ptr, settings_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_get_unpacked_settings_json(buf_ptr: ptr, buf_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_capabilities_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http3_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http3_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_get_ciphers_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_get_ciphers_detailed_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_default_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_default_min_version(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_default_max_version(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_convert_alpn_protocols(protocols_json_ptr: ptr, protocols_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_root_certificates_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_get_ca_certificates_json(type_ptr: ptr, type_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_set_default_ca_certificates(certs_pem_ptr: ptr, certs_pem_len: u64) -> u64
+@extern sa_node_plugin_tls_reset_default_ca_certificates() -> u64
+@extern sa_node_plugin_tls_create_secure_context(ca_ptr: ptr, ca_len: u64, cert_ptr: ptr, cert_len: u64, key_ptr: ptr, key_len: u64, ciphers_ptr: ptr, ciphers_len: u64, min_ptr: ptr, min_len: u64, max_ptr: ptr, max_len: u64, &out_context: ptr) -> u64
+@extern sa_node_plugin_tls_secure_context_snapshot_json(context: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_secure_context_free(context: ptr) -> u64
+@extern sa_node_plugin_tls_connect(host_ptr: ptr, host_len: u64, port: u64, servername_ptr: ptr, servername_len: u64, reject_unauthorized: u64, &out_socket: ptr) -> u64
+@extern sa_node_plugin_tls_connect_secure_context(context: ptr, host_ptr: ptr, host_len: u64, port: u64, servername_ptr: ptr, servername_len: u64, reject_unauthorized: u64, &out_socket: ptr) -> u64
+@extern sa_node_plugin_tls_connect_options(host_ptr: ptr, host_len: u64, port: u64, servername_ptr: ptr, servername_len: u64, reject_unauthorized: u64, family: u32, local_ptr: ptr, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64, blocklist: ptr, &out_socket: ptr) -> u64
+@extern sa_node_plugin_tls_write(socket: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_tls_read(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_authorized_json(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_servername(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_alpn_protocol(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_get_protocol(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_get_cipher_json(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_address(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_remote_address(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_local_address(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_local_family(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_local_port(socket: ptr, &out_port: ptr) -> u64
+@extern sa_node_plugin_tls_remote_address_value(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_remote_family(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_remote_port(socket: ptr, &out_port: ptr) -> u64
+@extern sa_node_plugin_tls_set_timeout(socket: ptr, timeout_ms: u64) -> u64
+@extern sa_node_plugin_tls_get_timeout(socket: ptr, &out_timeout_ms: ptr) -> u64
+@extern sa_node_plugin_tls_bytes_read(socket: ptr, &out_bytes: ptr) -> u64
+@extern sa_node_plugin_tls_bytes_written(socket: ptr, &out_bytes: ptr) -> u64
+@extern sa_node_plugin_tls_buffer_size(socket: ptr, &out_size: ptr) -> u64
+@extern sa_node_plugin_tls_connecting(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_pending(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_ready_state(socket: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_readable(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_writable(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_closed(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_destroyed(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_ref(socket: ptr) -> u64
+@extern sa_node_plugin_tls_unref(socket: ptr) -> u64
+@extern sa_node_plugin_tls_has_ref(socket: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_tls_destroy(socket: ptr) -> u64
+@extern sa_node_plugin_tls_close(socket: ptr) -> u64
 @extern sa_node_plugin_dgram_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_new(&out_vfs: ptr) -> u64
+@extern sa_node_plugin_vfs_free(vfs_ptr: ptr) -> u64
+@extern sa_node_plugin_vfs_mkdir(vfs_ptr: ptr, path_ptr: ptr, path_len: u64) -> u64
+@extern sa_node_plugin_vfs_write_file(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_vfs_append_file(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_vfs_read_file(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_open(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, mode: u64, &out_handle: ptr) -> u64
+@extern sa_node_plugin_vfs_file_close(file_ptr: ptr) -> u64
+@extern sa_node_plugin_vfs_file_read(file_ptr: ptr, buf_ptr: ptr, len: u64, position: u64, use_position: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_vfs_file_write(file_ptr: ptr, data_ptr: ptr, data_len: u64, position: u64, use_position: u64, &out_n: u64) -> u64
+@extern sa_node_plugin_vfs_file_fstat_json(file_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_file_truncate(file_ptr: ptr, len: u64) -> u64
+@extern sa_node_plugin_vfs_opendir(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_dir: ptr) -> u64
+@extern sa_node_plugin_vfs_dir_next(dir_ptr: ptr, &out_name_ptr: ptr, &out_name_len: u64, &out_entry_type: u64) -> u64
+@extern sa_node_plugin_vfs_dir_snapshot_json(dir_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_dir_close(dir_ptr: ptr) -> u64
+@extern sa_node_plugin_vfs_readdir(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_stat_json(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_lstat_json(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_exists(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_vfs_unlink(vfs_ptr: ptr, path_ptr: ptr, path_len: u64) -> u64
+@extern sa_node_plugin_vfs_rm(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, recursive: u64) -> u64
+@extern sa_node_plugin_vfs_rename(vfs_ptr: ptr, old_ptr: ptr, old_len: u64, new_ptr: ptr, new_len: u64) -> u64
+@extern sa_node_plugin_vfs_copy_file(vfs_ptr: ptr, src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_vfs_realpath(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_chdir(vfs_ptr: ptr, path_ptr: ptr, path_len: u64) -> u64
+@extern sa_node_plugin_vfs_cwd(vfs_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_symlink(vfs_ptr: ptr, target_ptr: ptr, target_len: u64, link_ptr: ptr, link_len: u64) -> u64
+@extern sa_node_plugin_vfs_readlink(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_watch(vfs_ptr: ptr, path_ptr: ptr, path_len: u64, recursive: u64, &out_watcher: ptr) -> u64
+@extern sa_node_plugin_vfs_watcher_next(watcher_ptr: ptr, &out_event_ptr: ptr, &out_event_len: u64, &out_filename_ptr: ptr, &out_filename_len: u64) -> u64
+@extern sa_node_plugin_vfs_watcher_snapshot_json(watcher_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_vfs_watcher_close(watcher_ptr: ptr) -> u64
+@extern sa_node_plugin_vfs_snapshot_json(vfs_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_ffi_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_ffi_open(path_ptr: ptr, path_len: u64, &out_library: ptr) -> u64
+@extern sa_node_plugin_ffi_close(library_ptr: ptr) -> u64
+@extern sa_node_plugin_ffi_has_symbol(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_ffi_call_i64_0(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, &out_value: u64) -> u64
+@extern sa_node_plugin_ffi_call_i64_1(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, a0: u64, &out_value: u64) -> u64
+@extern sa_node_plugin_ffi_call_i64_2(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, a0: u64, a1: u64, &out_value: u64) -> u64
+@extern sa_node_plugin_ffi_call_strlen(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, value_ptr: ptr, value_len: u64, &out_value: u64) -> u64
+@extern sa_node_plugin_ffi_call_string_i64(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, value_ptr: ptr, value_len: u64, a0: u64, &out_value: u64) -> u64
+@extern sa_node_plugin_ffi_call_ptr_string(library_ptr: ptr, symbol_ptr: ptr, symbol_len: u64, value_ptr: ptr, value_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sqlite_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_version_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_open(path_ptr: ptr, path_len: u64, &out_db: ptr) -> u64
+@extern sa_node_plugin_sqlite_close(db_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_exec(db_ptr: ptr, sql_ptr: ptr, sql_len: u64) -> u64
+@extern sa_node_plugin_sqlite_query_json(db_ptr: ptr, sql_ptr: ptr, sql_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_prepare(db_ptr: ptr, sql_ptr: ptr, sql_len: u64, &out_stmt: ptr) -> u64
+@extern sa_node_plugin_sqlite_step_json(stmt_ptr: ptr, &out_ready: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_bind_int(stmt_ptr: ptr, index: u64, value: u64) -> u64
+@extern sa_node_plugin_sqlite_bind_double(stmt_ptr: ptr, index: u64, value: f64) -> u64
+@extern sa_node_plugin_sqlite_bind_text(stmt_ptr: ptr, index: u64, value_ptr: ptr, value_len: u64) -> u64
+@extern sa_node_plugin_sqlite_bind_blob(stmt_ptr: ptr, index: u64, value_ptr: ptr, value_len: u64) -> u64
+@extern sa_node_plugin_sqlite_bind_null(stmt_ptr: ptr, index: u64) -> u64
+@extern sa_node_plugin_sqlite_reset(stmt_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_clear_bindings(stmt_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_finalize(stmt_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_changes(db_ptr: ptr, &out_changes: u64) -> u64
+@extern sa_node_plugin_sqlite_last_insert_rowid(db_ptr: ptr, &out_rowid: u64) -> u64
+@extern sa_node_plugin_sqlite_backup_init(db_ptr: ptr, path_ptr: ptr, path_len: u64, &out_backup: ptr) -> u64
+@extern sa_node_plugin_sqlite_backup_step(backup_ptr: ptr, pages: u64, &out_done: u64, &out_remaining: u64, &out_pagecount: u64) -> u64
+@extern sa_node_plugin_sqlite_backup_remaining(backup_ptr: ptr, &out_remaining: u64, &out_pagecount: u64) -> u64
+@extern sa_node_plugin_sqlite_backup_finish(backup_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_backup_to_file(db_ptr: ptr, path_ptr: ptr, path_len: u64, pages_per_step: u64, &out_pages: u64) -> u64
+@extern sa_node_plugin_sqlite_session_create(db_ptr: ptr, db_name_ptr: ptr, db_name_len: u64, table_ptr: ptr, table_len: u64, &out_session: ptr) -> u64
+@extern sa_node_plugin_sqlite_session_changeset(session_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_session_patchset(session_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_session_isempty(session_ptr: ptr, &out_empty: u64) -> u64
+@extern sa_node_plugin_sqlite_session_memory_used(session_ptr: ptr, &out_bytes: u64) -> u64
+@extern sa_node_plugin_sqlite_session_close(session_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_apply_changeset(db_ptr: ptr, changeset_ptr: ptr, changeset_len: u64, &out_applied: u64) -> u64
+@extern sa_node_plugin_sqlite_tagstore_new(db_ptr: ptr, capacity: u64, &out_store: ptr) -> u64
+@extern sa_node_plugin_sqlite_tagstore_all(store_ptr: ptr, sql_ptr: ptr, sql_len: u64, params_ptr: ptr, params_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_tagstore_get(store_ptr: ptr, sql_ptr: ptr, sql_len: u64, params_ptr: ptr, params_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_tagstore_run(store_ptr: ptr, sql_ptr: ptr, sql_len: u64, params_ptr: ptr, params_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_tagstore_snapshot_json(store_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sqlite_tagstore_clear(store_ptr: ptr) -> u64
+@extern sa_node_plugin_sqlite_tagstore_free(store_ptr: ptr) -> u64
 @extern sa_node_plugin_tty_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_diagnostics_channel_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_client_new(use_tls: u64, &out_client: ptr) -> u64
@@ -255,6 +536,10 @@
 @extern sa_node_plugin_http_client_req_add_header(req: ptr, key_ptr: ptr, key_len: u64, val_ptr: ptr, val_len: u64) -> u64
 @extern sa_node_plugin_http_client_req_set_body(req: ptr, body_ptr: ptr, body_len: u64) -> u64
 @extern sa_node_plugin_http_client_req_send(req: ptr, &out_resp: ptr) -> u64
+@extern sa_node_plugin_http_client_req_send_async(req: ptr, &out_op: ptr) -> u64
+@extern sa_node_plugin_http_client_async_poll(op: ptr, &out_ready: u64) -> u64
+@extern sa_node_plugin_http_client_async_take_response(op: ptr, &out_resp: ptr) -> u64
+@extern sa_node_plugin_http_client_async_free(op: ptr) -> u64
 @extern sa_node_plugin_http_client_resp_status(resp: ptr) -> u64
 @extern sa_node_plugin_http_client_resp_get_header(resp: ptr, key_ptr: ptr, key_len: u64, &out_val_ptr: ptr, &out_val_len: u64) -> u64
 @extern sa_node_plugin_http_client_resp_body_slice(resp: ptr, &out_body_ptr: ptr, &out_body_len: u64) -> u64
@@ -264,6 +549,8 @@
 @extern sa_node_plugin_http_client_body_reader_free(reader: ptr) -> u64
 @extern sa_node_plugin_http_client_free(client: ptr) -> u64
 @extern sa_node_plugin_http_client_req_free(req: ptr) -> u64
+@extern sa_node_plugin_http_request_json(method_ptr: ptr, method_len: u64, url_ptr: ptr, url_len: u64, body_ptr: ptr, body_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http_get_json(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_websocket_connect(client: ptr, url_ptr: ptr, url_len: u64, &out_ws: ptr) -> u64
 @extern sa_node_plugin_http_websocket_read(ws: ptr, max_len: u64, &out_opcode: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_websocket_write(ws: ptr, opcode: u64, data_ptr: ptr, data_len: u64) -> u64

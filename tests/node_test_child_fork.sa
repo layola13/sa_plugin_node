@@ -1,0 +1,19 @@
+// SA tests for Node child_process: spawn, fork
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_NODE = utf8:"node"
+@const S_ARG = utf8:"-e"
+
+@test "node.child_process spawn"():
+L_ENTRY:
+    argv = stack_alloc 32
+    store argv+0, S_NODE as ptr
+    store argv+8, 4 as u64
+    store argv+16, S_ARG as ptr
+    store argv+24, 2 as u64
+    pid = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_SPAWN argv, 2, 0, 0, pid, s
+    !s
+    !pid
+    return

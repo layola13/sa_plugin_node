@@ -583,6 +583,14 @@
     %out_len = load __dns_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_DNS_LOOKUP_SERVICE %out_ptr, %out_len, %out_status, %address, %address_len, %port
+    __dnss_ptr_slot = stack_alloc 8
+    __dnss_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_lookup_service(&%address, %address_len, %port, &__dnss_ptr_slot, &__dnss_len_slot)
+    %out_ptr = load __dnss_ptr_slot+0 as ptr
+    %out_len = load __dnss_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_DNS_RESOLVE %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %rrtype, %rrtype_len
     __dnsr_ptr_slot = stack_alloc 8
     __dnsr_len_slot = stack_alloc 8
@@ -591,10 +599,68 @@
     %out_len = load __dnsr_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_DNS_RESOLVE_ANY %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dnsa_ptr_slot = stack_alloc 8
+    __dnsa_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_any(&%hostname, %hostname_len, &__dnsa_ptr_slot, &__dnsa_len_slot)
+    %out_ptr = load __dnsa_ptr_slot+0 as ptr
+    %out_len = load __dnsa_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_CAA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dnscaa_ptr_slot = stack_alloc 8
+    __dnscaa_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_caa(&%hostname, %hostname_len, &__dnscaa_ptr_slot, &__dnscaa_len_slot)
+    %out_ptr = load __dnscaa_ptr_slot+0 as ptr
+    %out_len = load __dnscaa_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_NAPTR %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dnsnaptr_ptr_slot = stack_alloc 8
+    __dnsnaptr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_naptr(&%hostname, %hostname_len, &__dnsnaptr_ptr_slot, &__dnsnaptr_len_slot)
+    %out_ptr = load __dnsnaptr_ptr_slot+0 as ptr
+    %out_len = load __dnsnaptr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_SOA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dnssoa_ptr_slot = stack_alloc 8
+    __dnssoa_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_soa(&%hostname, %hostname_len, &__dnssoa_ptr_slot, &__dnssoa_len_slot)
+    %out_ptr = load __dnssoa_ptr_slot+0 as ptr
+    %out_len = load __dnssoa_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_TLSA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dnstlsa_ptr_slot = stack_alloc 8
+    __dnstlsa_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_tlsa(&%hostname, %hostname_len, &__dnstlsa_ptr_slot, &__dnstlsa_len_slot)
+    %out_ptr = load __dnstlsa_ptr_slot+0 as ptr
+    %out_len = load __dnstlsa_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_NET_CONNECT %host, %host_len, %port, %out_socket, %out_status
     __net_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_net_connect(&%host, %host_len, %port, &__net_slot)
     %out_socket = load __net_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_CONNECT_BLOCKLIST %host, %host_len, %port, %blocklist, %out_socket, %out_status
+    __net_block_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_connect_blocklist(&%host, %host_len, %port, %blocklist, &__net_block_slot)
+    %out_socket = load __net_block_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_CONNECT_OPTIONS %host, %host_len, %port, %family, %local, %local_len, %local_port, %no_delay, %keep_alive, %keep_alive_initial_delay_secs, %timeout_ms, %blocklist, %out_socket, %out_status
+    __net_options_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_connect_options(&%host, %host_len, %port, %family, &%local, %local_len, %local_port, %no_delay, %keep_alive, %keep_alive_initial_delay_secs, %timeout_ms, %blocklist, &__net_options_slot)
+    %out_socket = load __net_options_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_CONNECT_UNIX %path, %path_len, %out_socket, %out_status
+    __netu_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_connect_unix(&%path, %path_len, &__netu_slot)
+    %out_socket = load __netu_slot+0 as ptr
 [END_MACRO]
 
 [MACRO] NODE_NET_LISTEN %host, %host_len, %port, %out_server, %out_status
@@ -603,10 +669,174 @@
     %out_server = load __nets_slot+0 as ptr
 [END_MACRO]
 
+[MACRO] NODE_NET_LISTEN_UNIX %path, %path_len, %out_server, %out_status
+    __netsu_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_listen_unix(&%path, %path_len, &__netsu_slot)
+    %out_server = load __netsu_slot+0 as ptr
+[END_MACRO]
+
 [MACRO] NODE_NET_ACCEPT %server, %out_socket, %out_status
     __neta_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_net_accept(%server, &__neta_slot)
     %out_socket = load __neta_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_GET_CONNECTIONS %server, %out_count, %out_status
+    __nconn_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_server_get_connections(%server, &__nconn_slot)
+    %out_count = load __nconn_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_LISTENING %server, %out_bool, %out_status
+    __nlisten_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_server_listening(%server, &__nlisten_slot)
+    %out_bool = load __nlisten_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_CLOSE %server, %out_status
+    %out_status = call @sa_node_plugin_net_server_close(%server)
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_SET_BLOCKLIST %server, %blocklist, %out_status
+    %out_status = call @sa_node_plugin_net_server_set_blocklist(%server, %blocklist)
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_SET_MAX_CONNECTIONS %server, %max_connections, %out_status
+    %out_status = call @sa_node_plugin_net_server_set_max_connections(%server, %max_connections)
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_GET_MAX_CONNECTIONS %server, %out_max_connections, %out_status
+    __nmaxconn_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_server_get_max_connections(%server, &__nmaxconn_slot)
+    %out_max_connections = load __nmaxconn_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SERVER_ADDRESS %server, %out_ptr, %out_len, %out_status
+    __nserveraddr_ptr_slot = stack_alloc 8
+    __nserveraddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_server_address(%server, &__nserveraddr_ptr_slot, &__nserveraddr_len_slot)
+    %out_ptr = load __nserveraddr_ptr_slot+0 as ptr
+    %out_len = load __nserveraddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_REF %handle, %out_status
+    %out_status = call @sa_node_plugin_net_ref(%handle)
+[END_MACRO]
+
+[MACRO] NODE_NET_UNREF %handle, %out_status
+    %out_status = call @sa_node_plugin_net_unref(%handle)
+[END_MACRO]
+
+[MACRO] NODE_NET_HAS_REF %handle, %out_bool, %out_status
+    __n_has_ref_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_has_ref(%handle, &__n_has_ref_slot)
+    %out_bool = load __n_has_ref_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_NEW %out_addr, %out_status, %address, %address_len, %port, %family, %family_len, %flowlabel
+    __n_socket_address_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_new(&%address, %address_len, %port, &%family, %family_len, %flowlabel, &__n_socket_address_slot)
+    %out_addr = load __n_socket_address_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_PARSE %out_addr, %out_status, %input, %input_len
+    __n_socket_address_parse_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_parse(&%input, %input_len, &__n_socket_address_parse_slot)
+    %out_addr = load __n_socket_address_parse_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_FREE %addr, %out_status
+    %out_status = call @sa_node_plugin_net_socket_address_free(%addr)
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_ADDRESS %addr, %out_ptr, %out_len, %out_status
+    __n_socket_address_addr_ptr_slot = stack_alloc 8
+    __n_socket_address_addr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_address(%addr, &__n_socket_address_addr_ptr_slot, &__n_socket_address_addr_len_slot)
+    %out_ptr = load __n_socket_address_addr_ptr_slot+0 as ptr
+    %out_len = load __n_socket_address_addr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_FAMILY %addr, %out_ptr, %out_len, %out_status
+    __n_socket_address_family_ptr_slot = stack_alloc 8
+    __n_socket_address_family_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_family(%addr, &__n_socket_address_family_ptr_slot, &__n_socket_address_family_len_slot)
+    %out_ptr = load __n_socket_address_family_ptr_slot+0 as ptr
+    %out_len = load __n_socket_address_family_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_PORT %addr, %out_port, %out_status
+    __n_socket_address_port_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_port(%addr, &__n_socket_address_port_slot)
+    %out_port = load __n_socket_address_port_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_FLOWLABEL %addr, %out_flowlabel, %out_status
+    __n_socket_address_flowlabel_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_flowlabel(%addr, &__n_socket_address_flowlabel_slot)
+    %out_flowlabel = load __n_socket_address_flowlabel_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SOCKET_ADDRESS_JSON %addr, %out_ptr, %out_len, %out_status
+    __n_socket_address_json_ptr_slot = stack_alloc 8
+    __n_socket_address_json_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_json(%addr, &__n_socket_address_json_ptr_slot, &__n_socket_address_json_len_slot)
+    %out_ptr = load __n_socket_address_json_ptr_slot+0 as ptr
+    %out_len = load __n_socket_address_json_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_NEW %out_blocklist, %out_status
+    __n_blocklist_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_new(&__n_blocklist_slot)
+    %out_blocklist = load __n_blocklist_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_FREE %blocklist, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_free(%blocklist)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_ADDRESS %blocklist, %address, %address_len, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_address(%blocklist, &%address, %address_len)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_ADDRESS_HANDLE %blocklist, %addr, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_address_handle(%blocklist, %addr)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_RANGE %blocklist, %start, %start_len, %end, %end_len, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_range(%blocklist, &%start, %start_len, &%end, %end_len)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_RANGE_HANDLE %blocklist, %start, %end, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_range_handle(%blocklist, %start, %end)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_SUBNET %blocklist, %network, %network_len, %prefix, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_subnet(%blocklist, &%network, %network_len, %prefix)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_SUBNET_HANDLE %blocklist, %network, %prefix, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_subnet_handle(%blocklist, %network, %prefix)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_CHECK %blocklist, %address, %address_len, %out_bool, %out_status
+    __n_blocklist_check_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_check(%blocklist, &%address, %address_len, &__n_blocklist_check_slot)
+    %out_bool = load __n_blocklist_check_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_CHECK_HANDLE %blocklist, %addr, %out_bool, %out_status
+    __n_blocklist_check_handle_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_check_handle(%blocklist, %addr, &__n_blocklist_check_handle_slot)
+    %out_bool = load __n_blocklist_check_handle_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_RULES %blocklist, %out_ptr, %out_len, %out_status
+    __n_blocklist_rules_ptr_slot = stack_alloc 8
+    __n_blocklist_rules_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_rules(%blocklist, &__n_blocklist_rules_ptr_slot, &__n_blocklist_rules_len_slot)
+    %out_ptr = load __n_blocklist_rules_ptr_slot+0 as ptr
+    %out_len = load __n_blocklist_rules_len_slot+0 as u64
 [END_MACRO]
 
 [MACRO] NODE_NET_WRITE %socket, %data, %data_len, %out_status
@@ -625,8 +855,208 @@
     %out_status = call @sa_node_plugin_net_end(%socket)
 [END_MACRO]
 
+[MACRO] NODE_NET_ADDRESS %socket, %out_ptr, %out_len, %out_status
+    __naddr_ptr_slot = stack_alloc 8
+    __naddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_address(%socket, &__naddr_ptr_slot, &__naddr_len_slot)
+    %out_ptr = load __naddr_ptr_slot+0 as ptr
+    %out_len = load __naddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_REMOTE_ADDRESS %socket, %out_ptr, %out_len, %out_status
+    __nraddr_ptr_slot = stack_alloc 8
+    __nraddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_remote_address(%socket, &__nraddr_ptr_slot, &__nraddr_len_slot)
+    %out_ptr = load __nraddr_ptr_slot+0 as ptr
+    %out_len = load __nraddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_LOCAL_ADDRESS %socket, %out_ptr, %out_len, %out_status
+    __nla_ptr_slot = stack_alloc 8
+    __nla_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_local_address(%socket, &__nla_ptr_slot, &__nla_len_slot)
+    %out_ptr = load __nla_ptr_slot+0 as ptr
+    %out_len = load __nla_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_LOCAL_FAMILY %socket, %out_ptr, %out_len, %out_status
+    __nlf_ptr_slot = stack_alloc 8
+    __nlf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_local_family(%socket, &__nlf_ptr_slot, &__nlf_len_slot)
+    %out_ptr = load __nlf_ptr_slot+0 as ptr
+    %out_len = load __nlf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_LOCAL_PORT %socket, %out_port, %out_status
+    __nlp_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_local_port(%socket, &__nlp_slot)
+    %out_port = load __nlp_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_REMOTE_ADDRESS_VALUE %socket, %out_ptr, %out_len, %out_status
+    __nrav_ptr_slot = stack_alloc 8
+    __nrav_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_remote_address_value(%socket, &__nrav_ptr_slot, &__nrav_len_slot)
+    %out_ptr = load __nrav_ptr_slot+0 as ptr
+    %out_len = load __nrav_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_REMOTE_FAMILY %socket, %out_ptr, %out_len, %out_status
+    __nrf_ptr_slot = stack_alloc 8
+    __nrf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_remote_family(%socket, &__nrf_ptr_slot, &__nrf_len_slot)
+    %out_ptr = load __nrf_ptr_slot+0 as ptr
+    %out_len = load __nrf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_REMOTE_PORT %socket, %out_port, %out_status
+    __nrp_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_remote_port(%socket, &__nrp_slot)
+    %out_port = load __nrp_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BYTES_READ %socket, %out_bytes, %out_status
+    __nbr_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_bytes_read(%socket, &__nbr_slot)
+    %out_bytes = load __nbr_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BYTES_WRITTEN %socket, %out_bytes, %out_status
+    __nbw_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_bytes_written(%socket, &__nbw_slot)
+    %out_bytes = load __nbw_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BUFFER_SIZE %socket, %out_size, %out_status
+    __nbufsize_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_buffer_size(%socket, &__nbufsize_slot)
+    %out_size = load __nbufsize_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_CONNECTING %socket, %out_bool, %out_status
+    __nconnecting_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_connecting(%socket, &__nconnecting_slot)
+    %out_bool = load __nconnecting_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_AUTO_SELECT_FAMILY_ATTEMPTED_ADDRESSES %socket, %out_ptr, %out_len, %out_status
+    __nauto_attempts_ptr_slot = stack_alloc 8
+    __nauto_attempts_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_auto_select_family_attempted_addresses(%socket, &__nauto_attempts_ptr_slot, &__nauto_attempts_len_slot)
+    %out_ptr = load __nauto_attempts_ptr_slot+0 as ptr
+    %out_len = load __nauto_attempts_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_PENDING %socket, %out_bool, %out_status
+    __npending_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_pending(%socket, &__npending_slot)
+    %out_bool = load __npending_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_READY_STATE %socket, %out_ptr, %out_len, %out_status
+    __nstate_ptr_slot = stack_alloc 8
+    __nstate_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_ready_state(%socket, &__nstate_ptr_slot, &__nstate_len_slot)
+    %out_ptr = load __nstate_ptr_slot+0 as ptr
+    %out_len = load __nstate_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_TIMEOUT %socket, %timeout_ms, %out_status
+    %out_status = call @sa_node_plugin_net_set_timeout(%socket, %timeout_ms)
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_TIMEOUT %socket, %out_timeout_ms, %out_status
+    __ntimeout_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_timeout(%socket, &__ntimeout_slot)
+    %out_timeout_ms = load __ntimeout_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_READABLE %socket, %out_bool, %out_status
+    __nreadable_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_readable(%socket, &__nreadable_slot)
+    %out_bool = load __nreadable_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_WRITABLE %socket, %out_bool, %out_status
+    __nwritable_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_writable(%socket, &__nwritable_slot)
+    %out_bool = load __nwritable_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_CLOSED %socket, %out_bool, %out_status
+    __nclosed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_closed(%socket, &__nclosed_slot)
+    %out_bool = load __nclosed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_DESTROYED %socket, %out_bool, %out_status
+    __ndestroyed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_destroyed(%socket, &__ndestroyed_slot)
+    %out_bool = load __ndestroyed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_DESTROY %socket, %out_status
+    %out_status = call @sa_node_plugin_net_destroy(%socket)
+[END_MACRO]
+
+[MACRO] NODE_NET_RESET_AND_DESTROY %socket, %out_status
+    %out_status = call @sa_node_plugin_net_reset_and_destroy(%socket)
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_NO_DELAY %socket, %enable, %out_status
+    %out_status = call @sa_node_plugin_net_set_no_delay(%socket, %enable)
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_KEEP_ALIVE %socket, %enable, %initial_delay_secs, %out_status
+    %out_status = call @sa_node_plugin_net_set_keep_alive(%socket, %enable, %initial_delay_secs)
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_RECV_BUFFER_SIZE %socket, %size, %out_status
+    %out_status = call @sa_node_plugin_net_set_recv_buffer_size(%socket, %size)
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_SEND_BUFFER_SIZE %socket, %size, %out_status
+    %out_status = call @sa_node_plugin_net_set_send_buffer_size(%socket, %size)
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_RECV_BUFFER_SIZE %socket, %out_size, %out_status
+    __net_rcvbuf_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_recv_buffer_size(%socket, &__net_rcvbuf_slot)
+    %out_size = load __net_rcvbuf_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_SEND_BUFFER_SIZE %socket, %out_size, %out_status
+    __net_sndbuf_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_send_buffer_size(%socket, &__net_sndbuf_slot)
+    %out_size = load __net_sndbuf_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_TYPE_OF_SERVICE %socket, %tos, %out_status
+    %out_status = call @sa_node_plugin_net_set_type_of_service(%socket, %tos)
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_TYPE_OF_SERVICE %socket, %out_tos, %out_status
+    __net_tos_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_type_of_service(%socket, &__net_tos_slot)
+    %out_tos = load __net_tos_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SHUTDOWN_WRITE %socket, %out_status
+    %out_status = call @sa_node_plugin_net_shutdown_write(%socket)
+[END_MACRO]
+
 [MACRO] NODE_DGRAM_CREATE %out_socket
     %out_socket = call @sa_node_plugin_dgram_create()
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_CREATE_UDP6 %out_socket
+    %out_socket = call @sa_node_plugin_dgram_create_udp6()
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_CREATE_OPTIONS %out_socket, %out_status, %socket_type, %reuse_addr, %reuse_port, %ipv6_only, %recv_buffer_size, %send_buffer_size
+    __dgram_options_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_create_options(%socket_type, %reuse_addr, %reuse_port, %ipv6_only, %recv_buffer_size, %send_buffer_size, &__dgram_options_slot)
+    %out_socket = load __dgram_options_slot+0 as ptr
 [END_MACRO]
 
 [MACRO] NODE_DGRAM_BIND %out_status, %socket, %host, %host_len, %port
@@ -653,6 +1083,144 @@
 
 [MACRO] NODE_DGRAM_CLOSE %out_status, %socket
     %out_status = call @sa_node_plugin_dgram_close(%socket)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_CONNECT %out_status, %socket, %host, %host_len, %port
+    %out_status = call @sa_node_plugin_dgram_connect(%socket, &%host, %host_len, %port)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_DISCONNECT %out_status, %socket
+    %out_status = call @sa_node_plugin_dgram_disconnect(%socket)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SEND_CONNECTED %out_status, %socket, %data, %data_len
+    %out_status = call @sa_node_plugin_dgram_send_connected(%socket, &%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_SEND_BLOCKLIST %out_status, %socket, %blocklist
+    %out_status = call @sa_node_plugin_dgram_set_send_blocklist(%socket, %blocklist)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_RECEIVE_BLOCKLIST %out_status, %socket, %blocklist
+    %out_status = call @sa_node_plugin_dgram_set_receive_blocklist(%socket, %blocklist)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_ADDRESS %out_status, %out_ptr, %out_len, %socket
+    __dgram_addr_ptr_slot = stack_alloc 8
+    __dgram_addr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_address(%socket, &__dgram_addr_ptr_slot, &__dgram_addr_len_slot)
+    %out_ptr = load __dgram_addr_ptr_slot+0 as ptr
+    %out_len = load __dgram_addr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_REMOTE_ADDRESS %out_status, %out_ptr, %out_len, %socket
+    __dgram_raddr_ptr_slot = stack_alloc 8
+    __dgram_raddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_remote_address(%socket, &__dgram_raddr_ptr_slot, &__dgram_raddr_len_slot)
+    %out_ptr = load __dgram_raddr_ptr_slot+0 as ptr
+    %out_len = load __dgram_raddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_REF %out_status, %socket
+    %out_status = call @sa_node_plugin_dgram_ref(%socket)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_UNREF %out_status, %socket
+    %out_status = call @sa_node_plugin_dgram_unref(%socket)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_HAS_REF %out_status, %out_bool, %socket
+    __dgram_has_ref_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_has_ref(%socket, &__dgram_has_ref_slot)
+    %out_bool = load __dgram_has_ref_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_BROADCAST %out_status, %socket, %enable
+    %out_status = call @sa_node_plugin_dgram_set_broadcast(%socket, %enable)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_TTL %out_status, %socket, %ttl
+    %out_status = call @sa_node_plugin_dgram_set_ttl(%socket, %ttl)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_TTL %out_status, %socket, %ttl
+    %out_status = call @sa_node_plugin_dgram_set_multicast_ttl(%socket, %ttl)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_LOOPBACK %out_status, %socket, %enable
+    %out_status = call @sa_node_plugin_dgram_set_multicast_loopback(%socket, %enable)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_INTERFACE %out_status, %socket, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_set_multicast_interface(%socket, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_INTERFACE6 %out_status, %socket, %iface_index
+    %out_status = call @sa_node_plugin_dgram_set_multicast_interface6(%socket, %iface_index)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_HOPS6 %out_status, %socket, %hops
+    %out_status = call @sa_node_plugin_dgram_set_multicast_hops6(%socket, %hops)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_MULTICAST_LOOPBACK6 %out_status, %socket, %enable
+    %out_status = call @sa_node_plugin_dgram_set_multicast_loopback6(%socket, %enable)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_ADD_MEMBERSHIP %out_status, %socket, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_add_membership(%socket, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_DROP_MEMBERSHIP %out_status, %socket, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_drop_membership(%socket, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_ADD_SOURCE_SPECIFIC_MEMBERSHIP %out_status, %socket, %source, %source_len, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_add_source_specific_membership(%socket, &%source, %source_len, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_DROP_SOURCE_SPECIFIC_MEMBERSHIP %out_status, %socket, %source, %source_len, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_drop_source_specific_membership(%socket, &%source, %source_len, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_ADD_MEMBERSHIP6 %out_status, %socket, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_add_membership6(%socket, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_DROP_MEMBERSHIP6 %out_status, %socket, %multicast, %multicast_len, %iface, %iface_len
+    %out_status = call @sa_node_plugin_dgram_drop_membership6(%socket, &%multicast, %multicast_len, &%iface, %iface_len)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_RECV_BUFFER_SIZE %out_status, %socket, %size
+    %out_status = call @sa_node_plugin_dgram_set_recv_buffer_size(%socket, %size)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_SET_SEND_BUFFER_SIZE %out_status, %socket, %size
+    %out_status = call @sa_node_plugin_dgram_set_send_buffer_size(%socket, %size)
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_GET_RECV_BUFFER_SIZE %out_status, %out_size, %socket
+    __dgram_rcvbuf_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_get_recv_buffer_size(%socket, &__dgram_rcvbuf_slot)
+    %out_size = load __dgram_rcvbuf_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_GET_SEND_BUFFER_SIZE %out_status, %out_size, %socket
+    __dgram_sndbuf_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_get_send_buffer_size(%socket, &__dgram_sndbuf_slot)
+    %out_size = load __dgram_sndbuf_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_GET_SEND_QUEUE_SIZE %out_status, %out_size, %socket
+    __dgram_sendq_size_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_get_send_queue_size(%socket, &__dgram_sendq_size_slot)
+    %out_size = load __dgram_sendq_size_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_GET_SEND_QUEUE_COUNT %out_status, %out_count, %socket
+    __dgram_sendq_count_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_get_send_queue_count(%socket, &__dgram_sendq_count_slot)
+    %out_count = load __dgram_sendq_count_slot+0 as u64
 [END_MACRO]
 
 [MACRO] NODE_FS_STAT %out_ptr, %out_len, %out_status, %path, %path_len

@@ -1,0 +1,261 @@
+// SA tests for TLS top-level helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SYSTEM = utf8:"system"
+@const S_TLS_MIN = utf8:"TLSv1.2"
+@const S_TLS_MAX = utf8:"TLSv1.3"
+@const S_ALPN_JSON = utf8:"[\"h2\",\"http/1.1\"]"
+
+@test "node.tls top level helpers"():
+L_ENTRY:
+    ciphers_ptr = add 0, 0
+    ciphers_len = add 0, 0
+    ciphers_status = add 0, 0
+    EXPAND NODE_TLS_GET_CIPHERS_JSON ciphers_ptr, ciphers_len, ciphers_status
+    ciphers_ok = eq ciphers_status, 0
+    br ciphers_ok -> L_CIPHERS_LEN, L_ERR_CIPHERS
+L_CIPHERS_LEN:
+    !ciphers_ok
+    ciphers_has_len = ugt ciphers_len, 0
+    br ciphers_has_len -> L_DETAILED, L_ERR_CIPHERS_LEN
+L_DETAILED:
+    !ciphers_has_len
+    detailed_ptr = add 0, 0
+    detailed_len = add 0, 0
+    detailed_status = add 0, 0
+    EXPAND NODE_TLS_GET_CIPHERS_DETAILED_JSON detailed_ptr, detailed_len, detailed_status
+    detailed_ok = eq detailed_status, 0
+    br detailed_ok -> L_DETAILED_LEN, L_ERR_DETAILED
+L_DETAILED_LEN:
+    !detailed_ok
+    detailed_has_len = ugt detailed_len, 0
+    br detailed_has_len -> L_CONSTANTS, L_ERR_DETAILED_LEN
+L_CONSTANTS:
+    !detailed_has_len
+    constants_ptr = add 0, 0
+    constants_len = add 0, 0
+    constants_status = add 0, 0
+    EXPAND NODE_TLS_DEFAULT_CONSTANTS_JSON constants_ptr, constants_len, constants_status
+    constants_ok = eq constants_status, 0
+    br constants_ok -> L_CONSTANTS_LEN, L_ERR_CONSTANTS
+L_CONSTANTS_LEN:
+    !constants_ok
+    constants_has_len = ugt constants_len, 0
+    br constants_has_len -> L_MIN, L_ERR_CONSTANTS_LEN
+L_MIN:
+    !constants_has_len
+    min_ptr = add 0, 0
+    min_len = add 0, 0
+    min_status = add 0, 0
+    EXPAND NODE_TLS_DEFAULT_MIN_VERSION min_ptr, min_len, min_status
+    min_ok = eq min_status, 0
+    br min_ok -> L_MIN_LEN, L_ERR_MIN
+L_MIN_LEN:
+    !min_ok
+    min_len_ok = eq min_len, 7
+    br min_len_ok -> L_MAX, L_ERR_MIN_LEN
+L_MAX:
+    !min_len_ok
+    max_ptr = add 0, 0
+    max_len = add 0, 0
+    max_status = add 0, 0
+    EXPAND NODE_TLS_DEFAULT_MAX_VERSION max_ptr, max_len, max_status
+    max_ok = eq max_status, 0
+    br max_ok -> L_MAX_LEN, L_ERR_MAX
+L_MAX_LEN:
+    !max_ok
+    max_len_ok = eq max_len, 7
+    br max_len_ok -> L_ALPN, L_ERR_MAX_LEN
+L_ALPN:
+    !max_len_ok
+    alpn_ptr = add 0, 0
+    alpn_len = add 0, 0
+    alpn_status = add 0, 0
+    EXPAND NODE_TLS_CONVERT_ALPN_PROTOCOLS alpn_ptr, alpn_len, alpn_status, S_ALPN_JSON, 17
+    alpn_ok = eq alpn_status, 0
+    br alpn_ok -> L_ALPN_LEN, L_ERR_ALPN
+L_ALPN_LEN:
+    !alpn_ok
+    alpn_len_ok = eq alpn_len, 12
+    br alpn_len_ok -> L_ROOT_CERTS, L_ERR_ALPN_LEN
+L_ROOT_CERTS:
+    !alpn_len_ok
+    root_ptr = add 0, 0
+    root_len = add 0, 0
+    root_status = add 0, 0
+    EXPAND NODE_TLS_ROOT_CERTIFICATES_JSON root_ptr, root_len, root_status
+    root_ok = eq root_status, 0
+    br root_ok -> L_ROOT_LEN, L_ERR_ROOT
+L_ROOT_LEN:
+    !root_ok
+    root_has_len = ugt root_len, 2
+    br root_has_len -> L_SYSTEM_CA, L_ERR_ROOT_LEN
+L_SYSTEM_CA:
+    !root_has_len
+    system_ptr = add 0, 0
+    system_len = add 0, 0
+    system_status = add 0, 0
+    EXPAND NODE_TLS_GET_CA_CERTIFICATES_JSON system_ptr, system_len, system_status, S_SYSTEM, 6
+    system_ok = eq system_status, 0
+    br system_ok -> L_SYSTEM_LEN, L_ERR_SYSTEM
+L_SYSTEM_LEN:
+    !system_ok
+    system_has_len = ugt system_len, 2
+    br system_has_len -> L_SECURE_CONTEXT, L_ERR_SYSTEM_LEN
+L_SECURE_CONTEXT:
+    !system_has_len
+    context = add 0, 0
+    context_status = add 0, 0
+    EXPAND NODE_TLS_CREATE_SECURE_CONTEXT context, context_status, 0, 0, 0, 0, 0, 0, 0, 0, S_TLS_MIN, 7, S_TLS_MAX, 7
+    context_ok = eq context_status, 0
+    br context_ok -> L_CONTEXT_PTR, L_ERR_CONTEXT
+L_CONTEXT_PTR:
+    !context_ok
+    context_nonnull = ne context, 0
+    br context_nonnull -> L_CONTEXT_SNAPSHOT, L_ERR_CONTEXT_PTR
+L_CONTEXT_SNAPSHOT:
+    !context_nonnull
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    snap_status = add 0, 0
+    EXPAND NODE_TLS_SECURE_CONTEXT_SNAPSHOT_JSON snap_ptr, snap_len, snap_status, context
+    snap_ok = eq snap_status, 0
+    br snap_ok -> L_CONTEXT_SNAPSHOT_LEN, L_ERR_SNAPSHOT
+L_CONTEXT_SNAPSHOT_LEN:
+    !snap_ok
+    snap_has_len = ugt snap_len, 0
+    br snap_has_len -> L_OK, L_ERR_SNAPSHOT_LEN
+L_OK:
+    !snap_has_len
+    free_context = add 0, 0
+    EXPAND NODE_TLS_SECURE_CONTEXT_FREE free_context, context
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    free_system = call @sa_node_plugin_free_buffer(system_ptr, system_len)
+    free_root = call @sa_node_plugin_free_buffer(root_ptr, root_len)
+    free_alpn = call @sa_node_plugin_free_buffer(alpn_ptr, alpn_len)
+    free_max = call @sa_node_plugin_free_buffer(max_ptr, max_len)
+    free_min = call @sa_node_plugin_free_buffer(min_ptr, min_len)
+    free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_detailed = call @sa_node_plugin_free_buffer(detailed_ptr, detailed_len)
+    free_ciphers = call @sa_node_plugin_free_buffer(ciphers_ptr, ciphers_len)
+    !free_context
+    !free_snap
+    !free_system
+    !free_root
+    !free_alpn
+    !free_max
+    !free_min
+    !free_constants
+    !free_detailed
+    !free_ciphers
+    !snap_len
+    !snap_ptr
+    !context
+    !system_len
+    !system_ptr
+    !root_len
+    !root_ptr
+    !alpn_status
+    !alpn_len
+    !alpn_ptr
+    !max_len
+    !max_ptr
+    !min_len
+    !min_ptr
+    !constants_len
+    !constants_ptr
+    !detailed_len
+    !detailed_ptr
+    !ciphers_len
+    !ciphers_ptr
+    return
+L_ERR_CIPHERS:
+    !ciphers_ok
+    !ciphers_status
+    panic(103)
+L_ERR_CIPHERS_LEN:
+    !ciphers_has_len
+    !ciphers_ptr
+    !ciphers_len
+    panic(103)
+L_ERR_DETAILED:
+    !detailed_ok
+    !detailed_status
+    panic(103)
+L_ERR_DETAILED_LEN:
+    !detailed_has_len
+    !detailed_ptr
+    !detailed_len
+    panic(103)
+L_ERR_CONSTANTS:
+    !constants_ok
+    !constants_status
+    panic(103)
+L_ERR_CONSTANTS_LEN:
+    !constants_has_len
+    !constants_ptr
+    !constants_len
+    panic(103)
+L_ERR_MIN:
+    !min_ok
+    !min_status
+    panic(103)
+L_ERR_MIN_LEN:
+    !min_len_ok
+    !min_ptr
+    !min_len
+    panic(103)
+L_ERR_MAX:
+    !max_ok
+    !max_status
+    panic(103)
+L_ERR_MAX_LEN:
+    !max_len_ok
+    !max_ptr
+    !max_len
+    panic(103)
+L_ERR_ALPN:
+    !alpn_ok
+    !alpn_status
+    panic(103)
+L_ERR_ALPN_LEN:
+    !alpn_len_ok
+    !alpn_ptr
+    !alpn_len
+    panic(103)
+L_ERR_ROOT:
+    !root_ok
+    !root_status
+    panic(103)
+L_ERR_ROOT_LEN:
+    !root_has_len
+    !root_ptr
+    !root_len
+    panic(103)
+L_ERR_SYSTEM:
+    !system_ok
+    !system_status
+    panic(103)
+L_ERR_SYSTEM_LEN:
+    !system_has_len
+    !system_ptr
+    !system_len
+    panic(103)
+L_ERR_CONTEXT:
+    !context_ok
+    !context_status
+    panic(103)
+L_ERR_CONTEXT_PTR:
+    !context_nonnull
+    !context
+    panic(103)
+L_ERR_SNAPSHOT:
+    !snap_ok
+    !snap_status
+    panic(103)
+L_ERR_SNAPSHOT_LEN:
+    !snap_has_len
+    !snap_ptr
+    !snap_len
+    panic(103)

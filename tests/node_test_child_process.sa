@@ -1,0 +1,12 @@
+// SA tests for Node child_process extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.child_process status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_STATUS_JSON op, ol
+    !ol
+    !op
+    return

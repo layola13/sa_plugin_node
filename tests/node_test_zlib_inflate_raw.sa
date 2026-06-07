@@ -1,0 +1,22 @@
+// SA tests for Node zlib extras: unzip (gzip roundtrip), inflate_raw roundtrip
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_DATA = utf8:"inflate raw test data here"
+
+@test "node.zlib gzip then unzip"():
+L_ENTRY:
+    gp = add 0, 0
+    gl = add 0, 0
+    gs = add 0, 0
+    EXPAND NODE_ZLIB_GZIP gp, gl, gs, S_DATA, 26
+    op = add 0, 0
+    ol = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ZLIB_UNZIP op, ol, s2, gp, gl
+    !s2
+    !ol
+    !op
+    !gs
+    !gl
+    !gp
+    return

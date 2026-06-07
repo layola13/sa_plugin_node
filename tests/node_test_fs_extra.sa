@@ -1,0 +1,292 @@
+// SA-native unit tests for Node FS operations (node_extra)
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_TESTFILE = utf8:"/tmp/sa_node_test.txt"
+@const S_TMPDIR = utf8:"/tmp"
+@const S_DATA = utf8:"hello"
+@const S_GLOB = utf8:"/tmp/sa_node_*"
+@const S_LNK = utf8:"/tmp/sa_node_link"
+@const S_MT = utf8:"/tmp/tmpXXXXXX"
+
+@test "node.fs open and close"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 65, 438, fd, s1
+    EXPAND NODE_FS_CLOSE_FD fd, s2
+    !s2
+    !s1
+    !fd
+    return
+
+@test "node.fs write_fd and read_fd"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    wn = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    fd2 = add 0, 0
+    s4 = add 0, 0
+    buf = stack_alloc 1024
+    rn = add 0, 0
+    s5 = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 66, 438, fd, s1
+    EXPAND NODE_FS_WRITE_FD fd, S_DATA, 5, 0, wn, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 0, 0, fd2, s4
+    EXPAND NODE_FS_READ_FD fd2, buf, 1024, 0, rn, s5
+    EXPAND NODE_FS_CLOSE_FD fd2, s6
+    !s6
+    !s5
+    !rn
+    !s4
+    !fd2
+    !s3
+    !s2
+    !wn
+    !s1
+    !fd
+    return
+
+@test "node.fs fstat"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    p = add 0, 0
+    l = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 66, 438, fd, s1
+    EXPAND NODE_FS_FSTAT fd, p, l, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !p
+    !l
+    !s1
+    !fd
+    return
+
+@test "node.fs chmod"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_FS_CHMOD S_TESTFILE, 24, 438, s
+    !s
+    return
+
+@test "node.fs chown"():
+L_ENTRY:
+    uid = add 0, 0
+    gid = add 0, 0
+    su = add 0, 0
+    sg = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_GETUID uid, su
+    EXPAND NODE_PROCESS_GETGID gid, sg
+    EXPAND NODE_FS_CHOWN S_TESTFILE, 24, uid, gid, s
+    !s
+    !sg
+    !su
+    !gid
+    !uid
+    return
+
+@test "node.fs fchmod"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 2, 0, fd, s1
+    EXPAND NODE_FS_FCHMOD fd, 438, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !s1
+    !fd
+    return
+
+@test "node.fs fchown"():
+L_ENTRY:
+    fd = add 0, 0
+    uid = add 0, 0
+    gid = add 0, 0
+    su = add 0, 0
+    sg = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_PROCESS_GETUID uid, su
+    EXPAND NODE_PROCESS_GETGID gid, sg
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 2, 0, fd, s1
+    EXPAND NODE_FS_FCHOWN fd, uid, gid, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !s1
+    !sg
+    !su
+    !gid
+    !uid
+    !fd
+    return
+
+@test "node.fs fsync and fdatasync"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 2, 0, fd, s1
+    EXPAND NODE_FS_FSYNC fd, s2
+    EXPAND NODE_FS_FDATASYNC fd, s3
+    EXPAND NODE_FS_CLOSE_FD fd, s4
+    !s4
+    !s3
+    !s2
+    !s1
+    !fd
+    return
+
+@test "node.fs ftruncate"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 2, 0, fd, s1
+    EXPAND NODE_FS_FTRUNCATE fd, 0, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !s1
+    !fd
+    return
+
+@test "node.fs futimes"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 2, 0, fd, s1
+    EXPAND NODE_FS_FUTIMES fd, 1000, 1000, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !s1
+    !fd
+    return
+
+@test "node.fs statfs"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_STATFS S_TMPDIR, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.fs glob"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_GLOB S_GLOB, 18, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.fs mkdtemp"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_MKDTEMP S_MT, 20, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.fs rm"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_FS_RM S_TESTFILE, 24, 0, s
+    !s
+    return
+
+@test "node.fs truncate"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_FS_TRUNCATE S_TESTFILE, 24, 0, s
+    !s
+    return
+
+@test "node.fs utimes"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_FS_UTIMES S_TESTFILE, 24, 1000, 1000, s
+    !s
+    return
+
+@test "node.fs link and rm"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_LINK S_TESTFILE, 24, S_LNK, 23, s1
+    EXPAND NODE_FS_RM S_LNK, 23, 0, s2
+    !s2
+    !s1
+    return
+
+@test "node.fs symlink and rm"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_SYMLINK S_TESTFILE, 24, S_LNK, 23, s1
+    EXPAND NODE_FS_RM S_LNK, 23, 1, s2
+    !s2
+    !s1
+    return
+
+@test "node.fs readv"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    v = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 66, 438, fd, s1
+    EXPAND NODE_FS_READV fd, 0, 0, v, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !v
+    !s1
+    !fd
+    return
+
+@test "node.fs writev"():
+L_ENTRY:
+    fd = add 0, 0
+    s1 = add 0, 0
+    v = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FS_OPEN S_TESTFILE, 24, 66, 438, fd, s1
+    EXPAND NODE_FS_WRITEV fd, 0, 0, v, s2
+    EXPAND NODE_FS_CLOSE_FD fd, s3
+    !s3
+    !s2
+    !v
+    !s1
+    !fd
+    return

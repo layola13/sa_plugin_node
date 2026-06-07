@@ -1,0 +1,20 @@
+// SA tests for Node diagnostics_channel: subscribe, unsubscribe, snapshot_json
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_CH = utf8:"test-ch2"
+
+@test "node.diagnostics_channel subscribe and unsubscribe"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_CREATE S_CH, 9, h, s1
+    s2 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_SUBSCRIBE h, 0, s2
+    s3 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_UNSUBSCRIBE h, 0, s3
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_FREE h
+    !s3
+    !s2
+    !s1
+    !h
+    return

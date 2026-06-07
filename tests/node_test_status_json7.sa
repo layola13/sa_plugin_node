@@ -1,0 +1,25 @@
+// SA tests for more 3-param STATUS_JSON macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.deprecated status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DEPRECATED_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.environment_variables status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return

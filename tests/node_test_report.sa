@@ -1,0 +1,23 @@
+// SA tests for Node report extras: get_json, status_json
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.report get_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_REPORT_GET_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.report status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_REPORT_STATUS_JSON op, ol
+    !ol
+    !op
+    return

@@ -125,21 +125,124 @@
 
 // --- Phase 5: net & dns module ---
 @extern sa_node_plugin_dns_lookup(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_lookup_service(&address: ptr, len: u64, port: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_dns_resolve(&hostname: ptr, len: u64, &rrtype: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve_any(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve_caa(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve_naptr(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve_soa(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dns_resolve_tlsa(&hostname: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 
 @extern sa_node_plugin_net_connect(&host: ptr, host_len: u64, port: u64, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_connect_blocklist(&host: ptr, host_len: u64, port: u64, blocklist: ptr, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_connect_options(&host: ptr, host_len: u64, port: u64, family: u32, &local: ptr, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64, blocklist: ptr, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_connect_unix(&path: ptr, path_len: u64, &out_socket: ptr) -> u32
 @extern sa_node_plugin_net_listen(&host: ptr, host_len: u64, port: u64, &out_server: ptr) -> u32
+@extern sa_node_plugin_net_listen_unix(&path: ptr, path_len: u64, &out_server: ptr) -> u32
 @extern sa_node_plugin_net_accept(server: ptr, &out_socket: ptr) -> u32
+@extern sa_node_plugin_net_server_get_connections(server: ptr, &out_count: ptr) -> u32
+@extern sa_node_plugin_net_server_listening(server: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_server_close(server: ptr) -> u32
+@extern sa_node_plugin_net_server_set_blocklist(server: ptr, blocklist: ptr) -> u32
+@extern sa_node_plugin_net_server_set_max_connections(server: ptr, max_connections: u64) -> u32
+@extern sa_node_plugin_net_server_get_max_connections(server: ptr, &out_max_connections: ptr) -> u32
+@extern sa_node_plugin_net_server_address(server: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_ref(handle: ptr) -> u32
+@extern sa_node_plugin_net_unref(handle: ptr) -> u32
+@extern sa_node_plugin_net_has_ref(handle: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_new(&address: ptr, address_len: u64, port: u64, &family: ptr, family_len: u64, flowlabel: u64, &out_addr: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_parse(&input: ptr, input_len: u64, &out_addr: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_free(addr: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_address(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_family(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_port(addr: ptr, &out_port: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_flowlabel(addr: ptr, &out_flowlabel: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_json(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_new(&out_blocklist: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_free(blocklist: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_add_address(blocklist: ptr, &address: ptr, address_len: u64) -> u32
+@extern sa_node_plugin_net_blocklist_add_address_handle(blocklist: ptr, addr: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_add_range(blocklist: ptr, &start: ptr, start_len: u64, &end: ptr, end_len: u64) -> u32
+@extern sa_node_plugin_net_blocklist_add_range_handle(blocklist: ptr, start: ptr, end: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_add_subnet(blocklist: ptr, &network: ptr, network_len: u64, prefix: u32) -> u32
+@extern sa_node_plugin_net_blocklist_add_subnet_handle(blocklist: ptr, network: ptr, prefix: u32) -> u32
+@extern sa_node_plugin_net_blocklist_check(blocklist: ptr, &address: ptr, address_len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_check_handle(blocklist: ptr, addr: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_rules(blocklist: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_write(socket: ptr, &data: ptr, data_len: u64) -> u32
 @extern sa_node_plugin_net_read(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_end(socket: ptr) -> u32
+@extern sa_node_plugin_net_address(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_remote_address(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_local_address(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_local_family(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_local_port(socket: ptr, &out_port: ptr) -> u32
+@extern sa_node_plugin_net_remote_address_value(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_remote_family(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_remote_port(socket: ptr, &out_port: ptr) -> u32
+@extern sa_node_plugin_net_bytes_read(socket: ptr, &out_bytes: ptr) -> u32
+@extern sa_node_plugin_net_bytes_written(socket: ptr, &out_bytes: ptr) -> u32
+@extern sa_node_plugin_net_buffer_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_net_connecting(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_auto_select_family_attempted_addresses(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_pending(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_ready_state(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_net_set_timeout(socket: ptr, timeout_ms: u64) -> u32
+@extern sa_node_plugin_net_get_timeout(socket: ptr, &out_timeout_ms: ptr) -> u32
+@extern sa_node_plugin_net_readable(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_writable(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_closed(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_destroyed(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_destroy(socket: ptr) -> u32
+@extern sa_node_plugin_net_reset_and_destroy(socket: ptr) -> u32
+@extern sa_node_plugin_net_set_no_delay(socket: ptr, enable: u32) -> u32
+@extern sa_node_plugin_net_set_keep_alive(socket: ptr, enable: u32, initial_delay_secs: u32) -> u32
+@extern sa_node_plugin_net_set_recv_buffer_size(socket: ptr, size: u32) -> u32
+@extern sa_node_plugin_net_set_send_buffer_size(socket: ptr, size: u32) -> u32
+@extern sa_node_plugin_net_get_recv_buffer_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_net_get_send_buffer_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_net_set_type_of_service(socket: ptr, tos: u32) -> u32
+@extern sa_node_plugin_net_get_type_of_service(socket: ptr, &out_tos: ptr) -> u32
+@extern sa_node_plugin_net_shutdown_write(socket: ptr) -> u32
 
 // --- Phase 5: UDP/datagram module ---
 @extern sa_node_plugin_dgram_create() -> ptr
+@extern sa_node_plugin_dgram_create_udp6() -> ptr
+@extern sa_node_plugin_dgram_create_options(socket_type: u32, reuse_addr: u32, reuse_port: u32, ipv6_only: u32, recv_buffer_size: u32, send_buffer_size: u32, &out_socket: ptr) -> u32
 @extern sa_node_plugin_dgram_bind(socket: ptr, &host: ptr, host_len: u64, port: u64) -> u32
 @extern sa_node_plugin_dgram_send(socket: ptr, &data: ptr, data_len: u64, &host: ptr, host_len: u64, port: u64) -> u32
 @extern sa_node_plugin_dgram_recv(socket: ptr, max_len: u64, &out_ptr: ptr, &out_len: ptr, &out_host_ptr: ptr, &out_host_len: ptr, &out_port: ptr) -> u32
 @extern sa_node_plugin_dgram_close(socket: ptr) -> u32
+@extern sa_node_plugin_dgram_connect(socket: ptr, &host: ptr, host_len: u64, port: u64) -> u32
+@extern sa_node_plugin_dgram_disconnect(socket: ptr) -> u32
+@extern sa_node_plugin_dgram_send_connected(socket: ptr, &data: ptr, data_len: u64) -> u32
+@extern sa_node_plugin_dgram_set_send_blocklist(socket: ptr, blocklist: ptr) -> u32
+@extern sa_node_plugin_dgram_set_receive_blocklist(socket: ptr, blocklist: ptr) -> u32
+@extern sa_node_plugin_dgram_address(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dgram_remote_address(socket: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_dgram_ref(socket: ptr) -> u32
+@extern sa_node_plugin_dgram_unref(socket: ptr) -> u32
+@extern sa_node_plugin_dgram_has_ref(socket: ptr, &out_bool: ptr) -> u32
+@extern sa_node_plugin_dgram_set_broadcast(socket: ptr, enable: u32) -> u32
+@extern sa_node_plugin_dgram_set_ttl(socket: ptr, ttl: u32) -> u32
+@extern sa_node_plugin_dgram_set_multicast_ttl(socket: ptr, ttl: u32) -> u32
+@extern sa_node_plugin_dgram_set_multicast_loopback(socket: ptr, enable: u32) -> u32
+@extern sa_node_plugin_dgram_set_multicast_interface(socket: ptr, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_set_multicast_interface6(socket: ptr, iface_index: u32) -> u32
+@extern sa_node_plugin_dgram_set_multicast_hops6(socket: ptr, hops: u32) -> u32
+@extern sa_node_plugin_dgram_set_multicast_loopback6(socket: ptr, enable: u32) -> u32
+@extern sa_node_plugin_dgram_add_membership(socket: ptr, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_drop_membership(socket: ptr, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_add_source_specific_membership(socket: ptr, &source: ptr, source_len: u64, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_drop_source_specific_membership(socket: ptr, &source: ptr, source_len: u64, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_add_membership6(socket: ptr, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_drop_membership6(socket: ptr, &multicast: ptr, multicast_len: u64, &iface: ptr, iface_len: u64) -> u32
+@extern sa_node_plugin_dgram_set_recv_buffer_size(socket: ptr, size: u32) -> u32
+@extern sa_node_plugin_dgram_set_send_buffer_size(socket: ptr, size: u32) -> u32
+@extern sa_node_plugin_dgram_get_recv_buffer_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_dgram_get_send_buffer_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_dgram_get_send_queue_size(socket: ptr, &out_size: ptr) -> u32
+@extern sa_node_plugin_dgram_get_send_queue_count(socket: ptr, &out_count: ptr) -> u32
 
 // --- Phase 6: fs read-only utilities ---
 @extern sa_node_plugin_fs_stat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32

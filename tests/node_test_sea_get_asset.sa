@@ -1,0 +1,16 @@
+// SA tests for Node SEA: get_asset
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_KEY = utf8:"test-key"
+@const S_ENC = utf8:"utf8"
+
+@test "node.sea get_asset"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_SEA_GET_ASSET S_KEY, 8, S_ENC, 4, op, ol, s
+    !s
+    !ol
+    !op
+    return

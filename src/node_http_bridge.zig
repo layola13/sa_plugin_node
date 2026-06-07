@@ -1,5 +1,78 @@
+const std = @import("std");
 const http_client = @import("http_client");
 const http_server = @import("http_server");
+
+fn appendJsonString(out: *std.ArrayList(u8), bytes: []const u8) !void {
+    try out.append('"');
+    for (bytes) |c| switch (c) {
+        '"' => try out.appendSlice("\\\""),
+        '\\' => try out.appendSlice("\\\\"),
+        '\n' => try out.appendSlice("\\n"),
+        '\r' => try out.appendSlice("\\r"),
+        '\t' => try out.appendSlice("\\t"),
+        else => try out.append(c),
+    };
+    try out.append('"');
+}
+
+fn writeOwned(out_ptr: ?*?[*]const u8, out_len: ?*u64, bytes: []const u8) u32 {
+    const ptr_slot = out_ptr orelse return 2;
+    const len_slot = out_len orelse return 2;
+    const owned = std.heap.page_allocator.dupe(u8, bytes) catch return 2;
+    ptr_slot.* = owned.ptr;
+    len_slot.* = owned.len;
+    return 0;
+}
+
+fn httpMethodCode(method: []const u8) ?u8 {
+    if (std.ascii.eqlIgnoreCase(method, "GET")) return 1;
+    if (std.ascii.eqlIgnoreCase(method, "POST")) return 2;
+    if (std.ascii.eqlIgnoreCase(method, "PUT")) return 3;
+    if (std.ascii.eqlIgnoreCase(method, "DELETE")) return 4;
+    return null;
+}
+
+fn httpOneShotJson(method: []const u8, url: []const u8, body: ?[]const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const method_code = httpMethodCode(method) orelse return 2;
+    const use_tls: u8 = if (std.mem.startsWith(u8, url, "https://")) 1 else 0;
+
+    var client: ?*anyopaque = null;
+    if (sa_node_plugin_http_client_new(use_tls, &client) != 0) return 2;
+    defer _ = sa_node_plugin_http_client_free(client);
+
+    var req: ?*anyopaque = null;
+    if (sa_node_plugin_http_client_req_new(client, method_code, url.ptr, url.len, &req) != 0) return 2;
+    defer _ = sa_node_plugin_http_client_req_free(req);
+
+    if (body) |payload| {
+        if (sa_node_plugin_http_client_req_set_body(req, payload.ptr, payload.len) != 0) return 2;
+    }
+
+    var resp: ?*anyopaque = null;
+    if (sa_node_plugin_http_client_req_send(req, &resp) != 0) return 2;
+    defer _ = sa_node_plugin_http_client_resp_free(resp);
+
+    var body_ptr: ?[*]const u8 = null;
+    var body_len: u64 = 0;
+    if (sa_node_plugin_http_client_resp_body_slice(resp, &body_ptr, &body_len) != 0) return 2;
+
+    var content_type_ptr: ?[*]const u8 = null;
+    var content_type_len: u64 = 0;
+    const has_content_type = sa_node_plugin_http_client_resp_get_header(resp, "content-type", 12, &content_type_ptr, &content_type_len) == 0;
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.writer().print("{{\"statusCode\":{d},\"body\":", .{sa_node_plugin_http_client_resp_status(resp)}) catch return 2;
+    appendJsonString(&out, (body_ptr orelse return 2)[0..body_len]) catch return 2;
+    out.appendSlice(",\"contentType\":") catch return 2;
+    if (has_content_type) {
+        appendJsonString(&out, content_type_ptr.?[0..content_type_len]) catch return 2;
+    } else {
+        out.appendSlice("null") catch return 2;
+    }
+    out.append('}') catch return 2;
+    return writeOwned(out_ptr, out_len, out.items);
+}
 
 // --- HTTP Client ---
 pub export fn sa_node_plugin_http_client_new(use_tls: u8, out_client: ?*?*anyopaque) u32 {
@@ -20,6 +93,27 @@ pub export fn sa_node_plugin_http_client_req_set_body(req: ?*anyopaque, body_ptr
 
 pub export fn sa_node_plugin_http_client_req_send(req: ?*anyopaque, out_resp: ?*?*anyopaque) u32 {
     return http_client.sa_http_client_req_send(req, out_resp);
+}
+
+pub export fn sa_node_plugin_http_client_req_send_async(req: ?*anyopaque, out_op: ?*?*anyopaque) u32 {
+    return http_client.sa_http_client_req_send_async(req, out_op);
+}
+
+pub export fn sa_node_plugin_http_client_async_poll(op: ?*anyopaque, out_ready: ?*u64) u32 {
+    const slot = out_ready orelse return 2;
+    var ready: u8 = 0;
+    const status = http_client.sa_http_client_async_poll(op, &ready);
+    if (status != 0) return status;
+    slot.* = ready;
+    return 0;
+}
+
+pub export fn sa_node_plugin_http_client_async_take_response(op: ?*anyopaque, out_resp: ?*?*anyopaque) u32 {
+    return http_client.sa_http_client_async_take_response(op, out_resp);
+}
+
+pub export fn sa_node_plugin_http_client_async_free(op: ?*anyopaque) u32 {
+    return http_client.sa_http_client_async_free(op);
 }
 
 pub export fn sa_node_plugin_http_client_resp_status(resp: ?*anyopaque) u16 {
@@ -56,6 +150,22 @@ pub export fn sa_node_plugin_http_client_free(client: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_http_client_req_free(req: ?*anyopaque) u32 {
     return http_client.sa_http_client_req_free(req);
+}
+
+pub export fn sa_node_plugin_http_request_json(method_ptr: ?[*]const u8, method_len: u64, url_ptr: ?[*]const u8, url_len: u64, body_ptr: ?[*]const u8, body_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (out_ptr) |slot| slot.* = null;
+    if (out_len) |slot| slot.* = 0;
+    const method = (method_ptr orelse return 2)[0..method_len];
+    const url = (url_ptr orelse return 2)[0..url_len];
+    const body = if (body_ptr) |ptr| ptr[0..body_len] else if (body_len == 0) null else return 2;
+    return httpOneShotJson(method, url, body, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_http_get_json(url_ptr: ?[*]const u8, url_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (out_ptr) |slot| slot.* = null;
+    if (out_len) |slot| slot.* = 0;
+    const url = (url_ptr orelse return 2)[0..url_len];
+    return httpOneShotJson("GET", url, null, out_ptr, out_len);
 }
 
 // --- HTTP Client WebSocket ---

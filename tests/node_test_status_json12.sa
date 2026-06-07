@@ -1,0 +1,12 @@
+// SA tests for HTTPS STATUS_JSON
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.https status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_HTTPS_STATUS_JSON op, ol
+    !ol
+    !op
+    return

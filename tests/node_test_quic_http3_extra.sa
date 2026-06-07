@@ -1,0 +1,112 @@
+// SA tests for QUIC / HTTP3 metadata helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.quic and http3 metadata helpers"():
+L_ENTRY:
+    quic_status_ptr = add 0, 0
+    quic_status_len = add 0, 0
+    EXPAND NODE_QUIC_STATUS_JSON quic_status_ptr, quic_status_len
+    quic_status_has_len = ugt quic_status_len, 0
+    br quic_status_has_len -> L_QUIC_CONST, L_ERR_QUIC_STATUS_LEN
+L_QUIC_CONST:
+    !quic_status_has_len
+    quic_constants_ptr = add 0, 0
+    quic_constants_len = add 0, 0
+    quic_constants_status = add 0, 0
+    EXPAND NODE_QUIC_CONSTANTS_JSON quic_constants_ptr, quic_constants_len, quic_constants_status
+    quic_constants_ok = eq quic_constants_status, 0
+    br quic_constants_ok -> L_QUIC_CONST_LEN, L_ERR_QUIC_CONST
+L_QUIC_CONST_LEN:
+    !quic_constants_ok
+    quic_constants_has_len = ugt quic_constants_len, 0
+    br quic_constants_has_len -> L_QUIC_CAPS, L_ERR_QUIC_CONST_LEN
+L_QUIC_CAPS:
+    !quic_constants_has_len
+    quic_caps_ptr = add 0, 0
+    quic_caps_len = add 0, 0
+    quic_caps_status = add 0, 0
+    EXPAND NODE_QUIC_CAPABILITIES_JSON quic_caps_ptr, quic_caps_len, quic_caps_status
+    quic_caps_ok = eq quic_caps_status, 0
+    br quic_caps_ok -> L_QUIC_CAPS_LEN, L_ERR_QUIC_CAPS
+L_QUIC_CAPS_LEN:
+    !quic_caps_ok
+    quic_caps_has_len = ugt quic_caps_len, 0
+    br quic_caps_has_len -> L_HTTP3_STATUS, L_ERR_QUIC_CAPS_LEN
+L_HTTP3_STATUS:
+    !quic_caps_has_len
+    http3_status_ptr = add 0, 0
+    http3_status_len = add 0, 0
+    EXPAND NODE_HTTP3_STATUS_JSON http3_status_ptr, http3_status_len
+    http3_status_has_len = ugt http3_status_len, 0
+    br http3_status_has_len -> L_HTTP3_CONST, L_ERR_HTTP3_STATUS_LEN
+L_HTTP3_CONST:
+    !http3_status_has_len
+    http3_constants_ptr = add 0, 0
+    http3_constants_len = add 0, 0
+    http3_constants_status = add 0, 0
+    EXPAND NODE_HTTP3_CONSTANTS_JSON http3_constants_ptr, http3_constants_len, http3_constants_status
+    http3_constants_ok = eq http3_constants_status, 0
+    br http3_constants_ok -> L_HTTP3_CONST_LEN, L_ERR_HTTP3_CONST
+L_HTTP3_CONST_LEN:
+    !http3_constants_ok
+    http3_constants_has_len = ugt http3_constants_len, 0
+    br http3_constants_has_len -> L_OK, L_ERR_HTTP3_CONST_LEN
+L_OK:
+    !http3_constants_has_len
+    free_http3_constants = call @sa_node_plugin_free_buffer(http3_constants_ptr, http3_constants_len)
+    free_http3_status = call @sa_node_plugin_free_buffer(http3_status_ptr, http3_status_len)
+    free_quic_caps = call @sa_node_plugin_free_buffer(quic_caps_ptr, quic_caps_len)
+    free_quic_constants = call @sa_node_plugin_free_buffer(quic_constants_ptr, quic_constants_len)
+    free_quic_status = call @sa_node_plugin_free_buffer(quic_status_ptr, quic_status_len)
+    !free_http3_constants
+    !free_http3_status
+    !free_quic_caps
+    !free_quic_constants
+    !free_quic_status
+    !http3_constants_len
+    !http3_constants_ptr
+    !http3_status_len
+    !http3_status_ptr
+    !quic_caps_len
+    !quic_caps_ptr
+    !quic_constants_len
+    !quic_constants_ptr
+    !quic_status_len
+    !quic_status_ptr
+    return
+L_ERR_QUIC_STATUS_LEN:
+    !quic_status_has_len
+    panic(103)
+L_ERR_QUIC_CONST:
+    !quic_constants_ok
+    !quic_constants_status
+    panic(103)
+L_ERR_QUIC_CONST_LEN:
+    !quic_constants_has_len
+    !quic_constants_ptr
+    !quic_constants_len
+    panic(103)
+L_ERR_QUIC_CAPS:
+    !quic_caps_ok
+    !quic_caps_status
+    panic(103)
+L_ERR_QUIC_CAPS_LEN:
+    !quic_caps_has_len
+    !quic_caps_ptr
+    !quic_caps_len
+    panic(103)
+L_ERR_HTTP3_STATUS_LEN:
+    !http3_status_has_len
+    !http3_status_ptr
+    !http3_status_len
+    panic(103)
+L_ERR_HTTP3_CONST:
+    !http3_constants_ok
+    !http3_constants_status
+    panic(103)
+L_ERR_HTTP3_CONST_LEN:
+    !http3_constants_has_len
+    !http3_constants_ptr
+    !http3_constants_len
+    panic(103)

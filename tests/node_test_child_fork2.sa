@@ -1,0 +1,13 @@
+// SA tests for Node child_process: fork
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_MOD = utf8:"test.js"
+
+@test "node.child_process fork"():
+L_ENTRY:
+    pid = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_FORK S_MOD, 7, 0, 0, pid, s
+    !s
+    !pid
+    return

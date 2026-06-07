@@ -1,0 +1,22 @@
+// SA tests for Node FS ops part 3b: unlink, rename
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_TESTFILE = utf8:"/tmp/sa_node_fs3.txt"
+@const S_DSTFILE = utf8:"/tmp/sa_node_fs3_dst.txt"
+
+@test "node.fs unlink"():
+L_ENTRY:
+    s1 = add 0, 0
+    EXPAND NODE_FS_UNLINK s1, S_TESTFILE, 24
+    !s1
+    return
+
+@test "node.fs rename"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_RENAME s1, S_TESTFILE, 24, S_DSTFILE, 24
+    EXPAND NODE_FS_RM S_DSTFILE, 24, 0, s2
+    !s2
+    !s1
+    return

@@ -1,0 +1,19 @@
+// SA tests for Node SEA extras: is_sea, asset_keys_json, status_json
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.sea is_sea"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_SEA_IS_SEA v
+    !v
+    return
+
+@test "node.sea asset_keys_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_SEA_ASSET_KEYS_JSON op, ol
+    !ol
+    !op
+    return

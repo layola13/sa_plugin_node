@@ -1,0 +1,207 @@
+// SA-native unit tests for Node events extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_EVT = utf8:"test_event"
+@const S_DATA = utf8:"data"
+
+@test "node.events off succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_OFF ee, S_EVT, 4, 0, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events once succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_ONCE ee, S_EVT, 4, 0, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events prepend_listener succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_PREPEND_LISTENER ee, S_EVT, 4, 0, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events remove_all_listeners succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_REMOVE_ALL_LISTENERS ee, S_EVT, 4, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events set_max_listeners succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_SET_MAX_LISTENERS ee, 10, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events get_max_listeners succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_EVENTS_GET_MAX_LISTENERS ee, v, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    !v
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events get_event_listeners succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_EVENTS_GET_EVENT_LISTENERS ee, S_EVT, 4, p, l, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    !p
+    !l
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events listener_count_by_event succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_EVENTS_LISTENER_COUNT_BY_EVENT ee, S_EVT, 4, v, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    !v
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !v
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)
+
+@test "node.events emit_with_error succeeds"():
+L_ENTRY:
+    ee = add 0, 0
+    EXPAND NODE_EVENTS_CREATE ee
+    s = add 0, 0
+    EXPAND NODE_EVENTS_EMIT_WITH_ERROR ee, S_EVT, 4, 0, 0, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs
+    !fs
+    return
+L_ERR:
+    !ok
+    !s
+    EXPAND NODE_EVENTS_FREE ee, fs2
+    !fs2
+    panic(103)

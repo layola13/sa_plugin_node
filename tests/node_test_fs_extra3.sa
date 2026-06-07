@@ -1,0 +1,45 @@
+// SA tests for Node FS ops part 3a: access, lstat, mkdir, readdir_with_types
+@import "../node.sal"
+@const S_TMPDIR = utf8:"/tmp"
+@const S_MKDIR_PATH = utf8:"/tmp/sa_node_testdir"
+
+@test "node.fs access"():
+L_ENTRY:
+    bl = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_FS_ACCESS S_TMPDIR, 5, 0, bl, s1
+    !s1
+    !bl
+    return
+
+@test "node.fs lstat"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_LSTAT p, l, s, S_TMPDIR, 5
+    !s
+    !p
+    !l
+    return
+
+@test "node.fs mkdir and rmdir"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_MKDIR s1, S_MKDIR_PATH, 22, 0
+    EXPAND NODE_FS_RMDIR s2, S_MKDIR_PATH, 22
+    !s2
+    !s1
+    return
+
+@test "node.fs readdir_with_types"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_READDIR_WITH_TYPES p, l, s, S_TMPDIR, 5
+    !s
+    !p
+    !l
+    return

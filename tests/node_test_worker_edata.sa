@@ -1,0 +1,22 @@
+// SA tests for Node worker_threads: environment_data, get/set
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_KEY = utf8:"test"
+
+@test "node.worker_threads set_environment_data"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_SET_ENVIRONMENT_DATA 0, 0, 0, 0, s
+    !s
+    return
+
+@test "node.worker_threads get_environment_data"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_WORKER_THREADS_GET_ENVIRONMENT_DATA 0, 0, op, ol, s
+    !s
+    !ol
+    !op
+    return

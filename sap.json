@@ -20,7 +20,7 @@
     "sai": { "path": "node.sai" },
     "sal": { "path": "node.sal" }
   },
-  "skills": ["node.os", "node.process", "node.crypto"],
+  "skills": ["node.os", "node.process", "node.crypto", "node.net", "node.dns", "node.http"],
   "permissions": {
     "fs": [
       { "op": "read", "path": "$PROJECT/**" },

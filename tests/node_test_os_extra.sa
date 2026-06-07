@@ -1,0 +1,32 @@
+// SA tests for Node OS extras: constants, get_priority, set_priority
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.os constants"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_OS_CONSTANTS p, l
+    !l
+    !p
+    return
+
+@test "node.os get_priority"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_OS_GET_PRIORITY 0, v, s
+    !s
+    !v
+    return
+
+@test "node.os set_priority"():
+L_ENTRY:
+    v = add 0, 0
+    s0 = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_OS_GET_PRIORITY 0, v, s0
+    EXPAND NODE_OS_SET_PRIORITY 0, v, s
+    !s
+    !s0
+    return

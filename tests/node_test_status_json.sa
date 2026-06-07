@@ -790,15 +790,27 @@ L_ERR:
 L_ENTRY:
     p = add 0, 0
     l = add 0, 0
+    s = add 0, 0
     EXPAND NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION p, l, s
+    ok = eq s, 0
+    br ok -> L_CHK, L_ERR
+L_CHK:
+    !ok
+    !s
     has = ugt l, 0
-    br has -> L_OK, L_ERR
+    br has -> L_OK, L_LEN_ERR
 L_OK:
     !has
     !p
     !l
     return
 L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
     !has
     !p
     !l
@@ -949,23 +961,13 @@ L_LEN_ERR:
 
 @test "node.dns set_default_result_order returns"():
 L_ENTRY:
-    s = add 0, 0
     EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER S_DATA, 5
-    ok = eq s, 0
-    br ok -> L_OK, L_ERR
-L_OK:
-    !ok
-    !s
     return
-L_ERR:
-    !ok
-    !s
-    panic(103)
 
 @test "node.dns set_servers returns"():
 L_ENTRY:
     s = add 0, 0
-    EXPAND NODE_DNS_SET_SERVERS S_DATA, 5
+    EXPAND NODE_DNS_SET_SERVERS S_DATA, 5, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:

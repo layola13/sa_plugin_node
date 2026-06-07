@@ -1,0 +1,46 @@
+// SA tests for Node perf_hooks extras: now_ms, time_origin, mark, clear_marks, clear_measures
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_MARK = utf8:"test-mark"
+
+@test "node.perf_hooks now_ms"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PERF_HOOKS_NOW_MS v, s
+    !s
+    !v
+    return
+
+@test "node.perf_hooks time_origin_ms"():
+L_ENTRY:
+    v = add 0, 0
+    EXPAND NODE_PERF_HOOKS_TIME_ORIGIN_MS v
+    !v
+    return
+
+@test "node.perf_hooks mark and clear"():
+L_ENTRY:
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_MARK S_MARK, 9, s1
+    EXPAND NODE_PERF_HOOKS_CLEAR_MARKS s2
+    EXPAND NODE_PERF_HOOKS_CLEAR_MEASURES s3
+    !s3
+    !s2
+    !s1
+    return
+
+@test "node.perf_hooks histogram"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_CREATE_HISTOGRAM h
+    EXPAND NODE_PERF_HOOKS_HISTOGRAM_RECORD h, 42
+    EXPAND NODE_PERF_HOOKS_HISTOGRAM_FREE h
+    !s2
+    !s1
+    !h
+    return

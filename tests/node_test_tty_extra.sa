@@ -1,0 +1,21 @@
+// SA tests for Node TTY extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.tty isatty"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TTY_ISATTY 0, v, s
+    !s
+    !v
+    return
+
+@test "node.tty write_stream_new"():
+L_ENTRY:
+    ws = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TTY_WRITE_STREAM_NEW 0, ws, s
+    !s
+    !ws
+    return

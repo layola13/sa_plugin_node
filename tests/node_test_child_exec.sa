@@ -1,0 +1,24 @@
+// SA tests for Node child_process: exec, spawn, spawn_sync, exec_file
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_CMD = utf8:"echo"
+
+@test "node.child_process exec"():
+L_ENTRY:
+    argv = stack_alloc 16
+    store argv+0, S_CMD as ptr
+    store argv+8, 4 as u64
+    op = add 0, 0
+    ol = add 0, 0
+    ep = add 0, 0
+    el = add 0, 0
+    ec = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_EXEC argv, 1, ec, op, ol, ep, el, s
+    !s
+    !el
+    !ep
+    !ol
+    !op
+    !ec
+    return

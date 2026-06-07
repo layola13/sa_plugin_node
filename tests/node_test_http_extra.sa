@@ -1,0 +1,111 @@
+// SA tests for Node HTTP extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_HEADER_NAME = utf8:"content-type"
+@const S_HEADER_BAD = utf8:"bad header"
+@const S_HEADER_VALUE = utf8:"text/plain"
+@const S_PATCH = utf8:"PATCH"
+@const S_URL = utf8:"http://127.0.0.1:1/"
+
+@test "node.http static metadata and validators"():
+L_ENTRY:
+    max_header_size = add 0, 0
+    max_header_status = add 0, 0
+    EXPAND NODE_HTTP_MAX_HEADER_SIZE max_header_size, max_header_status
+    max_header_ok = eq max_header_status, 0
+    br max_header_ok -> L_IDLE_PARSERS, L_ERR_MAX_HEADER
+L_IDLE_PARSERS:
+    !max_header_ok
+    idle_status = add 0, 0
+    EXPAND NODE_HTTP_SET_MAX_IDLE_HTTP_PARSERS 1, idle_status
+    idle_ok = eq idle_status, 0
+    br idle_ok -> L_METHODS, L_ERR_IDLE
+L_METHODS:
+    !idle_ok
+    methods_ptr = add 0, 0
+    methods_len = add 0, 0
+    methods_status = add 0, 0
+    EXPAND NODE_HTTP_METHODS_JSON methods_ptr, methods_len, methods_status
+    methods_ok = eq methods_status, 0
+    br methods_ok -> L_STATUS_CODES, L_ERR_METHODS
+L_STATUS_CODES:
+    !methods_ok
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    status_status = add 0, 0
+    EXPAND NODE_HTTP_STATUS_CODES_JSON status_ptr, status_len, status_status
+    status_ok = eq status_status, 0
+    br status_ok -> L_VALIDATE_NAME, L_ERR_STATUS_CODES
+L_VALIDATE_NAME:
+    !status_ok
+    validate_name_status = add 0, 0
+    EXPAND NODE_HTTP_VALIDATE_HEADER_NAME S_HEADER_NAME, 12, validate_name_status
+    name_ok = eq validate_name_status, 0
+    br name_ok -> L_VALIDATE_VALUE, L_ERR_VALIDATE_NAME
+L_VALIDATE_VALUE:
+    !name_ok
+    validate_value_status = add 0, 0
+    EXPAND NODE_HTTP_VALIDATE_HEADER_VALUE S_HEADER_NAME, 12, S_HEADER_VALUE, 10, validate_value_status
+    value_ok = eq validate_value_status, 0
+    br value_ok -> L_INVALID_NAME, L_ERR_VALIDATE_VALUE
+L_INVALID_NAME:
+    !value_ok
+    invalid_name_status = add 0, 0
+    EXPAND NODE_HTTP_VALIDATE_HEADER_NAME S_HEADER_BAD, 10, invalid_name_status
+    invalid_name_fails = ne invalid_name_status, 0
+    br invalid_name_fails -> L_INVALID_REQUEST, L_ERR_INVALID_NAME
+L_INVALID_REQUEST:
+    !invalid_name_fails
+    req_ptr = add 0, 0
+    req_len = add 0, 0
+    req_status = add 0, 0
+    EXPAND NODE_HTTP_REQUEST_JSON req_ptr, req_len, req_status, S_PATCH, 5, S_URL, 19, 0, 0
+    request_fails = ne req_status, 0
+    br request_fails -> L_OK, L_ERR_INVALID_REQUEST
+L_OK:
+    !request_fails
+    free_methods = call @sa_node_plugin_free_buffer(methods_ptr, methods_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_methods
+    !req_status
+    !req_len
+    !req_ptr
+    !invalid_name_status
+    !validate_value_status
+    !validate_name_status
+    !status_status
+    !status_len
+    !status_ptr
+    !methods_status
+    !methods_len
+    !methods_ptr
+    !idle_status
+    !max_header_status
+    !max_header_size
+    return
+L_ERR_MAX_HEADER:
+    !max_header_ok
+    panic(103)
+L_ERR_IDLE:
+    !idle_ok
+    panic(103)
+L_ERR_METHODS:
+    !methods_ok
+    panic(103)
+L_ERR_STATUS_CODES:
+    !status_ok
+    panic(103)
+L_ERR_VALIDATE_NAME:
+    !name_ok
+    panic(103)
+L_ERR_VALIDATE_VALUE:
+    !value_ok
+    panic(103)
+L_ERR_INVALID_NAME:
+    !invalid_name_fails
+    panic(103)
+L_ERR_INVALID_REQUEST:
+    !request_fails
+    panic(103)

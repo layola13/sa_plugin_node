@@ -1,0 +1,16 @@
+// SA tests for Node net: listen, accept, connect, read, write
+@import "../node.sal"
+@const S_HOST = utf8:"127.0.0.1"
+@const S_MSG = utf8:"hi"
+
+@test "node.net listen and end"():
+L_ENTRY:
+    srv = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18769, srv, s1
+    EXPAND NODE_NET_END srv, s2
+    !s2
+    !s1
+    !srv
+    return

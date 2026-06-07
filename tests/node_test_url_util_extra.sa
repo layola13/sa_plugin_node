@@ -1,0 +1,399 @@
+// SA-native unit tests for Node URL extras + Util extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_URL = utf8:"https://example.com/path?q=1"
+@const S_MSG = utf8:"test msg"
+@const S_JSON_A = utf8:"{\"a\":1}"
+@const S_JSON_B = utf8:"{\"b\":2}"
+@const S_MOD = utf8:"module"
+@const S_CODE = utf8:"test"
+@const S_X = utf8:"x"
+@const S_NAME = utf8:"name"
+@const S_HINT = utf8:"use old fn"
+@const S_FILE = utf8:"test.js"
+
+@test "node.url new and free succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok = eq s1, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    !s1
+    s2 = add 0, 0
+    EXPAND NODE_URL_FREE u, s2
+    !s2
+    return
+L_ERR:
+    !ok
+    !s1
+    panic(103)
+
+@test "node.url get_href succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    hp = add 0, 0
+    hl = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok = eq s1, 0
+    br ok -> L_GET, L_ERR
+L_GET:
+    !ok
+    !s1
+    EXPAND NODE_URL_GET_HREF u, hp, hl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_DONE, L_ERR2
+L_DONE:
+    !ok2
+    !s2
+    !hp
+    !hl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    return
+L_ERR:
+    !ok
+    !s1
+    !hp
+    !hl
+    !s2
+    !s3
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !hp
+    !hl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    panic(103)
+
+@test "node.url get_protocol succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    pp = add 0, 0
+    pl = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok = eq s1, 0
+    br ok -> L_GET, L_ERR
+L_GET:
+    !ok
+    !s1
+    EXPAND NODE_URL_GET_PROTOCOL u, pp, pl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_DONE, L_ERR2
+L_DONE:
+    !ok2
+    !s2
+    !pp
+    !pl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    return
+L_ERR:
+    !ok
+    !s1
+    !pp
+    !pl
+    !s2
+    !s3
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !pp
+    !pl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    panic(103)
+
+@test "node.url get_host succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    hp = add 0, 0
+    hl = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok = eq s1, 0
+    br ok -> L_GET, L_ERR
+L_GET:
+    !ok
+    !s1
+    EXPAND NODE_URL_GET_HOST u, hp, hl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_DONE, L_ERR2
+L_DONE:
+    !ok2
+    !s2
+    !hp
+    !hl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    return
+L_ERR:
+    !ok
+    !s1
+    !hp
+    !hl
+    !s2
+    !s3
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !hp
+    !hl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    panic(103)
+
+@test "node.url get_pathname succeeds"():
+L_ENTRY:
+    u = add 0, 0
+    pp = add 0, 0
+    pl = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_URL_NEW S_URL, 28, u, s1
+    ok = eq s1, 0
+    br ok -> L_GET, L_ERR
+L_GET:
+    !ok
+    !s1
+    EXPAND NODE_URL_GET_PATHNAME u, pp, pl, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_DONE, L_ERR2
+L_DONE:
+    !ok2
+    !s2
+    !pp
+    !pl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    return
+L_ERR:
+    !ok
+    !s1
+    !pp
+    !pl
+    !s2
+    !s3
+    panic(103)
+L_ERR2:
+    !ok2
+    !s2
+    !pp
+    !pl
+    EXPAND NODE_URL_FREE u, s3
+    !s3
+    panic(103)
+
+@test "node.util inspect succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_INSPECT p, l, s, S_JSON_A, 7
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util diff succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_DIFF S_JSON_A, 7, S_JSON_B, 7, S_JSON_A, 7, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util inherits succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_UTIL_INHERITS S_JSON_A, 7, S_JSON_B, 7, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.util mime_type succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_MIME_TYPE S_FILE, 7, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util parse_args succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_PARSE_ARGS S_JSON_A, 7, S_JSON_A, 7, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util style_text succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_STYLE_TEXT S_MSG, 8, S_X, 1, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util debuglog succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_DEBUGLOG S_NAME, 4, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util deprecate succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_UTIL_DEPRECATE S_CODE, 4, S_MSG, 8, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.util callbackify succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_CALLBACKIFY S_MOD, 6, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.util promisify succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_PROMISIFY S_MOD, 6, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_ERR
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)

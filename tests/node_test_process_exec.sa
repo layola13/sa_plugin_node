@@ -1,0 +1,27 @@
+// SA tests for Node process: exec (from node.sal)
+@import "../node.sal"
+@const S_CMD = utf8:"echo"
+@const S_ARG = utf8:"hi"
+@const S_CWD = utf8:"/tmp"
+
+@test "node.process exec"():
+L_ENTRY:
+    argv = stack_alloc 32
+    store argv+0, S_CMD as ptr
+    store argv+8, 4 as u64
+    store argv+16, S_ARG as ptr
+    store argv+24, 2 as u64
+    ec = add 0, 0
+    sop = add 0, 0
+    sol = add 0, 0
+    sep = add 0, 0
+    sel = add 0, 0
+    st = add 0, 0
+    EXPAND NODE_PROCESS_EXEC ec, sop, sol, sep, sel, st, argv, 2, S_CWD, 4
+    !st
+    !sel
+    !sep
+    !sol
+    !sop
+    !ec
+    return

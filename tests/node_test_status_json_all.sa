@@ -1,0 +1,36 @@
+// SA tests for all remaining STATUS_JSON macros (3 params each: out_ptr, out_len, status)
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.async_context_tracking status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.async_hooks status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.async_hooks snapshot_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_SNAPSHOT_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return

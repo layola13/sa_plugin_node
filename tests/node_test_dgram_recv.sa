@@ -1,0 +1,30 @@
+// SA tests for Node dgram: recv
+@import "../node.sal"
+@const S_HOST = utf8:"127.0.0.1"
+@const S_MSG = utf8:"test"
+
+@test "node.dgram recv"():
+L_ENTRY:
+    sock = add 0, 0
+    EXPAND NODE_DGRAM_CREATE sock
+    s1 = add 0, 0
+    EXPAND NODE_DGRAM_BIND s1, sock, S_HOST, 9, 18771
+    s2 = add 0, 0
+    EXPAND NODE_DGRAM_SEND s2, sock, S_MSG, 4, S_HOST, 9, 18771
+    op = add 0, 0
+    ol = add 0, 0
+    hp = add 0, 0
+    hl = add 0, 0
+    port = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_DGRAM_RECV s3, op, ol, hp, hl, port, sock, 1024
+    !s3
+    !port
+    !hl
+    !hp
+    !ol
+    !op
+    !s2
+    !s1
+    !sock
+    return

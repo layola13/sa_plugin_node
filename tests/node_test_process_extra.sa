@@ -1,0 +1,41 @@
+// SA tests for Node process extras: kill and resourceUsage
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.process kill with invalid pid"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_PROCESS_KILL 999999, 0, s
+    !s
+    return
+
+@test "node.process resourceUsage json"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_RESOURCE_USAGE_JSON p, l, s
+    !s
+    !l
+    !p
+    return
+
+@test "node.process availableMemory"():
+L_ENTRY:
+    v = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_AVAILABLE_MEMORY v, s
+    !s
+    !v
+    return
+
+@test "node.process features json"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_FEATURES_JSON p, l, s
+    !s
+    !l
+    !p
+    return

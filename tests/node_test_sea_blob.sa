@@ -1,0 +1,13 @@
+// SA tests for Node SEA: get_asset_as_blob
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_KEY = utf8:"test-key"
+
+@test "node.sea get_asset_as_blob"():
+L_ENTRY:
+    op = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_SEA_GET_ASSET_AS_BLOB S_KEY, 8, op, s
+    !s
+    !op
+    return

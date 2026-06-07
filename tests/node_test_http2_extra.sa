@@ -1,0 +1,109 @@
+// SA tests for Node HTTP/2 extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_ENABLE_PUSH_FALSE = utf8:"{\"enablePush\":false}"
+
+@test "node.http2 settings helpers"():
+L_ENTRY:
+    default_ptr = add 0, 0
+    default_len = add 0, 0
+    default_status = add 0, 0
+    EXPAND NODE_HTTP2_GET_DEFAULT_SETTINGS_JSON default_ptr, default_len, default_status
+    default_ok = eq default_status, 0
+    br default_ok -> L_DEFAULT_LEN, L_ERR_DEFAULT
+L_DEFAULT_LEN:
+    !default_ok
+    default_has_len = ugt default_len, 0
+    br default_has_len -> L_CONSTANTS, L_ERR_DEFAULT_LEN
+L_CONSTANTS:
+    !default_has_len
+    constants_ptr = add 0, 0
+    constants_len = add 0, 0
+    constants_status = add 0, 0
+    EXPAND NODE_HTTP2_CONSTANTS_JSON constants_ptr, constants_len, constants_status
+    constants_ok = eq constants_status, 0
+    br constants_ok -> L_CONSTANTS_LEN, L_ERR_CONSTANTS
+L_CONSTANTS_LEN:
+    !constants_ok
+    constants_has_len = ugt constants_len, 0
+    br constants_has_len -> L_PACK, L_ERR_CONSTANTS_LEN
+L_PACK:
+    !constants_has_len
+    packed_ptr = add 0, 0
+    packed_len = add 0, 0
+    packed_status = add 0, 0
+    EXPAND NODE_HTTP2_GET_PACKED_SETTINGS packed_ptr, packed_len, packed_status, S_ENABLE_PUSH_FALSE, 20
+    packed_ok = eq packed_status, 0
+    br packed_ok -> L_PACK_LEN, L_ERR_PACK
+L_PACK_LEN:
+    !packed_ok
+    packed_len_ok = eq packed_len, 6
+    br packed_len_ok -> L_UNPACK, L_ERR_PACK_LEN
+L_UNPACK:
+    !packed_len_ok
+    unpacked_ptr = add 0, 0
+    unpacked_len = add 0, 0
+    unpacked_status = add 0, 0
+    EXPAND NODE_HTTP2_GET_UNPACKED_SETTINGS_JSON unpacked_ptr, unpacked_len, unpacked_status, packed_ptr, packed_len
+    unpacked_ok = eq unpacked_status, 0
+    br unpacked_ok -> L_UNPACK_LEN, L_ERR_UNPACK
+L_UNPACK_LEN:
+    !unpacked_ok
+    unpacked_has_len = ugt unpacked_len, 0
+    br unpacked_has_len -> L_OK, L_ERR_UNPACK_LEN
+L_OK:
+    !unpacked_has_len
+    free_default = call @sa_node_plugin_free_buffer(default_ptr, default_len)
+    free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_packed = call @sa_node_plugin_free_buffer(packed_ptr, packed_len)
+    free_unpacked = call @sa_node_plugin_free_buffer(unpacked_ptr, unpacked_len)
+    !free_unpacked
+    !free_packed
+    !free_constants
+    !free_default
+    !unpacked_len
+    !unpacked_ptr
+    !constants_len
+    !constants_ptr
+    !packed_len
+    !packed_ptr
+    !default_len
+    !default_ptr
+    return
+L_ERR_DEFAULT:
+    !default_ok
+    !default_status
+    panic(103)
+L_ERR_DEFAULT_LEN:
+    !default_has_len
+    !default_ptr
+    !default_len
+    panic(103)
+L_ERR_CONSTANTS:
+    !constants_ok
+    !constants_status
+    panic(103)
+L_ERR_CONSTANTS_LEN:
+    !constants_has_len
+    !constants_ptr
+    !constants_len
+    panic(103)
+L_ERR_PACK:
+    !packed_ok
+    !packed_status
+    panic(103)
+L_ERR_PACK_LEN:
+    !packed_len_ok
+    !packed_ptr
+    !packed_len
+    panic(103)
+L_ERR_UNPACK:
+    !unpacked_ok
+    !unpacked_status
+    panic(103)
+L_ERR_UNPACK_LEN:
+    !unpacked_has_len
+    !unpacked_ptr
+    !unpacked_len
+    panic(103)

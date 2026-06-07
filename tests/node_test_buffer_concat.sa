@@ -1,0 +1,20 @@
+// SA tests for Node buffer_concat (from node.sal)
+@import "../node.sal"
+@const S_A = utf8:"hello"
+@const S_B = utf8:" world"
+
+@test "node.buffer concat"():
+L_ENTRY:
+    slices = stack_alloc 32
+    store slices+0, S_A as ptr
+    store slices+8, 5 as u64
+    store slices+16, S_B as ptr
+    store slices+24, 6 as u64
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_CONCAT slices, 2, op, ol, s
+    !s
+    !ol
+    !op
+    return

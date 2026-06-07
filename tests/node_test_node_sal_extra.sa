@@ -1,0 +1,60 @@
+// SA tests for remaining node_sal macros (part 1)
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_MSG = utf8:"test msg"
+@const S_TESTFILE = utf8:"/tmp/sa_node_sal_test.txt"
+@const S_DATA = utf8:"hello"
+
+@test "node.console error succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_CONSOLE_ERROR s, S_MSG, 8
+    !s
+    return
+
+@test "node.fs write_file and read_file"():
+L_ENTRY:
+    s1 = add 0, 0
+    EXPAND NODE_FS_WRITE_FILE s1, S_TESTFILE, 28, S_DATA, 5
+    p = add 0, 0
+    l = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_READ_FILE p, l, s2, S_TESTFILE, 28
+    !s2
+    !p
+    !l
+    !s1
+    return
+
+@test "node.dgram create and close"():
+L_ENTRY:
+    sk = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_DGRAM_CREATE sk
+    EXPAND NODE_DGRAM_CLOSE s1, sk
+    !s1
+    !sk
+    return
+
+@test "node.zlib gunzip succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_GUNZIP p, l, s, S_DATA, 5
+    !s
+    !p
+    !l
+    return
+
+@test "node.zlib inflate succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_INFLATE p, l, s, S_DATA, 5
+    !s
+    !p
+    !l
+    return

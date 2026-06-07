@@ -1,0 +1,31 @@
+// SA tests for Node diagnostics_channel extras
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_CHNAME = utf8:"test-channel"
+
+@test "node.diagnostics_channel create and free"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_CREATE S_CHNAME, 12, h, s1
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_FREE h
+    !s2
+    !s1
+    !h
+    return
+
+@test "node.diagnostics_channel has_subscribers"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    bl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_CREATE S_CHNAME, 12, h, s1
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_HAS_SUBSCRIBERS h, bl, s2
+    EXPAND NODE_DIAGNOSTICS_CHANNEL_FREE h
+    !s2
+    !bl
+    !s1
+    !h
+    return

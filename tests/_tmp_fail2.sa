@@ -1,7 +1,0 @@
-@import "../node.sal"
-@import "../node_extra.sal"
-@const S_DATA = utf8:"hello"
-@test "test dns sdro"():
-L_ENTRY:
-    EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER S_DATA, 5
-    return

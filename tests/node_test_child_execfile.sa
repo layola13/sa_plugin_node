@@ -1,0 +1,15 @@
+// SA tests for Node child_process: execfile_sync
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_LS = utf8:"/bin/ls"
+
+@test "node.child_process execfile_sync"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_EXECFILE_SYNC S_LS, 7, 0, 0, op, ol, s
+    !s
+    !ol
+    !op
+    return

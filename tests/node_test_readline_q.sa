@@ -1,0 +1,13 @@
+// SA tests for Node readline: create and free
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.readline create and free"():
+L_ENTRY:
+    rl = add 0, 0
+    EXPAND NODE_READLINE_CREATE rl
+    s = add 0, 0
+    EXPAND NODE_READLINE_FREE rl, s
+    !s
+    !rl
+    return

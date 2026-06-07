@@ -1,0 +1,28 @@
+// SA tests for Node perf_hooks: entries_json, histogram_get_statistics
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_MARK = utf8:"test-m"
+
+@test "node.perf_hooks entries_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_PERF_HOOKS_ENTRIES_JSON op, ol
+    !ol
+    !op
+    return
+
+@test "node.perf_hooks histogram statistics"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    op = add 0, 0
+    ol = add 0, 0
+    EXPAND NODE_PERF_HOOKS_CREATE_HISTOGRAM h
+    EXPAND NODE_PERF_HOOKS_HISTOGRAM_GET_STATISTICS h, op, ol
+    EXPAND NODE_PERF_HOOKS_HISTOGRAM_FREE h
+    !ol
+    !op
+    !s1
+    !h
+    return

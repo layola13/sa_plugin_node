@@ -1,0 +1,14 @@
+// SA tests for Node DNS lookup (from node.sal)
+@import "../node.sal"
+@const S_HOST = utf8:"localhost"
+
+@test "node.dns lookup"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_LOOKUP op, ol, s, S_HOST, 9
+    !s
+    !ol
+    !op
+    return

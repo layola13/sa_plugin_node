@@ -1,0 +1,25 @@
+// SA tests for more STATUS_JSON macros
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.repl status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_REPL_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.test_runner status_json"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_TEST_RUNNER_STATUS_JSON op, ol, s
+    !s
+    !ol
+    !op
+    return

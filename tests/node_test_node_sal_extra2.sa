@@ -1,0 +1,39 @@
+// SA tests for remaining node_sal macros (part 2: dns, net, buffer)
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_HOST = utf8:"127.0.0.1"
+@const S_DOMAIN = utf8:"example.com"
+@const S_RRTYPE = utf8:"A"
+
+@test "node.dns lookup succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_LOOKUP p, l, s, S_DOMAIN, 11
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE p, l, s, S_DOMAIN, 11, S_RRTYPE, 1
+    !s
+    !p
+    !l
+    return
+
+@test "node.net is_ipv4 succeeds"():
+L_ENTRY:
+    EXPAND NODE_NET_IS_IPV4 S_HOST, 9
+    return
+
+@test "node.net is_ipv6 succeeds"():
+L_ENTRY:
+    EXPAND NODE_NET_IS_IPV6 S_HOST, 9
+    return

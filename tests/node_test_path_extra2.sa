@@ -1,0 +1,36 @@
+// SA tests for Node path extras: join, resolve (from node.sal)
+@import "../node.sal"
+@const S_A = utf8:"/usr"
+@const S_B = utf8:"local"
+
+@test "node.path join"():
+L_ENTRY:
+    slices = stack_alloc 32
+    store slices+0, S_A as ptr
+    store slices+8, 4 as u64
+    store slices+16, S_B as ptr
+    store slices+24, 5 as u64
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_JOIN slices, 2, op, ol, s
+    !s
+    !ol
+    !op
+    return
+
+@test "node.path resolve"():
+L_ENTRY:
+    slices = stack_alloc 32
+    store slices+0, S_A as ptr
+    store slices+8, 4 as u64
+    store slices+16, S_B as ptr
+    store slices+24, 5 as u64
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_RESOLVE slices, 2, op, ol, s
+    !s
+    !ol
+    !op
+    return

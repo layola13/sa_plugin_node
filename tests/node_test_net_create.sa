@@ -1,0 +1,13 @@
+// SA tests for Node net: create_connection
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_HOST = utf8:"127.0.0.1"
+
+@test "node.net create_connection"():
+L_ENTRY:
+    sock = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_NET_CREATE_CONNECTION S_HOST, 9, 18767, sock, s
+    !s
+    !sock
+    return

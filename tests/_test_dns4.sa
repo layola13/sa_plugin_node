@@ -1,0 +1,37 @@
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_DOMAIN = utf8:"example.com"
+@const S_RRTYPE = utf8:"A"
+
+@test "dns lookup"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_LOOKUP p, l, s, S_DOMAIN, 11
+    !s
+    !p
+    !l
+    return
+
+@test "dns resolve"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE p, l, s, S_DOMAIN, 11, S_RRTYPE, 1
+    !s
+    !p
+    !l
+    return
+
+@test "is_ipv4"():
+L_ENTRY:
+    EXPAND NODE_NET_IS_IPV4 S_DOMAIN, 11
+    return
+
+@test "is_ipv6"():
+L_ENTRY:
+    EXPAND NODE_NET_IS_IPV6 S_DOMAIN, 11
+    return

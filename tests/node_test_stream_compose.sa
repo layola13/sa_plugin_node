@@ -1,0 +1,18 @@
+// SA tests for Node stream: compose
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.stream compose"():
+L_ENTRY:
+    slices = stack_alloc 32
+    a = add 0, 0
+    EXPAND NODE_STREAM_DUPLEX_NEW a
+    store slices+0, a as ptr
+    store slices+8, 1 as u64
+    op = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_STREAM_COMPOSE slices, 1, op, s
+    !s
+    !op
+    !a
+    return

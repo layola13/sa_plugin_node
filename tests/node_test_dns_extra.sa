@@ -1,0 +1,324 @@
+// SA-native unit tests for Node DNS extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_HOST = utf8:"example.com"
+@const S_LOCALHOST = utf8:"localhost"
+@const S_IP = utf8:"127.0.0.1"
+@const S_IPV4FIRST = utf8:"ipv4first"
+@const S_VERBATIM = utf8:"verbatim"
+
+@test "node.dns resolve4 succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE4 S_HOST, 11, p, l, s
+    ok = eq s, 0
+    br ok -> L_OK, L_CHK
+L_OK:
+    !ok
+    !s
+    !p
+    !l
+    return
+L_CHK:
+    !ok
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve6 succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE6 S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_cname succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_CNAME S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_mx succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_MX S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_ns succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_NS S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_ptr succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_PTR S_IP, 9, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_srv succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_SRV S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns resolve_txt succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE_TXT S_HOST, 11, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns reverse succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_REVERSE S_IP, 9, p, l, s
+    !s
+    !p
+    !l
+    return
+
+@test "node.dns get_servers succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_DNS_GET_SERVERS p, l
+    pp = add 0, 0
+    pl = add 0, 0
+    ps = add 0, 0
+    EXPAND NODE_DNS_PROMISES_GET_SERVERS pp, pl, ps
+    promises_ok = eq ps, 0
+    br promises_ok -> L_SET_PROMISES, L_ERR_PROMISES
+L_SET_PROMISES:
+    !promises_ok
+    set_s = add 0, 0
+    EXPAND NODE_DNS_PROMISES_SET_SERVERS set_s, pp, pl
+    set_ok = eq set_s, 0
+    br set_ok -> L_OK, L_ERR_SET
+L_OK:
+    !set_ok
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    free_pp = call @sa_node_plugin_free_buffer(pp, pl)
+    !free_pp
+    !free_p
+    !set_s
+    !ps
+    !pl
+    !pp
+    !p
+    !l
+    return
+L_ERR_PROMISES:
+    !promises_ok
+    panic(103)
+L_ERR_SET:
+    !set_ok
+    panic(103)
+
+@test "node.dns constants json succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_CONSTANTS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_PROMISES, L_ERR
+L_PROMISES:
+    !ok
+    pp = add 0, 0
+    pl = add 0, 0
+    ps = add 0, 0
+    EXPAND NODE_DNS_PROMISES_CONSTANTS_JSON pp, pl, ps
+    promises_ok = eq ps, 0
+    br promises_ok -> L_OK, L_ERR_PROMISES
+L_OK:
+    !promises_ok
+    has_len = ugt l, 0
+    br has_len -> L_FREE, L_ERR_LEN
+L_FREE:
+    !has_len
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    free_pp = call @sa_node_plugin_free_buffer(pp, pl)
+    !free_pp
+    !free_p
+    !ps
+    !pl
+    !pp
+    !s
+    !l
+    !p
+    return
+L_ERR:
+    !ok
+    panic(103)
+L_ERR_PROMISES:
+    !promises_ok
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    panic(103)
+
+@test "node.dns get_default_result_order succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_GET_DEFAULT_RESULT_ORDER p, l, s
+    ok = eq s, 0
+    br ok -> L_PROMISES, L_ERR
+L_PROMISES:
+    !ok
+    pp = add 0, 0
+    pl = add 0, 0
+    ps = add 0, 0
+    EXPAND NODE_DNS_PROMISES_GET_DEFAULT_RESULT_ORDER pp, pl, ps
+    promises_ok = eq ps, 0
+    br promises_ok -> L_SET_PROMISES, L_ERR_PROMISES
+L_SET_PROMISES:
+    !promises_ok
+    set_s = add 0, 0
+    EXPAND NODE_DNS_PROMISES_SET_DEFAULT_RESULT_ORDER set_s, S_VERBATIM, 8
+    set_ok = eq set_s, 0
+    br set_ok -> L_OK, L_ERR_SET
+L_OK:
+    !set_ok
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    free_pp = call @sa_node_plugin_free_buffer(pp, pl)
+    !free_pp
+    !free_p
+    !set_s
+    !ps
+    !pl
+    !pp
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    panic(103)
+L_ERR_PROMISES:
+    !promises_ok
+    panic(103)
+L_ERR_SET:
+    !set_ok
+    panic(103)
+
+@test "node.dns set_servers succeeds"():
+L_ENTRY:
+    s = add 0, 0
+    EXPAND NODE_DNS_SET_SERVERS 0, 0, s
+    !s
+    return
+
+@test "node.dns set_default_result_order succeeds"():
+L_ENTRY:
+    EXPAND NODE_DNS_SET_DEFAULT_RESULT_ORDER 0, 0
+    return
+
+@test "node.dns lookup options succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_LOOKUP_OPTIONS p, l, s, S_LOCALHOST, 9, 4, 1, S_IPV4FIRST, 9
+    ok = eq s, 0
+    br ok -> L_PROMISES, L_ERR
+L_PROMISES:
+    !ok
+    pp = add 0, 0
+    pl = add 0, 0
+    ps = add 0, 0
+    EXPAND NODE_DNS_PROMISES_LOOKUP_OPTIONS pp, pl, ps, S_LOCALHOST, 9, 4, 0, 0, 0
+    promises_ok = eq ps, 0
+    br promises_ok -> L_HINTS, L_ERR_PROMISES
+L_HINTS:
+    !promises_ok
+    hp = add 0, 0
+    hl = add 0, 0
+    hs = add 0, 0
+    EXPAND NODE_DNS_LOOKUP_OPTIONS_HINTS hp, hl, hs, S_LOCALHOST, 9, 4, 1, 0, S_VERBATIM, 8
+    hints_ok = eq hs, 0
+    br hints_ok -> L_PROMISES_HINTS, L_ERR_HINTS
+L_PROMISES_HINTS:
+    !hints_ok
+    php = add 0, 0
+    phl = add 0, 0
+    phs = add 0, 0
+    EXPAND NODE_DNS_PROMISES_LOOKUP_OPTIONS_HINTS php, phl, phs, S_LOCALHOST, 9, 4, 0, 0, 0, 0
+    promises_hints_ok = eq phs, 0
+    br promises_hints_ok -> L_OK, L_ERR_PROMISES_HINTS
+L_OK:
+    !promises_hints_ok
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    free_pp = call @sa_node_plugin_free_buffer(pp, pl)
+    free_hp = call @sa_node_plugin_free_buffer(hp, hl)
+    free_php = call @sa_node_plugin_free_buffer(php, phl)
+    !free_php
+    !free_hp
+    !free_pp
+    !free_p
+    !phs
+    !phl
+    !php
+    !hs
+    !hl
+    !hp
+    !ps
+    !pl
+    !pp
+    !s
+    !l
+    !p
+    return
+L_ERR:
+    !ok
+    panic(103)
+L_ERR_PROMISES:
+    !promises_ok
+    panic(103)
+L_ERR_HINTS:
+    !hints_ok
+    panic(103)
+L_ERR_PROMISES_HINTS:
+    !promises_hints_ok
+    panic(103)

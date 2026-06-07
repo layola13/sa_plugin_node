@@ -1,0 +1,33 @@
+// SA tests for Node FS opendir
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_TMPDIR = utf8:"/tmp"
+
+@test "node.fs opendir"():
+L_ENTRY:
+    h = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_FS_OPENDIR S_TMPDIR, 5, h, s
+    EXPAND NODE_FS_OPENDIR_FREE h, s
+    !s
+    !h
+    return
+
+@test "node.fs opendir_next"():
+L_ENTRY:
+    h = add 0, 0
+    s1 = add 0, 0
+    np = add 0, 0
+    nl = add 0, 0
+    ntype = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FS_OPENDIR S_TMPDIR, 5, h, s1
+    EXPAND NODE_FS_OPENDIR_NEXT h, np, nl, ntype, s2
+    EXPAND NODE_FS_OPENDIR_FREE h, s1
+    !s2
+    !ntype
+    !nl
+    !np
+    !s1
+    !h
+    return

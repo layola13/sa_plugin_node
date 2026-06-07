@@ -1,0 +1,114 @@
+// SA tests for Node dgram: bind and close
+@import "../node.sal"
+@const S_HOST = utf8:"127.0.0.1"
+@const S_HOST6 = utf8:"::1"
+
+@test "node.dgram create options"():
+L_ENTRY:
+    sock = add 0, 0
+    s_create = add 0, 0
+    EXPAND NODE_DGRAM_CREATE_OPTIONS sock, s_create, 4, 1, 0, 0, 8192, 8192
+    recv_size = add 0, 0
+    s_recv_size = add 0, 0
+    EXPAND NODE_DGRAM_GET_RECV_BUFFER_SIZE s_recv_size, recv_size, sock
+    send_size = add 0, 0
+    s_send_size = add 0, 0
+    EXPAND NODE_DGRAM_GET_SEND_BUFFER_SIZE s_send_size, send_size, sock
+    send_queue_size = add 0, 0
+    s_send_queue_size = add 0, 0
+    EXPAND NODE_DGRAM_GET_SEND_QUEUE_SIZE s_send_queue_size, send_queue_size, sock
+    send_queue_count = add 0, 0
+    s_send_queue_count = add 0, 0
+    EXPAND NODE_DGRAM_GET_SEND_QUEUE_COUNT s_send_queue_count, send_queue_count, sock
+    s_close = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s_close, sock
+    sock6 = add 0, 0
+    s_create6 = add 0, 0
+    EXPAND NODE_DGRAM_CREATE_OPTIONS sock6, s_create6, 6, 0, 0, 1, 0, 0
+    s_bind6 = add 0, 0
+    EXPAND NODE_DGRAM_BIND s_bind6, sock6, S_HOST6, 3, 0
+    s_close6 = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s_close6, sock6
+    !s_close6
+    !s_bind6
+    !s_create6
+    !sock6
+    !s_close
+    !s_send_queue_count
+    !send_queue_count
+    !s_send_queue_size
+    !send_queue_size
+    !s_send_size
+    !send_size
+    !s_recv_size
+    !recv_size
+    !s_create
+    !sock
+    return
+
+@test "node.dgram blocklists"():
+L_ENTRY:
+    sock = add 0, 0
+    EXPAND NODE_DGRAM_CREATE sock
+    bl = add 0, 0
+    s_bl = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, s_bl
+    s_add = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS bl, S_HOST, 9, s_add
+    s_send_bl = add 0, 0
+    EXPAND NODE_DGRAM_SET_SEND_BLOCKLIST s_send_bl, sock, bl
+    s_recv_bl = add 0, 0
+    EXPAND NODE_DGRAM_SET_RECEIVE_BLOCKLIST s_recv_bl, sock, bl
+    s_clear_send = add 0, 0
+    EXPAND NODE_DGRAM_SET_SEND_BLOCKLIST s_clear_send, sock, 0
+    s_clear_recv = add 0, 0
+    EXPAND NODE_DGRAM_SET_RECEIVE_BLOCKLIST s_clear_recv, sock, 0
+    s_close = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s_close, sock
+    s_bl_free = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, s_bl_free
+    !s_bl_free
+    !s_close
+    !s_clear_recv
+    !s_clear_send
+    !s_recv_bl
+    !s_send_bl
+    !s_add
+    !s_bl
+    !bl
+    !sock
+    return
+
+@test "node.dgram bind and close"():
+L_ENTRY:
+    sock = add 0, 0
+    EXPAND NODE_DGRAM_CREATE sock
+    s1 = add 0, 0
+    EXPAND NODE_DGRAM_BIND s1, sock, S_HOST, 9, 18768
+    has_ref = add 0, 0
+    s_ref0 = add 0, 0
+    EXPAND NODE_DGRAM_HAS_REF s_ref0, has_ref, sock
+    s_unref = add 0, 0
+    EXPAND NODE_DGRAM_UNREF s_unref, sock
+    has_ref_after_unref = add 0, 0
+    s_ref1 = add 0, 0
+    EXPAND NODE_DGRAM_HAS_REF s_ref1, has_ref_after_unref, sock
+    s_ref = add 0, 0
+    EXPAND NODE_DGRAM_REF s_ref, sock
+    has_ref_after_ref = add 0, 0
+    s_ref2 = add 0, 0
+    EXPAND NODE_DGRAM_HAS_REF s_ref2, has_ref_after_ref, sock
+    s2 = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s2, sock
+    !s_ref2
+    !has_ref_after_ref
+    !s_ref
+    !s_ref1
+    !has_ref_after_unref
+    !s_unref
+    !s_ref0
+    !has_ref
+    !s2
+    !s1
+    !sock
+    return

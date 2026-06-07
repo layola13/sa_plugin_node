@@ -1,0 +1,233 @@
+// SA tests for Node net: full listen/connect/accept/write/read/end cycle
+@import "../node.sal"
+@import "../node_extra.sal"
+@const S_HOST = utf8:"127.0.0.1"
+@const S_MSG = utf8:"hi"
+
+@test "node.net full lifecycle"():
+L_ENTRY:
+    ip4 = add 0, 0
+    EXPAND NODE_NET_IS_IPV4 S_HOST, 9, ip4
+    srv = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18773, srv, s1
+    listening = add 0, 0
+    sListening = add 0, 0
+    EXPAND NODE_NET_SERVER_LISTENING srv, listening, sListening
+    serverHasRef0 = add 0, 0
+    sServerHasRef0 = add 0, 0
+    EXPAND NODE_NET_HAS_REF srv, serverHasRef0, sServerHasRef0
+    sServerUnref = add 0, 0
+    EXPAND NODE_NET_UNREF srv, sServerUnref
+    serverHasRef1 = add 0, 0
+    sServerHasRef1 = add 0, 0
+    EXPAND NODE_NET_HAS_REF srv, serverHasRef1, sServerHasRef1
+    sServerRef = add 0, 0
+    EXPAND NODE_NET_REF srv, sServerRef
+    serverHasRef2 = add 0, 0
+    sServerHasRef2 = add 0, 0
+    EXPAND NODE_NET_HAS_REF srv, serverHasRef2, sServerHasRef2
+    sSetMaxConnections = add 0, 0
+    EXPAND NODE_NET_SERVER_SET_MAX_CONNECTIONS srv, 64, sSetMaxConnections
+    maxConnections = add 0, 0
+    sGetMaxConnections = add 0, 0
+    EXPAND NODE_NET_SERVER_GET_MAX_CONNECTIONS srv, maxConnections, sGetMaxConnections
+    serverAddressPtr = add 0, 0
+    serverAddressLen = add 0, 0
+    sServerAddress = add 0, 0
+    EXPAND NODE_NET_SERVER_ADDRESS srv, serverAddressPtr, serverAddressLen, sServerAddress
+    initialConnections = add 0, 0
+    sInitialConnections = add 0, 0
+    EXPAND NODE_NET_SERVER_GET_CONNECTIONS srv, initialConnections, sInitialConnections
+    cli = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_NET_CONNECT S_HOST, 9, 18773, cli, s2
+    pending = add 0, 0
+    sPending = add 0, 0
+    EXPAND NODE_NET_PENDING cli, pending, sPending
+    connecting = add 0, 0
+    sConnecting = add 0, 0
+    EXPAND NODE_NET_CONNECTING cli, connecting, sConnecting
+    bufferSize = add 0, 0
+    sBufferSize = add 0, 0
+    EXPAND NODE_NET_BUFFER_SIZE cli, bufferSize, sBufferSize
+    attemptsPtr = add 0, 0
+    attemptsLen = add 0, 0
+    sAttempts = add 0, 0
+    EXPAND NODE_NET_AUTO_SELECT_FAMILY_ATTEMPTED_ADDRESSES cli, attemptsPtr, attemptsLen, sAttempts
+    clientHasRef0 = add 0, 0
+    sClientHasRef0 = add 0, 0
+    EXPAND NODE_NET_HAS_REF cli, clientHasRef0, sClientHasRef0
+    sClientUnref = add 0, 0
+    EXPAND NODE_NET_UNREF cli, sClientUnref
+    clientHasRef1 = add 0, 0
+    sClientHasRef1 = add 0, 0
+    EXPAND NODE_NET_HAS_REF cli, clientHasRef1, sClientHasRef1
+    sClientRef = add 0, 0
+    EXPAND NODE_NET_REF cli, sClientRef
+    clientHasRef2 = add 0, 0
+    sClientHasRef2 = add 0, 0
+    EXPAND NODE_NET_HAS_REF cli, clientHasRef2, sClientHasRef2
+    readable = add 0, 0
+    sReadable = add 0, 0
+    EXPAND NODE_NET_READABLE cli, readable, sReadable
+    writable = add 0, 0
+    sWritable = add 0, 0
+    EXPAND NODE_NET_WRITABLE cli, writable, sWritable
+    closed = add 0, 0
+    sClosed = add 0, 0
+    EXPAND NODE_NET_CLOSED cli, closed, sClosed
+    destroyed = add 0, 0
+    sDestroyed = add 0, 0
+    EXPAND NODE_NET_DESTROYED cli, destroyed, sDestroyed
+    statePtr = add 0, 0
+    stateLen = add 0, 0
+    sState = add 0, 0
+    EXPAND NODE_NET_READY_STATE cli, statePtr, stateLen, sState
+    localAddressPtr = add 0, 0
+    localAddressLen = add 0, 0
+    sLocalAddress = add 0, 0
+    EXPAND NODE_NET_LOCAL_ADDRESS cli, localAddressPtr, localAddressLen, sLocalAddress
+    localFamilyPtr = add 0, 0
+    localFamilyLen = add 0, 0
+    sLocalFamily = add 0, 0
+    EXPAND NODE_NET_LOCAL_FAMILY cli, localFamilyPtr, localFamilyLen, sLocalFamily
+    localPort = add 0, 0
+    sLocalPort = add 0, 0
+    EXPAND NODE_NET_LOCAL_PORT cli, localPort, sLocalPort
+    remoteAddressPtr = add 0, 0
+    remoteAddressLen = add 0, 0
+    sRemoteAddress = add 0, 0
+    EXPAND NODE_NET_REMOTE_ADDRESS_VALUE cli, remoteAddressPtr, remoteAddressLen, sRemoteAddress
+    remoteFamilyPtr = add 0, 0
+    remoteFamilyLen = add 0, 0
+    sRemoteFamily = add 0, 0
+    EXPAND NODE_NET_REMOTE_FAMILY cli, remoteFamilyPtr, remoteFamilyLen, sRemoteFamily
+    remotePort = add 0, 0
+    sRemotePort = add 0, 0
+    EXPAND NODE_NET_REMOTE_PORT cli, remotePort, sRemotePort
+    sSetTimeout = add 0, 0
+    EXPAND NODE_NET_SET_TIMEOUT cli, 250, sSetTimeout
+    timeoutMs = add 0, 0
+    sGetTimeout = add 0, 0
+    EXPAND NODE_NET_GET_TIMEOUT cli, timeoutMs, sGetTimeout
+    sSetTos = add 0, 0
+    EXPAND NODE_NET_SET_TYPE_OF_SERVICE cli, 0, sSetTos
+    tos = add 0, 0
+    sGetTos = add 0, 0
+    EXPAND NODE_NET_GET_TYPE_OF_SERVICE cli, tos, sGetTos
+    acc = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_NET_ACCEPT srv, acc, s3
+    activeConnections = add 0, 0
+    sActiveConnections = add 0, 0
+    EXPAND NODE_NET_SERVER_GET_CONNECTIONS srv, activeConnections, sActiveConnections
+    s4 = add 0, 0
+    EXPAND NODE_NET_WRITE cli, S_MSG, 2, s4
+    buf = add 0, 0
+    bLen = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_NET_READ acc, 1024, buf, bLen, s5
+    cliWritten = add 0, 0
+    sWritten = add 0, 0
+    EXPAND NODE_NET_BYTES_WRITTEN cli, cliWritten, sWritten
+    accRead = add 0, 0
+    sRead = add 0, 0
+    EXPAND NODE_NET_BYTES_READ acc, accRead, sRead
+    s6 = add 0, 0
+    EXPAND NODE_NET_END cli, s6
+    s7 = add 0, 0
+    EXPAND NODE_NET_END acc, s7
+    s8 = add 0, 0
+    EXPAND NODE_NET_END srv, s8
+    freeServerAddress = call @sa_node_plugin_free_buffer(serverAddressPtr, serverAddressLen)
+    !s8
+    !freeServerAddress
+    !sServerAddress
+    !serverAddressLen
+    !serverAddressPtr
+    !sClientHasRef2
+    !clientHasRef2
+    !sClientRef
+    !sClientHasRef1
+    !clientHasRef1
+    !sClientUnref
+    !sClientHasRef0
+    !clientHasRef0
+    !sServerHasRef2
+    !serverHasRef2
+    !sServerRef
+    !sServerHasRef1
+    !serverHasRef1
+    !sServerUnref
+    !sServerHasRef0
+    !serverHasRef0
+    !sGetMaxConnections
+    !maxConnections
+    !sSetMaxConnections
+    !sListening
+    !listening
+    !s7
+    !s6
+    !s5
+    !bLen
+    !buf
+    !sRead
+    !accRead
+    !sWritten
+    !cliWritten
+    !s4
+    !sState
+    !stateLen
+    !statePtr
+    !sPending
+    !pending
+    !sBufferSize
+    !bufferSize
+    !sAttempts
+    !attemptsLen
+    !attemptsPtr
+    !sConnecting
+    !connecting
+    !sDestroyed
+    !destroyed
+    !sClosed
+    !closed
+    !sWritable
+    !writable
+    !sReadable
+    !readable
+    !sRemotePort
+    !remotePort
+    !sGetTos
+    !tos
+    !sSetTos
+    !sGetTimeout
+    !timeoutMs
+    !sSetTimeout
+    !sRemoteFamily
+    !remoteFamilyLen
+    !remoteFamilyPtr
+    !sRemoteAddress
+    !remoteAddressLen
+    !remoteAddressPtr
+    !sLocalPort
+    !localPort
+    !sLocalFamily
+    !localFamilyLen
+    !localFamilyPtr
+    !sLocalAddress
+    !localAddressLen
+    !localAddressPtr
+    !s3
+    !sActiveConnections
+    !activeConnections
+    !sInitialConnections
+    !initialConnections
+    !ip4
+    !acc
+    !s2
+    !cli
+    !s1
+    !srv
+    return

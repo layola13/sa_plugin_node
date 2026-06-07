@@ -1,0 +1,89 @@
+// SA-native unit tests for Node crypto cipher/sign extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_ALG = utf8:"aes-256-cbc"
+@const S_KEY = utf8:"0123456789abcdef0123456789abcdef"
+@const S_IV = utf8:"0123456789abcdef"
+@const S_MSG = utf8:"hello world"
+@const S_SHA256 = utf8:"sha256"
+
+@test "node.crypto create_cipher and free"():
+L_ENTRY:
+    ch = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_CIPHER S_ALG, 11, S_KEY, 32, S_IV, 16, ch, s1
+    EXPAND NODE_CRYPTO_CIPHER_FREE ch, s2
+    !s2
+    !s1
+    !ch
+    return
+
+@test "node.crypto create_decipher and free"():
+L_ENTRY:
+    cd = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_DECIPHER S_ALG, 11, S_KEY, 32, S_IV, 16, cd, s1
+    EXPAND NODE_CRYPTO_DECIPHER_FREE cd, s2
+    !s2
+    !s1
+    !cd
+    return
+
+@test "node.crypto cipher update succeeds"():
+L_ENTRY:
+    ch = add 0, 0
+    s1 = add 0, 0
+    p = add 0, 0
+    l = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_CIPHER S_ALG, 11, S_KEY, 32, S_IV, 16, ch, s1
+    EXPAND NODE_CRYPTO_CIPHER_UPDATE ch, S_MSG, 11, p, l, s2
+    EXPAND NODE_CRYPTO_CIPHER_FREE ch, s3
+    !s3
+    !s2
+    !p
+    !l
+    !s1
+    !ch
+    return
+
+@test "node.crypto decipher update succeeds"():
+L_ENTRY:
+    cd = add 0, 0
+    s1 = add 0, 0
+    p = add 0, 0
+    l = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_CRYPTO_CREATE_DECIPHER S_ALG, 11, S_KEY, 32, S_IV, 16, cd, s1
+    EXPAND NODE_CRYPTO_DECIPHER_UPDATE cd, S_MSG, 11, p, l, s2
+    EXPAND NODE_CRYPTO_DECIPHER_FREE cd, s3
+    !s3
+    !s2
+    !p
+    !l
+    !s1
+    !cd
+    return
+
+@test "node.crypto sign lifecycle"():
+L_ENTRY:
+    cp = add 0, 0
+    pl = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_CRYPTO_GENERATE_KEY S_SHA256, 6, 256, cp, pl, s1
+    sp = add 0, 0
+    sl = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_CRYPTO_SIGN S_SHA256, 6, S_MSG, 11, cp, pl, sp, sl, s2
+    !s2
+    !sp
+    !sl
+    !cp
+    !pl
+    !s1
+    return

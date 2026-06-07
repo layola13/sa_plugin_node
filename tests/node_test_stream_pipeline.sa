@@ -1,0 +1,19 @@
+// SA tests for Node stream extras: pipeline, finished
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.stream pipeline with duplex pair"():
+L_ENTRY:
+    a = add 0, 0
+    b = add 0, 0
+    sp = add 0, 0
+    sl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_STREAM_DUPLEX_PAIR a, b, s
+    EXPAND NODE_STREAM_PIPELINE a, b, sp, sl, s
+    !s
+    !sl
+    !sp
+    !b
+    !a
+    return

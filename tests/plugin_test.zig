@@ -2597,6 +2597,67 @@ test "node plugin readline promises interface" {
     try std.testing.expect(plugin.sa_node_plugin_readline_promises_question(iface, "q3> ".ptr, 4, &after_close_ptr, &after_close_len) != 0);
 }
 
+test "node plugin repl native session subset" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullReplStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"repl\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "native-session-subset") != null);
+
+    var session: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_create_session("node> ".ptr, 6, &session));
+    defer _ = plugin.sa_node_plugin_repl_free(session);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_define_command(session, "hello".ptr, 5, "custom help".ptr, 11));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_set_prompt(session, "sa> ".ptr, 4));
+
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_snapshot_json(session, &snapshot_ptr, &snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+    const snapshot = (snapshot_ptr orelse return error.NullReplSnapshot)[0..@intCast(snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"prompt\":\"sa> \"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, ".hello") != null);
+
+    var help_ptr: ?[*]const u8 = null;
+    var help_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_eval_line(session, ".help".ptr, 5, &help_ptr, &help_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(help_ptr, help_len);
+    const help = (help_ptr orelse return error.NullReplHelp)[0..@intCast(help_len)];
+    try std.testing.expect(std.mem.indexOf(u8, help, ".history") != null);
+    try std.testing.expect(std.mem.indexOf(u8, help, ".hello") != null);
+
+    var buffer_ptr: ?[*]const u8 = null;
+    var buffer_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_eval_line(session, "const x = \\".ptr, 11, &buffer_ptr, &buffer_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(buffer_ptr, buffer_len);
+    const buffer_json = (buffer_ptr orelse return error.NullReplBuffer)[0..@intCast(buffer_len)];
+    try std.testing.expect(std.mem.indexOf(u8, buffer_json, "\"continued\":true") != null);
+
+    var input_ptr: ?[*]const u8 = null;
+    var input_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_eval_line(session, "1 + 2".ptr, 5, &input_ptr, &input_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(input_ptr, input_len);
+    const input_json = (input_ptr orelse return error.NullReplInput)[0..@intCast(input_len)];
+    try std.testing.expect(std.mem.indexOf(u8, input_json, "\"submitted\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, input_json, "const x = ") != null);
+
+    var history_ptr: ?[*]const u8 = null;
+    var history_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_history_json(session, &history_ptr, &history_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(history_ptr, history_len);
+    const history = (history_ptr orelse return error.NullReplHistory)[0..@intCast(history_len)];
+    try std.testing.expect(std.mem.indexOf(u8, history, ".help") != null);
+    try std.testing.expect(std.mem.indexOf(u8, history, "1 + 2") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_close(session));
+    var after_close_ptr: ?[*]const u8 = null;
+    var after_close_len: u64 = 0;
+    try std.testing.expect(plugin.sa_node_plugin_repl_eval_line(session, "x".ptr, 1, &after_close_ptr, &after_close_len) != 0);
+}
+
 test "node plugin readline terminal control writes ansi sequences" {
     const pipe_fds = try std.posix.pipe();
     defer std.posix.close(pipe_fds[0]);

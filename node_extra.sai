@@ -348,6 +348,14 @@
 @extern sa_node_plugin_permissions_has(scope_ptr: ptr, scope_len: u64, reference_ptr: ptr, reference_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_repl_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_repl_create_session(prompt_ptr: ptr, prompt_len: u64, &out_session: ptr) -> u64
+@extern sa_node_plugin_repl_set_prompt(session_ptr: ptr, prompt_ptr: ptr, prompt_len: u64) -> u64
+@extern sa_node_plugin_repl_define_command(session_ptr: ptr, name_ptr: ptr, name_len: u64, help_ptr: ptr, help_len: u64) -> u64
+@extern sa_node_plugin_repl_eval_line(session_ptr: ptr, line_ptr: ptr, line_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_repl_history_json(session_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_repl_snapshot_json(session_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_repl_close(session_ptr: ptr) -> u64
+@extern sa_node_plugin_repl_free(session_ptr: ptr) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_builtin_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_config_json(&out_ptr: ptr, &out_len: u64) -> u64

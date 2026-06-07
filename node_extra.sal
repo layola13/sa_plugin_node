@@ -4056,6 +4056,95 @@
     !__m_load_81994972_p_1
 [END_MACRO]
 
+[MACRO] NODE_REPL_CREATE_SESSION %p_0, %p_1, %p_2, %p_3
+    __m_slot_0ef73372_0 = stack_alloc 8
+    __m_status_0ef73372 = call @sa_node_plugin_repl_create_session(%p_0, %p_1, &__m_slot_0ef73372_0)
+    !%p_3
+    %p_3 = add __m_status_0ef73372, 0
+    !__m_status_0ef73372
+    __m_load_0ef73372_p_2 = load __m_slot_0ef73372_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_0ef73372_p_2, 0
+    !__m_load_0ef73372_p_2
+[END_MACRO]
+
+[MACRO] NODE_REPL_SET_PROMPT %p_0, %p_1, %p_2, %p_3
+    __m_status_9bb01d4f = call @sa_node_plugin_repl_set_prompt(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_9bb01d4f, 0
+    !__m_status_9bb01d4f
+[END_MACRO]
+
+[MACRO] NODE_REPL_DEFINE_COMMAND %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_status_49d2cac3 = call @sa_node_plugin_repl_define_command(%p_0, %p_1, %p_2, %p_3, %p_4)
+    !%p_5
+    %p_5 = add __m_status_49d2cac3, 0
+    !__m_status_49d2cac3
+[END_MACRO]
+
+[MACRO] NODE_REPL_EVAL_LINE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_8ac24956_0 = stack_alloc 8
+    __m_slot_8ac24956_1 = stack_alloc 8
+    __m_status_8ac24956 = call @sa_node_plugin_repl_eval_line(%p_0, %p_1, %p_2, &__m_slot_8ac24956_0, &__m_slot_8ac24956_1)
+    !%p_5
+    %p_5 = add __m_status_8ac24956, 0
+    !__m_status_8ac24956
+    __m_load_8ac24956_p_3 = load __m_slot_8ac24956_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_8ac24956_p_3, 0
+    !__m_load_8ac24956_p_3
+    __m_load_8ac24956_p_4 = load __m_slot_8ac24956_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_8ac24956_p_4, 0
+    !__m_load_8ac24956_p_4
+[END_MACRO]
+
+[MACRO] NODE_REPL_HISTORY_JSON %p_0, %p_1, %p_2, %p_3
+    __m_slot_07d8ddfb_0 = stack_alloc 8
+    __m_slot_07d8ddfb_1 = stack_alloc 8
+    __m_status_07d8ddfb = call @sa_node_plugin_repl_history_json(%p_0, &__m_slot_07d8ddfb_0, &__m_slot_07d8ddfb_1)
+    !%p_3
+    %p_3 = add __m_status_07d8ddfb, 0
+    !__m_status_07d8ddfb
+    __m_load_07d8ddfb_p_1 = load __m_slot_07d8ddfb_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_07d8ddfb_p_1, 0
+    !__m_load_07d8ddfb_p_1
+    __m_load_07d8ddfb_p_2 = load __m_slot_07d8ddfb_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_07d8ddfb_p_2, 0
+    !__m_load_07d8ddfb_p_2
+[END_MACRO]
+
+[MACRO] NODE_REPL_SNAPSHOT_JSON %p_0, %p_1, %p_2, %p_3
+    __m_slot_a3b48dd7_0 = stack_alloc 8
+    __m_slot_a3b48dd7_1 = stack_alloc 8
+    __m_status_a3b48dd7 = call @sa_node_plugin_repl_snapshot_json(%p_0, &__m_slot_a3b48dd7_0, &__m_slot_a3b48dd7_1)
+    !%p_3
+    %p_3 = add __m_status_a3b48dd7, 0
+    !__m_status_a3b48dd7
+    __m_load_a3b48dd7_p_1 = load __m_slot_a3b48dd7_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_a3b48dd7_p_1, 0
+    !__m_load_a3b48dd7_p_1
+    __m_load_a3b48dd7_p_2 = load __m_slot_a3b48dd7_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_a3b48dd7_p_2, 0
+    !__m_load_a3b48dd7_p_2
+[END_MACRO]
+
+[MACRO] NODE_REPL_CLOSE %p_0, %p_1
+    __m_status_f4f74cd1 = call @sa_node_plugin_repl_close(%p_0)
+    !%p_1
+    %p_1 = add __m_status_f4f74cd1, 0
+    !__m_status_f4f74cd1
+[END_MACRO]
+
+[MACRO] NODE_REPL_FREE %p_0
+    __m_status_4858f88c = call @sa_node_plugin_repl_free(%p_0)
+    !__m_status_4858f88c
+[END_MACRO]
+
 [MACRO] NODE_TEST_RUNNER_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_b7993a1c_0 = stack_alloc 8
     __m_slot_b7993a1c_1 = stack_alloc 8

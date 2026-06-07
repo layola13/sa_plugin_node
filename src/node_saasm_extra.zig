@@ -1826,8 +1826,300 @@ pub export fn sa_node_plugin_permissions_status_json(out_ptr: ?*?[*]const u8, ou
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+const ReplBuiltinCommand = struct {
+    name: []const u8,
+    help: []const u8,
+};
+
+const repl_builtin_commands = [_]ReplBuiltinCommand{
+    .{ .name = "break", .help = "clear buffered continuation input" },
+    .{ .name = "clear", .help = "alias of .break for native sessions" },
+    .{ .name = "help", .help = "list available dot commands" },
+    .{ .name = "history", .help = "return current line history" },
+};
+
+const ReplCommand = struct {
+    name: []u8,
+    help: []u8,
+};
+
+const ReplSession = struct {
+    allocator: std.mem.Allocator,
+    prompt: []u8,
+    continuation_prompt: []u8,
+    buffer: std.ArrayList(u8),
+    history: std.ArrayList([]u8),
+    commands: std.ArrayList(ReplCommand),
+    terminal: bool,
+    use_colors: bool,
+    closed: bool = false,
+    eval_count: u64 = 0,
+
+    fn init(allocator: std.mem.Allocator, prompt: []const u8) !*ReplSession {
+        const session = try allocator.create(ReplSession);
+        errdefer allocator.destroy(session);
+        session.* = .{
+            .allocator = allocator,
+            .prompt = try allocator.dupe(u8, if (prompt.len == 0) "node> " else prompt),
+            .continuation_prompt = try allocator.dupe(u8, "... "),
+            .buffer = std.ArrayList(u8).init(allocator),
+            .history = std.ArrayList([]u8).init(allocator),
+            .commands = std.ArrayList(ReplCommand).init(allocator),
+            .terminal = replIsTerminal(),
+            .use_colors = replShouldUseColors(),
+        };
+        return session;
+    }
+
+    fn deinit(self: *ReplSession) void {
+        self.allocator.free(self.prompt);
+        self.allocator.free(self.continuation_prompt);
+        self.buffer.deinit();
+        for (self.history.items) |item| self.allocator.free(item);
+        self.history.deinit();
+        for (self.commands.items) |item| {
+            self.allocator.free(item.name);
+            self.allocator.free(item.help);
+        }
+        self.commands.deinit();
+        self.allocator.destroy(self);
+    }
+
+    fn setPrompt(self: *ReplSession, prompt: []const u8) !void {
+        self.allocator.free(self.prompt);
+        self.prompt = try self.allocator.dupe(u8, if (prompt.len == 0) "node> " else prompt);
+    }
+
+    fn appendHistory(self: *ReplSession, line: []const u8) !void {
+        try self.history.append(try self.allocator.dupe(u8, line));
+    }
+
+    fn defineCommand(self: *ReplSession, name: []const u8, help: []const u8) !void {
+        for (self.commands.items) |*command| {
+            if (std.mem.eql(u8, command.name, name)) {
+                self.allocator.free(command.help);
+                command.help = try self.allocator.dupe(u8, help);
+                return;
+            }
+        }
+        try self.commands.append(.{
+            .name = try self.allocator.dupe(u8, name),
+            .help = try self.allocator.dupe(u8, help),
+        });
+    }
+};
+
+fn replIsTerminal() bool {
+    return posix.isatty(0) and posix.isatty(1);
+}
+
+fn replShouldUseColors() bool {
+    if (std.posix.getenv("NO_COLOR") != null) return false;
+    if (std.posix.getenv("FORCE_COLOR")) |value| return !std.mem.eql(u8, value, "0");
+    const term = std.posix.getenv("TERM") orelse return replIsTerminal();
+    if (std.mem.eql(u8, term, "dumb")) return false;
+    return replIsTerminal();
+}
+
+fn replFindCommand(session: *const ReplSession, name: []const u8) ?*const ReplCommand {
+    for (session.commands.items) |*command| {
+        if (std.mem.eql(u8, command.name, name)) return command;
+    }
+    return null;
+}
+
+fn replAppendCommandsJson(out: *std.ArrayList(u8), session: *const ReplSession) !void {
+    try out.append('[');
+    var first = true;
+    for (repl_builtin_commands) |command| {
+        if (!first) try out.append(',');
+        first = false;
+        try out.appendSlice("{\"name\":\".");
+        try out.appendSlice(command.name);
+        try out.appendSlice("\",\"help\":");
+        try appendJsonString(out, command.help);
+        try out.appendSlice(",\"builtin\":true}");
+    }
+    for (session.commands.items) |command| {
+        if (!first) try out.append(',');
+        first = false;
+        try out.appendSlice("{\"name\":\".");
+        try out.appendSlice(command.name);
+        try out.appendSlice("\",\"help\":");
+        try appendJsonString(out, command.help);
+        try out.appendSlice(",\"builtin\":false}");
+    }
+    try out.append(']');
+}
+
+fn replWriteHistoryJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendOwnedStringArray(&out, session.history.items) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn replWriteSnapshotJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"prompt\":") catch return fail();
+    appendJsonString(&out, session.prompt) catch return fail();
+    out.appendSlice(",\"continuationPrompt\":") catch return fail();
+    appendJsonString(&out, session.continuation_prompt) catch return fail();
+    out.appendSlice(",\"terminal\":") catch return fail();
+    out.appendSlice(if (session.terminal) "true" else "false") catch return fail();
+    out.appendSlice(",\"useColors\":") catch return fail();
+    out.appendSlice(if (session.use_colors) "true" else "false") catch return fail();
+    out.appendSlice(",\"closed\":") catch return fail();
+    out.appendSlice(if (session.closed) "true" else "false") catch return fail();
+    out.appendSlice(",\"evalCount\":") catch return fail();
+    out.writer().print("{d}", .{session.eval_count}) catch return fail();
+    out.appendSlice(",\"historySize\":") catch return fail();
+    out.writer().print("{d}", .{session.history.items.len}) catch return fail();
+    out.appendSlice(",\"bufferedInput\":") catch return fail();
+    appendJsonString(&out, session.buffer.items) catch return fail();
+    out.appendSlice(",\"commands\":") catch return fail();
+    replAppendCommandsJson(&out, session) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn replWriteEvalResultJson(session: *ReplSession, line: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const trimmed = std.mem.trim(u8, line, " \t");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+
+    if (trimmed.len == 0) {
+        out.appendSlice("{\"type\":\"empty\",\"executed\":false}") catch return fail();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+
+    if (trimmed[0] == '.') {
+        const body = trimmed[1..];
+        const space_index = std.mem.indexOfAny(u8, body, " \t");
+        const command_name = if (space_index) |idx| body[0..idx] else body;
+        const argument = if (space_index) |idx| std.mem.trim(u8, body[idx + 1 ..], " \t") else "";
+
+        if (std.mem.eql(u8, command_name, "help")) {
+            out.appendSlice("{\"type\":\"help\",\"executed\":false,\"commands\":") catch return fail();
+            replAppendCommandsJson(&out, session) catch return fail();
+            out.append('}') catch return fail();
+            return writeOwnedBytes(out_ptr, out_len, out.items);
+        }
+        if (std.mem.eql(u8, command_name, "history")) {
+            out.appendSlice("{\"type\":\"history\",\"executed\":false,\"entries\":") catch return fail();
+            appendOwnedStringArray(&out, session.history.items) catch return fail();
+            out.append('}') catch return fail();
+            return writeOwnedBytes(out_ptr, out_len, out.items);
+        }
+        if (std.mem.eql(u8, command_name, "break") or std.mem.eql(u8, command_name, "clear")) {
+            session.buffer.clearRetainingCapacity();
+            out.appendSlice("{\"type\":\"control\",\"command\":\".") catch return fail();
+            out.appendSlice(command_name) catch return fail();
+            out.appendSlice("\",\"executed\":false,\"bufferedInput\":\"\",\"cleared\":true}") catch return fail();
+            return writeOwnedBytes(out_ptr, out_len, out.items);
+        }
+        if (replFindCommand(session, command_name)) |command| {
+            out.appendSlice("{\"type\":\"command\",\"executed\":false,\"name\":\".") catch return fail();
+            out.appendSlice(command.name) catch return fail();
+            out.appendSlice("\",\"help\":") catch return fail();
+            appendJsonString(&out, command.help) catch return fail();
+            out.appendSlice(",\"argument\":") catch return fail();
+            appendJsonString(&out, argument) catch return fail();
+            out.append('}') catch return fail();
+            return writeOwnedBytes(out_ptr, out_len, out.items);
+        }
+        out.appendSlice("{\"type\":\"unknown-command\",\"executed\":false,\"name\":\".") catch return fail();
+        out.appendSlice(command_name) catch return fail();
+        out.appendSlice("\"}") catch return fail();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+
+    if (line.len > 0 and line[line.len - 1] == '\\') {
+        session.buffer.appendSlice(line[0 .. line.len - 1]) catch return fail();
+        session.buffer.append('\n') catch return fail();
+        out.appendSlice("{\"type\":\"buffer\",\"executed\":false,\"continued\":true,\"bufferedInput\":") catch return fail();
+        appendJsonString(&out, session.buffer.items) catch return fail();
+        out.append('}') catch return fail();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+
+    if (session.buffer.items.len != 0) {
+        session.buffer.appendSlice(line) catch return fail();
+        out.appendSlice("{\"type\":\"input\",\"executed\":false,\"submitted\":true,\"source\":") catch return fail();
+        appendJsonString(&out, session.buffer.items) catch return fail();
+        out.appendSlice(",\"jsRuntime\":false}") catch return fail();
+        session.buffer.clearRetainingCapacity();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+
+    out.appendSlice("{\"type\":\"input\",\"executed\":false,\"submitted\":true,\"source\":") catch return fail();
+    appendJsonString(&out, line) catch return fail();
+    out.appendSlice(",\"jsRuntime\":false}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
 pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "repl", false, "interactive REPL is not modeled");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"repl\",\"supported\":true,\"mode\":\"native-session-subset\",\"capabilities\":[\"explicit REPL session handles\",\"prompt and continuation prompt metadata\",\"dot-command registry and help listing\",\"line history and buffered continuation input\",\"native eval-line routing without JavaScript execution\"],\"limitations\":[\"no vm or V8-backed JavaScript evaluation\",\"no context object, completion engine, or require injection\",\"multiline continuation uses explicit trailing backslash buffering rather than JavaScript syntax recovery\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_repl_create_session(prompt_ptr: ?[*]const u8, prompt_len: u64, out_session: ?*?*anyopaque) u32 {
+    const prompt = if (prompt_ptr) |ptr| ptr[0..prompt_len] else "";
+    const session = ReplSession.init(std.heap.page_allocator, prompt) catch return fail();
+    out_session.?.* = @ptrCast(session);
+    return 0;
+}
+
+pub export fn sa_node_plugin_repl_set_prompt(session_ptr: ?*anyopaque, prompt_ptr: ?[*]const u8, prompt_len: u64) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    const prompt = if (prompt_ptr) |ptr| ptr[0..prompt_len] else "";
+    session.setPrompt(prompt) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_repl_define_command(session_ptr: ?*anyopaque, name_ptr: ?[*]const u8, name_len: u64, help_ptr: ?[*]const u8, help_len: u64) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    const name = if (name_ptr) |ptr| ptr[0..name_len] else return fail();
+    const help = if (help_ptr) |ptr| ptr[0..help_len] else "";
+    session.defineCommand(name, help) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_repl_eval_line(session_ptr: ?*anyopaque, line_ptr: ?[*]const u8, line_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    if (session.closed) return fail();
+    const raw_line = if (line_ptr) |ptr| ptr[0..line_len] else "";
+    const line = std.mem.trimRight(u8, raw_line, "\r\n");
+    session.eval_count += 1;
+    if (line.len != 0) session.appendHistory(line) catch return fail();
+    return replWriteEvalResultJson(session, line, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_repl_history_json(session_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    return replWriteHistoryJson(session, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_repl_snapshot_json(session_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    return replWriteSnapshotJson(session, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_repl_close(session_ptr: ?*anyopaque) u32 {
+    const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
+    session.closed = true;
+    return 0;
+}
+
+pub export fn sa_node_plugin_repl_free(session_ptr: ?*anyopaque) u32 {
+    if (session_ptr) |ptr| {
+        const session: *ReplSession = @ptrCast(@alignCast(ptr));
+        session.deinit();
+    }
+    return 0;
 }
 
 const test_runner_builtin_reporters = [_][]const u8{ "spec", "tap", "dot", "junit", "lcov" };

@@ -1,0 +1,90 @@
+// SA tests for Node repl native session subset helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_PROMPT = utf8:"node> "
+@const S_PROMPT2 = utf8:"sa> "
+@const S_COMMAND = utf8:"hello"
+@const S_HELP = utf8:"custom help"
+@const S_LINE = utf8:".help"
+
+@test "node.repl native session helpers"():
+L_ENTRY:
+    session = add 0, 0
+    create_status = add 0, 0
+    EXPAND NODE_REPL_CREATE_SESSION S_PROMPT, 6, session, create_status
+    ok_create = eq create_status, 0
+    br ok_create -> L_DEFINE, L_ERR_CREATE
+L_DEFINE:
+    !ok_create
+    define_status = add 0, 0
+    EXPAND NODE_REPL_DEFINE_COMMAND session, S_COMMAND, 5, S_HELP, 11, define_status
+    ok_define = eq define_status, 0
+    br ok_define -> L_PROMPT, L_ERR_DEFINE
+L_PROMPT:
+    !ok_define
+    prompt_status = add 0, 0
+    EXPAND NODE_REPL_SET_PROMPT session, S_PROMPT2, 4, prompt_status
+    ok_prompt = eq prompt_status, 0
+    br ok_prompt -> L_SNAPSHOT, L_ERR_PROMPT
+L_SNAPSHOT:
+    !ok_prompt
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    snap_status = add 0, 0
+    EXPAND NODE_REPL_SNAPSHOT_JSON session, snap_ptr, snap_len, snap_status
+    ok_snapshot = eq snap_status, 0
+    br ok_snapshot -> L_EVAL, L_ERR_SNAPSHOT
+L_EVAL:
+    !ok_snapshot
+    eval_ptr = add 0, 0
+    eval_len = add 0, 0
+    eval_status = add 0, 0
+    EXPAND NODE_REPL_EVAL_LINE session, S_LINE, 5, eval_ptr, eval_len, eval_status
+    ok_eval = eq eval_status, 0
+    br ok_eval -> L_HISTORY, L_ERR_EVAL
+L_HISTORY:
+    !ok_eval
+    hist_ptr = add 0, 0
+    hist_len = add 0, 0
+    hist_status = add 0, 0
+    EXPAND NODE_REPL_HISTORY_JSON session, hist_ptr, hist_len, hist_status
+    ok_history = eq hist_status, 0
+    br ok_history -> L_CLOSE, L_ERR_HISTORY
+L_CLOSE:
+    !ok_history
+    close_status = add 0, 0
+    EXPAND NODE_REPL_CLOSE session, close_status
+    ok_close = eq close_status, 0
+    br ok_close -> L_FREE, L_ERR_CLOSE
+L_FREE:
+    !ok_close
+    free_hist = call @sa_node_plugin_free_buffer(hist_ptr, hist_len)
+    free_eval = call @sa_node_plugin_free_buffer(eval_ptr, eval_len)
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    EXPAND NODE_REPL_FREE session
+    !free_snap
+    !free_eval
+    !free_hist
+    return
+L_ERR_CREATE:
+    !ok_create
+    panic(103)
+L_ERR_DEFINE:
+    !ok_define
+    panic(103)
+L_ERR_PROMPT:
+    !ok_prompt
+    panic(103)
+L_ERR_SNAPSHOT:
+    !ok_snapshot
+    panic(103)
+L_ERR_EVAL:
+    !ok_eval
+    panic(103)
+L_ERR_HISTORY:
+    !ok_history
+    panic(103)
+L_ERR_CLOSE:
+    !ok_close
+    panic(103)

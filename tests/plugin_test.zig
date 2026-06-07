@@ -2149,6 +2149,9 @@ test "node plugin permissions native manifest helpers" {
 }
 
 test "node plugin status reports native command line i18n deprecation and iterable stream support" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--env-file=.env --env-file-if-exists .env.local --require ./preload.js -C development --inspect=127.0.0.1:9229", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+
     var cmd_ptr: ?[*]const u8 = null;
     var cmd_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_status_json(&cmd_ptr, &cmd_len));
@@ -2157,6 +2160,39 @@ test "node plugin status reports native command line i18n deprecation and iterab
     try std.testing.expect(std.mem.indexOf(u8, cmd, "\"module\":\"command_line_options\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, cmd, "\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, cmd, "NODE_OPTIONS") != null or std.mem.indexOf(u8, cmd, "nodeOptions") != null);
+    try std.testing.expect(std.mem.indexOf(u8, cmd, "\"nodeOptionsPresent\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, cmd, "\"preloadModules\":[\"./preload.js\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, cmd, "\"conditions\":[\"development\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, cmd, "\"inspectFlags\":[\"--inspect=127.0.0.1:9229\"]") != null);
+
+    var argv_ptr: ?[*]const u8 = null;
+    var argv_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_argv_json(&argv_ptr, &argv_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(argv_ptr, argv_len);
+    const argv_json = (argv_ptr orelse return error.NullCommandLineOptionsArgv)[0..@intCast(argv_len)];
+    try std.testing.expect(std.mem.startsWith(u8, argv_json, "["));
+
+    var tokens_ptr: ?[*]const u8 = null;
+    var tokens_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_node_options_tokens_json(&tokens_ptr, &tokens_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(tokens_ptr, tokens_len);
+    const tokens = (tokens_ptr orelse return error.NullCommandLineOptionsTokens)[0..@intCast(tokens_len)];
+    try std.testing.expectEqualStrings("[\"--env-file=.env\",\"--env-file-if-exists\",\".env.local\",\"--require\",\"./preload.js\",\"-C\",\"development\",\"--inspect=127.0.0.1:9229\"]", tokens);
+
+    var env_files_ptr: ?[*]const u8 = null;
+    var env_files_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_env_files_json(&env_files_ptr, &env_files_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(env_files_ptr, env_files_len);
+    const env_files = (env_files_ptr orelse return error.NullCommandLineOptionsEnvFiles)[0..@intCast(env_files_len)];
+    try std.testing.expectEqualStrings("{\"required\":[\".env\"],\"optional\":[\".env.local\"]}", env_files);
+
+    var has_require: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_has_flag("--require".ptr, 9, &has_require));
+    try std.testing.expectEqual(@as(u64, 1), has_require);
+
+    var has_fake: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_command_line_options_has_flag("--does-not-exist".ptr, 16, &has_fake));
+    try std.testing.expectEqual(@as(u64, 0), has_fake);
 
     var dep_ptr: ?[*]const u8 = null;
     var dep_len: u64 = 0;

@@ -115,6 +115,15 @@ fn nodeOptionsHasFlag(flag: []const u8) bool {
     return std.mem.indexOf(u8, std.posix.getenv("NODE_OPTIONS") orelse "", flag) != null;
 }
 
+fn appendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8) !void {
+    try out.append('[');
+    for (items, 0..) |item, i| {
+        if (i != 0) try out.append(',');
+        try appendJsonString(out, item);
+    }
+    try out.append(']');
+}
+
 const AsyncResourceHandle = struct {
     allocator: std.mem.Allocator,
     id: u64,
@@ -277,18 +286,256 @@ pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]c
     return writeStatusJson(out_ptr, out_len, "async_context_tracking", true, "async_hooks compatibility shims");
 }
 
+const CommandLineOptionsConfig = struct {
+    allocator: std.mem.Allocator,
+    argv: std.ArrayList([]u8),
+    node_options_tokens: std.ArrayList([]u8),
+    env_files: std.ArrayList([]u8),
+    optional_env_files: std.ArrayList([]u8),
+    conditions: std.ArrayList([]u8),
+    preload_modules: std.ArrayList([]u8),
+    inspect_flags: std.ArrayList([]u8),
+    saw_node_options: bool = false,
+    saw_argv: bool = false,
+
+    fn init(allocator: std.mem.Allocator) CommandLineOptionsConfig {
+        return .{
+            .allocator = allocator,
+            .argv = std.ArrayList([]u8).init(allocator),
+            .node_options_tokens = std.ArrayList([]u8).init(allocator),
+            .env_files = std.ArrayList([]u8).init(allocator),
+            .optional_env_files = std.ArrayList([]u8).init(allocator),
+            .conditions = std.ArrayList([]u8).init(allocator),
+            .preload_modules = std.ArrayList([]u8).init(allocator),
+            .inspect_flags = std.ArrayList([]u8).init(allocator),
+        };
+    }
+
+    fn freeItems(allocator: std.mem.Allocator, list: *std.ArrayList([]u8)) void {
+        for (list.items) |item| allocator.free(item);
+        list.deinit();
+    }
+
+    fn deinit(self: *CommandLineOptionsConfig) void {
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.argv);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.node_options_tokens);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.env_files);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.optional_env_files);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.conditions);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.preload_modules);
+        CommandLineOptionsConfig.freeItems(self.allocator, &self.inspect_flags);
+    }
+};
+
+fn commandLineOptionsPush(list: *std.ArrayList([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
+    try list.append(try allocator.dupe(u8, value));
+}
+
+fn commandLineOptionsFlagValue(token: []const u8, prefix: []const u8) ?[]const u8 {
+    if (!std.mem.startsWith(u8, token, prefix)) return null;
+    if (token.len <= prefix.len or token[prefix.len] != '=') return null;
+    return token[prefix.len + 1 ..];
+}
+
+fn commandLineOptionsInspectPrefix(token: []const u8) bool {
+    return std.mem.eql(u8, token, "--inspect") or
+        std.mem.startsWith(u8, token, "--inspect=") or
+        std.mem.eql(u8, token, "--inspect-brk") or
+        std.mem.startsWith(u8, token, "--inspect-brk=") or
+        std.mem.eql(u8, token, "--inspect-wait") or
+        std.mem.startsWith(u8, token, "--inspect-wait=");
+}
+
+fn commandLineOptionsParseToken(config: *CommandLineOptionsConfig, token: []const u8, next: ?[]const u8, from_node_options: bool) !bool {
+    if (from_node_options) {
+        try commandLineOptionsPush(&config.node_options_tokens, config.allocator, token);
+    }
+    if (commandLineOptionsFlagValue(token, "--env-file")) |value| {
+        try commandLineOptionsPush(&config.env_files, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--env-file") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.env_files, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsFlagValue(token, "--env-file-if-exists")) |value| {
+        try commandLineOptionsPush(&config.optional_env_files, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--env-file-if-exists") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.optional_env_files, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsFlagValue(token, "--require")) |value| {
+        try commandLineOptionsPush(&config.preload_modules, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--require") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.preload_modules, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsFlagValue(token, "-r")) |value| {
+        try commandLineOptionsPush(&config.preload_modules, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "-r") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.preload_modules, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsFlagValue(token, "--conditions")) |value| {
+        try commandLineOptionsPush(&config.conditions, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "--conditions") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.conditions, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsFlagValue(token, "-C")) |value| {
+        try commandLineOptionsPush(&config.conditions, config.allocator, value);
+        return false;
+    }
+    if (std.mem.eql(u8, token, "-C") and next != null) {
+        if (from_node_options) try commandLineOptionsPush(&config.node_options_tokens, config.allocator, next.?);
+        try commandLineOptionsPush(&config.conditions, config.allocator, next.?);
+        return true;
+    }
+    if (commandLineOptionsInspectPrefix(token)) {
+        try commandLineOptionsPush(&config.inspect_flags, config.allocator, token);
+        return false;
+    }
+    return false;
+}
+
+fn commandLineOptionsParseNodeOptions(config: *CommandLineOptionsConfig) !void {
+    const options = std.posix.getenv("NODE_OPTIONS") orelse return;
+    config.saw_node_options = true;
+    var tokens = std.mem.tokenizeAny(u8, options, " \t\r\n");
+    var pending: ?[]const u8 = tokens.next();
+    while (pending) |token| {
+        const next = tokens.next();
+        const consumed_next = try commandLineOptionsParseToken(config, token, next, true);
+        pending = if (consumed_next) tokens.next() else next;
+    }
+}
+
+fn commandLineOptionsParseArgv(config: *CommandLineOptionsConfig) !void {
+    const allocator = config.allocator;
+    const argv = std.process.argsAlloc(allocator) catch return;
+    defer std.process.argsFree(allocator, argv);
+    if (argv.len == 0) return;
+    config.saw_argv = true;
+    for (argv) |arg| {
+        try commandLineOptionsPush(&config.argv, allocator, arg);
+    }
+    if (argv.len <= 1) return;
+    var i: usize = 1;
+    while (i < argv.len) : (i += 1) {
+        const consumed_next = try commandLineOptionsParseToken(config, argv[i], if (i + 1 < argv.len) argv[i + 1] else null, false);
+        if (consumed_next) i += 1;
+    }
+}
+
+fn commandLineOptionsReadConfig(allocator: std.mem.Allocator) !CommandLineOptionsConfig {
+    var config = CommandLineOptionsConfig.init(allocator);
+    errdefer config.deinit();
+    try commandLineOptionsParseNodeOptions(&config);
+    try commandLineOptionsParseArgv(&config);
+    return config;
+}
+
+fn commandLineOptionsHasFlagInternal(flag: []const u8) bool {
+    var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return false;
+    defer config.deinit();
+
+    if (config.saw_node_options) {
+        for (config.node_options_tokens.items) |token| {
+            if (std.mem.eql(u8, token, flag)) return true;
+            if (std.mem.startsWith(u8, token, flag) and token.len > flag.len and token[flag.len] == '=') return true;
+        }
+    }
+    if (config.saw_argv) {
+        for (config.argv.items[1..]) |token| {
+            if (std.mem.eql(u8, token, flag)) return true;
+            if (std.mem.startsWith(u8, token, flag) and token.len > flag.len and token[flag.len] == '=') return true;
+        }
+    }
+    return false;
+}
+
+fn commandLineOptionsWriteStatusJson(config: *const CommandLineOptionsConfig, out: *std.ArrayList(u8)) !void {
+    try out.appendSlice("{\"module\":\"command_line_options\",\"supported\":true,\"mode\":\"native-process-env\",\"argvSource\":\"std.process.args\",\"nodeOptionsParsing\":\"whitespace-tokenized\",\"nodeOptionsPresent\":");
+    try out.appendSlice(if (config.saw_node_options) "true" else "false");
+    try out.appendSlice(",\"argvPresent\":");
+    try out.appendSlice(if (config.saw_argv) "true" else "false");
+    try out.appendSlice(",\"saPluginDev\":");
+    try out.appendSlice(if (std.posix.getenv("SA_PLUGIN_DEV") != null) "true" else "false");
+    try appendEnvStringField(out, "nodeOptions", "NODE_OPTIONS");
+    try out.appendSlice(",\"argv\":");
+    try appendOwnedStringArray(out, config.argv.items);
+    try out.appendSlice(",\"nodeOptionsTokens\":");
+    try appendOwnedStringArray(out, config.node_options_tokens.items);
+    try out.appendSlice(",\"envFiles\":");
+    try appendOwnedStringArray(out, config.env_files.items);
+    try out.appendSlice(",\"optionalEnvFiles\":");
+    try appendOwnedStringArray(out, config.optional_env_files.items);
+    try out.appendSlice(",\"preloadModules\":");
+    try appendOwnedStringArray(out, config.preload_modules.items);
+    try out.appendSlice(",\"conditions\":");
+    try appendOwnedStringArray(out, config.conditions.items);
+    try out.appendSlice(",\"inspectFlags\":");
+    try appendOwnedStringArray(out, config.inspect_flags.items);
+    try out.appendSlice(",\"recognizedFamilies\":[\"--inspect*\",\"--require/-r\",\"--conditions/-C\",\"--env-file\",\"--env-file-if-exists\",\"--input-type\",\"--experimental-*\",\"--trace-*\"],\"capabilities\":[\"host argv snapshot\",\"NODE_OPTIONS token snapshot\",\"preload/env-file/conditions/inspect flag introspection\"],\"limitations\":[\"flags are reported for host and tooling compatibility only\",\"no V8 or JavaScript loader flags are executed by this native plugin\",\"NODE_OPTIONS parsing is whitespace-based and does not emulate shell quoting\"]}");
+}
+
 pub export fn sa_node_plugin_command_line_options_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
+    defer config.deinit();
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    const node_options_present = std.posix.getenv("NODE_OPTIONS") != null;
-    const sa_plugin_dev = std.posix.getenv("SA_PLUGIN_DEV") != null;
-    out.appendSlice("{\"module\":\"command_line_options\",\"supported\":true,\"mode\":\"native-process-env\",\"argvSource\":\"std.process.args\",\"nodeOptionsPresent\":") catch return fail();
-    out.appendSlice(if (node_options_present) "true" else "false") catch return fail();
-    out.appendSlice(",\"saPluginDev\":") catch return fail();
-    out.appendSlice(if (sa_plugin_dev) "true" else "false") catch return fail();
-    appendEnvStringField(&out, "nodeOptions", "NODE_OPTIONS") catch return fail();
-    out.appendSlice(",\"recognizedFamilies\":[\"--inspect\",\"--require\",\"--input-type\",\"--conditions\",\"--experimental-*\",\"--trace-*\"],\"limitations\":[\"flags are reported for host/tooling compatibility\",\"no V8 or JavaScript loader flags are executed by this native plugin\"]}") catch return fail();
+    commandLineOptionsWriteStatusJson(&config, &out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_command_line_options_argv_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendOwnedStringArray(&out, config.argv.items) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_command_line_options_node_options_tokens_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendOwnedStringArray(&out, config.node_options_tokens.items) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_command_line_options_env_files_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"required\":") catch return fail();
+    appendOwnedStringArray(&out, config.env_files.items) catch return fail();
+    out.appendSlice(",\"optional\":") catch return fail();
+    appendOwnedStringArray(&out, config.optional_env_files.items) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_command_line_options_has_flag(flag_ptr: ?[*]const u8, flag_len: u64, out_bool: ?*u64) u32 {
+    const flag = if (flag_len == 0) return fail() else (flag_ptr orelse return fail())[0..flag_len];
+    out_bool.?.* = if (commandLineOptionsHasFlagInternal(flag)) 1 else 0;
+    return 0;
 }
 
 pub export fn sa_node_plugin_debugger_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

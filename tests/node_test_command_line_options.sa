@@ -1,0 +1,85 @@
+// SA tests for Node command_line_options native config helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_REQUIRE = utf8:"--require"
+
+@test "node.command_line_options native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_ARGV, L_ERR_STATUS
+L_ARGV:
+    !ok1
+    argv_ptr = add 0, 0
+    argv_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_ARGV_JSON argv_ptr, argv_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_TOKENS, L_ERR_ARGV
+L_TOKENS:
+    !ok2
+    tokens_ptr = add 0, 0
+    tokens_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_NODE_OPTIONS_TOKENS_JSON tokens_ptr, tokens_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_ENV_FILES, L_ERR_TOKENS
+L_ENV_FILES:
+    !ok3
+    env_ptr = add 0, 0
+    env_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_ENV_FILES_JSON env_ptr, env_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_HAS, L_ERR_ENV
+L_HAS:
+    !ok4
+    has_require = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_COMMAND_LINE_OPTIONS_HAS_FLAG has_require, s5, S_REQUIRE, 9
+    ok5 = eq s5, 0
+    br ok5 -> L_FREE, L_ERR_HAS
+L_FREE:
+    !ok5
+    free_env = call @sa_node_plugin_free_buffer(env_ptr, env_len)
+    free_tokens = call @sa_node_plugin_free_buffer(tokens_ptr, tokens_len)
+    free_argv = call @sa_node_plugin_free_buffer(argv_ptr, argv_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_argv
+    !free_tokens
+    !free_env
+    !s5
+    !has_require
+    !s4
+    !env_len
+    !env_ptr
+    !s3
+    !tokens_len
+    !tokens_ptr
+    !s2
+    !argv_len
+    !argv_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_ARGV:
+    !ok2
+    panic(103)
+L_ERR_TOKENS:
+    !ok3
+    panic(103)
+L_ERR_ENV:
+    !ok4
+    panic(103)
+L_ERR_HAS:
+    !ok5
+    panic(103)

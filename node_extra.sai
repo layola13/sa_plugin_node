@@ -297,6 +297,10 @@
 @extern sa_node_plugin_diagnostics_channel_snapshot_json(channel_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_async_context_tracking_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_command_line_options_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_command_line_options_argv_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_command_line_options_node_options_tokens_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_command_line_options_env_files_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_command_line_options_has_flag(flag_ptr: ptr, flag_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_debugger_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_deprecated_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_deprecated_flags_json(&out_ptr: ptr, &out_len: u64) -> u64

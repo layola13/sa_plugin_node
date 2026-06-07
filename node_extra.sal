@@ -3612,6 +3612,36 @@
     !__m_load_493e3735_p_1
 [END_MACRO]
 
+[MACRO] NODE_COMMAND_LINE_OPTIONS_ARGV_JSON %out_ptr, %out_len, %out_status
+    __m_command_line_options_argv_ptr_slot = stack_alloc 8
+    __m_command_line_options_argv_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_command_line_options_argv_json(&__m_command_line_options_argv_ptr_slot, &__m_command_line_options_argv_len_slot)
+    %out_ptr = load __m_command_line_options_argv_ptr_slot+0 as ptr
+    %out_len = load __m_command_line_options_argv_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_COMMAND_LINE_OPTIONS_NODE_OPTIONS_TOKENS_JSON %out_ptr, %out_len, %out_status
+    __m_command_line_options_tokens_ptr_slot = stack_alloc 8
+    __m_command_line_options_tokens_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_command_line_options_node_options_tokens_json(&__m_command_line_options_tokens_ptr_slot, &__m_command_line_options_tokens_len_slot)
+    %out_ptr = load __m_command_line_options_tokens_ptr_slot+0 as ptr
+    %out_len = load __m_command_line_options_tokens_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_COMMAND_LINE_OPTIONS_ENV_FILES_JSON %out_ptr, %out_len, %out_status
+    __m_command_line_options_env_files_ptr_slot = stack_alloc 8
+    __m_command_line_options_env_files_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_command_line_options_env_files_json(&__m_command_line_options_env_files_ptr_slot, &__m_command_line_options_env_files_len_slot)
+    %out_ptr = load __m_command_line_options_env_files_ptr_slot+0 as ptr
+    %out_len = load __m_command_line_options_env_files_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_COMMAND_LINE_OPTIONS_HAS_FLAG %out_bool, %out_status, %flag, %flag_len
+    __m_command_line_options_has_flag_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_command_line_options_has_flag(%flag, %flag_len, &__m_command_line_options_has_flag_slot)
+    %out_bool = load __m_command_line_options_has_flag_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_DEBUGGER_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_240a3406_0 = stack_alloc 8
     __m_slot_240a3406_1 = stack_alloc 8

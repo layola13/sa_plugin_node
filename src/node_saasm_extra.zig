@@ -2027,6 +2027,12 @@ const repl_builtin_commands = [_]ReplBuiltinCommand{
     .{ .name = "history", .help = "return current line history" },
 };
 
+const repl_export_names = [_][]const u8{
+    "start",
+    "REPLServer",
+    "Recoverable",
+};
+
 const ReplCommand = struct {
     name: []u8,
     help: []u8,
@@ -2251,8 +2257,36 @@ fn replWriteEvalResultJson(session: *ReplSession, line: []const u8, out_ptr: ?*?
 pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.appendSlice("{\"module\":\"repl\",\"supported\":true,\"mode\":\"native-session-subset\",\"capabilities\":[\"explicit REPL session handles\",\"prompt and continuation prompt metadata\",\"dot-command registry and help listing\",\"line history and buffered continuation input\",\"native eval-line routing without JavaScript execution\"],\"limitations\":[\"no vm or V8-backed JavaScript evaluation\",\"no context object, completion engine, or require injection\",\"multiline continuation uses explicit trailing backslash buffering rather than JavaScript syntax recovery\"]}") catch return fail();
+    out.appendSlice("{\"module\":\"repl\",\"supported\":true,\"mode\":\"top-level-native-repl-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &repl_export_names) catch return fail();
+    out.appendSlice(",\"defaultConfig\":{\"terminal\":") catch return fail();
+    out.appendSlice(if (replIsTerminal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"useColors\":") catch return fail();
+    out.appendSlice(if (replShouldUseColors()) "true" else "false") catch return fail();
+    out.appendSlice(",\"prompt\":\"node> \",\"continuationPrompt\":\"... \",\"builtinCommands\":[\".help\",\".break\",\".clear\",\".history\"]},\"featureSupport\":{\"start\":true,\"REPLServer\":false,\"Recoverable\":false,\"prompt\":true,\"history\":true,\"defineCommand\":true,\"bufferedInput\":true,\"jsEvaluation\":false,\"completion\":false,\"contextObject\":false,\"requireInjection\":false},\"capabilities\":[\"explicit REPL session handles\",\"prompt and continuation prompt metadata\",\"dot-command registry and help listing\",\"line history and buffered continuation input\",\"native eval-line routing without JavaScript execution\"],\"limitations\":[\"no vm or V8-backed JavaScript evaluation\",\"no context object, completion engine, or require injection\",\"multiline continuation uses explicit trailing backslash buffering rather than JavaScript syntax recovery\",\"top-level start metadata maps to native session allocation rather than a live stream-bound REPLServer instance\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_repl_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &repl_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_repl_default_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"prompt\":\"node> \",\"continuationPrompt\":\"... \",\"terminal\":") catch return fail();
+    out.appendSlice(if (replIsTerminal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"useColors\":") catch return fail();
+    out.appendSlice(if (replShouldUseColors()) "true" else "false") catch return fail();
+    out.appendSlice(",\"builtinCommands\":[\".help\",\".break\",\".clear\",\".history\"],\"sessionModel\":\"explicit native handle\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_repl_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"start\":{\"supported\":true,\"mode\":\"allocate native REPL session handle with prompt metadata\"},\"REPLServer\":{\"supported\":false,\"reason\":\"JavaScript REPLServer stream-bound EventEmitter objects are not modeled\"},\"Recoverable\":{\"supported\":false,\"reason\":\"JavaScript Recoverable error class identity is not modeled\"},\"prompt\":{\"supported\":true,\"mode\":\"native prompt and continuation prompt metadata\"},\"history\":{\"supported\":true,\"mode\":\"native history JSON snapshot\"},\"defineCommand\":{\"supported\":true,\"mode\":\"native dot-command registry\"},\"bufferedInput\":{\"supported\":true,\"mode\":\"explicit trailing-backslash multiline buffer\"},\"jsEvaluation\":{\"supported\":false,\"reason\":\"vm or V8-backed JavaScript evaluation is out of scope\"},\"completion\":{\"supported\":false,\"reason\":\"syntax-aware completion engine is not modeled\"},\"contextObject\":{\"supported\":false,\"reason\":\"mutable JavaScript evaluation context objects are not modeled\"},\"requireInjection\":{\"supported\":false,\"reason\":\"module loader and require injection are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_repl_create_session(prompt_ptr: ?[*]const u8, prompt_len: u64, out_session: ?*?*anyopaque) u32 {

@@ -3389,6 +3389,41 @@ test "node plugin repl native session subset" {
     try std.testing.expect(plugin.sa_node_plugin_repl_eval_line(session, "x".ptr, 1, &after_close_ptr, &after_close_len) != 0);
 }
 
+test "node plugin repl top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullReplTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"repl\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-repl-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"start\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"REPLServer\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    try std.testing.expectEqualStrings("[\"start\",\"REPLServer\",\"Recoverable\"]", (exports_ptr orelse return error.NullReplTopExports)[0..@intCast(exports_len)]);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_default_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullReplTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"sessionModel\":\"explicit native handle\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"builtinCommands\":[\".help\",\".break\",\".clear\",\".history\"]") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_repl_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullReplTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"start\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"jsEvaluation\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"completion\":{\"supported\":false") != null);
+}
+
 test "node plugin readline terminal control writes ansi sequences" {
     const pipe_fds = try std.posix.pipe();
     defer std.posix.close(pipe_fds[0]);

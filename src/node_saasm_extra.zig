@@ -1494,6 +1494,10 @@ pub export fn sa_node_plugin_http2_constants_json(out_ptr: ?*?[*]const u8, out_l
     );
 }
 
+pub export fn sa_node_plugin_http2_sensitive_headers(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "Symbol(sensitiveHeaders)");
+}
+
 pub export fn sa_node_plugin_http2_get_packed_settings(settings_json_ptr: ?[*]const u8, settings_json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const settings_json = if (settings_json_ptr) |ptr| ptr[0..settings_json_len] else "{}";
     var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, settings_json, .{}) catch return fail();

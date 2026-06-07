@@ -1504,6 +1504,91 @@
     !__dns_promises_resolve6_len
 [END_MACRO]
 
+[MACRO] NODE_DNS_PROMISES_RESOLVE_ANY %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_any_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_any_len_slot = stack_alloc 8
+    __dns_promises_resolve_any_status = call @sa_node_plugin_dns_promises_resolve_any(%hostname, %hostname_len, &__dns_promises_resolve_any_ptr_slot, &__dns_promises_resolve_any_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_any_status, 0
+    !__dns_promises_resolve_any_status
+    __dns_promises_resolve_any_ptr = load __dns_promises_resolve_any_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_any_ptr, 0
+    !__dns_promises_resolve_any_ptr
+    __dns_promises_resolve_any_len = load __dns_promises_resolve_any_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_any_len, 0
+    !__dns_promises_resolve_any_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_CAA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_caa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_caa_len_slot = stack_alloc 8
+    __dns_promises_resolve_caa_status = call @sa_node_plugin_dns_promises_resolve_caa(%hostname, %hostname_len, &__dns_promises_resolve_caa_ptr_slot, &__dns_promises_resolve_caa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_caa_status, 0
+    !__dns_promises_resolve_caa_status
+    __dns_promises_resolve_caa_ptr = load __dns_promises_resolve_caa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_caa_ptr, 0
+    !__dns_promises_resolve_caa_ptr
+    __dns_promises_resolve_caa_len = load __dns_promises_resolve_caa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_caa_len, 0
+    !__dns_promises_resolve_caa_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_NAPTR %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_naptr_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_naptr_len_slot = stack_alloc 8
+    __dns_promises_resolve_naptr_status = call @sa_node_plugin_dns_promises_resolve_naptr(%hostname, %hostname_len, &__dns_promises_resolve_naptr_ptr_slot, &__dns_promises_resolve_naptr_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_naptr_status, 0
+    !__dns_promises_resolve_naptr_status
+    __dns_promises_resolve_naptr_ptr = load __dns_promises_resolve_naptr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_naptr_ptr, 0
+    !__dns_promises_resolve_naptr_ptr
+    __dns_promises_resolve_naptr_len = load __dns_promises_resolve_naptr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_naptr_len, 0
+    !__dns_promises_resolve_naptr_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_SOA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_soa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_soa_len_slot = stack_alloc 8
+    __dns_promises_resolve_soa_status = call @sa_node_plugin_dns_promises_resolve_soa(%hostname, %hostname_len, &__dns_promises_resolve_soa_ptr_slot, &__dns_promises_resolve_soa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_soa_status, 0
+    !__dns_promises_resolve_soa_status
+    __dns_promises_resolve_soa_ptr = load __dns_promises_resolve_soa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_soa_ptr, 0
+    !__dns_promises_resolve_soa_ptr
+    __dns_promises_resolve_soa_len = load __dns_promises_resolve_soa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_soa_len, 0
+    !__dns_promises_resolve_soa_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_TLSA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_tlsa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_tlsa_len_slot = stack_alloc 8
+    __dns_promises_resolve_tlsa_status = call @sa_node_plugin_dns_promises_resolve_tlsa(%hostname, %hostname_len, &__dns_promises_resolve_tlsa_ptr_slot, &__dns_promises_resolve_tlsa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_tlsa_status, 0
+    !__dns_promises_resolve_tlsa_status
+    __dns_promises_resolve_tlsa_ptr = load __dns_promises_resolve_tlsa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_tlsa_ptr, 0
+    !__dns_promises_resolve_tlsa_ptr
+    __dns_promises_resolve_tlsa_len = load __dns_promises_resolve_tlsa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_tlsa_len, 0
+    !__dns_promises_resolve_tlsa_len
+[END_MACRO]
+
 [MACRO] NODE_DNS_PROMISES_REVERSE %out_ptr, %out_len, %out_status, %ip, %ip_len
     __dns_promises_reverse_ptr_slot = stack_alloc 8
     __dns_promises_reverse_len_slot = stack_alloc 8
@@ -4265,6 +4350,40 @@
     !__m_load_655d0146_p_1
 [END_MACRO]
 
+[MACRO] NODE_HTTPS_REQUEST_JSON %out_ptr, %out_len, %out_status, %method, %method_len, %url, %url_len, %body, %body_len
+    __https_request_json_ptr_slot = stack_alloc 8
+    __https_request_json_len_slot = stack_alloc 8
+    __https_request_json_status = call @sa_node_plugin_https_request_json(%method, %method_len, %url, %url_len, %body, %body_len, &__https_request_json_ptr_slot, &__https_request_json_len_slot)
+    !%out_status
+    %out_status = add __https_request_json_status, 0
+    !__https_request_json_status
+    __https_request_json_ptr = load __https_request_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __https_request_json_ptr, 0
+    !__https_request_json_ptr
+    __https_request_json_len = load __https_request_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __https_request_json_len, 0
+    !__https_request_json_len
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_GET_JSON %out_ptr, %out_len, %out_status, %url, %url_len
+    __https_get_json_ptr_slot = stack_alloc 8
+    __https_get_json_len_slot = stack_alloc 8
+    __https_get_json_status = call @sa_node_plugin_https_get_json(%url, %url_len, &__https_get_json_ptr_slot, &__https_get_json_len_slot)
+    !%out_status
+    %out_status = add __https_get_json_status, 0
+    !__https_get_json_status
+    __https_get_json_ptr = load __https_get_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __https_get_json_ptr, 0
+    !__https_get_json_ptr
+    __https_get_json_len = load __https_get_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __https_get_json_len, 0
+    !__https_get_json_len
+[END_MACRO]
+
 [MACRO] NODE_HTTP2_STATUS_JSON %p_0, %p_1
     __m_slot_b27afb81_0 = stack_alloc 8
     __m_slot_b27afb81_1 = stack_alloc 8
@@ -4346,6 +4465,23 @@
     !%out_len
     %out_len = add __http2_constants_len, 0
     !__http2_constants_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_SENSITIVE_HEADERS %out_ptr, %out_len, %out_status
+    __http2_sensitive_headers_ptr_slot = stack_alloc 8
+    __http2_sensitive_headers_len_slot = stack_alloc 8
+    __http2_sensitive_headers_status = call @sa_node_plugin_http2_sensitive_headers(&__http2_sensitive_headers_ptr_slot, &__http2_sensitive_headers_len_slot)
+    !%out_status
+    %out_status = add __http2_sensitive_headers_status, 0
+    !__http2_sensitive_headers_status
+    __http2_sensitive_headers_ptr = load __http2_sensitive_headers_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http2_sensitive_headers_ptr, 0
+    !__http2_sensitive_headers_ptr
+    __http2_sensitive_headers_len = load __http2_sensitive_headers_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http2_sensitive_headers_len, 0
+    !__http2_sensitive_headers_len
 [END_MACRO]
 
 [MACRO] NODE_HTTP2_GET_PACKED_SETTINGS %out_ptr, %out_len, %out_status, %settings_json, %settings_json_len

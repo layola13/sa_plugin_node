@@ -368,6 +368,24 @@ test "node plugin dns promises helpers" {
     const generic = (generic_ptr orelse return error.NullDnsPromisesResolve)[0..@intCast(generic_len)];
     try std.testing.expect(std.mem.indexOf(u8, generic, "127.0.0.1") != null);
 
+    var any_ptr: ?[*]const u8 = null;
+    var any_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_any("localhost", 9, &any_ptr, &any_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(any_ptr, any_len);
+    try std.testing.expect(std.mem.startsWith(u8, (any_ptr orelse return error.NullDnsPromisesResolveAny)[0..@intCast(any_len)], "["));
+
+    var soa_ptr: ?[*]const u8 = null;
+    var soa_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_soa("nodejs.org", 10, &soa_ptr, &soa_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(soa_ptr, soa_len);
+    try std.testing.expect(std.mem.indexOf(u8, (soa_ptr orelse return error.NullDnsPromisesResolveSoa)[0..@intCast(soa_len)], "\"serial\":") != null);
+
+    var caa_ptr: ?[*]const u8 = null;
+    var caa_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_resolve_caa("cloudflare.com", 14, &caa_ptr, &caa_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(caa_ptr, caa_len);
+    try std.testing.expect(std.mem.startsWith(u8, (caa_ptr orelse return error.NullDnsPromisesResolveCaa)[0..@intCast(caa_len)], "["));
+
     var service_ptr: ?[*]const u8 = null;
     var service_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_promises_lookup_service("127.0.0.1", 9, 80, &service_ptr, &service_len));
@@ -3067,6 +3085,25 @@ test "node plugin http one-shot request helpers" {
     thread.join();
 }
 
+test "node plugin https one-shot request helpers" {
+    const https_url = "https://127.0.0.1:1/";
+    const http_url = "http://127.0.0.1:1/";
+
+    var out_ptr: ?[*]const u8 = null;
+    var out_len: u64 = 99;
+    try std.testing.expect(plugin.sa_node_plugin_https_get_json(http_url.ptr, http_url.len, &out_ptr, &out_len) != 0);
+    try std.testing.expect(out_ptr == null);
+    try std.testing.expectEqual(@as(u64, 0), out_len);
+
+    try std.testing.expect(plugin.sa_node_plugin_https_request_json("PATCH", 5, https_url.ptr, https_url.len, null, 0, &out_ptr, &out_len) != 0);
+    try std.testing.expect(out_ptr == null);
+    try std.testing.expectEqual(@as(u64, 0), out_len);
+
+    try std.testing.expect(plugin.sa_node_plugin_https_get_json(https_url.ptr, https_url.len, &out_ptr, &out_len) != 0);
+    try std.testing.expect(out_ptr == null);
+    try std.testing.expectEqual(@as(u64, 0), out_len);
+}
+
 test "node plugin http static metadata and header validators" {
     var max_header_size: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http_max_header_size(&max_header_size));
@@ -3126,6 +3163,12 @@ test "node plugin http2 settings pack and unpack helpers" {
     try std.testing.expectEqual(@as(i64, 200), constants.value.object.get("HTTP_STATUS_OK").?.integer);
     try std.testing.expectEqualStrings(":path", constants.value.object.get("HTTP2_HEADER_PATH").?.string);
     try std.testing.expectEqualStrings("GET", constants.value.object.get("HTTP2_METHOD_GET").?.string);
+
+    var sensitive_ptr: ?[*]const u8 = null;
+    var sensitive_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_sensitive_headers(&sensitive_ptr, &sensitive_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len);
+    try std.testing.expectEqualStrings("Symbol(sensitiveHeaders)", (sensitive_ptr orelse return error.NullHttp2SensitiveHeaders)[0..@intCast(sensitive_len)]);
 
     const enable_push_false = "{\"enablePush\":false}";
     var packed_ptr: ?[*]const u8 = null;

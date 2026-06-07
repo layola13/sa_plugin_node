@@ -286,17 +286,30 @@ L_PROMISES_HINTS:
     phs = add 0, 0
     EXPAND NODE_DNS_PROMISES_LOOKUP_OPTIONS_HINTS php, phl, phs, S_LOCALHOST, 9, 4, 0, 0, 0, 0
     promises_hints_ok = eq phs, 0
-    br promises_hints_ok -> L_OK, L_ERR_PROMISES_HINTS
-L_OK:
+    br promises_hints_ok -> L_PROMISES_ANY, L_ERR_PROMISES_HINTS
+L_PROMISES_ANY:
     !promises_hints_ok
+    pap = add 0, 0
+    pal = add 0, 0
+    pas = add 0, 0
+    EXPAND NODE_DNS_PROMISES_RESOLVE_ANY pap, pal, pas, S_LOCALHOST, 9
+    promises_any_ok = eq pas, 0
+    br promises_any_ok -> L_OK, L_ERR_PROMISES_ANY
+L_OK:
+    !promises_any_ok
     free_p = call @sa_node_plugin_free_buffer(p, l)
     free_pp = call @sa_node_plugin_free_buffer(pp, pl)
     free_hp = call @sa_node_plugin_free_buffer(hp, hl)
     free_php = call @sa_node_plugin_free_buffer(php, phl)
+    free_pap = call @sa_node_plugin_free_buffer(pap, pal)
+    !free_pap
     !free_php
     !free_hp
     !free_pp
     !free_p
+    !pas
+    !pal
+    !pap
     !phs
     !phl
     !php
@@ -321,4 +334,7 @@ L_ERR_HINTS:
     panic(103)
 L_ERR_PROMISES_HINTS:
     !promises_hints_ok
+    panic(103)
+L_ERR_PROMISES_ANY:
+    !promises_any_ok
     panic(103)

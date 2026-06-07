@@ -168,6 +168,24 @@ pub export fn sa_node_plugin_http_get_json(url_ptr: ?[*]const u8, url_len: u64, 
     return httpOneShotJson("GET", url, null, out_ptr, out_len);
 }
 
+pub export fn sa_node_plugin_https_request_json(method_ptr: ?[*]const u8, method_len: u64, url_ptr: ?[*]const u8, url_len: u64, body_ptr: ?[*]const u8, body_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (out_ptr) |slot| slot.* = null;
+    if (out_len) |slot| slot.* = 0;
+    const method = (method_ptr orelse return 2)[0..method_len];
+    const url = (url_ptr orelse return 2)[0..url_len];
+    if (!std.mem.startsWith(u8, url, "https://")) return 2;
+    const body = if (body_ptr) |ptr| ptr[0..body_len] else if (body_len == 0) null else return 2;
+    return httpOneShotJson(method, url, body, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_https_get_json(url_ptr: ?[*]const u8, url_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (out_ptr) |slot| slot.* = null;
+    if (out_len) |slot| slot.* = 0;
+    const url = (url_ptr orelse return 2)[0..url_len];
+    if (!std.mem.startsWith(u8, url, "https://")) return 2;
+    return httpOneShotJson("GET", url, null, out_ptr, out_len);
+}
+
 // --- HTTP Client WebSocket ---
 pub export fn sa_node_plugin_http_websocket_connect(client: ?*anyopaque, url_ptr: ?[*]const u8, url_len: u64, out_ws: ?*?*anyopaque) u32 {
     return http_client.sa_http_client_websocket_connect(client, url_ptr, url_len, out_ws);

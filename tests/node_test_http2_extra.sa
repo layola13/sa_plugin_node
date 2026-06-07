@@ -27,9 +27,21 @@ L_CONSTANTS:
 L_CONSTANTS_LEN:
     !constants_ok
     constants_has_len = ugt constants_len, 0
-    br constants_has_len -> L_PACK, L_ERR_CONSTANTS_LEN
-L_PACK:
+    br constants_has_len -> L_SENSITIVE, L_ERR_CONSTANTS_LEN
+L_SENSITIVE:
     !constants_has_len
+    sensitive_ptr = add 0, 0
+    sensitive_len = add 0, 0
+    sensitive_status = add 0, 0
+    EXPAND NODE_HTTP2_SENSITIVE_HEADERS sensitive_ptr, sensitive_len, sensitive_status
+    sensitive_ok = eq sensitive_status, 0
+    br sensitive_ok -> L_SENSITIVE_LEN, L_ERR_SENSITIVE
+L_SENSITIVE_LEN:
+    !sensitive_ok
+    sensitive_has_len = ugt sensitive_len, 0
+    br sensitive_has_len -> L_PACK, L_ERR_SENSITIVE_LEN
+L_PACK:
+    !sensitive_has_len
     packed_ptr = add 0, 0
     packed_len = add 0, 0
     packed_status = add 0, 0
@@ -56,14 +68,18 @@ L_OK:
     !unpacked_has_len
     free_default = call @sa_node_plugin_free_buffer(default_ptr, default_len)
     free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_sensitive = call @sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len)
     free_packed = call @sa_node_plugin_free_buffer(packed_ptr, packed_len)
     free_unpacked = call @sa_node_plugin_free_buffer(unpacked_ptr, unpacked_len)
     !free_unpacked
     !free_packed
+    !free_sensitive
     !free_constants
     !free_default
     !unpacked_len
     !unpacked_ptr
+    !sensitive_len
+    !sensitive_ptr
     !constants_len
     !constants_ptr
     !packed_len
@@ -88,6 +104,15 @@ L_ERR_CONSTANTS_LEN:
     !constants_has_len
     !constants_ptr
     !constants_len
+    panic(103)
+L_ERR_SENSITIVE:
+    !sensitive_ok
+    !sensitive_status
+    panic(103)
+L_ERR_SENSITIVE_LEN:
+    !sensitive_has_len
+    !sensitive_ptr
+    !sensitive_len
     panic(103)
 L_ERR_PACK:
     !packed_ok

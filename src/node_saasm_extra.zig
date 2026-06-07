@@ -3450,8 +3450,148 @@ pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len:
     return writeStatusJson(out_ptr, out_len, "dgram", true, "UDP4/UDP6 socket create/bind/send/recv/close, connect, address metadata, buffer options, and multicast controls are exposed");
 }
 
+const wasi_supported_versions = [_][]const u8{ "unstable", "preview1" };
+const wasi_import_module_names = [_][]const u8{ "wasi_unstable", "wasi_snapshot_preview1" };
+
+fn wasiVersion() []const u8 {
+    return std.posix.getenv("SA_NODE_WASI_VERSION") orelse "preview1";
+}
+
+fn wasiBindingName(version: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, version, "unstable")) return "wasi_unstable";
+    if (std.mem.eql(u8, version, "preview1")) return "wasi_snapshot_preview1";
+    return null;
+}
+
+fn wasiReadJsonConfig(allocator: std.mem.Allocator, env_name: []const u8, default_json: []const u8, expected_kind: std.meta.Tag(std.json.Value)) ![]u8 {
+    const json_text = std.process.getEnvVarOwned(allocator, env_name) catch |err| switch (err) {
+        error.EnvironmentVariableNotFound => return allocator.dupe(u8, default_json),
+        else => return err,
+    };
+    defer allocator.free(json_text);
+
+    var parsed = try std.json.parseFromSlice(std.json.Value, allocator, json_text, .{});
+    defer parsed.deinit();
+    if (parsed.value != expected_kind) return error.InvalidWasiConfig;
+
+    var out = std.ArrayList(u8).init(allocator);
+    errdefer out.deinit();
+    try std.json.stringify(parsed.value, .{}, out.writer());
+    return out.toOwnedSlice();
+}
+
+fn wasiReturnOnExit() bool {
+    const value = std.posix.getenv("SA_NODE_WASI_RETURN_ON_EXIT") orelse return true;
+    if (value.len == 0) return true;
+    if (std.mem.eql(u8, value, "0")) return false;
+    return !std.ascii.eqlIgnoreCase(value, "false");
+}
+
+fn wasiStdioFd(name: []const u8, default_value: u64) u64 {
+    const value = std.posix.getenv(name) orelse return default_value;
+    return std.fmt.parseInt(u64, value, 10) catch default_value;
+}
+
+fn wasiExperimentalFlag() bool {
+    return nodeOptionsHasFlag("--experimental-wasi-unstable-preview1");
+}
+
+fn wasiAllowedInternal() bool {
+    return !permissionsIsEnabledInternal() or nodeOptionsHasFlag("--allow-wasi");
+}
+
+pub export fn sa_node_plugin_wasi_supported_versions_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &wasi_supported_versions) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_wasi_import_modules_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &wasi_import_module_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_wasi_is_allowed(out_bool: ?*u64) u32 {
+    out_bool.?.* = if (wasiAllowedInternal()) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_wasi_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    const version = wasiVersion();
+    const binding_name = wasiBindingName(version) orelse return fail();
+    const args_json = wasiReadJsonConfig(allocator, "SA_NODE_WASI_ARGS", "[]", .array) catch return fail();
+    defer allocator.free(args_json);
+    const env_json = wasiReadJsonConfig(allocator, "SA_NODE_WASI_ENV", "{}", .object) catch return fail();
+    defer allocator.free(env_json);
+    const preopens_json = wasiReadJsonConfig(allocator, "SA_NODE_WASI_PREOPENS", "{}", .object) catch return fail();
+    defer allocator.free(preopens_json);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"version\":") catch return fail();
+    appendJsonString(&out, version) catch return fail();
+    out.appendSlice(",\"bindingName\":") catch return fail();
+    appendJsonString(&out, binding_name) catch return fail();
+    out.appendSlice(",\"args\":") catch return fail();
+    out.appendSlice(args_json) catch return fail();
+    out.appendSlice(",\"env\":") catch return fail();
+    out.appendSlice(env_json) catch return fail();
+    out.appendSlice(",\"preopens\":") catch return fail();
+    out.appendSlice(preopens_json) catch return fail();
+    out.appendSlice(",\"returnOnExit\":") catch return fail();
+    out.appendSlice(if (wasiReturnOnExit()) "true" else "false") catch return fail();
+    out.writer().print(",\"stdio\":{{\"stdin\":{d},\"stdout\":{d},\"stderr\":{d}}}", .{
+        wasiStdioFd("SA_NODE_WASI_STDIN", 0),
+        wasiStdioFd("SA_NODE_WASI_STDOUT", 1),
+        wasiStdioFd("SA_NODE_WASI_STDERR", 2),
+    }) catch return fail();
+    out.appendSlice(",\"permissionRequired\":true,\"permissionSatisfied\":") catch return fail();
+    out.appendSlice(if (wasiAllowedInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"experimentalFlag\":") catch return fail();
+    out.appendSlice(if (wasiExperimentalFlag()) "true" else "false") catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
 pub export fn sa_node_plugin_wasi_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "wasi", false, "WASI runtime is not modeled");
+    const allocator = std.heap.page_allocator;
+    var versions_ptr: ?[*]const u8 = null;
+    var versions_len: u64 = 0;
+    if (sa_node_plugin_wasi_supported_versions_json(&versions_ptr, &versions_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(versions_ptr, versions_len);
+
+    var imports_ptr: ?[*]const u8 = null;
+    var imports_len: u64 = 0;
+    if (sa_node_plugin_wasi_import_modules_json(&imports_ptr, &imports_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(imports_ptr, imports_len);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    if (sa_node_plugin_wasi_config_json(&config_ptr, &config_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(config_ptr, config_len);
+
+    const versions = if (versions_ptr) |ptr| ptr[0..@intCast(versions_len)] else "[]";
+    const imports = if (imports_ptr) |ptr| ptr[0..@intCast(imports_len)] else "[]";
+    const config = if (config_ptr) |ptr| ptr[0..@intCast(config_len)] else "{}";
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"wasi\",\"supported\":true,\"mode\":\"native-config-introspection\",\"versions\":") catch return fail();
+    out.appendSlice(versions) catch return fail();
+    out.appendSlice(",\"importModules\":") catch return fail();
+    out.appendSlice(imports) catch return fail();
+    out.appendSlice(",\"allowed\":") catch return fail();
+    out.appendSlice(if (wasiAllowedInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"experimentalFlag\":") catch return fail();
+    out.appendSlice(if (wasiExperimentalFlag()) "true" else "false") catch return fail();
+    out.appendSlice(",\"config\":") catch return fail();
+    out.appendSlice(config) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"supported version metadata\",\"import module name metadata\",\"host-config args/env/preopens/stdio snapshot\",\"permission and experimental flag introspection\"],\"limitations\":[\"no WebAssembly instantiation or execution\",\"no uvwasi syscall bridge or wasiImport object model\",\"preopens are reported as configuration only, not enforced sandbox mounts\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_vfs_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

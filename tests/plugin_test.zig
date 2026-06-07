@@ -2015,6 +2015,71 @@ test "node plugin test runner reports native harness support" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"reporterDestinations\":[\"stdout\"]") != null);
 }
 
+test "node plugin wasi reports native config introspection" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--permission --allow-wasi --experimental-wasi-unstable-preview1", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_VERSION", "preview1", 1));
+    defer _ = unsetenv("SA_NODE_WASI_VERSION");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_ARGS", "[\"/virtual/app.wasm\",\"--demo\"]", 1));
+    defer _ = unsetenv("SA_NODE_WASI_ARGS");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_ENV", "{\"FOO\":\"bar\"}", 1));
+    defer _ = unsetenv("SA_NODE_WASI_ENV");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_PREOPENS", "{\"/sandbox\":\"/tmp\"}", 1));
+    defer _ = unsetenv("SA_NODE_WASI_PREOPENS");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_RETURN_ON_EXIT", "1", 1));
+    defer _ = unsetenv("SA_NODE_WASI_RETURN_ON_EXIT");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_STDIN", "3", 1));
+    defer _ = unsetenv("SA_NODE_WASI_STDIN");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_STDOUT", "4", 1));
+    defer _ = unsetenv("SA_NODE_WASI_STDOUT");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_WASI_STDERR", "5", 1));
+    defer _ = unsetenv("SA_NODE_WASI_STDERR");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullWasiStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"wasi\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"native-config-introspection\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "wasi_snapshot_preview1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"allowed\":true") != null);
+
+    var versions_ptr: ?[*]const u8 = null;
+    var versions_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_supported_versions_json(&versions_ptr, &versions_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(versions_ptr, versions_len);
+    try std.testing.expectEqualStrings("[\"unstable\",\"preview1\"]", (versions_ptr orelse return error.NullWasiVersions)[0..@intCast(versions_len)]);
+
+    var imports_ptr: ?[*]const u8 = null;
+    var imports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_import_modules_json(&imports_ptr, &imports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(imports_ptr, imports_len);
+    const imports = (imports_ptr orelse return error.NullWasiImports)[0..@intCast(imports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, imports, "wasi_unstable") != null);
+    try std.testing.expect(std.mem.indexOf(u8, imports, "wasi_snapshot_preview1") != null);
+
+    var allowed: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_is_allowed(&allowed));
+    try std.testing.expectEqual(@as(u64, 1), allowed);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_wasi_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullWasiConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"version\":\"preview1\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"bindingName\":\"wasi_snapshot_preview1\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"args\":[\"/virtual/app.wasm\",\"--demo\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"env\":{\"FOO\":\"bar\"}") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"preopens\":{\"/sandbox\":\"/tmp\"}") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"returnOnExit\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"stdin\":3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"stdout\":4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"stderr\":5") != null);
+}
+
 test "node plugin errors and permissions report native compatibility status" {
     var err_ptr: ?[*]const u8 = null;
     var err_len: u64 = 0;

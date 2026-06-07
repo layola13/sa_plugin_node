@@ -493,6 +493,10 @@
 @extern sa_node_plugin_tls_close(socket: ptr) -> u64
 @extern sa_node_plugin_dgram_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_supported_versions_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_import_modules_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_wasi_is_allowed(&out_bool: u64) -> u64
+@extern sa_node_plugin_wasi_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_vfs_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_vfs_new(&out_vfs: ptr) -> u64
 @extern sa_node_plugin_vfs_free(vfs_ptr: ptr) -> u64

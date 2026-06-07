@@ -1,0 +1,83 @@
+// SA tests for Node wasi native config helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.wasi native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_WASI_STATUS_JSON status_ptr, status_len
+    has_status = ugt status_len, 0
+    br has_status -> L_VERSIONS, L_ERR_STATUS
+L_VERSIONS:
+    !has_status
+    versions_ptr = add 0, 0
+    versions_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_WASI_SUPPORTED_VERSIONS_JSON versions_ptr, versions_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_IMPORTS, L_ERR_VERSIONS
+L_IMPORTS:
+    !ok2
+    imports_ptr = add 0, 0
+    imports_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_WASI_IMPORT_MODULES_JSON imports_ptr, imports_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_ALLOWED, L_ERR_IMPORTS
+L_ALLOWED:
+    !ok3
+    allowed = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_WASI_IS_ALLOWED allowed, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_CONFIG, L_ERR_ALLOWED
+L_CONFIG:
+    !ok4
+    config_ptr = add 0, 0
+    config_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_WASI_CONFIG_JSON config_ptr, config_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_FREE, L_ERR_CONFIG
+L_FREE:
+    !ok5
+    free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
+    free_imports = call @sa_node_plugin_free_buffer(imports_ptr, imports_len)
+    free_versions = call @sa_node_plugin_free_buffer(versions_ptr, versions_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_versions
+    !free_imports
+    !free_config
+    !s5
+    !config_len
+    !config_ptr
+    !s4
+    !allowed
+    !s3
+    !imports_len
+    !imports_ptr
+    !s2
+    !versions_len
+    !versions_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !has_status
+    panic(103)
+L_ERR_VERSIONS:
+    !ok2
+    panic(103)
+L_ERR_IMPORTS:
+    !ok3
+    panic(103)
+L_ERR_ALLOWED:
+    !ok4
+    panic(103)
+L_ERR_CONFIG:
+    !ok5
+    panic(103)

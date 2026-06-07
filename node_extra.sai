@@ -419,6 +419,9 @@
 @extern sa_node_plugin_report_write_file(filename_ptr: ptr, filename_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sea_is_sea(&out_bool: u64) -> u64
 @extern sa_node_plugin_sea_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sea_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sea_asset_keys_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sea_get_asset(key_ptr: ptr, key_len: u64, encoding_ptr: ptr, encoding_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sea_get_raw_asset(key_ptr: ptr, key_len: u64, &out_ptr: ptr, &out_len: u64) -> u64

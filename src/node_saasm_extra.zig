@@ -3189,8 +3189,67 @@ pub export fn sa_node_plugin_sea_is_sea(out_bool: ?*u32) u32 {
     return writeOwnedBool(out_bool, std.posix.getenv("SA_NODE_SEA_ASSETS") != null or std.posix.getenv("SA_NODE_SEA_ASSET_DIR") != null);
 }
 
+const sea_export_names = [_][]const u8{
+    "isSea",
+    "getAsset",
+    "getRawAsset",
+    "getAssetAsBlob",
+    "getAssetKeys",
+};
+
+fn seaProviderConfigJson(out: *std.ArrayList(u8)) !void {
+    var is_sea: u32 = 0;
+    if (sa_node_plugin_sea_is_sea(&is_sea) != 0) return error.Unexpected;
+
+    var keys_ptr: ?[*]const u8 = null;
+    var keys_len: u64 = 0;
+    if (sa_node_plugin_sea_asset_keys_json(&keys_ptr, &keys_len) != 0) return error.Unexpected;
+    defer _ = base.sa_node_plugin_free_buffer(keys_ptr, keys_len);
+
+    try out.appendSlice("{\"isSea\":");
+    try out.appendSlice(if (is_sea != 0) "true" else "false");
+    try out.appendSlice(",\"assetKeys\":");
+    try out.appendSlice((keys_ptr orelse return error.Unexpected)[0..@intCast(keys_len)]);
+    try appendEnvStringField(out, "assetsEnv", "SA_NODE_SEA_ASSETS");
+    try appendEnvStringField(out, "assetDir", "SA_NODE_SEA_ASSET_DIR");
+    try out.appendSlice(",\"provider\":");
+    if (std.posix.getenv("SA_NODE_SEA_ASSETS") != null) {
+        try appendJsonString(out, "environment-json");
+    } else if (std.posix.getenv("SA_NODE_SEA_ASSET_DIR") != null) {
+        try appendJsonString(out, "filesystem-directory");
+    } else {
+        try out.appendSlice("null");
+    }
+    try out.append('}');
+}
+
 pub export fn sa_node_plugin_sea_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "sea", true, "single executable application shims are exposed");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"sea\",\"supported\":true,\"mode\":\"top-level-sea-asset-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &sea_export_names) catch return fail();
+    out.appendSlice(",\"config\":") catch return fail();
+    seaProviderConfigJson(&out) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"isSea\":true,\"getAsset\":true,\"getRawAsset\":true,\"getAssetAsBlob\":true,\"getAssetKeys\":true,\"TextDecoderSemantics\":false,\"BlobClass\":false,\"singleExecutableBinaryEmbedding\":false},\"limitations\":[\"SEA data is sourced from environment JSON or a host directory rather than from an embedded single-executable blob\",\"getAssetAsBlob returns a readable native blob-like stream handle rather than a JavaScript Blob instance\",\"getAsset encoding support is limited to the native utf8/base64/hex compatibility paths implemented by this plugin\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_sea_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &sea_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_sea_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    seaProviderConfigJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_sea_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"isSea\":{\"supported\":true,\"mode\":\"environment or directory backed SEA detection\"},\"getAsset\":{\"supported\":true,\"mode\":\"native asset lookup plus utf8/base64/hex encoding compatibility\"},\"getRawAsset\":{\"supported\":true,\"mode\":\"native byte lookup\"},\"getAssetAsBlob\":{\"supported\":true,\"mode\":\"readable native blob-like handle\",\"limitations\":[\"not a JavaScript Blob instance\"]},\"getAssetKeys\":{\"supported\":true,\"mode\":\"environment JSON keys or directory file listing\"},\"singleExecutableBinaryEmbedding\":{\"supported\":false,\"reason\":\"embedded SEA binary blob parsing is not modeled; use environment or directory backed assets\"},\"TextDecoderSemantics\":{\"supported\":false,\"reason\":\"full JavaScript TextDecoder error handling and label aliases are not modeled\"},\"Blob\":{\"supported\":false,\"reason\":\"JavaScript Blob class instances are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_sea_asset_keys_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

@@ -856,6 +856,47 @@ test "node plugin sea assets from environment provider" {
     try std.testing.expect(plugin.sa_node_plugin_sea_get_raw_asset("missing".ptr, 7, &missing_ptr, &missing_len) != 0);
 }
 
+test "node plugin sea top-level facade helpers" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_SEA_ASSETS", "{\"test-key\":\"hello\",\"num\":7}", 1));
+    defer _ = unsetenv("SA_NODE_SEA_ASSETS");
+    defer _ = unsetenv("SA_NODE_SEA_ASSET_DIR");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sea_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullSeaStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"sea\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-sea-asset-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"getAssetAsBlob\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"BlobClass\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sea_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullSeaExports)[0..@intCast(exports_len)];
+    try std.testing.expectEqualStrings("[\"isSea\",\"getAsset\",\"getRawAsset\",\"getAssetAsBlob\",\"getAssetKeys\"]", exports_json);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sea_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config_json = (config_ptr orelse return error.NullSeaConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config_json, "\"isSea\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config_json, "\"assetKeys\":[\"test-key\",\"num\"]") != null or std.mem.indexOf(u8, config_json, "\"assetKeys\":[\"num\",\"test-key\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config_json, "\"provider\":\"environment-json\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sea_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullSeaFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"isSea\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Blob\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"singleExecutableBinaryEmbedding\":{\"supported\":false") != null);
+}
+
 test "node plugin sqlite native helpers" {
     var version_ptr: ?[*]const u8 = null;
     var version_len: u64 = 0;

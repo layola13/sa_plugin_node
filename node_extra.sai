@@ -200,6 +200,10 @@
 @extern sa_node_plugin_net_set_default_auto_select_family_attempt_timeout(value: u64) -> u64
 @extern sa_node_plugin_net_create_connection(host_ptr: ptr, host_len: u64, port: u64, &out_socket: ptr) -> u64
 @extern sa_node_plugin_net_create_server(&out_server: ptr) -> u64
+@extern sa_node_plugin_net_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_net_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_net_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_net_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_timers_set_timeout(ms: u64, callback: ptr, &out_id: u64) -> u64
 @extern sa_node_plugin_timers_set_interval(ms: u64, callback: ptr, &out_id: u64) -> u64
 @extern sa_node_plugin_timers_set_immediate(callback: ptr, &out_id: u64) -> u64

@@ -2391,6 +2391,38 @@
     !__m_load_b31b1cd1_p_0
 [END_MACRO]
 
+[MACRO] NODE_NET_STATUS_JSON %out_ptr, %out_len, %out_status
+    __net_status_ptr_slot = stack_alloc 8
+    __net_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_status_json(&__net_status_ptr_slot, &__net_status_len_slot)
+    %out_ptr = load __net_status_ptr_slot+0 as ptr
+    %out_len = load __net_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __net_top_exports_ptr_slot = stack_alloc 8
+    __net_top_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_exports_json(&__net_top_exports_ptr_slot, &__net_top_exports_len_slot)
+    %out_ptr = load __net_top_exports_ptr_slot+0 as ptr
+    %out_len = load __net_top_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __net_top_config_ptr_slot = stack_alloc 8
+    __net_top_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_config_json(&__net_top_config_ptr_slot, &__net_top_config_len_slot)
+    %out_ptr = load __net_top_config_ptr_slot+0 as ptr
+    %out_len = load __net_top_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __net_top_feature_ptr_slot = stack_alloc 8
+    __net_top_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_feature_support_json(&__net_top_feature_ptr_slot, &__net_top_feature_len_slot)
+    %out_ptr = load __net_top_feature_ptr_slot+0 as ptr
+    %out_len = load __net_top_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_TIMERS_SET_TIMEOUT %p_0, %p_1, %p_2, %p_3
     __m_slot_f787e0e6_0 = stack_alloc 8
     __m_status_f787e0e6 = call @sa_node_plugin_timers_set_timeout(%p_0, %p_1, &__m_slot_f787e0e6_0)

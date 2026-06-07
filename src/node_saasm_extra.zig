@@ -5658,6 +5658,26 @@ const dgram_export_names = [_][]const u8{
     "Socket",
 };
 
+const net_export_names = [_][]const u8{
+    "_createServerHandle",
+    "_normalizeArgs",
+    "BlockList",
+    "SocketAddress",
+    "connect",
+    "createConnection",
+    "createServer",
+    "isIP",
+    "isIPv4",
+    "isIPv6",
+    "Server",
+    "Socket",
+    "Stream",
+    "getDefaultAutoSelectFamily",
+    "setDefaultAutoSelectFamily",
+    "getDefaultAutoSelectFamilyAttemptTimeout",
+    "setDefaultAutoSelectFamilyAttemptTimeout",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6630,6 +6650,54 @@ pub export fn sa_node_plugin_dgram_config_json(out_ptr: ?*?[*]const u8, out_len:
 
 pub export fn sa_node_plugin_dgram_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"createSocket\":{\"supported\":true,\"mode\":\"allocate explicit native UDP socket handle for udp4 or udp6\"},\"Socket\":{\"supported\":false,\"reason\":\"JavaScript dgram Socket EventEmitter class instances are not modeled\"},\"bind\":{\"supported\":true,\"mode\":\"explicit native bind on UDP socket handle\"},\"send\":{\"supported\":true,\"mode\":\"explicit native sendto or connected send on UDP socket handle\"},\"recv\":{\"supported\":true,\"mode\":\"explicit native recvfrom with host and port outputs\"},\"connect\":{\"supported\":true,\"mode\":\"native UDP connect storing peer on explicit handle\"},\"disconnect\":{\"supported\":true,\"mode\":\"native UDP disconnect on explicit handle\"},\"address\":{\"supported\":true,\"mode\":\"local socket address JSON snapshot\"},\"remoteAddress\":{\"supported\":true,\"mode\":\"connected peer address JSON snapshot\"},\"ref\":{\"supported\":true,\"mode\":\"native has_ref state toggle\"},\"unref\":{\"supported\":true,\"mode\":\"native has_ref state toggle\"},\"hasRef\":{\"supported\":true,\"mode\":\"native has_ref state query\"},\"setBroadcast\":{\"supported\":true,\"mode\":\"sets SO_BROADCAST\"},\"setTTL\":{\"supported\":true,\"mode\":\"sets IPv4 TTL\"},\"setMulticastTTL\":{\"supported\":true,\"mode\":\"sets IPv4 multicast TTL\"},\"setMulticastLoopback\":{\"supported\":true,\"mode\":\"sets IPv4 multicast loopback\"},\"setMulticastInterface\":{\"supported\":true,\"mode\":\"sets IPv4 multicast interface\"},\"setMulticastInterface6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast interface index\"},\"setMulticastHops6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast hops\"},\"setMulticastLoopback6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast loopback\"},\"membership\":{\"supported\":true,\"mode\":\"IPv4 and IPv6 multicast membership controls, including IPv4 source-specific membership\"},\"bufferSizing\":{\"supported\":true,\"mode\":\"native SO_RCVBUF and SO_SNDBUF configuration and queries\"},\"sendQueueMetrics\":{\"supported\":true,\"mode\":\"reports 0 for this synchronous UDP send model\"},\"blockList\":{\"supported\":true,\"mode\":\"native copied send and receive blocklist rules\"}}");
+}
+
+pub export fn sa_node_plugin_net_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var auto_select_family: u64 = 0;
+    if (ext.sa_node_plugin_net_get_default_auto_select_family(&auto_select_family) != 0) return fail();
+    var auto_select_timeout: u64 = 0;
+    if (ext.sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&auto_select_timeout) != 0) return fail();
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"net\",\"supported\":true,\"mode\":\"top-level-native-net-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &net_export_names) catch return fail();
+    out.appendSlice(",\"defaults\":{\"autoSelectFamily\":") catch return fail();
+    out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
+    out.appendSlice(",\"autoSelectFamilyAttemptTimeout\":") catch return fail();
+    out.writer().print("{d}", .{auto_select_timeout}) catch return fail();
+    out.appendSlice("},\"featureSupport\":{\"connect\":true,\"createConnection\":true,\"createServer\":true,\"isIP\":true,\"isIPv4\":true,\"isIPv6\":true,\"BlockList\":true,\"SocketAddress\":true,\"getDefaultAutoSelectFamily\":true,\"setDefaultAutoSelectFamily\":true,\"getDefaultAutoSelectFamilyAttemptTimeout\":true,\"setDefaultAutoSelectFamilyAttemptTimeout\":true,\"Server\":false,\"Socket\":false,\"Stream\":false,\"_createServerHandle\":false,\"_normalizeArgs\":false},\"capabilities\":[\"TCP and Unix socket connect/listen/accept/read/write/end helpers\",\"socket and server address, timeout, buffer, ref, readyState, and byte-counter metadata\",\"SocketAddress and BlockList native handles\",\"TCP connect blocklist filtering and createConnection/createServer convenience helpers\",\"default auto-select-family setting metadata and setters\"],\"limitations\":[\"no JavaScript Server, Socket, or Stream class instances\",\"no EventEmitter callback object model for sockets or servers\",\"_createServerHandle and _normalizeArgs internal JavaScript helpers are not modeled\",\"createConnection and createServer return explicit native handles rather than JavaScript objects\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_net_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &net_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_net_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var auto_select_family: u64 = 0;
+    if (ext.sa_node_plugin_net_get_default_auto_select_family(&auto_select_family) != 0) return fail();
+    var auto_select_timeout: u64 = 0;
+    if (ext.sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&auto_select_timeout) != 0) return fail();
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"socketModel\":\"explicit native TCP or Unix socket handle\",\"serverModel\":\"explicit native listener handle\",\"blockListModel\":\"explicit native BlockList handle\",\"socketAddressModel\":\"explicit native SocketAddress handle\",\"defaultAutoSelectFamily\":") catch return fail();
+    out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
+    out.appendSlice(",\"defaultAutoSelectFamilyAttemptTimeout\":") catch return fail();
+    out.writer().print("{d}", .{auto_select_timeout}) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_net_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"explicit native TCP or Unix socket connect helper\"},\"createConnection\":{\"supported\":true,\"mode\":\"alias of native connect helper returning explicit socket handle\"},\"createServer\":{\"supported\":true,\"mode\":\"native listener handle on an ephemeral port\",\"limitations\":[\"returns explicit native listener handle rather than a JavaScript Server object\"]},\"isIP\":{\"supported\":true,\"mode\":\"native IP parser returning 0, 4, or 6\"},\"isIPv4\":{\"supported\":true,\"mode\":\"native IPv4 parser boolean helper\"},\"isIPv6\":{\"supported\":true,\"mode\":\"native IPv6 parser boolean helper\"},\"BlockList\":{\"supported\":true,\"mode\":\"explicit native BlockList handle with add/check/rules helpers\"},\"SocketAddress\":{\"supported\":true,\"mode\":\"explicit native SocketAddress handle with parse/address/family/port/flowlabel/json helpers\"},\"getDefaultAutoSelectFamily\":{\"supported\":true,\"mode\":\"read native default setting metadata\"},\"setDefaultAutoSelectFamily\":{\"supported\":true,\"mode\":\"write native default setting metadata\"},\"getDefaultAutoSelectFamilyAttemptTimeout\":{\"supported\":true,\"mode\":\"read native default timeout metadata\"},\"setDefaultAutoSelectFamilyAttemptTimeout\":{\"supported\":true,\"mode\":\"write native default timeout metadata\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript Server class instances are not modeled; use explicit native listener handles instead\"},\"Socket\":{\"supported\":false,\"reason\":\"JavaScript Socket class instances are not modeled; use explicit native socket handles instead\"},\"Stream\":{\"supported\":false,\"reason\":\"legacy JavaScript Stream alias semantics are not modeled\"},\"_createServerHandle\":{\"supported\":false,\"reason\":\"Node internal JavaScript server-handle helper is not exposed as a public native ABI helper\"},\"_normalizeArgs\":{\"supported\":false,\"reason\":\"Node internal JavaScript argument normalization helper is not modeled\"}}");
 }
 
 const wasi_supported_versions = [_][]const u8{ "unstable", "preview1" };

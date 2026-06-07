@@ -4143,6 +4143,112 @@ test "node plugin quic and http3 metadata helpers" {
     try std.testing.expectEqual(@as(i64, 9114), http3_constants.value.object.get("RFC_HTTP3").?.integer);
 }
 
+test "node plugin quic http3 and dtls native endpoint subsets" {
+    var quic_endpoint: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_listen(4, "127.0.0.1", 9, 0, "h3", 2, "cubic", 5, 1500, &quic_endpoint));
+    defer _ = plugin.sa_node_plugin_quic_endpoint_free(quic_endpoint);
+
+    var qsnap_ptr: ?[*]const u8 = null;
+    var qsnap_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_snapshot_json(quic_endpoint, &qsnap_ptr, &qsnap_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(qsnap_ptr, qsnap_len);
+    const qsnap = (qsnap_ptr orelse return error.NullQuicSnapshot)[0..@intCast(qsnap_len)];
+    try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"server\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"alpn\":\"h3\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"cc\":\"cubic\"") != null);
+
+    var qaddr_ptr: ?[*]const u8 = null;
+    var qaddr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_address_json(quic_endpoint, &qaddr_ptr, &qaddr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(qaddr_ptr, qaddr_len);
+    const port = try jsonPort((qaddr_ptr orelse return error.NullQuicAddress)[0..@intCast(qaddr_len)]);
+    try std.testing.expect(port != 0);
+
+    var has_ref: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_has_ref(quic_endpoint, &has_ref));
+    try std.testing.expectEqual(@as(u64, 1), has_ref);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_unref(quic_endpoint));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_has_ref(quic_endpoint, &has_ref));
+    try std.testing.expectEqual(@as(u64, 0), has_ref);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_ref(quic_endpoint));
+
+    var client_endpoint: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_connect(4, "127.0.0.1", 9, port, null, 0, 0, "h3", 2, "reno", 4, 500, &client_endpoint));
+    defer _ = plugin.sa_node_plugin_quic_endpoint_free(client_endpoint);
+
+    var client_raddr_ptr: ?[*]const u8 = null;
+    var client_raddr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_remote_address_json(client_endpoint, &client_raddr_ptr, &client_raddr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(client_raddr_ptr, client_raddr_len);
+    try std.testing.expectEqual(port, try jsonPort((client_raddr_ptr orelse return error.NullQuicRemote)[0..@intCast(client_raddr_len)]));
+
+    var http3_session: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_create_session(client_endpoint, "example.test", 12, "/echo", 5, "POST", 4, &http3_session));
+    defer _ = plugin.sa_node_plugin_http3_session_free(http3_session);
+
+    var h3snap_ptr: ?[*]const u8 = null;
+    var h3snap_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_session_snapshot_json(http3_session, &h3snap_ptr, &h3snap_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(h3snap_ptr, h3snap_len);
+    const h3snap = (h3snap_ptr orelse return error.NullHttp3Snapshot)[0..@intCast(h3snap_len)];
+    try std.testing.expect(std.mem.indexOf(u8, h3snap, "example.test") != null);
+    try std.testing.expect(std.mem.indexOf(u8, h3snap, "\"method\":\"POST\"") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_session_send_datagram(http3_session, "ping", 4));
+    var recv_ptr: ?[*]const u8 = null;
+    var recv_len: u64 = 0;
+    var recv_host_ptr: ?[*]const u8 = null;
+    var recv_host_len: u64 = 0;
+    var recv_port: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_session_recv_datagram(http3_session, 64, &recv_ptr, &recv_len, &recv_host_ptr, &recv_host_len, &recv_port));
+    defer _ = plugin.sa_node_plugin_free_buffer(recv_ptr, recv_len);
+    defer _ = plugin.sa_node_plugin_free_buffer(recv_host_ptr, recv_host_len);
+    try std.testing.expectEqualStrings("ping", (recv_ptr orelse return error.NullHttp3Recv)[0..@intCast(recv_len)]);
+    try std.testing.expectEqual(port, @as(u16, @intCast(recv_port)));
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_session_close(http3_session));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_close(client_endpoint));
+
+    var dtls_status_ptr: ?[*]const u8 = null;
+    var dtls_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_status_json(&dtls_status_ptr, &dtls_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(dtls_status_ptr, dtls_status_len);
+    try std.testing.expect(std.mem.indexOf(u8, (dtls_status_ptr orelse return error.NullDtlsStatus)[0..@intCast(dtls_status_len)], "\"module\":\"dtls\"") != null);
+
+    var dtls_server: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_listen(4, "127.0.0.1", 9, 0, &dtls_server));
+    defer _ = plugin.sa_node_plugin_dtls_free(dtls_server);
+    var dtls_addr_ptr: ?[*]const u8 = null;
+    var dtls_addr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_endpoint_address_json(dtls_server, &dtls_addr_ptr, &dtls_addr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(dtls_addr_ptr, dtls_addr_len);
+    const dtls_port = try jsonPort((dtls_addr_ptr orelse return error.NullDtlsAddress)[0..@intCast(dtls_addr_len)]);
+
+    var dtls_client: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_connect(4, "127.0.0.1", 9, dtls_port, null, 0, 0, &dtls_client));
+    defer _ = plugin.sa_node_plugin_dtls_free(dtls_client);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_send(dtls_client, "hi", 2));
+
+    var dtls_recv_ptr: ?[*]const u8 = null;
+    var dtls_recv_len: u64 = 0;
+    var dtls_recv_host_ptr: ?[*]const u8 = null;
+    var dtls_recv_host_len: u64 = 0;
+    var dtls_recv_port: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_recv(dtls_server, 64, &dtls_recv_ptr, &dtls_recv_len, &dtls_recv_host_ptr, &dtls_recv_host_len, &dtls_recv_port));
+    defer _ = plugin.sa_node_plugin_free_buffer(dtls_recv_ptr, dtls_recv_len);
+    defer _ = plugin.sa_node_plugin_free_buffer(dtls_recv_host_ptr, dtls_recv_host_len);
+    try std.testing.expectEqualStrings("hi", (dtls_recv_ptr orelse return error.NullDtlsRecv)[0..@intCast(dtls_recv_len)]);
+
+    var dtls_snap_ptr: ?[*]const u8 = null;
+    var dtls_snap_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_endpoint_snapshot_json(dtls_client, &dtls_snap_ptr, &dtls_snap_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(dtls_snap_ptr, dtls_snap_len);
+    try std.testing.expect(std.mem.indexOf(u8, (dtls_snap_ptr orelse return error.NullDtlsSnapshot)[0..@intCast(dtls_snap_len)], "\"alpn\":\"dtls\"") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_close(dtls_client));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_close(dtls_server));
+}
+
 test "node plugin tls top level constants and cipher helpers" {
     var ciphers_ptr: ?[*]const u8 = null;
     var ciphers_len: u64 = 0;

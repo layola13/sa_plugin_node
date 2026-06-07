@@ -4421,6 +4421,325 @@ pub export fn sa_node_plugin_http3_constants_json(out_ptr: ?*?[*]const u8, out_l
     );
 }
 
+const QuicEndpointHandle = struct {
+    allocator: std.mem.Allocator,
+    socket: ?*anyopaque,
+    family: u32,
+    server: bool,
+    closed: bool = false,
+    bound: bool = false,
+    connected: bool = false,
+    has_ref: bool = true,
+    local_host: []u8,
+    local_port: u16,
+    remote_host: []u8,
+    remote_port: u16,
+    alpn: []u8,
+    cc: []u8,
+    idle_timeout_ms: u64,
+
+    fn deinit(self: *QuicEndpointHandle) void {
+        if (!self.closed and self.socket != null) {
+            _ = base.sa_node_plugin_dgram_close(self.socket);
+        }
+        self.allocator.free(self.local_host);
+        self.allocator.free(self.remote_host);
+        self.allocator.free(self.alpn);
+        self.allocator.free(self.cc);
+        self.allocator.destroy(self);
+    }
+};
+
+const QuicSessionHandle = struct {
+    allocator: std.mem.Allocator,
+    endpoint: *QuicEndpointHandle,
+    authority: []u8,
+    path: []u8,
+    method: []u8,
+    closed: bool = false,
+
+    fn deinit(self: *QuicSessionHandle) void {
+        self.allocator.free(self.authority);
+        self.allocator.free(self.path);
+        self.allocator.free(self.method);
+        self.allocator.destroy(self);
+    }
+};
+
+fn quicEndpointHandle(ptr: ?*anyopaque) ?*QuicEndpointHandle {
+    if (ptr == null) return null;
+    return @ptrCast(@alignCast(ptr));
+}
+
+fn quicSessionHandle(ptr: ?*anyopaque) ?*QuicSessionHandle {
+    if (ptr == null) return null;
+    return @ptrCast(@alignCast(ptr));
+}
+
+fn quicNormalizeCc(cc: []const u8) ?[]const u8 {
+    if (cc.len == 0) return "cubic";
+    if (std.ascii.eqlIgnoreCase(cc, "reno")) return "reno";
+    if (std.ascii.eqlIgnoreCase(cc, "cubic")) return "cubic";
+    if (std.ascii.eqlIgnoreCase(cc, "bbr")) return "bbr";
+    return null;
+}
+
+fn quicNormalizeAlpn(alpn: []const u8) ?[]const u8 {
+    if (alpn.len == 0) return "h3";
+    if (std.mem.eql(u8, alpn, "h3")) return "h3";
+    if (std.mem.eql(u8, alpn, "h3-29")) return "h3-29";
+    return null;
+}
+
+fn quicCreateEndpoint(family: u32, server: bool, local_host: []const u8, local_port: u64, remote_host: []const u8, remote_port: u64, alpn: []const u8, cc: []const u8, idle_timeout_ms: u64, out_endpoint: ?*?*anyopaque) u32 {
+    if (family != 4 and family != 6) return fail();
+    if (local_port > std.math.maxInt(u16) or remote_port > std.math.maxInt(u16)) return fail();
+    const allocator = std.heap.page_allocator;
+    const norm_alpn = quicNormalizeAlpn(alpn) orelse return fail();
+    const norm_cc = quicNormalizeCc(cc) orelse return fail();
+    const socket = if (family == 6) base.sa_node_plugin_dgram_create_udp6() else base.sa_node_plugin_dgram_create();
+    if (socket == null) return fail();
+    errdefer _ = base.sa_node_plugin_dgram_close(socket);
+
+    if (server or local_host.len != 0 or local_port != 0) {
+        const bind_host = if (local_host.len == 0) (if (family == 6) "::" else "0.0.0.0") else local_host;
+        if (base.sa_node_plugin_dgram_bind(socket, bind_host.ptr, bind_host.len, local_port) != 0) return fail();
+    }
+    if (!server and remote_host.len != 0) {
+        if (base.sa_node_plugin_dgram_connect(socket, remote_host.ptr, remote_host.len, remote_port) != 0) return fail();
+    }
+
+    const handle = allocator.create(QuicEndpointHandle) catch return fail();
+    errdefer allocator.destroy(handle);
+    handle.* = .{
+        .allocator = allocator,
+        .socket = socket,
+        .family = family,
+        .server = server,
+        .bound = server or local_host.len != 0 or local_port != 0,
+        .connected = !server and remote_host.len != 0,
+        .local_host = allocator.dupe(u8, local_host) catch return fail(),
+        .local_port = @intCast(local_port),
+        .remote_host = allocator.dupe(u8, remote_host) catch return fail(),
+        .remote_port = @intCast(remote_port),
+        .alpn = allocator.dupe(u8, norm_alpn) catch return fail(),
+        .cc = allocator.dupe(u8, norm_cc) catch return fail(),
+        .idle_timeout_ms = idle_timeout_ms,
+    };
+    out_endpoint.?.* = @ptrCast(handle);
+    return 0;
+}
+
+fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(handle.allocator);
+    defer out.deinit();
+    out.appendSlice("{\"family\":") catch return fail();
+    out.writer().print("{d}", .{handle.family}) catch return fail();
+    out.appendSlice(",\"server\":") catch return fail();
+    out.appendSlice(if (handle.server) "true" else "false") catch return fail();
+    out.appendSlice(",\"closed\":") catch return fail();
+    out.appendSlice(if (handle.closed) "true" else "false") catch return fail();
+    out.appendSlice(",\"bound\":") catch return fail();
+    out.appendSlice(if (handle.bound) "true" else "false") catch return fail();
+    out.appendSlice(",\"connected\":") catch return fail();
+    out.appendSlice(if (handle.connected) "true" else "false") catch return fail();
+    out.appendSlice(",\"hasRef\":") catch return fail();
+    out.appendSlice(if (handle.has_ref) "true" else "false") catch return fail();
+    out.appendSlice(",\"alpn\":") catch return fail();
+    appendJsonString(&out, handle.alpn) catch return fail();
+    out.appendSlice(",\"cc\":") catch return fail();
+    appendJsonString(&out, handle.cc) catch return fail();
+    out.writer().print(",\"idleTimeoutMs\":{d}", .{handle.idle_timeout_ms}) catch return fail();
+    out.appendSlice(",\"localHost\":") catch return fail();
+    appendJsonString(&out, handle.local_host) catch return fail();
+    out.writer().print(",\"localPort\":{d}", .{handle.local_port}) catch return fail();
+    out.appendSlice(",\"remoteHost\":") catch return fail();
+    appendJsonString(&out, handle.remote_host) catch return fail();
+    out.writer().print(",\"remotePort\":{d}", .{handle.remote_port}) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn quicWriteSessionSnapshot(handle: *QuicSessionHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(handle.allocator);
+    defer out.deinit();
+    out.appendSlice("{\"closed\":") catch return fail();
+    out.appendSlice(if (handle.closed) "true" else "false") catch return fail();
+    out.appendSlice(",\"authority\":") catch return fail();
+    appendJsonString(&out, handle.authority) catch return fail();
+    out.appendSlice(",\"path\":") catch return fail();
+    appendJsonString(&out, handle.path) catch return fail();
+    out.appendSlice(",\"method\":") catch return fail();
+    appendJsonString(&out, handle.method) catch return fail();
+    out.appendSlice(",\"alpn\":") catch return fail();
+    appendJsonString(&out, handle.endpoint.alpn) catch return fail();
+    out.appendSlice(",\"cc\":") catch return fail();
+    appendJsonString(&out, handle.endpoint.cc) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_quic_create_endpoint(family: u32, host_ptr: ?[*]const u8, host_len: u64, port: u64, alpn_ptr: ?[*]const u8, alpn_len: u64, cc_ptr: ?[*]const u8, cc_len: u64, idle_timeout_ms: u64, out_endpoint: ?*?*anyopaque) u32 {
+    const host = if (host_ptr) |ptr| ptr[0..host_len] else "";
+    const alpn = if (alpn_ptr) |ptr| ptr[0..alpn_len] else "";
+    const cc = if (cc_ptr) |ptr| ptr[0..cc_len] else "";
+    return quicCreateEndpoint(family, false, host, port, "", 0, alpn, cc, idle_timeout_ms, out_endpoint);
+}
+
+pub export fn sa_node_plugin_quic_connect(family: u32, remote_host_ptr: ?[*]const u8, remote_host_len: u64, remote_port: u64, local_host_ptr: ?[*]const u8, local_host_len: u64, local_port: u64, alpn_ptr: ?[*]const u8, alpn_len: u64, cc_ptr: ?[*]const u8, cc_len: u64, idle_timeout_ms: u64, out_endpoint: ?*?*anyopaque) u32 {
+    const remote_host = (remote_host_ptr orelse return fail())[0..remote_host_len];
+    if (remote_host.len == 0) return fail();
+    const local_host = if (local_host_ptr) |ptr| ptr[0..local_host_len] else "";
+    const alpn = if (alpn_ptr) |ptr| ptr[0..alpn_len] else "";
+    const cc = if (cc_ptr) |ptr| ptr[0..cc_len] else "";
+    return quicCreateEndpoint(family, false, local_host, local_port, remote_host, remote_port, alpn, cc, idle_timeout_ms, out_endpoint);
+}
+
+pub export fn sa_node_plugin_quic_listen(family: u32, host_ptr: ?[*]const u8, host_len: u64, port: u64, alpn_ptr: ?[*]const u8, alpn_len: u64, cc_ptr: ?[*]const u8, cc_len: u64, idle_timeout_ms: u64, out_endpoint: ?*?*anyopaque) u32 {
+    const host = if (host_ptr) |ptr| ptr[0..host_len] else "";
+    const alpn = if (alpn_ptr) |ptr| ptr[0..alpn_len] else "";
+    const cc = if (cc_ptr) |ptr| ptr[0..cc_len] else "";
+    return quicCreateEndpoint(family, true, host, port, "", 0, alpn, cc, idle_timeout_ms, out_endpoint);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_snapshot_json(endpoint_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    return quicWriteEndpointSnapshot(handle, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_address_json(endpoint_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null) return fail();
+    return base.sa_node_plugin_dgram_address(handle.socket, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_remote_address_json(endpoint_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null or !handle.connected) return fail();
+    return base.sa_node_plugin_dgram_remote_address(handle.socket, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_ref(endpoint_ptr: ?*anyopaque) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null) return fail();
+    handle.has_ref = true;
+    return base.sa_node_plugin_dgram_ref(handle.socket);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_unref(endpoint_ptr: ?*anyopaque) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null) return fail();
+    handle.has_ref = false;
+    return base.sa_node_plugin_dgram_unref(handle.socket);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_has_ref(endpoint_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null) return fail();
+    return base.sa_node_plugin_dgram_has_ref(handle.socket, out_bool);
+}
+
+pub export fn sa_node_plugin_quic_endpoint_close(endpoint_ptr: ?*anyopaque) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed) return 0;
+    handle.closed = true;
+    if (handle.socket != null) {
+        const socket = handle.socket;
+        handle.socket = null;
+        return base.sa_node_plugin_dgram_close(socket);
+    }
+    return 0;
+}
+
+pub export fn sa_node_plugin_quic_endpoint_free(endpoint_ptr: ?*anyopaque) u32 {
+    if (quicEndpointHandle(endpoint_ptr)) |handle| handle.deinit();
+    return 0;
+}
+
+pub export fn sa_node_plugin_http3_create_session(endpoint_ptr: ?*anyopaque, authority_ptr: ?[*]const u8, authority_len: u64, path_ptr: ?[*]const u8, path_len: u64, method_ptr: ?[*]const u8, method_len: u64, out_session: ?*?*anyopaque) u32 {
+    const endpoint = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (endpoint.closed or endpoint.socket == null) return fail();
+    const allocator = std.heap.page_allocator;
+    const authority = if (authority_ptr) |ptr| ptr[0..authority_len] else "";
+    const path = if (path_ptr) |ptr| ptr[0..path_len] else "/";
+    const method = if (method_ptr) |ptr| ptr[0..method_len] else "GET";
+    const handle = allocator.create(QuicSessionHandle) catch return fail();
+    errdefer allocator.destroy(handle);
+    handle.* = .{
+        .allocator = allocator,
+        .endpoint = endpoint,
+        .authority = allocator.dupe(u8, authority) catch return fail(),
+        .path = allocator.dupe(u8, path) catch return fail(),
+        .method = allocator.dupe(u8, method) catch return fail(),
+    };
+    out_session.?.* = @ptrCast(handle);
+    return 0;
+}
+
+pub export fn sa_node_plugin_http3_session_snapshot_json(session_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const handle = quicSessionHandle(session_ptr) orelse return fail();
+    return quicWriteSessionSnapshot(handle, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_http3_session_send_datagram(session_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
+    const handle = quicSessionHandle(session_ptr) orelse return fail();
+    if (handle.closed or handle.endpoint.closed or handle.endpoint.socket == null or !handle.endpoint.connected) return fail();
+    return base.sa_node_plugin_dgram_send_connected(handle.endpoint.socket, data_ptr, data_len);
+}
+
+pub export fn sa_node_plugin_http3_session_recv_datagram(session_ptr: ?*anyopaque, max_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_host_ptr: ?*?[*]const u8, out_host_len: ?*u64, out_port: ?*u64) u32 {
+    const handle = quicSessionHandle(session_ptr) orelse return fail();
+    if (handle.closed or handle.endpoint.closed or handle.endpoint.socket == null) return fail();
+    return base.sa_node_plugin_dgram_recv(handle.endpoint.socket, max_len, out_ptr, out_len, out_host_ptr, out_host_len, out_port);
+}
+
+pub export fn sa_node_plugin_http3_session_close(session_ptr: ?*anyopaque) u32 {
+    const handle = quicSessionHandle(session_ptr) orelse return fail();
+    handle.closed = true;
+    return 0;
+}
+
+pub export fn sa_node_plugin_http3_session_free(session_ptr: ?*anyopaque) u32 {
+    if (quicSessionHandle(session_ptr)) |handle| handle.deinit();
+    return 0;
+}
+
+pub export fn sa_node_plugin_dtls_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeStatusJson(out_ptr, out_len, "dtls", true, "native UDP endpoint/session metadata and datagram transport helpers are exposed; DTLS handshake and record-layer crypto are not modeled");
+}
+
+pub export fn sa_node_plugin_dtls_connect(family: u32, remote_host_ptr: ?[*]const u8, remote_host_len: u64, remote_port: u64, local_host_ptr: ?[*]const u8, local_host_len: u64, local_port: u64, out_endpoint: ?*?*anyopaque) u32 {
+    return sa_node_plugin_quic_connect(family, remote_host_ptr, remote_host_len, remote_port, local_host_ptr, local_host_len, local_port, "dtls".ptr, 4, "reno".ptr, 4, 0, out_endpoint);
+}
+
+pub export fn sa_node_plugin_dtls_listen(family: u32, host_ptr: ?[*]const u8, host_len: u64, port: u64, out_endpoint: ?*?*anyopaque) u32 {
+    return sa_node_plugin_quic_listen(family, host_ptr, host_len, port, "dtls".ptr, 4, "reno".ptr, 4, 0, out_endpoint);
+}
+
+pub export fn sa_node_plugin_dtls_endpoint_snapshot_json(endpoint_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return sa_node_plugin_quic_endpoint_snapshot_json(endpoint_ptr, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_dtls_send(endpoint_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null or !handle.connected) return fail();
+    return base.sa_node_plugin_dgram_send_connected(handle.socket, data_ptr, data_len);
+}
+
+pub export fn sa_node_plugin_dtls_recv(endpoint_ptr: ?*anyopaque, max_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_host_ptr: ?*?[*]const u8, out_host_len: ?*u64, out_port: ?*u64) u32 {
+    const handle = quicEndpointHandle(endpoint_ptr) orelse return fail();
+    if (handle.closed or handle.socket == null) return fail();
+    return base.sa_node_plugin_dgram_recv(handle.socket, max_len, out_ptr, out_len, out_host_ptr, out_host_len, out_port);
+}
+
+pub export fn sa_node_plugin_dtls_close(endpoint_ptr: ?*anyopaque) u32 {
+    return sa_node_plugin_quic_endpoint_close(endpoint_ptr);
+}
+
+pub export fn sa_node_plugin_dtls_free(endpoint_ptr: ?*anyopaque) u32 {
+    return sa_node_plugin_quic_endpoint_free(endpoint_ptr);
+}
+
 var nghttp2_api: ?Nghttp2Api = null;
 var nghttp2_api_mutex = std.Thread.Mutex{};
 

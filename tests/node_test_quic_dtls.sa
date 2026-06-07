@@ -1,0 +1,80 @@
+// SA smoke tests for QUIC / HTTP3 / DTLS native endpoint subsets
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_LOOP4 = utf8:"127.0.0.1"
+@const S_H3 = utf8:"h3"
+@const S_CUBIC = utf8:"cubic"
+@const S_AUTH = utf8:"example.test"
+@const S_PATH = utf8:"/echo"
+@const S_POST = utf8:"POST"
+
+@test "node.quic http3 dtls smoke"():
+L_ENTRY:
+    endpoint = add 0, 0
+    s_listen = add 0, 0
+    EXPAND NODE_QUIC_LISTEN endpoint, s_listen, 4, S_LOOP4, 9, 19771, S_H3, 2, S_CUBIC, 5, 1500
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    s_snap = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_SNAPSHOT_JSON snap_ptr, snap_len, s_snap, endpoint
+    has_ref = add 0, 0
+    s_has_ref = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_HAS_REF s_has_ref, has_ref, endpoint
+    session = add 0, 0
+    s_session = add 0, 0
+    EXPAND NODE_HTTP3_CREATE_SESSION session, s_session, endpoint, S_AUTH, 12, S_PATH, 5, S_POST, 4
+    h3_ptr = add 0, 0
+    h3_len = add 0, 0
+    s_h3 = add 0, 0
+    EXPAND NODE_HTTP3_SESSION_SNAPSHOT_JSON h3_ptr, h3_len, s_h3, session
+    dtls_status_ptr = add 0, 0
+    dtls_status_len = add 0, 0
+    EXPAND NODE_DTLS_STATUS_JSON dtls_status_ptr, dtls_status_len
+    dtls_server = add 0, 0
+    s_dtls_listen = add 0, 0
+    EXPAND NODE_DTLS_LISTEN dtls_server, s_dtls_listen, 4, S_LOOP4, 9, 19772
+    dsnap_ptr = add 0, 0
+    dsnap_len = add 0, 0
+    s_dsnap = add 0, 0
+    EXPAND NODE_DTLS_ENDPOINT_SNAPSHOT_JSON dsnap_ptr, dsnap_len, s_dsnap, dtls_server
+    s_dtls_close = add 0, 0
+    EXPAND NODE_DTLS_CLOSE s_dtls_close, dtls_server
+    s_session_close = add 0, 0
+    EXPAND NODE_HTTP3_SESSION_CLOSE s_session_close, session
+    s_quic_close = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_CLOSE s_quic_close, endpoint
+    free_dsnap = call @sa_node_plugin_free_buffer(dsnap_ptr, dsnap_len)
+    free_dtls_status = call @sa_node_plugin_free_buffer(dtls_status_ptr, dtls_status_len)
+    free_h3 = call @sa_node_plugin_free_buffer(h3_ptr, h3_len)
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    s_dtls_free = add 0, 0
+    EXPAND NODE_DTLS_FREE s_dtls_free, dtls_server
+    s_session_free = add 0, 0
+    EXPAND NODE_HTTP3_SESSION_FREE s_session_free, session
+    s_quic_free = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_FREE s_quic_free, endpoint
+    !s_quic_free
+    !s_session_free
+    !s_dtls_free
+    !free_snap
+    !free_h3
+    !free_dtls_status
+    !free_dsnap
+    !s_quic_close
+    !s_session_close
+    !s_dtls_close
+    !s_dsnap
+    !s_dtls_listen
+    !dtls_status_len
+    !dtls_status_ptr
+    !s_h3
+    !s_session
+    !has_ref
+    !s_has_ref
+    !s_snap
+    !s_listen
+    !dtls_server
+    !session
+    !endpoint
+    return

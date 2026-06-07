@@ -5508,6 +5508,121 @@
     !__quic_caps_len
 [END_MACRO]
 
+[MACRO] NODE_QUIC_CREATE_ENDPOINT %out_endpoint, %out_status, %family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_endpoint_slot = stack_alloc 8
+    __quic_endpoint_status = call @sa_node_plugin_quic_create_endpoint(%family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_endpoint_slot)
+    !%out_status
+    %out_status = add __quic_endpoint_status, 0
+    !__quic_endpoint_status
+    __quic_endpoint_value = load __quic_endpoint_slot+0 as ptr
+    !%out_endpoint
+    %out_endpoint = add __quic_endpoint_value, 0
+    !__quic_endpoint_value
+[END_MACRO]
+
+[MACRO] NODE_QUIC_CONNECT %out_endpoint, %out_status, %family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_connect_slot = stack_alloc 8
+    __quic_connect_status = call @sa_node_plugin_quic_connect(%family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_connect_slot)
+    !%out_status
+    %out_status = add __quic_connect_status, 0
+    !__quic_connect_status
+    __quic_connect_value = load __quic_connect_slot+0 as ptr
+    !%out_endpoint
+    %out_endpoint = add __quic_connect_value, 0
+    !__quic_connect_value
+[END_MACRO]
+
+[MACRO] NODE_QUIC_LISTEN %out_endpoint, %out_status, %family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_listen_slot = stack_alloc 8
+    __quic_listen_status = call @sa_node_plugin_quic_listen(%family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_listen_slot)
+    !%out_status
+    %out_status = add __quic_listen_status, 0
+    !__quic_listen_status
+    __quic_listen_value = load __quic_listen_slot+0 as ptr
+    !%out_endpoint
+    %out_endpoint = add __quic_listen_value, 0
+    !__quic_listen_value
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_snapshot_ptr_slot = stack_alloc 8
+    __quic_snapshot_len_slot = stack_alloc 8
+    __quic_snapshot_status = call @sa_node_plugin_quic_endpoint_snapshot_json(%endpoint, &__quic_snapshot_ptr_slot, &__quic_snapshot_len_slot)
+    !%out_status
+    %out_status = add __quic_snapshot_status, 0
+    !__quic_snapshot_status
+    __quic_snapshot_ptr = load __quic_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __quic_snapshot_ptr, 0
+    !__quic_snapshot_ptr
+    __quic_snapshot_len = load __quic_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __quic_snapshot_len, 0
+    !__quic_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_ADDRESS_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_addr_ptr_slot = stack_alloc 8
+    __quic_addr_len_slot = stack_alloc 8
+    __quic_addr_status = call @sa_node_plugin_quic_endpoint_address_json(%endpoint, &__quic_addr_ptr_slot, &__quic_addr_len_slot)
+    !%out_status
+    %out_status = add __quic_addr_status, 0
+    !__quic_addr_status
+    __quic_addr_ptr = load __quic_addr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __quic_addr_ptr, 0
+    !__quic_addr_ptr
+    __quic_addr_len = load __quic_addr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __quic_addr_len, 0
+    !__quic_addr_len
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_REMOTE_ADDRESS_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_raddr_ptr_slot = stack_alloc 8
+    __quic_raddr_len_slot = stack_alloc 8
+    __quic_raddr_status = call @sa_node_plugin_quic_endpoint_remote_address_json(%endpoint, &__quic_raddr_ptr_slot, &__quic_raddr_len_slot)
+    !%out_status
+    %out_status = add __quic_raddr_status, 0
+    !__quic_raddr_status
+    __quic_raddr_ptr = load __quic_raddr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __quic_raddr_ptr, 0
+    !__quic_raddr_ptr
+    __quic_raddr_len = load __quic_raddr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __quic_raddr_len, 0
+    !__quic_raddr_len
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_REF %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_ref(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_UNREF %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_unref(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_HAS_REF %out_status, %out_bool, %endpoint
+    __quic_has_ref_slot = stack_alloc 8
+    __quic_has_ref_status = call @sa_node_plugin_quic_endpoint_has_ref(%endpoint, &__quic_has_ref_slot)
+    !%out_status
+    %out_status = add __quic_has_ref_status, 0
+    !__quic_has_ref_status
+    __quic_has_ref_value = load __quic_has_ref_slot+0 as u64
+    !%out_bool
+    %out_bool = add __quic_has_ref_value, 0
+    !__quic_has_ref_value
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_CLOSE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_close(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_FREE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_free(%endpoint)
+[END_MACRO]
+
 [MACRO] NODE_HTTP3_STATUS_JSON %out_ptr, %out_len
     __http3_status_ptr_slot = stack_alloc 8
     __http3_status_len_slot = stack_alloc 8
@@ -5538,6 +5653,179 @@
     !%out_len
     %out_len = add __http3_constants_len, 0
     !__http3_constants_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_CREATE_SESSION %out_session, %out_status, %endpoint, %authority, %authority_len, %path, %path_len, %method, %method_len
+    __http3_session_slot = stack_alloc 8
+    __http3_session_status = call @sa_node_plugin_http3_create_session(%endpoint, %authority, %authority_len, %path, %path_len, %method, %method_len, &__http3_session_slot)
+    !%out_status
+    %out_status = add __http3_session_status, 0
+    !__http3_session_status
+    __http3_session_value = load __http3_session_slot+0 as ptr
+    !%out_session
+    %out_session = add __http3_session_value, 0
+    !__http3_session_value
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %session
+    __http3_snapshot_ptr_slot = stack_alloc 8
+    __http3_snapshot_len_slot = stack_alloc 8
+    __http3_snapshot_status = call @sa_node_plugin_http3_session_snapshot_json(%session, &__http3_snapshot_ptr_slot, &__http3_snapshot_len_slot)
+    !%out_status
+    %out_status = add __http3_snapshot_status, 0
+    !__http3_snapshot_status
+    __http3_snapshot_ptr = load __http3_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http3_snapshot_ptr, 0
+    !__http3_snapshot_ptr
+    __http3_snapshot_len = load __http3_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http3_snapshot_len, 0
+    !__http3_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_SEND_DATAGRAM %out_status, %session, %data, %data_len
+    %out_status = call @sa_node_plugin_http3_session_send_datagram(%session, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_RECV_DATAGRAM %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %session, %max_len
+    __http3_recv_ptr_slot = stack_alloc 8
+    __http3_recv_len_slot = stack_alloc 8
+    __http3_recv_host_ptr_slot = stack_alloc 8
+    __http3_recv_host_len_slot = stack_alloc 8
+    __http3_recv_port_slot = stack_alloc 8
+    __http3_recv_status = call @sa_node_plugin_http3_session_recv_datagram(%session, %max_len, &__http3_recv_ptr_slot, &__http3_recv_len_slot, &__http3_recv_host_ptr_slot, &__http3_recv_host_len_slot, &__http3_recv_port_slot)
+    !%out_status
+    %out_status = add __http3_recv_status, 0
+    !__http3_recv_status
+    __http3_recv_ptr = load __http3_recv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http3_recv_ptr, 0
+    !__http3_recv_ptr
+    __http3_recv_len = load __http3_recv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http3_recv_len, 0
+    !__http3_recv_len
+    __http3_recv_host_ptr = load __http3_recv_host_ptr_slot+0 as ptr
+    !%out_host_ptr
+    %out_host_ptr = add __http3_recv_host_ptr, 0
+    !__http3_recv_host_ptr
+    __http3_recv_host_len = load __http3_recv_host_len_slot+0 as u64
+    !%out_host_len
+    %out_host_len = add __http3_recv_host_len, 0
+    !__http3_recv_host_len
+    __http3_recv_port = load __http3_recv_port_slot+0 as u64
+    !%out_port
+    %out_port = add __http3_recv_port, 0
+    !__http3_recv_port
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_CLOSE %out_status, %session
+    %out_status = call @sa_node_plugin_http3_session_close(%session)
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_FREE %out_status, %session
+    %out_status = call @sa_node_plugin_http3_session_free(%session)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_STATUS_JSON %out_ptr, %out_len
+    __dtls_status_ptr_slot = stack_alloc 8
+    __dtls_status_len_slot = stack_alloc 8
+    __dtls_status_status = call @sa_node_plugin_dtls_status_json(&__dtls_status_ptr_slot, &__dtls_status_len_slot)
+    !__dtls_status_status
+    __dtls_status_ptr = load __dtls_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_status_ptr, 0
+    !__dtls_status_ptr
+    __dtls_status_len = load __dtls_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_status_len, 0
+    !__dtls_status_len
+[END_MACRO]
+
+[MACRO] NODE_DTLS_CONNECT %out_endpoint, %out_status, %family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port
+    __dtls_connect_slot = stack_alloc 8
+    __dtls_connect_status = call @sa_node_plugin_dtls_connect(%family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, &__dtls_connect_slot)
+    !%out_status
+    %out_status = add __dtls_connect_status, 0
+    !__dtls_connect_status
+    __dtls_connect_value = load __dtls_connect_slot+0 as ptr
+    !%out_endpoint
+    %out_endpoint = add __dtls_connect_value, 0
+    !__dtls_connect_value
+[END_MACRO]
+
+[MACRO] NODE_DTLS_LISTEN %out_endpoint, %out_status, %family, %host, %host_len, %port
+    __dtls_listen_slot = stack_alloc 8
+    __dtls_listen_status = call @sa_node_plugin_dtls_listen(%family, %host, %host_len, %port, &__dtls_listen_slot)
+    !%out_status
+    %out_status = add __dtls_listen_status, 0
+    !__dtls_listen_status
+    __dtls_listen_value = load __dtls_listen_slot+0 as ptr
+    !%out_endpoint
+    %out_endpoint = add __dtls_listen_value, 0
+    !__dtls_listen_value
+[END_MACRO]
+
+[MACRO] NODE_DTLS_ENDPOINT_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __dtls_snapshot_ptr_slot = stack_alloc 8
+    __dtls_snapshot_len_slot = stack_alloc 8
+    __dtls_snapshot_status = call @sa_node_plugin_dtls_endpoint_snapshot_json(%endpoint, &__dtls_snapshot_ptr_slot, &__dtls_snapshot_len_slot)
+    !%out_status
+    %out_status = add __dtls_snapshot_status, 0
+    !__dtls_snapshot_status
+    __dtls_snapshot_ptr = load __dtls_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_snapshot_ptr, 0
+    !__dtls_snapshot_ptr
+    __dtls_snapshot_len = load __dtls_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_snapshot_len, 0
+    !__dtls_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_DTLS_SEND %out_status, %endpoint, %data, %data_len
+    %out_status = call @sa_node_plugin_dtls_send(%endpoint, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_RECV %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %endpoint, %max_len
+    __dtls_recv_ptr_slot = stack_alloc 8
+    __dtls_recv_len_slot = stack_alloc 8
+    __dtls_recv_host_ptr_slot = stack_alloc 8
+    __dtls_recv_host_len_slot = stack_alloc 8
+    __dtls_recv_port_slot = stack_alloc 8
+    __dtls_recv_status = call @sa_node_plugin_dtls_recv(%endpoint, %max_len, &__dtls_recv_ptr_slot, &__dtls_recv_len_slot, &__dtls_recv_host_ptr_slot, &__dtls_recv_host_len_slot, &__dtls_recv_port_slot)
+    !%out_status
+    %out_status = add __dtls_recv_status, 0
+    !__dtls_recv_status
+    __dtls_recv_ptr = load __dtls_recv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_recv_ptr, 0
+    !__dtls_recv_ptr
+    __dtls_recv_len = load __dtls_recv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_recv_len, 0
+    !__dtls_recv_len
+    __dtls_recv_host_ptr = load __dtls_recv_host_ptr_slot+0 as ptr
+    !%out_host_ptr
+    %out_host_ptr = add __dtls_recv_host_ptr, 0
+    !__dtls_recv_host_ptr
+    __dtls_recv_host_len = load __dtls_recv_host_len_slot+0 as u64
+    !%out_host_len
+    %out_host_len = add __dtls_recv_host_len, 0
+    !__dtls_recv_host_len
+    __dtls_recv_port = load __dtls_recv_port_slot+0 as u64
+    !%out_port
+    %out_port = add __dtls_recv_port, 0
+    !__dtls_recv_port
+[END_MACRO]
+
+[MACRO] NODE_DTLS_CLOSE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_dtls_close(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_FREE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_dtls_free(%endpoint)
 [END_MACRO]
 
 [MACRO] NODE_TLS_STATUS_JSON %p_0, %p_1

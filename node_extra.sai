@@ -481,8 +481,33 @@
 @extern sa_node_plugin_quic_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_capabilities_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_create_endpoint(family: u32, host_ptr: ptr, host_len: u64, port: u64, alpn_ptr: ptr, alpn_len: u64, cc_ptr: ptr, cc_len: u64, idle_timeout_ms: u64, &out_endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_connect(family: u32, remote_host_ptr: ptr, remote_host_len: u64, remote_port: u64, local_host_ptr: ptr, local_host_len: u64, local_port: u64, alpn_ptr: ptr, alpn_len: u64, cc_ptr: ptr, cc_len: u64, idle_timeout_ms: u64, &out_endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_listen(family: u32, host_ptr: ptr, host_len: u64, port: u64, alpn_ptr: ptr, alpn_len: u64, cc_ptr: ptr, cc_len: u64, idle_timeout_ms: u64, &out_endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_endpoint_snapshot_json(endpoint: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_endpoint_address_json(endpoint: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_endpoint_remote_address_json(endpoint: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_endpoint_ref(endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_endpoint_unref(endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_endpoint_has_ref(endpoint: ptr, &out_bool: ptr) -> u64
+@extern sa_node_plugin_quic_endpoint_close(endpoint: ptr) -> u64
+@extern sa_node_plugin_quic_endpoint_free(endpoint: ptr) -> u64
 @extern sa_node_plugin_http3_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http3_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http3_create_session(endpoint: ptr, authority_ptr: ptr, authority_len: u64, path_ptr: ptr, path_len: u64, method_ptr: ptr, method_len: u64, &out_session: ptr) -> u64
+@extern sa_node_plugin_http3_session_snapshot_json(session: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http3_session_send_datagram(session: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_http3_session_recv_datagram(session: ptr, max_len: u64, &out_ptr: ptr, &out_len: u64, &out_host_ptr: ptr, &out_host_len: u64, &out_port: ptr) -> u64
+@extern sa_node_plugin_http3_session_close(session: ptr) -> u64
+@extern sa_node_plugin_http3_session_free(session: ptr) -> u64
+@extern sa_node_plugin_dtls_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dtls_connect(family: u32, remote_host_ptr: ptr, remote_host_len: u64, remote_port: u64, local_host_ptr: ptr, local_host_len: u64, local_port: u64, &out_endpoint: ptr) -> u64
+@extern sa_node_plugin_dtls_listen(family: u32, host_ptr: ptr, host_len: u64, port: u64, &out_endpoint: ptr) -> u64
+@extern sa_node_plugin_dtls_endpoint_snapshot_json(endpoint: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dtls_send(endpoint: ptr, data_ptr: ptr, data_len: u64) -> u64
+@extern sa_node_plugin_dtls_recv(endpoint: ptr, max_len: u64, &out_ptr: ptr, &out_len: u64, &out_host_ptr: ptr, &out_host_len: u64, &out_port: ptr) -> u64
+@extern sa_node_plugin_dtls_close(endpoint: ptr) -> u64
+@extern sa_node_plugin_dtls_free(endpoint: ptr) -> u64
 @extern sa_node_plugin_tls_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_get_ciphers_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_get_ciphers_detailed_json(&out_ptr: ptr, &out_len: u64) -> u64

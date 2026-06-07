@@ -8192,7 +8192,75 @@ pub export fn sa_node_plugin_sqlite_tagstore_free(store_ptr: ?*anyopaque) u32 {
 }
 
 pub export fn sa_node_plugin_tty_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"tty\":{\"isatty\":true}}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"tty\",\"supported\":true,\"mode\":\"top-level-native-tty-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &tty_export_names) catch return fail();
+    out.appendSlice(",\"runtime\":") catch return fail();
+    ttyAppendRuntimeJson(&out) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"isatty\":true,\"ReadStream\":true,\"WriteStream\":true,\"setRawMode\":true,\"getWindowSize\":true,\"getColorDepth\":true,\"hasColors\":true,\"resizeEvent\":false,\"netSocketPrototype\":false,\"readlineCursorMethods\":false},\"limitations\":[\"ReadStream and WriteStream are native TTY handle facades rather than JavaScript net.Socket subclasses\",\"no resize event emitter integration or inherited cursorTo/moveCursor/clearLine/clearScreenDown methods on stream objects\",\"raw mode and color/window helpers operate on explicit native handles instead of JavaScript stream instances\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+const tty_export_names = [_][]const u8{
+    "isatty",
+    "ReadStream",
+    "WriteStream",
+};
+
+fn ttyAppendRuntimeJson(out: *std.ArrayList(u8)) !void {
+    var stdin_is_tty: u64 = 0;
+    if (sa_node_plugin_tty_isatty(0, &stdin_is_tty) != 0) return error.Unexpected;
+    var stdout_is_tty: u64 = 0;
+    if (sa_node_plugin_tty_isatty(1, &stdout_is_tty) != 0) return error.Unexpected;
+    var stderr_is_tty: u64 = 0;
+    if (sa_node_plugin_tty_isatty(2, &stderr_is_tty) != 0) return error.Unexpected;
+
+    var stdout_handle: ?*anyopaque = null;
+    if (sa_node_plugin_tty_write_stream_new(1, &stdout_handle) != 0) return error.Unexpected;
+    defer _ = sa_node_plugin_tty_stream_free(stdout_handle);
+
+    var cols: u64 = 0;
+    var rows: u64 = 0;
+    if (sa_node_plugin_tty_stream_get_window_size(stdout_handle, &cols, &rows) != 0) return error.Unexpected;
+    var color_depth: u64 = 0;
+    if (sa_node_plugin_tty_stream_get_color_depth(stdout_handle, &color_depth) != 0) return error.Unexpected;
+    var has_colors: u64 = 0;
+    if (sa_node_plugin_tty_stream_has_colors(stdout_handle, &has_colors) != 0) return error.Unexpected;
+
+    try out.appendSlice("{\"stdin\":{\"isTTY\":");
+    try out.appendSlice(if (stdin_is_tty != 0) "true" else "false");
+    try out.appendSlice("},\"stdout\":{\"isTTY\":");
+    try out.appendSlice(if (stdout_is_tty != 0) "true" else "false");
+    try out.appendSlice(",\"columns\":");
+    try out.writer().print("{d}", .{cols});
+    try out.appendSlice(",\"rows\":");
+    try out.writer().print("{d}", .{rows});
+    try out.appendSlice(",\"colorDepth\":");
+    try out.writer().print("{d}", .{color_depth});
+    try out.appendSlice(",\"hasColors\":");
+    try out.appendSlice(if (has_colors != 0) "true" else "false");
+    try out.appendSlice("},\"stderr\":{\"isTTY\":");
+    try out.appendSlice(if (stderr_is_tty != 0) "true" else "false");
+    try out.appendSlice("}}");
+}
+
+pub export fn sa_node_plugin_tty_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &tty_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_tty_stdio_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    ttyAppendRuntimeJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_tty_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"isatty\":{\"supported\":true,\"mode\":\"POSIX isatty on host fd\"},\"ReadStream\":{\"supported\":true,\"mode\":\"native read-handle allocation\",\"limitations\":[\"not a JavaScript net.Socket subclass\",\"no EventEmitter object model\"]},\"WriteStream\":{\"supported\":true,\"mode\":\"native write-handle allocation\",\"limitations\":[\"not a JavaScript net.Socket subclass\",\"no resize event emitter\"]},\"setRawMode\":{\"supported\":true,\"mode\":\"termios raw-mode toggle on explicit native handle\"},\"getWindowSize\":{\"supported\":true,\"mode\":\"ioctl or environment fallback\"},\"getColorDepth\":{\"supported\":true,\"mode\":\"environment-aware native helper\"},\"hasColors\":{\"supported\":true,\"mode\":\"derived from native color depth\"},\"cursorTo\":{\"supported\":false,\"reason\":\"readline cursor helpers are not attached to TTY stream handles\"},\"moveCursor\":{\"supported\":false,\"reason\":\"readline cursor helpers are not attached to TTY stream handles\"},\"clearLine\":{\"supported\":false,\"reason\":\"readline cursor helpers are not attached to TTY stream handles\"},\"clearScreenDown\":{\"supported\":false,\"reason\":\"readline cursor helpers are not attached to TTY stream handles\"},\"resizeEvent\":{\"supported\":false,\"reason\":\"window resize event dispatch is not modeled\"}}");
 }
 
 const diagnostics_channel_export_names = [_][]const u8{

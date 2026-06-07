@@ -1859,6 +1859,43 @@ test "node plugin tty u64 ABI and stdio fallback" {
     try std.testing.expect(has_colors == 0 or has_colors == 1);
 }
 
+test "node plugin tty top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tty_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullTtyStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"tty\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-tty-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"ReadStream\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"resizeEvent\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tty_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullTtyExports)[0..@intCast(exports_len)];
+    try std.testing.expectEqualStrings("[\"isatty\",\"ReadStream\",\"WriteStream\"]", exports_json);
+
+    var stdio_ptr: ?[*]const u8 = null;
+    var stdio_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tty_stdio_json(&stdio_ptr, &stdio_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(stdio_ptr, stdio_len);
+    const stdio_json = (stdio_ptr orelse return error.NullTtyStdio)[0..@intCast(stdio_len)];
+    try std.testing.expect(std.mem.indexOf(u8, stdio_json, "\"stdin\":{\"isTTY\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, stdio_json, "\"stdout\":{\"isTTY\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, stdio_json, "\"colorDepth\":") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tty_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullTtyFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"isatty\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"cursorTo\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"resizeEvent\":{\"supported\":false") != null);
+}
+
 test "node plugin worker_threads message ports and u64 bools" {
     var status_ptr: ?[*]const u8 = null;
     var status_len: u64 = 0;

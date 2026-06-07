@@ -2642,6 +2642,14 @@ var domain_next_id: u64 = 1;
 var domain_active: ?*DomainHandle = null;
 var domain_stack = std.ArrayList(*DomainHandle).init(std.heap.page_allocator);
 
+const domain_export_names = [_][]const u8{
+    "Domain",
+    "create",
+    "createDomain",
+    "active",
+    "_stack",
+};
+
 fn domainHandle(domain_ptr: ?*anyopaque) ?*DomainHandle {
     return if (domain_ptr) |ptr| @ptrCast(@alignCast(ptr)) else null;
 }
@@ -5501,16 +5509,38 @@ pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_le
 pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.appendSlice("{\"module\":\"domain\",\"supported\":true,\"mode\":\"native-domain-stack\",\"active\":") catch return fail();
+    out.appendSlice("{\"module\":\"domain\",\"supported\":true,\"mode\":\"top-level-native-domain-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &domain_export_names) catch return fail();
+    out.appendSlice(",\"active\":") catch return fail();
     if (domain_active) |active| {
-        out.writer().print("{d}", .{active.id}) catch return fail();
+        var active_ptr: ?[*]const u8 = null;
+        var active_len: u64 = 0;
+        if (domainSnapshotJson(active, &active_ptr, &active_len) != 0) return fail();
+        defer _ = base.sa_node_plugin_free_buffer(active_ptr, active_len);
+        out.appendSlice((active_ptr orelse return fail())[0..@intCast(active_len)]) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"stackDepth\":") catch return fail();
     out.writer().print("{d}", .{domain_stack.items.len}) catch return fail();
-    out.appendSlice(",\"capabilities\":[\"create domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain lookup\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance\",\"no bind/intercept callback wrapping\",\"no uncaught exception capture callback integration\",\"no async_hooks or timer callback domain propagation\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"Domain\":true,\"create\":true,\"createDomain\":true,\"active\":true,\"_stack\":true,\"enter\":true,\"exit\":true,\"dispose\":true,\"bind\":false,\"intercept\":false,\"run\":false,\"disposeEvent\":false,\"asyncPropagation\":false},\"capabilities\":[\"create native domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain snapshot and stack-depth metadata\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance or process.domain mutation hooks\",\"no bind/intercept callback wrapping or run() callback execution helper\",\"no uncaught exception capture callback integration\",\"no async_hooks, Promise, or timer callback domain propagation\",\"_stack is exposed as metadata rather than a live JavaScript array\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_domain_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &domain_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_domain_active_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (domain_active) |active| return domainSnapshotJson(active, out_ptr, out_len);
+    return writeOwnedString(out_ptr, out_len, "null");
+}
+
+pub export fn sa_node_plugin_domain_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"Domain\":{\"supported\":true,\"mode\":\"native domain handle\",\"operations\":[\"add\",\"remove\",\"enter\",\"exit\",\"dispose\",\"snapshot\",\"free\"]},\"create\":{\"supported\":true,\"mode\":\"allocate native domain handle\"},\"createDomain\":{\"supported\":true,\"mode\":\"alias of create\"},\"active\":{\"supported\":true,\"mode\":\"returns current active native domain snapshot or null\"},\"_stack\":{\"supported\":true,\"mode\":\"stack-depth metadata via status and domain snapshots\",\"limitations\":[\"not a live JavaScript array export\",\"entries are explicit native handles only\"]},\"bind\":{\"supported\":false,\"reason\":\"callback wrapping requires JavaScript function objects and invocation hooks\"},\"intercept\":{\"supported\":false,\"reason\":\"error-first callback interception requires JavaScript callback wrappers\"},\"run\":{\"supported\":false,\"reason\":\"run() callback execution semantics are not modeled without a JS runtime\"},\"EventEmitterInheritance\":{\"supported\":false,\"reason\":\"Domain is not exposed as a JavaScript EventEmitter subclass\"},\"uncaughtExceptionCapture\":{\"supported\":false,\"reason\":\"process uncaught exception capture integration is not modeled\"},\"asyncPropagation\":{\"supported\":false,\"reason\":\"automatic propagation across async_hooks, Promise, and timer callbacks is not modeled\"}}");
 }
 
 const module_builtin_modules = [_][]const u8{

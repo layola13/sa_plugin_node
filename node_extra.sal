@@ -5515,6 +5515,30 @@
     !__m_load_da7e6ad9_p_1
 [END_MACRO]
 
+[MACRO] NODE_DOMAIN_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_domain_exports_ptr_slot = stack_alloc 8
+    __m_domain_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_exports_json(&__m_domain_exports_ptr_slot, &__m_domain_exports_len_slot)
+    %out_ptr = load __m_domain_exports_ptr_slot+0 as ptr
+    %out_len = load __m_domain_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_TOP_ACTIVE_JSON %out_ptr, %out_len, %out_status
+    __m_domain_active_json_ptr_slot = stack_alloc 8
+    __m_domain_active_json_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_active_json(&__m_domain_active_json_ptr_slot, &__m_domain_active_json_len_slot)
+    %out_ptr = load __m_domain_active_json_ptr_slot+0 as ptr
+    %out_len = load __m_domain_active_json_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_domain_feature_ptr_slot = stack_alloc 8
+    __m_domain_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_feature_support_json(&__m_domain_feature_ptr_slot, &__m_domain_feature_len_slot)
+    %out_ptr = load __m_domain_feature_ptr_slot+0 as ptr
+    %out_len = load __m_domain_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_MODULE_STATUS_JSON %p_0, %p_1
     __m_slot_7d2781c0_0 = stack_alloc 8
     __m_slot_7d2781c0_1 = stack_alloc 8

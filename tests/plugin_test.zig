@@ -2193,6 +2193,54 @@ test "node plugin domain handle helpers" {
     try std.testing.expect(std.mem.indexOf(u8, disposed_snapshot, "\"disposed\":true") != null);
 }
 
+test "node plugin domain top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullDomainStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"domain\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-domain-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Domain\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"bind\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullDomainExports)[0..@intCast(exports_len)];
+    try std.testing.expectEqualStrings("[\"Domain\",\"create\",\"createDomain\",\"active\",\"_stack\"]", exports_json);
+
+    var active_ptr: ?[*]const u8 = null;
+    var active_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_active_json(&active_ptr, &active_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(active_ptr, active_len);
+    try std.testing.expectEqualStrings("null", (active_ptr orelse return error.NullDomainActive)[0..@intCast(active_len)]);
+
+    var domain: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_create(&domain));
+    defer _ = plugin.sa_node_plugin_domain_free(domain);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_enter(domain));
+    defer _ = plugin.sa_node_plugin_domain_exit(domain);
+
+    var active_entered_ptr: ?[*]const u8 = null;
+    var active_entered_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_active_json(&active_entered_ptr, &active_entered_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(active_entered_ptr, active_entered_len);
+    const active_json = (active_entered_ptr orelse return error.NullDomainActiveEntered)[0..@intCast(active_entered_len)];
+    try std.testing.expect(std.mem.indexOf(u8, active_json, "\"active\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, active_json, "\"stackDepth\":1") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullDomainFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Domain\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"bind\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"asyncPropagation\":{\"supported\":false") != null);
+}
+
 test "node plugin timers promises helpers" {
     var timeout_ptr: ?[*]const u8 = null;
     var timeout_len: u64 = 0;

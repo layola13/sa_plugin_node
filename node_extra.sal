@@ -6007,6 +6007,57 @@
     !__http2_unpacked_settings_len
 [END_MACRO]
 
+[MACRO] NODE_HTTP2_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __http2_exports_ptr_slot = stack_alloc 8
+    __http2_exports_len_slot = stack_alloc 8
+    __http2_exports_status = call @sa_node_plugin_http2_exports_json(&__http2_exports_ptr_slot, &__http2_exports_len_slot)
+    !%out_status
+    %out_status = add __http2_exports_status, 0
+    !__http2_exports_status
+    __http2_exports_ptr = load __http2_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http2_exports_ptr, 0
+    !__http2_exports_ptr
+    __http2_exports_len = load __http2_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http2_exports_len, 0
+    !__http2_exports_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __http2_config_ptr_slot = stack_alloc 8
+    __http2_config_len_slot = stack_alloc 8
+    __http2_config_status = call @sa_node_plugin_http2_config_json(&__http2_config_ptr_slot, &__http2_config_len_slot)
+    !%out_status
+    %out_status = add __http2_config_status, 0
+    !__http2_config_status
+    __http2_config_ptr = load __http2_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http2_config_ptr, 0
+    !__http2_config_ptr
+    __http2_config_len = load __http2_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http2_config_len, 0
+    !__http2_config_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __http2_feature_ptr_slot = stack_alloc 8
+    __http2_feature_len_slot = stack_alloc 8
+    __http2_feature_status = call @sa_node_plugin_http2_feature_support_json(&__http2_feature_ptr_slot, &__http2_feature_len_slot)
+    !%out_status
+    %out_status = add __http2_feature_status, 0
+    !__http2_feature_status
+    __http2_feature_ptr = load __http2_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http2_feature_ptr, 0
+    !__http2_feature_ptr
+    __http2_feature_len = load __http2_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http2_feature_len, 0
+    !__http2_feature_len
+[END_MACRO]
+
 [MACRO] NODE_QUIC_STATUS_JSON %out_ptr, %out_len
     __quic_status_ptr_slot = stack_alloc 8
     __quic_status_len_slot = stack_alloc 8

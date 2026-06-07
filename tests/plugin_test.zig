@@ -5188,6 +5188,44 @@ test "node plugin http2 h2c client request helper" {
     thread.join();
 }
 
+test "node plugin http2 top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullHttp2TopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"http2\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-http2-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"getPackedSettings\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createServer\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullHttp2TopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"connect\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createServer\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Http2ServerResponse\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullHttp2TopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"defaultSettings\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"transport\":\"cleartext prior-knowledge h2c client helper\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullHttp2TopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"connect\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createSecureServer\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"pushStreams\":{\"supported\":false") != null);
+}
+
 test "node plugin tls client round trip against local self-signed server" {
     var tmp = std.testing.tmpDir(.{ .iterate = true });
     defer tmp.cleanup();

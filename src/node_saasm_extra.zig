@@ -5588,6 +5588,20 @@ pub export fn sa_node_plugin_http2_nghttp2_version_json(out_ptr: ?*?[*]const u8,
     return writeOwnedString(out_ptr, out_len, json);
 }
 
+const http2_export_names = [_][]const u8{
+    "connect",
+    "constants",
+    "createServer",
+    "createSecureServer",
+    "getDefaultSettings",
+    "getPackedSettings",
+    "getUnpackedSettings",
+    "performServerHandshake",
+    "sensitiveHeaders",
+    "Http2ServerRequest",
+    "Http2ServerResponse",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6328,7 +6342,66 @@ pub export fn sa_node_plugin_https_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "http2", true, "HTTP/2 constants, default settings, packed settings helpers, and cleartext prior-knowledge client request helper are exposed; full session/server semantics are not modeled");
+    const allocator = std.heap.page_allocator;
+
+    var defaults_ptr: ?[*]const u8 = null;
+    var defaults_len: u64 = 0;
+    if (sa_node_plugin_http2_get_default_settings_json(&defaults_ptr, &defaults_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(defaults_ptr, defaults_len);
+
+    var sensitive_ptr: ?[*]const u8 = null;
+    var sensitive_len: u64 = 0;
+    if (sa_node_plugin_http2_sensitive_headers(&sensitive_ptr, &sensitive_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"http2\",\"supported\":true,\"mode\":\"top-level-native-http2-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &http2_export_names) catch return fail();
+    out.appendSlice(",\"nghttp2Available\":") catch return fail();
+    out.appendSlice(if (loadNghttp2Api() != null) "true" else "false") catch return fail();
+    out.appendSlice(",\"defaultSettings\":") catch return fail();
+    out.appendSlice((defaults_ptr orelse return fail())[0..@intCast(defaults_len)]) catch return fail();
+    out.appendSlice(",\"sensitiveHeaders\":") catch return fail();
+    out.appendSlice((sensitive_ptr orelse return fail())[0..@intCast(sensitive_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"connect\":true,\"constants\":true,\"getDefaultSettings\":true,\"getPackedSettings\":true,\"getUnpackedSettings\":true,\"sensitiveHeaders\":true,\"createServer\":false,\"createSecureServer\":false,\"performServerHandshake\":false,\"Http2ServerRequest\":false,\"Http2ServerResponse\":false,\"pushStreams\":false},\"capabilities\":[\"HTTP/2 constants metadata\",\"default settings metadata\",\"packed and unpacked settings helpers\",\"sensitive header metadata\",\"cleartext prior-knowledge client request helper\"],\"limitations\":[\"no server, session, or stream object model\",\"no TLS ALPN or secure HTTP/2 server support\",\"no push streams, priorities, or lifecycle events\",\"connect maps to the explicit h2c client helper rather than a live ClientHttp2Session object\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http2_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &http2_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http2_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var defaults_ptr: ?[*]const u8 = null;
+    var defaults_len: u64 = 0;
+    if (sa_node_plugin_http2_get_default_settings_json(&defaults_ptr, &defaults_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(defaults_ptr, defaults_len);
+
+    var sensitive_ptr: ?[*]const u8 = null;
+    var sensitive_len: u64 = 0;
+    if (sa_node_plugin_http2_sensitive_headers(&sensitive_ptr, &sensitive_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"defaultSettings\":") catch return fail();
+    out.appendSlice((defaults_ptr orelse return fail())[0..@intCast(defaults_len)]) catch return fail();
+    out.appendSlice(",\"sensitiveHeaders\":") catch return fail();
+    out.appendSlice((sensitive_ptr orelse return fail())[0..@intCast(sensitive_len)]) catch return fail();
+    out.appendSlice(",\"transport\":\"cleartext prior-knowledge h2c client helper\",\"nghttp2Available\":") catch return fail();
+    out.appendSlice(if (loadNghttp2Api() != null) "true" else "false") catch return fail();
+    out.appendSlice(",\"serverSupport\":false,\"tlsAlpnSupport\":false,\"sessionModel\":\"not-modeled\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http2_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"explicit cleartext h2c client request helper\",\"limitations\":[\"no persistent ClientHttp2Session object\",\"no per-stream lifecycle events\"]},\"constants\":{\"supported\":true,\"mode\":\"static constant catalog JSON\"},\"getDefaultSettings\":{\"supported\":true,\"mode\":\"default settings JSON\"},\"getPackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings encoder\"},\"getUnpackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings decoder\"},\"sensitiveHeaders\":{\"supported\":true,\"mode\":\"static sensitive header metadata\"},\"createServer\":{\"supported\":false,\"reason\":\"HTTP/2 server session and stream object model are not modeled\"},\"createSecureServer\":{\"supported\":false,\"reason\":\"TLS ALPN and secure HTTP/2 server support are not modeled\"},\"performServerHandshake\":{\"supported\":false,\"reason\":\"live server-side handshake state is not modeled\"},\"Http2ServerRequest\":{\"supported\":false,\"reason\":\"JavaScript request object instances are not modeled\"},\"Http2ServerResponse\":{\"supported\":false,\"reason\":\"JavaScript response object instances are not modeled\"},\"pushStreams\":{\"supported\":false,\"reason\":\"HTTP/2 push stream lifecycle is not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

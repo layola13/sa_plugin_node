@@ -104,6 +104,17 @@ fn appendStringArray(out: *std.ArrayList(u8), items: []const []const u8) !void {
     try out.append(']');
 }
 
+fn envTruthy(name: []const u8) bool {
+    const value = std.posix.getenv(name) orelse return false;
+    if (value.len == 0) return false;
+    if (std.mem.eql(u8, value, "0")) return false;
+    return !std.ascii.eqlIgnoreCase(value, "false");
+}
+
+fn nodeOptionsHasFlag(flag: []const u8) bool {
+    return std.mem.indexOf(u8, std.posix.getenv("NODE_OPTIONS") orelse "", flag) != null;
+}
+
 const AsyncResourceHandle = struct {
     allocator: std.mem.Allocator,
     id: u64,
@@ -284,8 +295,177 @@ pub export fn sa_node_plugin_debugger_status_json(out_ptr: ?*?[*]const u8, out_l
     return writeStatusJson(out_ptr, out_len, "debugger", false, "debugger protocol is not modeled");
 }
 
+const DeprecatedEntry = struct {
+    code: []u8,
+    message: []u8,
+    count: u64,
+
+    fn deinit(self: *DeprecatedEntry, allocator: std.mem.Allocator) void {
+        allocator.free(self.code);
+        allocator.free(self.message);
+        allocator.destroy(self);
+    }
+};
+
+var deprecated_mutex = std.Thread.Mutex{};
+var deprecated_registry = std.StringHashMap(*DeprecatedEntry).init(std.heap.page_allocator);
+
+fn deprecatedPendingEnabledInternal() bool {
+    return nodeOptionsHasFlag("--pending-deprecation") or envTruthy("NODE_PENDING_DEPRECATION");
+}
+
+fn deprecatedNoDeprecationInternal() bool {
+    return nodeOptionsHasFlag("--no-deprecation");
+}
+
+fn deprecatedTraceDeprecationInternal() bool {
+    return nodeOptionsHasFlag("--trace-deprecation");
+}
+
+fn deprecatedThrowDeprecationInternal() bool {
+    return nodeOptionsHasFlag("--throw-deprecation");
+}
+
+fn deprecatedNoWarningsInternal() bool {
+    return nodeOptionsHasFlag("--no-warnings") or envTruthy("NODE_NO_WARNINGS");
+}
+
+fn deprecatedAppendFlagsObject(out: *std.ArrayList(u8)) !void {
+    try out.appendSlice("{\"pendingDeprecation\":");
+    try out.appendSlice(if (deprecatedPendingEnabledInternal()) "true" else "false");
+    try out.appendSlice(",\"noDeprecation\":");
+    try out.appendSlice(if (deprecatedNoDeprecationInternal()) "true" else "false");
+    try out.appendSlice(",\"traceDeprecation\":");
+    try out.appendSlice(if (deprecatedTraceDeprecationInternal()) "true" else "false");
+    try out.appendSlice(",\"throwDeprecation\":");
+    try out.appendSlice(if (deprecatedThrowDeprecationInternal()) "true" else "false");
+    try out.appendSlice(",\"noWarnings\":");
+    try out.appendSlice(if (deprecatedNoWarningsInternal()) "true" else "false");
+    try out.append('}');
+}
+
+fn deprecatedRegisteredCount() u64 {
+    deprecated_mutex.lock();
+    defer deprecated_mutex.unlock();
+    return deprecated_registry.count();
+}
+
+pub export fn sa_node_plugin_deprecated_flags_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    deprecatedAppendFlagsObject(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_deprecated_clear() u32 {
+    deprecated_mutex.lock();
+    defer deprecated_mutex.unlock();
+    var it = deprecated_registry.iterator();
+    while (it.next()) |entry| {
+        entry.value_ptr.*.deinit(std.heap.page_allocator);
+    }
+    deprecated_registry.clearRetainingCapacity();
+    return 0;
+}
+
+pub export fn sa_node_plugin_deprecated_has(code_ptr: ?[*]const u8, code_len: u64, out_bool: ?*u64) u32 {
+    const code = if (code_len == 0) "" else (code_ptr orelse return fail())[0..code_len];
+    deprecated_mutex.lock();
+    defer deprecated_mutex.unlock();
+    out_bool.?.* = if (deprecated_registry.contains(code)) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code_len: u64, msg_ptr: ?[*]const u8, msg_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const code = if (code_len == 0) return fail() else (code_ptr orelse return fail())[0..code_len];
+    const message = if (msg_len == 0) "" else (msg_ptr orelse return fail())[0..msg_len];
+    const allocator = std.heap.page_allocator;
+
+    var first_occurrence = false;
+    var count: u64 = 0;
+    var stored_message: []const u8 = "";
+
+    deprecated_mutex.lock();
+    defer deprecated_mutex.unlock();
+
+    if (deprecated_registry.get(code)) |entry| {
+        entry.count += 1;
+        count = entry.count;
+        stored_message = entry.message;
+    } else {
+        const entry = allocator.create(DeprecatedEntry) catch return fail();
+        entry.* = .{
+            .code = allocator.dupe(u8, code) catch {
+                allocator.destroy(entry);
+                return fail();
+            },
+            .message = allocator.dupe(u8, message) catch {
+                allocator.free(entry.code);
+                allocator.destroy(entry);
+                return fail();
+            },
+            .count = 1,
+        };
+        deprecated_registry.put(entry.code, entry) catch {
+            entry.deinit(allocator);
+            return fail();
+        };
+        first_occurrence = true;
+        count = 1;
+        stored_message = entry.message;
+    }
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"code\":") catch return fail();
+    appendJsonString(&out, code) catch return fail();
+    out.appendSlice(",\"message\":") catch return fail();
+    appendJsonString(&out, stored_message) catch return fail();
+    out.writer().print(",\"count\":{d},\"firstOccurrence\":{s},\"shouldEmit\":{s},\"flags\":", .{
+        count,
+        if (first_occurrence) "true" else "false",
+        if (!deprecatedNoDeprecationInternal() and !deprecatedNoWarningsInternal() and first_occurrence) "true" else "false",
+    }) catch return fail();
+    deprecatedAppendFlagsObject(&out) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    deprecated_mutex.lock();
+    defer deprecated_mutex.unlock();
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"flags\":") catch return fail();
+    deprecatedAppendFlagsObject(&out) catch return fail();
+    out.writer().print(",\"registeredCount\":{d},\"entries\":[", .{deprecated_registry.count()}) catch return fail();
+
+    var first = true;
+    var it = deprecated_registry.iterator();
+    while (it.next()) |entry| {
+        if (!first) out.append(',') catch return fail();
+        first = false;
+        out.appendSlice("{\"code\":") catch return fail();
+        appendJsonString(&out, entry.value_ptr.*.code) catch return fail();
+        out.appendSlice(",\"message\":") catch return fail();
+        appendJsonString(&out, entry.value_ptr.*.message) catch return fail();
+        out.writer().print(",\"count\":{d}}}", .{entry.value_ptr.*.count}) catch return fail();
+    }
+
+    out.appendSlice("]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
 pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"module\":\"deprecated\",\"supported\":true,\"mode\":\"compatibility-metadata\",\"capabilities\":[\"util.deprecate registry\",\"idempotent deprecation codes\",\"status reporting\"],\"limitations\":[\"no JavaScript wrapper invocation semantics\",\"warnings are recorded as native metadata instead of emitted through process warning events\"]}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"deprecated\",\"supported\":true,\"mode\":\"native-registry\",\"registeredCount\":") catch return fail();
+    out.writer().print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
+    out.appendSlice(",\"flags\":") catch return fail();
+    deprecatedAppendFlagsObject(&out) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"util.deprecate-style registry\",\"idempotent deprecation codes\",\"deprecation flag introspection\",\"snapshot and clear helpers\"],\"limitations\":[\"no JavaScript wrapper invocation semantics\",\"no process warning events or warning listeners\",\"registry tracks native deprecation metadata only\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

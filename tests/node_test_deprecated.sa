@@ -1,0 +1,120 @@
+// SA tests for Node deprecated native registry helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_CODE = utf8:"DEP9001"
+@const S_MESSAGE = utf8:"sa deprecated test"
+
+@test "node.deprecated native helpers"():
+L_ENTRY:
+    s0 = add 0, 0
+    EXPAND NODE_DEPRECATED_CLEAR s0
+    ok0 = eq s0, 0
+    br ok0 -> L_HAS0, L_ERR_CLEAR0
+L_HAS0:
+    !ok0
+    has0 = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_DEPRECATED_HAS has0, s1, S_CODE, 7
+    ok1 = eq s1, 0
+    miss0 = eq has0, 0
+    both1 = and ok1, miss0
+    br both1 -> L_RECORD, L_ERR_HAS0
+L_RECORD:
+    !both1
+    rec_ptr = add 0, 0
+    rec_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_DEPRECATED_RECORD_JSON rec_ptr, rec_len, s2, S_CODE, 7, S_MESSAGE, 18
+    ok2 = eq s2, 0
+    br ok2 -> L_HAS1, L_ERR_RECORD
+L_HAS1:
+    !ok2
+    has1 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_DEPRECATED_HAS has1, s3, S_CODE, 7
+    ok3 = eq s3, 0
+    hit1 = eq has1, 1
+    both3 = and ok3, hit1
+    br both3 -> L_SNAPSHOT, L_ERR_HAS1
+L_SNAPSHOT:
+    !both3
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_DEPRECATED_SNAPSHOT_JSON snap_ptr, snap_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_FLAGS, L_ERR_SNAPSHOT
+L_FLAGS:
+    !ok4
+    flags_ptr = add 0, 0
+    flags_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_DEPRECATED_FLAGS_JSON flags_ptr, flags_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_CLEAR1, L_ERR_FLAGS
+L_CLEAR1:
+    !ok5
+    s6 = add 0, 0
+    EXPAND NODE_DEPRECATED_CLEAR s6
+    ok6 = eq s6, 0
+    br ok6 -> L_HAS2, L_ERR_CLEAR1
+L_HAS2:
+    !ok6
+    has2 = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_DEPRECATED_HAS has2, s7, S_CODE, 7
+    ok7 = eq s7, 0
+    miss2 = eq has2, 0
+    both7 = and ok7, miss2
+    br both7 -> L_FREE, L_ERR_HAS2
+L_FREE:
+    !both7
+    free_flags = call @sa_node_plugin_free_buffer(flags_ptr, flags_len)
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    free_rec = call @sa_node_plugin_free_buffer(rec_ptr, rec_len)
+    !free_rec
+    !free_snap
+    !free_flags
+    !s7
+    !has2
+    !s6
+    !s5
+    !flags_len
+    !flags_ptr
+    !s4
+    !snap_len
+    !snap_ptr
+    !s3
+    !has1
+    !s2
+    !rec_len
+    !rec_ptr
+    !s1
+    !has0
+    !s0
+    return
+L_ERR_CLEAR0:
+    !ok0
+    panic(103)
+L_ERR_HAS0:
+    !both1
+    panic(103)
+L_ERR_RECORD:
+    !ok2
+    panic(103)
+L_ERR_HAS1:
+    !both3
+    panic(103)
+L_ERR_SNAPSHOT:
+    !ok4
+    panic(103)
+L_ERR_FLAGS:
+    !ok5
+    panic(103)
+L_ERR_CLEAR1:
+    !ok6
+    panic(103)
+L_ERR_HAS2:
+    !both7
+    panic(103)

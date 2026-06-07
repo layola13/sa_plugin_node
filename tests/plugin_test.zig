@@ -2064,7 +2064,7 @@ test "node plugin status reports native command line i18n deprecation and iterab
     defer _ = plugin.sa_node_plugin_free_buffer(dep_ptr, dep_len);
     const dep = (dep_ptr orelse return error.NullDeprecatedStatus)[0..@intCast(dep_len)];
     try std.testing.expect(std.mem.indexOf(u8, dep, "\"module\":\"deprecated\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, dep, "util.deprecate registry") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dep, "util.deprecate-style registry") != null);
 
     var intl_ptr: ?[*]const u8 = null;
     var intl_len: u64 = 0;
@@ -2083,6 +2083,61 @@ test "node plugin status reports native command line i18n deprecation and iterab
     try std.testing.expect(std.mem.indexOf(u8, iter, "\"module\":\"iterable_streams\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, iter, "WebReadableStream") != null);
     try std.testing.expect(std.mem.indexOf(u8, iter, "pipeline state tracking") != null);
+}
+
+test "node plugin deprecated registry helpers" {
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_clear());
+
+    var has_before: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_has("DEP9000".ptr, 7, &has_before));
+    try std.testing.expectEqual(@as(u64, 0), has_before);
+
+    var first_ptr: ?[*]const u8 = null;
+    var first_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_record_json("DEP9000".ptr, 7, "native test warning".ptr, 19, &first_ptr, &first_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(first_ptr, first_len);
+    const first = (first_ptr orelse return error.NullDeprecatedRecordFirst)[0..@intCast(first_len)];
+    try std.testing.expect(std.mem.indexOf(u8, first, "\"count\":1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, first, "\"firstOccurrence\":true") != null);
+
+    var has_after: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_has("DEP9000".ptr, 7, &has_after));
+    try std.testing.expectEqual(@as(u64, 1), has_after);
+
+    var second_ptr: ?[*]const u8 = null;
+    var second_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_record_json("DEP9000".ptr, 7, "ignored replacement".ptr, 19, &second_ptr, &second_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(second_ptr, second_len);
+    const second = (second_ptr orelse return error.NullDeprecatedRecordSecond)[0..@intCast(second_len)];
+    try std.testing.expect(std.mem.indexOf(u8, second, "\"count\":2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, second, "\"firstOccurrence\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, second, "native test warning") != null);
+
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_snapshot_json(&snapshot_ptr, &snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+    const snapshot = (snapshot_ptr orelse return error.NullDeprecatedSnapshot)[0..@intCast(snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"registeredCount\":1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "DEP9000") != null);
+
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--pending-deprecation --trace-deprecation", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_PENDING_DEPRECATION", "1", 1));
+    defer _ = unsetenv("NODE_PENDING_DEPRECATION");
+
+    var flags_ptr: ?[*]const u8 = null;
+    var flags_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_flags_json(&flags_ptr, &flags_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(flags_ptr, flags_len);
+    const flags = (flags_ptr orelse return error.NullDeprecatedFlags)[0..@intCast(flags_len)];
+    try std.testing.expect(std.mem.indexOf(u8, flags, "\"pendingDeprecation\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, flags, "\"traceDeprecation\":true") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_clear());
+    var cleared_has: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_has("DEP9000".ptr, 7, &cleared_has));
+    try std.testing.expectEqual(@as(u64, 0), cleared_has);
 }
 
 test "node plugin readline promises interface" {

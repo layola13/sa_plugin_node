@@ -3646,6 +3646,40 @@
     !__m_load_3691080f_p_1
 [END_MACRO]
 
+[MACRO] NODE_DEPRECATED_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __m_deprecated_flags_ptr_slot = stack_alloc 8
+    __m_deprecated_flags_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_flags_json(&__m_deprecated_flags_ptr_slot, &__m_deprecated_flags_len_slot)
+    %out_ptr = load __m_deprecated_flags_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_flags_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_RECORD_JSON %out_ptr, %out_len, %out_status, %code, %code_len, %message, %message_len
+    __m_deprecated_record_ptr_slot = stack_alloc 8
+    __m_deprecated_record_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_record_json(%code, %code_len, %message, %message_len, &__m_deprecated_record_ptr_slot, &__m_deprecated_record_len_slot)
+    %out_ptr = load __m_deprecated_record_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_record_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_deprecated_snapshot_ptr_slot = stack_alloc 8
+    __m_deprecated_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_snapshot_json(&__m_deprecated_snapshot_ptr_slot, &__m_deprecated_snapshot_len_slot)
+    %out_ptr = load __m_deprecated_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_CLEAR %out_status
+    %out_status = call @sa_node_plugin_deprecated_clear()
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_HAS %out_bool, %out_status, %code, %code_len
+    __m_deprecated_has_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_has(%code, %code_len, &__m_deprecated_has_slot)
+    %out_bool = load __m_deprecated_has_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_ENVIRONMENT_VARIABLES_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_8995f291_0 = stack_alloc 8
     __m_slot_8995f291_1 = stack_alloc 8

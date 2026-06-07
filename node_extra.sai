@@ -299,6 +299,11 @@
 @extern sa_node_plugin_command_line_options_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_debugger_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_deprecated_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_deprecated_flags_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_deprecated_record_json(code_ptr: ptr, code_len: u64, msg_ptr: ptr, msg_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_deprecated_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_deprecated_clear() -> u64
+@extern sa_node_plugin_deprecated_has(code_ptr: ptr, code_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_environment_variables_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64

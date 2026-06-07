@@ -1,0 +1,85 @@
+// SA tests for Node worker_threads top-level facade helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.worker_threads top level helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    EXPAND NODE_WORKER_THREADS_STATUS_JSON status_ptr, status_len
+    has_status = ugt status_len, 0
+    br has_status -> L_EXPORTS, L_ERR_STATUS
+L_EXPORTS:
+    !has_status
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_EXPORTS_JSON exports_ptr, exports_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_SHARE_ENV, L_ERR_EXPORTS
+L_SHARE_ENV:
+    !ok2
+    share_ptr = add 0, 0
+    share_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_SHARE_ENV_JSON share_ptr, share_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_PARENT_PORT, L_ERR_SHARE_ENV
+L_PARENT_PORT:
+    !ok3
+    parent_ptr = add 0, 0
+    parent_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_PARENT_PORT_JSON parent_ptr, parent_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_FEATURES, L_ERR_PARENT_PORT
+L_FEATURES:
+    !ok4
+    feature_ptr = add 0, 0
+    feature_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_WORKER_THREADS_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_FREE, L_ERR_FEATURES
+L_FREE:
+    !ok5
+    free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
+    free_parent = call @sa_node_plugin_free_buffer(parent_ptr, parent_len)
+    free_share = call @sa_node_plugin_free_buffer(share_ptr, share_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_share
+    !free_parent
+    !free_feature
+    !s5
+    !feature_len
+    !feature_ptr
+    !s4
+    !parent_len
+    !parent_ptr
+    !s3
+    !share_len
+    !share_ptr
+    !s2
+    !exports_len
+    !exports_ptr
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !has_status
+    panic(103)
+L_ERR_EXPORTS:
+    !ok2
+    panic(103)
+L_ERR_SHARE_ENV:
+    !ok3
+    panic(103)
+L_ERR_PARENT_PORT:
+    !ok4
+    panic(103)
+L_ERR_FEATURES:
+    !ok5
+    panic(103)

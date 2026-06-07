@@ -3434,6 +3434,30 @@ pub export fn sa_node_plugin_tty_stream_free(handle_ptr: ?*anyopaque) u32 {
 var worker_env_data = std.StringHashMap([]u8).init(std.heap.page_allocator);
 var worker_main_thread_messages = std.ArrayList([]u8).init(std.heap.page_allocator);
 
+const worker_threads_export_names = [_][]const u8{
+    "isInternalThread",
+    "isMainThread",
+    "SHARE_ENV",
+    "resourceLimits",
+    "setEnvironmentData",
+    "getEnvironmentData",
+    "threadId",
+    "threadName",
+    "Worker",
+    "MessagePort",
+    "MessageChannel",
+    "markAsUncloneable",
+    "markAsUntransferable",
+    "isMarkedAsUntransferable",
+    "moveMessagePortToContext",
+    "receiveMessageOnPort",
+    "BroadcastChannel",
+    "postMessageToThread",
+    "parentPort",
+    "workerData",
+    "locks",
+};
+
 const MessagePortHandle = struct {
     allocator: std.mem.Allocator,
     inbox: std.ArrayList([]u8),
@@ -3459,7 +3483,39 @@ const MessagePortHandle = struct {
 };
 
 pub export fn sa_node_plugin_worker_threads_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "worker_threads", true, "main-thread compatibility");
+    const allocator = std.heap.page_allocator;
+    var limits_ptr: ?[*]const u8 = null;
+    var limits_len: u64 = 0;
+    if (sa_node_plugin_worker_threads_resource_limits_json(&limits_ptr, &limits_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(limits_ptr, limits_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"worker_threads\",\"supported\":true,\"mode\":\"top-level-main-thread-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &worker_threads_export_names) catch return fail();
+    out.appendSlice(",\"runtime\":{\"isMainThread\":true,\"isInternalThread\":false,\"threadId\":0,\"threadName\":\"main\",\"parentPort\":null,\"workerData\":null,\"shareEnv\":true},\"resourceLimits\":") catch return fail();
+    out.appendSlice((limits_ptr orelse return fail())[0..@intCast(limits_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"MessageChannel\":true,\"MessagePort\":true,\"receiveMessageOnPort\":true,\"postMessageToThread\":true,\"setEnvironmentData\":true,\"getEnvironmentData\":true,\"Worker\":false,\"BroadcastChannel\":false,\"locks\":false,\"moveMessagePortToContext\":false,\"markAsUncloneable\":false,\"markAsUntransferable\":false,\"isMarkedAsUntransferable\":false},\"limitations\":[\"no Worker constructor or background JavaScript execution\",\"no BroadcastChannel, LockManager, or structured-clone transfer registry\",\"message ports are native queue handles rather than EventTarget objects\",\"postMessageToThread only targets the main native thread mailbox compatibility path\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_worker_threads_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &worker_threads_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_worker_threads_share_env_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"SHARE_ENV\":true,\"mode\":\"host-environment-shared\",\"reason\":\"this native facade runs in a single host environment and environment data is shared explicitly\"}");
+}
+
+pub export fn sa_node_plugin_worker_threads_parent_port_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "null");
+}
+
+pub export fn sa_node_plugin_worker_threads_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"Worker\":{\"supported\":false,\"reason\":\"background JavaScript workers are not modeled\"},\"BroadcastChannel\":{\"supported\":false,\"reason\":\"cross-thread broadcast channels are not modeled\"},\"locks\":{\"supported\":false,\"reason\":\"LockManager coordination is not modeled\"},\"moveMessagePortToContext\":{\"supported\":false,\"reason\":\"vm context transfer is not modeled without a JS runtime\"},\"markAsUncloneable\":{\"supported\":false,\"reason\":\"JS object identity and structured clone hooks are not modeled\"},\"markAsUntransferable\":{\"supported\":false,\"reason\":\"transfer registries for JS object wrappers are not modeled\"},\"isMarkedAsUntransferable\":{\"supported\":false,\"reason\":\"transfer registries for JS object wrappers are not modeled\"},\"MessageChannel\":{\"supported\":true,\"mode\":\"native queue handles\"},\"MessagePort\":{\"supported\":true,\"mode\":\"native queue handles\"},\"receiveMessageOnPort\":{\"supported\":true,\"mode\":\"immediate native dequeue\"},\"postMessageToThread\":{\"supported\":true,\"mode\":\"main-thread mailbox compatibility path\"}}");
 }
 
 pub export fn sa_node_plugin_worker_threads_worker_data(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

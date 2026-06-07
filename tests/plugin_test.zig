@@ -1756,6 +1756,46 @@ test "node plugin tty u64 ABI and stdio fallback" {
 }
 
 test "node plugin worker_threads message ports and u64 bools" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullWorkerThreadsStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"worker_threads\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-main-thread-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Worker\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"MessageChannel\":true") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullWorkerThreadsExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Worker\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"MessageChannel\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"locks\"") != null);
+
+    var share_env_ptr: ?[*]const u8 = null;
+    var share_env_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_share_env_json(&share_env_ptr, &share_env_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(share_env_ptr, share_env_len);
+    const share_env = (share_env_ptr orelse return error.NullWorkerThreadsShareEnv)[0..@intCast(share_env_len)];
+    try std.testing.expect(std.mem.indexOf(u8, share_env, "\"SHARE_ENV\":true") != null);
+
+    var parent_port_ptr: ?[*]const u8 = null;
+    var parent_port_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_parent_port_json(&parent_port_ptr, &parent_port_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(parent_port_ptr, parent_port_len);
+    try std.testing.expectEqualStrings("null", (parent_port_ptr orelse return error.NullWorkerThreadsParentPort)[0..@intCast(parent_port_len)]);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullWorkerThreadsFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"Worker\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"MessagePort\":{\"supported\":true") != null);
+
     var is_main: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_worker_threads_is_main_thread(&is_main));
     try std.testing.expectEqual(@as(u64, 1), is_main);

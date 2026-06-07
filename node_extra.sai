@@ -431,6 +431,10 @@
 @extern sa_node_plugin_tty_stream_has_colors(handle_ptr: ptr, &out_bool: u64) -> u64
 @extern sa_node_plugin_tty_stream_free(handle_ptr: ptr) -> u64
 @extern sa_node_plugin_worker_threads_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_share_env_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_parent_port_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_worker_threads_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_worker_threads_is_main_thread(&out_bool: u64) -> u64
 @extern sa_node_plugin_worker_threads_is_internal_thread(&out_bool: u64) -> u64
 @extern sa_node_plugin_worker_threads_thread_id(&out_id: u64) -> u64

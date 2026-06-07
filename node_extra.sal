@@ -6915,6 +6915,30 @@
     !__m_load_9a4d897f_p_1
 [END_MACRO]
 
+[MACRO] NODE_DGRAM_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __dgram_top_exports_ptr_slot = stack_alloc 8
+    __dgram_top_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_exports_json(&__dgram_top_exports_ptr_slot, &__dgram_top_exports_len_slot)
+    %out_ptr = load __dgram_top_exports_ptr_slot+0 as ptr
+    %out_len = load __dgram_top_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __dgram_top_config_ptr_slot = stack_alloc 8
+    __dgram_top_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_config_json(&__dgram_top_config_ptr_slot, &__dgram_top_config_len_slot)
+    %out_ptr = load __dgram_top_config_ptr_slot+0 as ptr
+    %out_len = load __dgram_top_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __dgram_top_feature_ptr_slot = stack_alloc 8
+    __dgram_top_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_feature_support_json(&__dgram_top_feature_ptr_slot, &__dgram_top_feature_len_slot)
+    %out_ptr = load __dgram_top_feature_ptr_slot+0 as ptr
+    %out_len = load __dgram_top_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_WASI_STATUS_JSON %p_0, %p_1
     __m_slot_cb8f3a1b_0 = stack_alloc 8
     __m_slot_cb8f3a1b_1 = stack_alloc 8

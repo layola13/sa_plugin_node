@@ -635,6 +635,9 @@
 @extern sa_node_plugin_tls_destroy(socket: ptr) -> u64
 @extern sa_node_plugin_tls_close(socket: ptr) -> u64
 @extern sa_node_plugin_dgram_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dgram_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dgram_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dgram_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_supported_versions_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_wasi_import_modules_json(&out_ptr: ptr, &out_len: u64) -> u64

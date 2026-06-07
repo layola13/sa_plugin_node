@@ -5340,6 +5340,43 @@ test "node plugin tls top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"createServer\":{\"supported\":false") != null);
 }
 
+test "node plugin dgram top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dgram_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullDgramTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"dgram\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-dgram-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createSocket\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Socket\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dgram_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullDgramTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createSocket\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Socket\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dgram_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullDgramTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"socketModel\":\"explicit native UDP socket handle\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"queueModel\":\"synchronous send completion with queue size/count reported as 0\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dgram_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullDgramTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createSocket\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Socket\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"membership\":{\"supported\":true") != null);
+}
+
 test "node plugin tls client round trip against local self-signed server" {
     var tmp = std.testing.tmpDir(.{ .iterate = true });
     defer tmp.cleanup();

@@ -5653,6 +5653,11 @@ const tls_export_names = [_][]const u8{
     "connect",
 };
 
+const dgram_export_names = [_][]const u8{
+    "createSocket",
+    "Socket",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6604,7 +6609,27 @@ pub export fn sa_node_plugin_tls_feature_support_json(out_ptr: ?*?[*]const u8, o
 }
 
 pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "dgram", true, "UDP4/UDP6 socket create/bind/send/recv/close, connect, address metadata, buffer options, and multicast controls are exposed");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"dgram\",\"supported\":true,\"mode\":\"top-level-native-dgram-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &dgram_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"createSocket\":true,\"Socket\":false,\"udp4\":true,\"udp6\":true,\"bind\":true,\"send\":true,\"recv\":true,\"connect\":true,\"disconnect\":true,\"address\":true,\"remoteAddress\":true,\"ref\":true,\"unref\":true,\"hasRef\":true,\"multicast\":true,\"blockList\":true},\"capabilities\":[\"UDP4 and UDP6 socket create/bind/send/recv/close\",\"connected UDP send and disconnect\",\"local and remote address metadata\",\"broadcast, TTL, buffer, queue, and multicast controls\",\"send and receive blocklist filtering\",\"native ref and unref state\"],\"limitations\":[\"no JavaScript Socket EventEmitter class instances\",\"receive and send flows use explicit native socket handles rather than callback events\",\"queue metrics report this plugin's synchronous UDP send model rather than libuv request queues\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dgram_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &dgram_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dgram_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"socketModel\":\"explicit native UDP socket handle\",\"families\":[\"udp4\",\"udp6\"],\"queueModel\":\"synchronous send completion with queue size/count reported as 0\",\"blockListModel\":\"copied native send and receive blocklist rules\"}");
+}
+
+pub export fn sa_node_plugin_dgram_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"createSocket\":{\"supported\":true,\"mode\":\"allocate explicit native UDP socket handle for udp4 or udp6\"},\"Socket\":{\"supported\":false,\"reason\":\"JavaScript dgram Socket EventEmitter class instances are not modeled\"},\"bind\":{\"supported\":true,\"mode\":\"explicit native bind on UDP socket handle\"},\"send\":{\"supported\":true,\"mode\":\"explicit native sendto or connected send on UDP socket handle\"},\"recv\":{\"supported\":true,\"mode\":\"explicit native recvfrom with host and port outputs\"},\"connect\":{\"supported\":true,\"mode\":\"native UDP connect storing peer on explicit handle\"},\"disconnect\":{\"supported\":true,\"mode\":\"native UDP disconnect on explicit handle\"},\"address\":{\"supported\":true,\"mode\":\"local socket address JSON snapshot\"},\"remoteAddress\":{\"supported\":true,\"mode\":\"connected peer address JSON snapshot\"},\"ref\":{\"supported\":true,\"mode\":\"native has_ref state toggle\"},\"unref\":{\"supported\":true,\"mode\":\"native has_ref state toggle\"},\"hasRef\":{\"supported\":true,\"mode\":\"native has_ref state query\"},\"setBroadcast\":{\"supported\":true,\"mode\":\"sets SO_BROADCAST\"},\"setTTL\":{\"supported\":true,\"mode\":\"sets IPv4 TTL\"},\"setMulticastTTL\":{\"supported\":true,\"mode\":\"sets IPv4 multicast TTL\"},\"setMulticastLoopback\":{\"supported\":true,\"mode\":\"sets IPv4 multicast loopback\"},\"setMulticastInterface\":{\"supported\":true,\"mode\":\"sets IPv4 multicast interface\"},\"setMulticastInterface6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast interface index\"},\"setMulticastHops6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast hops\"},\"setMulticastLoopback6\":{\"supported\":true,\"mode\":\"sets IPv6 multicast loopback\"},\"membership\":{\"supported\":true,\"mode\":\"IPv4 and IPv6 multicast membership controls, including IPv4 source-specific membership\"},\"bufferSizing\":{\"supported\":true,\"mode\":\"native SO_RCVBUF and SO_SNDBUF configuration and queries\"},\"sendQueueMetrics\":{\"supported\":true,\"mode\":\"reports 0 for this synchronous UDP send model\"},\"blockList\":{\"supported\":true,\"mode\":\"native copied send and receive blocklist rules\"}}");
 }
 
 const wasi_supported_versions = [_][]const u8{ "unstable", "preview1" };

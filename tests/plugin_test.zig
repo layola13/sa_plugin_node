@@ -2081,6 +2081,70 @@ test "node plugin wasi reports native config introspection" {
 }
 
 test "node plugin errors and permissions report native compatibility status" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("SA_NODE_ENV_TEST", "demo-value", 1));
+    defer _ = unsetenv("SA_NODE_ENV_TEST");
+
+    var env_status_ptr: ?[*]const u8 = null;
+    var env_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_status_json(&env_status_ptr, &env_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(env_status_ptr, env_status_len);
+    const env_status = (env_status_ptr orelse return error.NullEnvironmentVariablesStatus)[0..@intCast(env_status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, env_status, "\"module\":\"environment_variables\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, env_status, "\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, env_status, "dotenv parse and load helpers") != null);
+
+    var env_snapshot_ptr: ?[*]const u8 = null;
+    var env_snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_snapshot_json(&env_snapshot_ptr, &env_snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(env_snapshot_ptr, env_snapshot_len);
+    const env_snapshot = (env_snapshot_ptr orelse return error.NullEnvironmentVariablesSnapshot)[0..@intCast(env_snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, env_snapshot, "\"SA_NODE_ENV_TEST\":\"demo-value\"") != null);
+
+    var env_has: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_has("SA_NODE_ENV_TEST".ptr, 16, &env_has));
+    try std.testing.expectEqual(@as(u64, 1), env_has);
+
+    var env_value_ptr: ?[*]const u8 = null;
+    var env_value_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_get_json("SA_NODE_ENV_TEST".ptr, 16, &env_value_ptr, &env_value_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(env_value_ptr, env_value_len);
+    try std.testing.expectEqualStrings("\"demo-value\"", (env_value_ptr orelse return error.NullEnvironmentVariablesGet)[0..@intCast(env_value_len)]);
+
+    const env_content =
+        "FOO=bar\n" ++
+        "export BAR = \"baz\"\n" ++
+        "HASH=value # comment\n" ++
+        "MULTILINE=\"line1\\nline2\"\n" ++
+        "NODE_OPTIONS=--inspect\n" ++
+        "BAD-NAME=skip\n";
+    var parsed_env_ptr: ?[*]const u8 = null;
+    var parsed_env_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_parse_env_json(env_content.ptr, env_content.len, &parsed_env_ptr, &parsed_env_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(parsed_env_ptr, parsed_env_len);
+    const parsed_env = (parsed_env_ptr orelse return error.NullEnvironmentVariablesParse)[0..@intCast(parsed_env_len)];
+    try std.testing.expect(std.mem.indexOf(u8, parsed_env, "\"FOO\":\"bar\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, parsed_env, "\"BAR\":\"baz\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, parsed_env, "\"HASH\":\"value\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, parsed_env, "\"MULTILINE\":\"line1\\nline2\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, parsed_env, "BAD-NAME") == null);
+
+    try std.testing.expectEqual(@as(c_int, 0), setenv("EXISTING_ENV", "keep", 1));
+    defer _ = unsetenv("EXISTING_ENV");
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.writeFile(.{ .sub_path = "fixture.env", .data = "FOO=loaded\nEXISTING_ENV=override\nNODE_OPTIONS=--trace-warnings\n" });
+    const fixture_path = try tmp.dir.realpathAlloc(std.testing.allocator, "fixture.env");
+    defer std.testing.allocator.free(fixture_path);
+
+    var loaded_env_ptr: ?[*]const u8 = null;
+    var loaded_env_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_environment_variables_load_env_file_json(fixture_path.ptr, fixture_path.len, &loaded_env_ptr, &loaded_env_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(loaded_env_ptr, loaded_env_len);
+    const loaded_env = (loaded_env_ptr orelse return error.NullEnvironmentVariablesLoad)[0..@intCast(loaded_env_len)];
+    try std.testing.expect(std.mem.indexOf(u8, loaded_env, "\"loaded\":1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, loaded_env, "\"skipped\":2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, loaded_env, "\"FOO\":\"loaded\"") != null);
+
     var err_ptr: ?[*]const u8 = null;
     var err_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_errors_status_json(&err_ptr, &err_len));

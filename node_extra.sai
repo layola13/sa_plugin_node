@@ -309,6 +309,11 @@
 @extern sa_node_plugin_deprecated_clear() -> u64
 @extern sa_node_plugin_deprecated_has(code_ptr: ptr, code_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_environment_variables_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_environment_variables_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_environment_variables_has(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_environment_variables_get_json(name_ptr: ptr, name_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_environment_variables_parse_env_json(content_ptr: ptr, content_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_environment_variables_load_env_file_json(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64

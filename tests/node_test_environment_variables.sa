@@ -1,0 +1,86 @@
+// SA tests for Node environment_variables native helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_ENV_NAME = utf8:"PATH"
+@const S_ENV_CONTENT = utf8:"FOO=bar\nBAR=baz\n"
+
+@test "node.environment_variables native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_SNAPSHOT, L_ERR_STATUS
+L_SNAPSHOT:
+    !ok1
+    snapshot_ptr = add 0, 0
+    snapshot_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_SNAPSHOT_JSON snapshot_ptr, snapshot_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_HAS, L_ERR_SNAPSHOT
+L_HAS:
+    !ok2
+    has_name = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_HAS has_name, s3, S_ENV_NAME, 4
+    ok3 = eq s3, 0
+    br ok3 -> L_GET, L_ERR_HAS
+L_GET:
+    !ok3
+    value_ptr = add 0, 0
+    value_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_GET_JSON value_ptr, value_len, s4, S_ENV_NAME, 4
+    ok4 = eq s4, 0
+    br ok4 -> L_PARSE, L_ERR_GET
+L_PARSE:
+    !ok4
+    parse_ptr = add 0, 0
+    parse_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_ENVIRONMENT_VARIABLES_PARSE_ENV_JSON parse_ptr, parse_len, s5, S_ENV_CONTENT, 16
+    ok5 = eq s5, 0
+    br ok5 -> L_FREE, L_ERR_PARSE
+L_FREE:
+    !ok5
+    free_parse = call @sa_node_plugin_free_buffer(parse_ptr, parse_len)
+    free_value = call @sa_node_plugin_free_buffer(value_ptr, value_len)
+    free_snapshot = call @sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_snapshot
+    !free_value
+    !free_parse
+    !s5
+    !parse_len
+    !parse_ptr
+    !s4
+    !value_len
+    !value_ptr
+    !s3
+    !has_name
+    !s2
+    !snapshot_len
+    !snapshot_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_SNAPSHOT:
+    !ok2
+    panic(103)
+L_ERR_HAS:
+    !ok3
+    panic(103)
+L_ERR_GET:
+    !ok4
+    panic(103)
+L_ERR_PARSE:
+    !ok5
+    panic(103)

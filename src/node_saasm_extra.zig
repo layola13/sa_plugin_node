@@ -11,6 +11,8 @@ const SaSlice = extern struct {
     len: u64,
 };
 
+extern fn setenv(name: [*:0]const u8, value: [*:0]const u8, overwrite: c_int) c_int;
+
 const UnsupportedStatus = @intFromEnum(plugin_api.AbiStatus.failed);
 
 fn pluginRootDir() []const u8 {
@@ -716,7 +718,298 @@ pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out
 }
 
 pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "environment_variables", true, "backed by process env shims");
+    var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
+    defer env_map.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"environment_variables\",\"supported\":true,\"mode\":\"native-process-env\",\"entryCount\":") catch return fail();
+    out.writer().print("{d}", .{env_map.count()}) catch return fail();
+    out.appendSlice(",\"hasNodeOptions\":") catch return fail();
+    out.appendSlice(if (std.posix.getenv("NODE_OPTIONS") != null) "true" else "false") catch return fail();
+    appendEnvStringField(&out, "nodeOptions", "NODE_OPTIONS") catch return fail();
+    out.appendSlice(",\"capabilities\":[\"host environment snapshot\",\"single-variable lookup\",\"dotenv parse and load helpers\"],\"limitations\":[\"no JavaScript process.env object proxy semantics\",\"no per-Worker environment copies\",\"loadEnvFile follows native host environment behavior and ignores NODE_OPTIONS entries from dotenv content\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn environmentVariablesAppendObject(out: *std.ArrayList(u8), map: *const std.process.EnvMap) !void {
+    try out.append('{');
+    var it = map.iterator();
+    var first = true;
+    while (it.next()) |entry| {
+        if (!first) try out.append(',');
+        first = false;
+        try appendJsonString(out, entry.key_ptr.*);
+        try out.append(':');
+        try appendJsonString(out, entry.value_ptr.*);
+    }
+    try out.append('}');
+}
+
+fn environmentVariablesIsValidName(name: []const u8) bool {
+    if (name.len == 0) return false;
+    const first = name[0];
+    if (!(std.ascii.isAlphabetic(first) or first == '_')) return false;
+    for (name[1..]) |ch| {
+        if (!(std.ascii.isAlphanumeric(ch) or ch == '_')) return false;
+    }
+    return true;
+}
+
+fn environmentVariablesTrimSpaces(bytes: []const u8) []const u8 {
+    return std.mem.trim(u8, bytes, " \t\n\r");
+}
+
+fn environmentVariablesExpandDoubleQuotedNewlines(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
+    var out = std.ArrayList(u8).init(allocator);
+    errdefer out.deinit();
+    var i: usize = 0;
+    while (i < value.len) : (i += 1) {
+        if (value[i] == '\\' and i + 1 < value.len and value[i + 1] == 'n') {
+            try out.append('\n');
+            i += 1;
+            continue;
+        }
+        try out.append(value[i]);
+    }
+    return out.toOwnedSlice();
+}
+
+fn environmentVariablesFindClosingQuote(bytes: []const u8, quote: u8) ?usize {
+    if (bytes.len == 0 or bytes[0] != quote) return null;
+    var i: usize = 1;
+    while (i < bytes.len) : (i += 1) {
+        if (bytes[i] == quote) return i;
+    }
+    return null;
+}
+
+fn environmentVariablesStoreInsertOwned(store: *std.StringHashMap([]u8), allocator: std.mem.Allocator, key: []const u8, value: []const u8) !void {
+    const owned_key = try allocator.dupe(u8, key);
+    errdefer allocator.free(owned_key);
+    const owned_value = try allocator.dupe(u8, value);
+    errdefer allocator.free(owned_value);
+    const gop = try store.getOrPut(owned_key);
+    if (gop.found_existing) {
+        allocator.free(owned_key);
+        allocator.free(gop.value_ptr.*);
+        gop.value_ptr.* = owned_value;
+        return;
+    }
+    gop.value_ptr.* = owned_value;
+}
+
+fn environmentVariablesStoreDeinit(store: *std.StringHashMap([]u8), allocator: std.mem.Allocator) void {
+    var it = store.iterator();
+    while (it.next()) |entry| {
+        allocator.free(entry.key_ptr.*);
+        allocator.free(entry.value_ptr.*);
+    }
+    store.deinit();
+}
+
+fn environmentVariablesParseContent(allocator: std.mem.Allocator, content_in: []const u8) !std.StringHashMap([]u8) {
+    var store = std.StringHashMap([]u8).init(allocator);
+    errdefer environmentVariablesStoreDeinit(&store, allocator);
+
+    const normalized = try std.mem.replaceOwned(u8, allocator, content_in, "\r", "");
+    defer allocator.free(normalized);
+
+    var content = environmentVariablesTrimSpaces(normalized);
+    while (content.len > 0) {
+        if (content[0] == '\n' or content[0] == '#') {
+            if (std.mem.indexOfScalar(u8, content, '\n')) |newline| {
+                content = content[newline + 1 ..];
+                continue;
+            }
+            break;
+        }
+
+        const equal_or_newline = std.mem.indexOfAny(u8, content, "=\n") orelse break;
+        if (content[equal_or_newline] == '\n') {
+            content = environmentVariablesTrimSpaces(content[equal_or_newline + 1 ..]);
+            continue;
+        }
+
+        var key = environmentVariablesTrimSpaces(content[0..equal_or_newline]);
+        content = content[equal_or_newline + 1 ..];
+        if (key.len == 0) {
+            content = environmentVariablesTrimSpaces(content);
+            continue;
+        }
+        if (std.mem.startsWith(u8, key, "export ")) {
+            key = environmentVariablesTrimSpaces(key[7..]);
+        }
+        if (!environmentVariablesIsValidName(key)) {
+            if (std.mem.indexOfScalar(u8, content, '\n')) |newline| {
+                content = environmentVariablesTrimSpaces(content[newline + 1 ..]);
+                continue;
+            }
+            break;
+        }
+
+        if (content.len == 0 or content[0] == '\n') {
+            try environmentVariablesStoreInsertOwned(&store, allocator, key, "");
+            content = if (content.len == 0) content else environmentVariablesTrimSpaces(content[1..]);
+            continue;
+        }
+
+        content = environmentVariablesTrimSpaces(content);
+        if (content.len == 0) {
+            try environmentVariablesStoreInsertOwned(&store, allocator, key, "");
+            break;
+        }
+
+        if (content[0] == '"') {
+            if (environmentVariablesFindClosingQuote(content, '"')) |closing| {
+                const raw = content[1..closing];
+                const expanded = try environmentVariablesExpandDoubleQuotedNewlines(allocator, raw);
+                defer allocator.free(expanded);
+                try environmentVariablesStoreInsertOwned(&store, allocator, key, expanded);
+                if (std.mem.indexOfScalarPos(u8, content, closing + 1, '\n')) |newline| {
+                    content = environmentVariablesTrimSpaces(content[newline + 1 ..]);
+                } else {
+                    break;
+                }
+                continue;
+            }
+        }
+
+        if (content[0] == '\'' or content[0] == '"' or content[0] == '`') {
+            const quote = content[0];
+            if (environmentVariablesFindClosingQuote(content, quote)) |closing| {
+                try environmentVariablesStoreInsertOwned(&store, allocator, key, content[1..closing]);
+                if (std.mem.indexOfScalarPos(u8, content, closing + 1, '\n')) |newline| {
+                    content = environmentVariablesTrimSpaces(content[newline + 1 ..]);
+                } else {
+                    break;
+                }
+                continue;
+            }
+
+            if (std.mem.indexOfScalar(u8, content, '\n')) |newline| {
+                try environmentVariablesStoreInsertOwned(&store, allocator, key, content[0..newline]);
+                content = environmentVariablesTrimSpaces(content[newline + 1 ..]);
+            } else {
+                try environmentVariablesStoreInsertOwned(&store, allocator, key, content);
+                break;
+            }
+            continue;
+        }
+
+        if (std.mem.indexOfScalar(u8, content, '\n')) |newline| {
+            var value = content[0..newline];
+            if (std.mem.indexOfScalar(u8, value, '#')) |hash| {
+                value = value[0..hash];
+            }
+            try environmentVariablesStoreInsertOwned(&store, allocator, key, environmentVariablesTrimSpaces(value));
+            content = environmentVariablesTrimSpaces(content[newline + 1 ..]);
+        } else {
+            var value = content;
+            if (std.mem.indexOfScalar(u8, value, '#')) |hash| {
+                value = value[0..hash];
+            }
+            try environmentVariablesStoreInsertOwned(&store, allocator, key, environmentVariablesTrimSpaces(value));
+            break;
+        }
+    }
+
+    return store;
+}
+
+fn environmentVariablesAppendStoreObject(out: *std.ArrayList(u8), store: *const std.StringHashMap([]u8)) !void {
+    try out.append('{');
+    var it = store.iterator();
+    var first = true;
+    while (it.next()) |entry| {
+        if (!first) try out.append(',');
+        first = false;
+        try appendJsonString(out, entry.key_ptr.*);
+        try out.append(':');
+        try appendJsonString(out, entry.value_ptr.*);
+    }
+    try out.append('}');
+}
+
+pub export fn sa_node_plugin_environment_variables_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
+    defer env_map.deinit();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    environmentVariablesAppendObject(&out, &env_map) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_environment_variables_has(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    out_bool.?.* = if (std.posix.getenv(name) != null) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_environment_variables_get_json(name_ptr: ?[*]const u8, name_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    if (std.posix.getenv(name)) |value| {
+        return writeJsonValue(out_ptr, out_len, value);
+    }
+    return writeOwnedString(out_ptr, out_len, "null");
+}
+
+pub export fn sa_node_plugin_environment_variables_parse_env_json(content_ptr: ?[*]const u8, content_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const content = if (content_len == 0) "" else (content_ptr orelse return fail())[0..content_len];
+    var store = environmentVariablesParseContent(std.heap.page_allocator, content) catch return fail();
+    defer environmentVariablesStoreDeinit(&store, std.heap.page_allocator);
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    environmentVariablesAppendStoreObject(&out, &store) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const path = if (path_len == 0) ".env" else (path_ptr orelse return fail())[0..path_len];
+    const allocator = std.heap.page_allocator;
+    var file = if (std.fs.path.isAbsolute(path))
+        std.fs.openFileAbsolute(path, .{}) catch return fail()
+    else
+        std.fs.cwd().openFile(path, .{}) catch return fail();
+    defer file.close();
+
+    const content = file.readToEndAlloc(allocator, 1024 * 1024) catch return fail();
+    defer allocator.free(content);
+
+    var store = environmentVariablesParseContent(allocator, content) catch return fail();
+    defer environmentVariablesStoreDeinit(&store, allocator);
+
+    var loaded_count: u64 = 0;
+    var skipped_count: u64 = 0;
+    var it = store.iterator();
+    while (it.next()) |entry| {
+        if (std.mem.eql(u8, entry.key_ptr.*, "NODE_OPTIONS")) {
+            skipped_count += 1;
+            continue;
+        }
+        if (std.posix.getenv(entry.key_ptr.*) != null) {
+            skipped_count += 1;
+            continue;
+        }
+        const key_z = std.fmt.allocPrintZ(allocator, "{s}", .{entry.key_ptr.*}) catch return fail();
+        defer allocator.free(key_z);
+        const value_z = std.fmt.allocPrintZ(allocator, "{s}", .{entry.value_ptr.*}) catch return fail();
+        defer allocator.free(value_z);
+        if (setenv(key_z.ptr, value_z.ptr, 1) != 0) return fail();
+        loaded_count += 1;
+    }
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"path\":") catch return fail();
+    appendJsonString(&out, path) catch return fail();
+    out.appendSlice(",\"loaded\":") catch return fail();
+    out.writer().print("{d}", .{loaded_count}) catch return fail();
+    out.appendSlice(",\"skipped\":") catch return fail();
+    out.writer().print("{d}", .{skipped_count}) catch return fail();
+    out.appendSlice(",\"entries\":") catch return fail();
+    environmentVariablesAppendStoreObject(&out, &store) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

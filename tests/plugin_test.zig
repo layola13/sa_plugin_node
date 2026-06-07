@@ -2123,6 +2123,127 @@ test "node plugin test runner reports native harness support" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"reporterDestinations\":[\"stdout\"]") != null);
 }
 
+test "node plugin module top level native facade" {
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_PATH", "/opt/node_modules:/srv/node_modules", 1));
+    defer _ = unsetenv("NODE_PATH");
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullModuleStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"module\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"builtinModules\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"compileCacheStatus\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createRequire\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullModuleExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"builtinModules\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"findPackageJSON\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"stripTypeScriptTypes\"") != null);
+
+    var builtin_ptr: ?[*]const u8 = null;
+    var builtin_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_builtin_modules_json(&builtin_ptr, &builtin_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(builtin_ptr, builtin_len);
+    const builtins = (builtin_ptr orelse return error.NullModuleBuiltins)[0..@intCast(builtin_len)];
+    try std.testing.expect(std.mem.indexOf(u8, builtins, "\"fs\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, builtins, "\"module\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, builtins, "\"test\"") != null);
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_constants_json(&constants_ptr, &constants_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+    const module_constants = (constants_ptr orelse return error.NullModuleConstants)[0..@intCast(constants_len)];
+    try std.testing.expect(std.mem.indexOf(u8, module_constants, "\"FAILED\":0") != null);
+    try std.testing.expect(std.mem.indexOf(u8, module_constants, "\"ENABLED\":1") != null);
+
+    var global_paths_ptr: ?[*]const u8 = null;
+    var global_paths_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_global_paths_json(&global_paths_ptr, &global_paths_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(global_paths_ptr, global_paths_len);
+    const global_paths = (global_paths_ptr orelse return error.NullModuleGlobalPaths)[0..@intCast(global_paths_len)];
+    try std.testing.expect(std.mem.indexOf(u8, global_paths, "/opt/node_modules") != null);
+    try std.testing.expect(std.mem.indexOf(u8, global_paths, "/srv/node_modules") != null);
+
+    var is_fs: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_is_builtin("fs".ptr, 2, &is_fs));
+    try std.testing.expectEqual(@as(u64, 1), is_fs);
+
+    var is_node_test: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_is_builtin("node:test".ptr, 9, &is_node_test));
+    try std.testing.expectEqual(@as(u64, 1), is_node_test);
+
+    var is_fake: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_is_builtin("fake".ptr, 4, &is_fake));
+    try std.testing.expectEqual(@as(u64, 0), is_fake);
+
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try tmp.dir.makePath("pkg/src");
+    try tmp.dir.writeFile(.{ .sub_path = "pkg/package.json", .data = "{\"name\":\"demo\"}" });
+    try tmp.dir.writeFile(.{ .sub_path = "pkg/src/index.js", .data = "module.exports = 1;" });
+    const entry_path = try tmp.dir.realpathAlloc(std.testing.allocator, "pkg/src/index.js");
+    defer std.testing.allocator.free(entry_path);
+
+    var package_ptr: ?[*]const u8 = null;
+    var package_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_find_package_json(entry_path.ptr, entry_path.len, &package_ptr, &package_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(package_ptr, package_len);
+    const package_json_path = (package_ptr orelse return error.NullModulePackageJson)[0..@intCast(package_len)];
+    try std.testing.expect(std.mem.indexOf(u8, package_json_path, "package.json") != null);
+
+    var enable_ptr: ?[*]const u8 = null;
+    var enable_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_enable_compile_cache_json(&enable_ptr, &enable_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(enable_ptr, enable_len);
+    const enable_json = (enable_ptr orelse return error.NullModuleEnableCompileCache)[0..@intCast(enable_len)];
+    try std.testing.expect(std.mem.indexOf(u8, enable_json, "\"status\":1") != null or std.mem.indexOf(u8, enable_json, "\"status\":2") != null);
+
+    var cache_dir_ptr: ?[*]const u8 = null;
+    var cache_dir_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_get_compile_cache_dir_json(&cache_dir_ptr, &cache_dir_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cache_dir_ptr, cache_dir_len);
+    const cache_dir_json = (cache_dir_ptr orelse return error.NullModuleCompileCacheDir)[0..@intCast(cache_dir_len)];
+    try std.testing.expect(cache_dir_json.len > 2);
+
+    var flush_ptr: ?[*]const u8 = null;
+    var flush_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_flush_compile_cache_json(&flush_ptr, &flush_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(flush_ptr, flush_len);
+    const flush_json = (flush_ptr orelse return error.NullModuleFlushCompileCache)[0..@intCast(flush_len)];
+    try std.testing.expect(std.mem.indexOf(u8, flush_json, "metadata-only") != null);
+
+    var source_maps_ptr: ?[*]const u8 = null;
+    var source_maps_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_get_source_maps_support_json(&source_maps_ptr, &source_maps_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(source_maps_ptr, source_maps_len);
+    const source_maps = (source_maps_ptr orelse return error.NullModuleSourceMapsSupport)[0..@intCast(source_maps_len)];
+    try std.testing.expect(std.mem.indexOf(u8, source_maps, "\"enabled\":") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_set_source_maps_support(1, 1, 0));
+    var source_maps2_ptr: ?[*]const u8 = null;
+    var source_maps2_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_get_source_maps_support_json(&source_maps2_ptr, &source_maps2_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(source_maps2_ptr, source_maps2_len);
+    const source_maps2 = (source_maps2_ptr orelse return error.NullModuleSourceMapsSupport2)[0..@intCast(source_maps2_len)];
+    try std.testing.expect(std.mem.indexOf(u8, source_maps2, "\"enabled\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, source_maps2, "\"nodeModules\":true") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullModuleFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"createRequire\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"stripTypeScriptTypes\":{\"supported\":false") != null);
+}
+
 test "node plugin wasi reports native config introspection" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--permission --allow-wasi --experimental-wasi-unstable-preview1", 1));
     defer _ = unsetenv("NODE_OPTIONS");

@@ -1,0 +1,239 @@
+// SA tests for Node module top-level native facade helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_FS = utf8:"fs"
+@const S_FAKE = utf8:"fake"
+@const S_DOT = utf8:"."
+
+@test "node.module top level helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    EXPAND NODE_MODULE_STATUS_JSON status_ptr, status_len
+    status_has = ugt status_len, 0
+    br status_has -> L_EXPORTS, L_ERR_STATUS
+L_EXPORTS:
+    !status_has
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_MODULE_EXPORTS_JSON exports_ptr, exports_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_BUILTINS, L_ERR_EXPORTS
+L_BUILTINS:
+    !ok2
+    builtins_ptr = add 0, 0
+    builtins_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_MODULE_BUILTIN_MODULES_JSON builtins_ptr, builtins_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_CONSTANTS, L_ERR_BUILTINS
+L_CONSTANTS:
+    !ok3
+    constants_ptr = add 0, 0
+    constants_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_MODULE_CONSTANTS_JSON constants_ptr, constants_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_GLOBAL, L_ERR_CONSTANTS
+L_GLOBAL:
+    !ok4
+    global_ptr = add 0, 0
+    global_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_MODULE_GLOBAL_PATHS_JSON global_ptr, global_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_IS_BUILTIN_TRUE, L_ERR_GLOBAL
+L_IS_BUILTIN_TRUE:
+    !ok5
+    builtin_bool = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_MODULE_IS_BUILTIN builtin_bool, s6, S_FS, 2
+    ok6 = eq s6, 0
+    hit6 = eq builtin_bool, 1
+    both6 = and ok6, hit6
+    br both6 -> L_IS_BUILTIN_FALSE, L_ERR_IS_BUILTIN_TRUE
+L_IS_BUILTIN_FALSE:
+    !both6
+    not_builtin_bool = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_MODULE_IS_BUILTIN not_builtin_bool, s7, S_FAKE, 4
+    ok7 = eq s7, 0
+    miss7 = eq not_builtin_bool, 0
+    both7 = and ok7, miss7
+    br both7 -> L_FIND_PKG, L_ERR_IS_BUILTIN_FALSE
+L_FIND_PKG:
+    !both7
+    pkg_ptr = add 0, 0
+    pkg_len = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_MODULE_FIND_PACKAGE_JSON pkg_ptr, pkg_len, s8, S_DOT, 1
+    ok8 = eq s8, 0
+    br ok8 -> L_ENABLE_CACHE, L_ERR_FIND_PKG
+L_ENABLE_CACHE:
+    !ok8
+    enable_ptr = add 0, 0
+    enable_len = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_MODULE_ENABLE_COMPILE_CACHE_JSON enable_ptr, enable_len, s9
+    ok9 = eq s9, 0
+    br ok9 -> L_GET_CACHE_DIR, L_ERR_ENABLE_CACHE
+L_GET_CACHE_DIR:
+    !ok9
+    cache_ptr = add 0, 0
+    cache_len = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_MODULE_GET_COMPILE_CACHE_DIR_JSON cache_ptr, cache_len, s10
+    ok10 = eq s10, 0
+    br ok10 -> L_FLUSH_CACHE, L_ERR_GET_CACHE_DIR
+L_FLUSH_CACHE:
+    !ok10
+    flush_ptr = add 0, 0
+    flush_len = add 0, 0
+    s11 = add 0, 0
+    EXPAND NODE_MODULE_FLUSH_COMPILE_CACHE_JSON flush_ptr, flush_len, s11
+    ok11 = eq s11, 0
+    br ok11 -> L_SOURCE_MAPS0, L_ERR_FLUSH_CACHE
+L_SOURCE_MAPS0:
+    !ok11
+    source_ptr = add 0, 0
+    source_len = add 0, 0
+    s12 = add 0, 0
+    EXPAND NODE_MODULE_GET_SOURCE_MAPS_SUPPORT_JSON source_ptr, source_len, s12
+    ok12 = eq s12, 0
+    br ok12 -> L_SET_SOURCE_MAPS, L_ERR_SOURCE_MAPS0
+L_SET_SOURCE_MAPS:
+    !ok12
+    s13 = add 0, 0
+    EXPAND NODE_MODULE_SET_SOURCE_MAPS_SUPPORT s13, 1, 1, 0
+    ok13 = eq s13, 0
+    br ok13 -> L_SOURCE_MAPS1, L_ERR_SET_SOURCE_MAPS
+L_SOURCE_MAPS1:
+    !ok13
+    source2_ptr = add 0, 0
+    source2_len = add 0, 0
+    s14 = add 0, 0
+    EXPAND NODE_MODULE_GET_SOURCE_MAPS_SUPPORT_JSON source2_ptr, source2_len, s14
+    ok14 = eq s14, 0
+    br ok14 -> L_FEATURES, L_ERR_SOURCE_MAPS1
+L_FEATURES:
+    !ok14
+    feature_ptr = add 0, 0
+    feature_len = add 0, 0
+    s15 = add 0, 0
+    EXPAND NODE_MODULE_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s15
+    ok15 = eq s15, 0
+    br ok15 -> L_FREE, L_ERR_FEATURES
+L_FREE:
+    !ok15
+    free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
+    free_source2 = call @sa_node_plugin_free_buffer(source2_ptr, source2_len)
+    free_source = call @sa_node_plugin_free_buffer(source_ptr, source_len)
+    free_flush = call @sa_node_plugin_free_buffer(flush_ptr, flush_len)
+    free_cache = call @sa_node_plugin_free_buffer(cache_ptr, cache_len)
+    free_enable = call @sa_node_plugin_free_buffer(enable_ptr, enable_len)
+    free_pkg = call @sa_node_plugin_free_buffer(pkg_ptr, pkg_len)
+    free_global = call @sa_node_plugin_free_buffer(global_ptr, global_len)
+    free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_builtins = call @sa_node_plugin_free_buffer(builtins_ptr, builtins_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_builtins
+    !free_constants
+    !free_global
+    !free_pkg
+    !free_enable
+    !free_cache
+    !free_flush
+    !free_source
+    !free_source2
+    !free_feature
+    !s15
+    !feature_len
+    !feature_ptr
+    !s14
+    !source2_len
+    !source2_ptr
+    !s13
+    !s12
+    !source_len
+    !source_ptr
+    !s11
+    !flush_len
+    !flush_ptr
+    !s10
+    !cache_len
+    !cache_ptr
+    !s9
+    !enable_len
+    !enable_ptr
+    !s8
+    !pkg_len
+    !pkg_ptr
+    !s7
+    !not_builtin_bool
+    !s6
+    !builtin_bool
+    !s5
+    !global_len
+    !global_ptr
+    !s4
+    !constants_len
+    !constants_ptr
+    !s3
+    !builtins_len
+    !builtins_ptr
+    !s2
+    !exports_len
+    !exports_ptr
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !status_has
+    panic(103)
+L_ERR_EXPORTS:
+    !ok2
+    panic(103)
+L_ERR_BUILTINS:
+    !ok3
+    panic(103)
+L_ERR_CONSTANTS:
+    !ok4
+    panic(103)
+L_ERR_GLOBAL:
+    !ok5
+    panic(103)
+L_ERR_IS_BUILTIN_TRUE:
+    !both6
+    panic(103)
+L_ERR_IS_BUILTIN_FALSE:
+    !both7
+    panic(103)
+L_ERR_FIND_PKG:
+    !ok8
+    panic(103)
+L_ERR_ENABLE_CACHE:
+    !ok9
+    panic(103)
+L_ERR_GET_CACHE_DIR:
+    !ok10
+    panic(103)
+L_ERR_FLUSH_CACHE:
+    !ok11
+    panic(103)
+L_ERR_SOURCE_MAPS0:
+    !ok12
+    panic(103)
+L_ERR_SET_SOURCE_MAPS:
+    !ok13
+    panic(103)
+L_ERR_SOURCE_MAPS1:
+    !ok14
+    panic(103)
+L_ERR_FEATURES:
+    !ok15
+    panic(103)

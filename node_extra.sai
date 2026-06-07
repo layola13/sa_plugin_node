@@ -477,6 +477,19 @@
 @extern sa_node_plugin_domain_snapshot_json(domain_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_domain_free(domain_ptr: ptr) -> u64
 @extern sa_node_plugin_domain_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_builtin_modules_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_global_paths_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_is_builtin(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_module_find_package_json(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_enable_compile_cache_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_flush_compile_cache_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_get_compile_cache_dir_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_get_source_maps_support_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_set_source_maps_support(enabled: u64, node_modules: u64, generated_code: u64) -> u64
+@extern sa_node_plugin_module_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_max_header_size(&out_size: ptr) -> u64

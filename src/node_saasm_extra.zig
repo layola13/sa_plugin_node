@@ -120,6 +120,10 @@ fn nodeOptionsHasFlag(flag: []const u8) bool {
     return std.mem.indexOf(u8, std.posix.getenv("NODE_OPTIONS") orelse "", flag) != null;
 }
 
+fn cloneOrNullTerminatedDup(allocator: std.mem.Allocator, text: []const u8) ![]u8 {
+    return allocator.dupe(u8, text);
+}
+
 fn appendJsonFieldSeparator(out: *std.ArrayList(u8), first: *bool) !void {
     if (!first.*) try out.append(',');
     first.* = false;
@@ -5284,6 +5288,349 @@ pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len
     out.writer().print("{d}", .{domain_stack.items.len}) catch return fail();
     out.appendSlice(",\"capabilities\":[\"create domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain lookup\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance\",\"no bind/intercept callback wrapping\",\"no uncaught exception capture callback integration\",\"no async_hooks or timer callback domain propagation\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+const module_builtin_modules = [_][]const u8{
+    "assert",
+    "async_hooks",
+    "buffer",
+    "child_process",
+    "cluster",
+    "console",
+    "constants",
+    "crypto",
+    "dgram",
+    "diagnostics_channel",
+    "dns",
+    "domain",
+    "dtls",
+    "events",
+    "ffi",
+    "fs",
+    "http",
+    "http2",
+    "https",
+    "inspector",
+    "module",
+    "net",
+    "os",
+    "path",
+    "perf_hooks",
+    "process",
+    "punycode",
+    "querystring",
+    "quic",
+    "readline",
+    "repl",
+    "sea",
+    "sqlite",
+    "stream",
+    "string_decoder",
+    "sys",
+    "test",
+    "timers",
+    "tls",
+    "trace_events",
+    "tty",
+    "url",
+    "util",
+    "vfs",
+    "wasi",
+    "worker_threads",
+    "zlib",
+};
+
+const module_export_names = [_][]const u8{
+    "builtinModules",
+    "constants",
+    "enableCompileCache",
+    "findPackageJSON",
+    "flushCompileCache",
+    "getCompileCacheDir",
+    "getSourceMapsSupport",
+    "setSourceMapsSupport",
+    "globalPaths",
+    "isBuiltin",
+    "createRequire",
+    "register",
+    "registerHooks",
+    "runMain",
+    "syncBuiltinESMExports",
+    "stripTypeScriptTypes",
+    "findSourceMap",
+    "SourceMap",
+};
+
+var module_compile_cache_enabled = false;
+var module_compile_cache_dir: ?[]u8 = null;
+var module_source_maps_initialized = false;
+var module_source_maps_enabled = false;
+var module_source_maps_node_modules = false;
+var module_source_maps_generated_code = false;
+
+fn moduleInitSourceMapsSupport() void {
+    if (module_source_maps_initialized) return;
+    module_source_maps_initialized = true;
+    module_source_maps_enabled = nodeOptionsHasFlag("--enable-source-maps");
+    module_source_maps_node_modules = false;
+    module_source_maps_generated_code = false;
+}
+
+fn moduleCompileCacheDisabled() bool {
+    return envTruthy("NODE_DISABLE_COMPILE_CACHE");
+}
+
+fn moduleCompileCacheStatusConstantsJson() []const u8 {
+    return "{\"FAILED\":0,\"ENABLED\":1,\"ALREADY_ENABLED\":2,\"DISABLED\":3}";
+}
+
+fn moduleResolveCompileCacheDir(allocator: std.mem.Allocator) ![]u8 {
+    if (module_compile_cache_dir) |dir| return cloneOrNullTerminatedDup(allocator, dir);
+    const resolved = if (std.posix.getenv("NODE_COMPILE_CACHE")) |configured|
+        try allocator.dupe(u8, configured)
+    else if (std.posix.getenv("XDG_CACHE_HOME")) |xdg|
+        try std.fs.path.join(allocator, &[_][]const u8{ xdg, "sa_plugin_node", "compile-cache" })
+    else if (std.posix.getenv("HOME")) |home|
+        try std.fs.path.join(allocator, &[_][]const u8{ home, ".cache", "sa_plugin_node", "compile-cache" })
+    else
+        try allocator.dupe(u8, "/tmp/sa_plugin_node-compile-cache");
+    module_compile_cache_dir = resolved;
+    return cloneOrNullTerminatedDup(allocator, resolved);
+}
+
+fn moduleEnsureDir(path: []const u8) !void {
+    if (std.fs.path.isAbsolute(path)) {
+        var root = try std.fs.openDirAbsolute("/", .{});
+        defer root.close();
+        const sub = std.mem.trimLeft(u8, path, "/");
+        if (sub.len == 0) return;
+        try root.makePath(sub);
+        return;
+    }
+    try std.fs.cwd().makePath(path);
+}
+
+fn moduleWriteCompileCacheResultJson(status_code: u64, directory: ?[]const u8, message: ?[]const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"status\":") catch return fail();
+    out.writer().print("{d}", .{status_code}) catch return fail();
+    out.appendSlice(",\"directory\":") catch return fail();
+    if (directory) |dir| {
+        appendJsonString(&out, dir) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"message\":") catch return fail();
+    if (message) |text| {
+        appendJsonString(&out, text) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn moduleWriteSourceMapsSupportJson(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    moduleInitSourceMapsSupport();
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"enabled\":") catch return fail();
+    out.appendSlice(if (module_source_maps_enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"nodeModules\":") catch return fail();
+    out.appendSlice(if (module_source_maps_node_modules) "true" else "false") catch return fail();
+    out.appendSlice(",\"generatedCode\":") catch return fail();
+    out.appendSlice(if (module_source_maps_generated_code) "true" else "false") catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn moduleAppendGlobalPaths(out: *std.ArrayList(u8), allocator: std.mem.Allocator) !void {
+    try out.append('[');
+    var first = true;
+    if (std.posix.getenv("NODE_PATH")) |node_path| {
+        const delimiter: u8 = if (builtin.os.tag == .windows) ';' else ':';
+        var parts = std.mem.splitScalar(u8, node_path, delimiter);
+        while (parts.next()) |part| {
+            if (part.len == 0) continue;
+            try appendJsonFieldSeparator(out, &first);
+            try appendJsonString(out, part);
+        }
+    }
+    if (std.posix.getenv("HOME")) |home| {
+        const user_modules = try std.fs.path.join(allocator, &[_][]const u8{ home, ".node_modules" });
+        defer allocator.free(user_modules);
+        try appendJsonFieldSeparator(out, &first);
+        try appendJsonString(out, user_modules);
+        const user_libraries = try std.fs.path.join(allocator, &[_][]const u8{ home, ".node_libraries" });
+        defer allocator.free(user_libraries);
+        try appendJsonFieldSeparator(out, &first);
+        try appendJsonString(out, user_libraries);
+    }
+    try appendJsonFieldSeparator(out, &first);
+    try appendJsonString(out, "/usr/local/lib/node");
+    try out.append(']');
+}
+
+fn moduleAbsolutePath(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
+    if (std.fs.path.isAbsolute(input)) return allocator.dupe(u8, input);
+    const cwd = try std.process.getCwdAlloc(allocator);
+    defer allocator.free(cwd);
+    return std.fs.path.join(allocator, &[_][]const u8{ cwd, input });
+}
+
+fn moduleFindPackageJsonPath(allocator: std.mem.Allocator, input: []const u8) !?[]u8 {
+    const absolute = try moduleAbsolutePath(allocator, input);
+    defer allocator.free(absolute);
+
+    var current = blk: {
+        if (std.fs.openDirAbsolute(absolute, .{})) |opened_dir| {
+            var dir = opened_dir;
+            dir.close();
+            break :blk try allocator.dupe(u8, absolute);
+        } else |_| {}
+        const dirname = std.fs.path.dirname(absolute) orelse return null;
+        break :blk try allocator.dupe(u8, dirname);
+    };
+    errdefer allocator.free(current);
+
+    while (true) {
+        const candidate = try std.fs.path.join(allocator, &[_][]const u8{ current, "package.json" });
+        errdefer allocator.free(candidate);
+        if (std.fs.accessAbsolute(candidate, .{})) |_| {
+            const real = std.fs.realpathAlloc(allocator, candidate) catch candidate;
+            if (real.ptr != candidate.ptr) allocator.free(candidate);
+            allocator.free(current);
+            return real;
+        } else |_| {}
+        const parent = std.fs.path.dirname(current) orelse break;
+        if (std.mem.eql(u8, parent, current)) break;
+        const next = try allocator.dupe(u8, parent);
+        allocator.free(current);
+        current = next;
+    }
+    allocator.free(current);
+    return null;
+}
+
+pub export fn sa_node_plugin_module_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var source_maps_ptr: ?[*]const u8 = null;
+    var source_maps_len: u64 = 0;
+    if (moduleWriteSourceMapsSupportJson(&source_maps_ptr, &source_maps_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(source_maps_ptr, source_maps_len);
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"module\",\"supported\":true,\"mode\":\"top-level-native-module-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &module_export_names) catch return fail();
+    out.appendSlice(",\"builtinModules\":") catch return fail();
+    appendStringArray(&out, &module_builtin_modules) catch return fail();
+    out.appendSlice(",\"constants\":{\"compileCacheStatus\":") catch return fail();
+    out.appendSlice(moduleCompileCacheStatusConstantsJson()) catch return fail();
+    out.appendSlice("},\"compileCache\":{\"enabled\":") catch return fail();
+    out.appendSlice(if (module_compile_cache_enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"disabledByEnv\":") catch return fail();
+    out.appendSlice(if (moduleCompileCacheDisabled()) "true" else "false") catch return fail();
+    out.appendSlice(",\"directory\":") catch return fail();
+    if (module_compile_cache_dir) |dir| {
+        appendJsonString(&out, dir) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice("},\"sourceMapsSupport\":") catch return fail();
+    out.appendSlice((source_maps_ptr orelse return fail())[0..@intCast(source_maps_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"findPackageJSON\":true,\"builtinModules\":true,\"globalPaths\":true,\"isBuiltin\":true,\"enableCompileCache\":true,\"flushCompileCache\":true,\"getCompileCacheDir\":true,\"getSourceMapsSupport\":true,\"setSourceMapsSupport\":true,\"createRequire\":false,\"register\":false,\"registerHooks\":false,\"runMain\":false,\"syncBuiltinESMExports\":false,\"findSourceMap\":false,\"SourceMap\":false,\"stripTypeScriptTypes\":false},\"limitations\":[\"no CommonJS or ESM loader execution semantics\",\"no createRequire/register/registerHooks/runMain integration\",\"no SourceMap object model or findSourceMap cache\",\"stripTypeScriptTypes is not yet modeled; use external tooling before feeding TypeScript to this plugin\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_module_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &module_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_module_builtin_modules_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &module_builtin_modules) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_module_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"compileCacheStatus\":{\"FAILED\":0,\"ENABLED\":1,\"ALREADY_ENABLED\":2,\"DISABLED\":3}}");
+}
+
+pub export fn sa_node_plugin_module_global_paths_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    moduleAppendGlobalPaths(&out, std.heap.page_allocator) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_module_is_builtin(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) "" else (name_ptr orelse return fail())[0..name_len];
+    const bare = if (std.mem.startsWith(u8, name, "node:")) name[5..] else name;
+    for (module_builtin_modules) |entry| {
+        if (std.mem.eql(u8, bare, entry)) {
+            out_bool.?.* = 1;
+            return 0;
+        }
+    }
+    out_bool.?.* = 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_module_find_package_json(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const input = if (path_len == 0) "." else (path_ptr orelse return fail())[0..path_len];
+    const found = moduleFindPackageJsonPath(std.heap.page_allocator, input) catch return fail();
+    defer if (found) |path| std.heap.page_allocator.free(path);
+    if (found) |path| {
+        var out = std.ArrayList(u8).init(std.heap.page_allocator);
+        defer out.deinit();
+        appendJsonString(&out, path) catch return fail();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+    return writeOwnedString(out_ptr, out_len, "null");
+}
+
+pub export fn sa_node_plugin_module_enable_compile_cache_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (moduleCompileCacheDisabled()) return moduleWriteCompileCacheResultJson(3, module_compile_cache_dir, "disabled by NODE_DISABLE_COMPILE_CACHE", out_ptr, out_len);
+    if (module_compile_cache_enabled) return moduleWriteCompileCacheResultJson(2, module_compile_cache_dir, "already enabled", out_ptr, out_len);
+    const dir = moduleResolveCompileCacheDir(std.heap.page_allocator) catch return fail();
+    defer std.heap.page_allocator.free(dir);
+    moduleEnsureDir(dir) catch return moduleWriteCompileCacheResultJson(0, dir, "failed to create compile cache directory", out_ptr, out_len);
+    module_compile_cache_enabled = true;
+    return moduleWriteCompileCacheResultJson(1, dir, null, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_module_flush_compile_cache_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (!module_compile_cache_enabled) return writeOwnedString(out_ptr, out_len, "{\"flushed\":false,\"directory\":null,\"entries\":0,\"reason\":\"compile cache not enabled\"}");
+    return moduleWriteCompileCacheResultJson(1, module_compile_cache_dir, "flush is a metadata-only no-op for this native module facade", out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_module_get_compile_cache_dir_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (!module_compile_cache_enabled) return writeOwnedString(out_ptr, out_len, "null");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendJsonString(&out, module_compile_cache_dir orelse return fail()) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_module_get_source_maps_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return moduleWriteSourceMapsSupportJson(out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_module_set_source_maps_support(enabled: u64, node_modules: u64, generated_code: u64) u32 {
+    module_source_maps_initialized = true;
+    module_source_maps_enabled = enabled != 0;
+    module_source_maps_node_modules = node_modules != 0;
+    module_source_maps_generated_code = generated_code != 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_module_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"createRequire\":{\"supported\":false,\"reason\":\"CommonJS loader instances are not modeled\"},\"register\":{\"supported\":false,\"reason\":\"ESM loader registration hooks are not modeled\"},\"registerHooks\":{\"supported\":false,\"reason\":\"ESM hook chaining is not modeled\"},\"runMain\":{\"supported\":false,\"reason\":\"Node main-module bootstrap is not modeled\"},\"syncBuiltinESMExports\":{\"supported\":false,\"reason\":\"builtin ESM/CJS export synchronization is not modeled\"},\"findSourceMap\":{\"supported\":false,\"reason\":\"source map cache lookup is not modeled\"},\"SourceMap\":{\"supported\":false,\"reason\":\"SourceMap object construction is not modeled\"},\"stripTypeScriptTypes\":{\"supported\":false,\"reason\":\"TypeScript syntax stripping is not yet modeled in this native facade\"}}");
 }
 
 pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

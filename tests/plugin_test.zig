@@ -1726,6 +1726,70 @@ test "node plugin perf hooks histogram extended statistics" {
     try std.testing.expect(std.mem.indexOf(u8, stats, "\"percentiles\"") != null);
 }
 
+test "node plugin perf_hooks top-level facade helpers" {
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_clear_marks());
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_clear_measures());
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_mark("start".ptr, 5));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_mark("end".ptr, 3));
+
+    var duration_ms: f64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_measure("span".ptr, 4, "start".ptr, 5, "end".ptr, 3, &duration_ms));
+    try std.testing.expect(duration_ms >= 0);
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullPerfHooksStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"perf_hooks\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-perf-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createHistogram\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"monitorEventLoopDelay\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"PerformanceObserver\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullPerfHooksExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Performance\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"eventLoopUtilization\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"constants\"") != null);
+
+    var entry_types_ptr: ?[*]const u8 = null;
+    var entry_types_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_supported_entry_types_json(&entry_types_ptr, &entry_types_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(entry_types_ptr, entry_types_len);
+    const entry_types = (entry_types_ptr orelse return error.NullPerfHooksEntryTypes)[0..@intCast(entry_types_len)];
+    try std.testing.expectEqualStrings("[\"mark\",\"measure\",\"function\"]", entry_types);
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_constants_json(&constants_ptr, &constants_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+    const constants = (constants_ptr orelse return error.NullPerfHooksConstants)[0..@intCast(constants_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants, "NODE_PERFORMANCE_GC_MAJOR") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "NODE_PERFORMANCE_GC_FLAGS_SCHEDULE_IDLE") != null);
+
+    var perf_ptr: ?[*]const u8 = null;
+    var perf_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_performance_json(&perf_ptr, &perf_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(perf_ptr, perf_len);
+    const perf_json = (perf_ptr orelse return error.NullPerfHooksPerformance)[0..@intCast(perf_len)];
+    try std.testing.expect(std.mem.indexOf(u8, perf_json, "\"nowMs\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, perf_json, "\"timeOriginMs\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, perf_json, "\"supportedEntryTypes\":[\"mark\",\"measure\",\"function\"]") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_perf_hooks_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature_json = (feature_ptr orelse return error.NullPerfHooksFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"PerformanceObserver\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"performance.now\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"monitorEventLoopDelay\":{\"supported\":true") != null);
+}
+
 test "node plugin tty u64 ABI and stdio fallback" {
     var is_tty: u64 = 99;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tty_isatty(0, &is_tty));

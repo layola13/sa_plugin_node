@@ -3029,6 +3029,114 @@ pub export fn sa_node_plugin_perf_hooks_clear_measures() u32 {
     return 0;
 }
 
+const perf_hooks_export_names = [_][]const u8{
+    "Performance",
+    "PerformanceEntry",
+    "PerformanceMark",
+    "PerformanceMeasure",
+    "PerformanceObserver",
+    "PerformanceObserverEntryList",
+    "PerformanceResourceTiming",
+    "monitorEventLoopDelay",
+    "eventLoopUtilization",
+    "timerify",
+    "createHistogram",
+    "performance",
+    "constants",
+};
+
+const perf_hooks_supported_entry_types = [_][]const u8{
+    "mark",
+    "measure",
+    "function",
+};
+
+fn perfHooksConstantsJson() []const u8 {
+    return "{\"NODE_PERFORMANCE_GC_MAJOR\":1,\"NODE_PERFORMANCE_GC_MINOR\":2,\"NODE_PERFORMANCE_GC_INCREMENTAL\":4,\"NODE_PERFORMANCE_GC_WEAKCB\":8,\"NODE_PERFORMANCE_GC_FLAGS_NO\":0,\"NODE_PERFORMANCE_GC_FLAGS_CONSTRUCT_RETAINED\":2,\"NODE_PERFORMANCE_GC_FLAGS_FORCED\":4,\"NODE_PERFORMANCE_GC_FLAGS_SYNCHRONOUS_PHANTOM_PROCESSING\":8,\"NODE_PERFORMANCE_GC_FLAGS_ALL_AVAILABLE_GARBAGE\":16,\"NODE_PERFORMANCE_GC_FLAGS_ALL_EXTERNAL_MEMORY\":32,\"NODE_PERFORMANCE_GC_FLAGS_SCHEDULE_IDLE\":64}";
+}
+
+pub export fn sa_node_plugin_perf_hooks_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var now_ms: f64 = 0;
+    if (sa_node_plugin_perf_hooks_now_ms(&now_ms) != 0) return fail();
+    var origin_ms: f64 = 0;
+    if (sa_node_plugin_perf_hooks_time_origin_ms(&origin_ms) != 0) return fail();
+
+    var elu_ptr: ?[*]const u8 = null;
+    var elu_len: u64 = 0;
+    if (ext.sa_node_plugin_perf_hooks_event_loop_utilization(&elu_ptr, &elu_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(elu_ptr, elu_len);
+
+    var entries_ptr: ?[*]const u8 = null;
+    var entries_len: u64 = 0;
+    if (sa_node_plugin_perf_hooks_entries_json(&entries_ptr, &entries_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(entries_ptr, entries_len);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"perf_hooks\",\"supported\":true,\"mode\":\"top-level-native-perf-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &perf_hooks_export_names) catch return fail();
+    out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
+    appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
+    out.appendSlice(",\"performance\":{\"now\":true,\"timeOrigin\":true,\"mark\":true,\"measure\":true,\"getEntries\":true,\"eventLoopUtilization\":true},\"helpers\":{\"createHistogram\":true,\"timerify\":true,\"monitorEventLoopDelay\":true},\"runtime\":{\"nowMs\":") catch return fail();
+    out.writer().print("{d}", .{now_ms}) catch return fail();
+    out.appendSlice(",\"timeOriginMs\":") catch return fail();
+    out.writer().print("{d}", .{origin_ms}) catch return fail();
+    out.appendSlice(",\"entries\":") catch return fail();
+    out.appendSlice((entries_ptr orelse return fail())[0..@intCast(entries_len)]) catch return fail();
+    out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
+    out.appendSlice((elu_ptr orelse return fail())[0..@intCast(elu_len)]) catch return fail();
+    out.appendSlice(",\"constants\":") catch return fail();
+    out.appendSlice(perfHooksConstantsJson()) catch return fail();
+    out.appendSlice("},\"featureSupport\":{\"PerformanceObserver\":false,\"PerformanceObserverEntryList\":false,\"PerformanceResourceTiming\":false,\"PerformanceEntryClass\":false,\"PerformanceClass\":false,\"performanceNow\":true,\"performanceTimeOrigin\":true,\"performanceMark\":true,\"performanceMeasure\":true,\"performanceEntries\":true,\"eventLoopUtilization\":true,\"createHistogram\":true,\"timerify\":true,\"monitorEventLoopDelay\":true,\"constants\":true},\"limitations\":[\"Performance, PerformanceEntry, PerformanceMark, PerformanceMeasure, PerformanceObserver, and PerformanceResourceTiming JavaScript class instances are not modeled\",\"monitorEventLoopDelay is exposed as a histogram-handle compatibility path over explicit native sampling records rather than an autonomous event-loop probe\",\"timerify records native timer ids only and does not wrap JavaScript functions or emit observer callbacks\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_perf_hooks_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &perf_hooks_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_perf_hooks_supported_entry_types_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_perf_hooks_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, perfHooksConstantsJson());
+}
+
+pub export fn sa_node_plugin_perf_hooks_performance_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var now_ms: f64 = 0;
+    if (sa_node_plugin_perf_hooks_now_ms(&now_ms) != 0) return fail();
+    var origin_ms: f64 = 0;
+    if (sa_node_plugin_perf_hooks_time_origin_ms(&origin_ms) != 0) return fail();
+    var elu_ptr: ?[*]const u8 = null;
+    var elu_len: u64 = 0;
+    if (ext.sa_node_plugin_perf_hooks_event_loop_utilization(&elu_ptr, &elu_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(elu_ptr, elu_len);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"nowMs\":") catch return fail();
+    out.writer().print("{d}", .{now_ms}) catch return fail();
+    out.appendSlice(",\"timeOriginMs\":") catch return fail();
+    out.writer().print("{d}", .{origin_ms}) catch return fail();
+    out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
+    out.appendSlice((elu_ptr orelse return fail())[0..@intCast(elu_len)]) catch return fail();
+    out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
+    appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_perf_hooks_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"Performance\":{\"supported\":false,\"reason\":\"JavaScript Performance class instances are not modeled\"},\"PerformanceEntry\":{\"supported\":false,\"reason\":\"JavaScript PerformanceEntry instances are not modeled\"},\"PerformanceMark\":{\"supported\":false,\"reason\":\"JavaScript PerformanceMark instances are not modeled\"},\"PerformanceMeasure\":{\"supported\":false,\"reason\":\"JavaScript PerformanceMeasure instances are not modeled\"},\"PerformanceObserver\":{\"supported\":false,\"reason\":\"observer callback dispatch and buffering are not modeled\"},\"PerformanceObserverEntryList\":{\"supported\":false,\"reason\":\"observer entry list objects are not modeled\"},\"PerformanceResourceTiming\":{\"supported\":false,\"reason\":\"resource timing objects are not modeled\"},\"performance.now\":{\"supported\":true,\"mode\":\"native monotonic milliseconds since process facade origin\"},\"performance.timeOrigin\":{\"supported\":true,\"mode\":\"native process facade origin timestamp\"},\"performance.mark\":{\"supported\":true,\"mode\":\"named native mark registry\"},\"performance.measure\":{\"supported\":true,\"mode\":\"named native mark delta calculation\"},\"performance.getEntries\":{\"supported\":true,\"mode\":\"JSON snapshot via entries_json\"},\"eventLoopUtilization\":{\"supported\":true,\"mode\":\"native process CPU and wall clock estimate JSON\"},\"createHistogram\":{\"supported\":true,\"mode\":\"native histogram handle\"},\"monitorEventLoopDelay\":{\"supported\":true,\"mode\":\"histogram handle compatibility subset\",\"limitations\":[\"no autonomous background sampling\",\"no resolution scheduler\"]},\"timerify\":{\"supported\":true,\"mode\":\"native timer registration id only\",\"limitations\":[\"does not wrap JavaScript functions\",\"does not emit PerformanceObserver function entries\"]},\"constants\":{\"supported\":true,\"mode\":\"static perf_hooks constant catalog\"}}");
+}
+
 // --- Report ---
 pub export fn sa_node_plugin_report_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeStatusJson(out_ptr, out_len, "report", true, "diagnostic report shim");

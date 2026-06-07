@@ -1,0 +1,103 @@
+// SA tests for Node perf_hooks top-level facade helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.perf_hooks top level helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_EXPORTS, L_ERR_STATUS
+L_EXPORTS:
+    !ok1
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_EXPORTS_JSON exports_ptr, exports_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_ENTRY_TYPES, L_ERR_EXPORTS
+L_ENTRY_TYPES:
+    !ok2
+    entry_ptr = add 0, 0
+    entry_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_SUPPORTED_ENTRY_TYPES_JSON entry_ptr, entry_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_CONSTANTS, L_ERR_ENTRY_TYPES
+L_CONSTANTS:
+    !ok3
+    constants_ptr = add 0, 0
+    constants_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_CONSTANTS_JSON constants_ptr, constants_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_PERFORMANCE, L_ERR_CONSTANTS
+L_PERFORMANCE:
+    !ok4
+    perf_ptr = add 0, 0
+    perf_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_PERFORMANCE_JSON perf_ptr, perf_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_FEATURES, L_ERR_PERFORMANCE
+L_FEATURES:
+    !ok5
+    feature_ptr = add 0, 0
+    feature_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_PERF_HOOKS_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s6
+    ok6 = eq s6, 0
+    br ok6 -> L_FREE, L_ERR_FEATURES
+L_FREE:
+    !ok6
+    free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
+    free_perf = call @sa_node_plugin_free_buffer(perf_ptr, perf_len)
+    free_constants = call @sa_node_plugin_free_buffer(constants_ptr, constants_len)
+    free_entry = call @sa_node_plugin_free_buffer(entry_ptr, entry_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_entry
+    !free_constants
+    !free_perf
+    !free_feature
+    !s6
+    !feature_len
+    !feature_ptr
+    !s5
+    !perf_len
+    !perf_ptr
+    !s4
+    !constants_len
+    !constants_ptr
+    !s3
+    !entry_len
+    !entry_ptr
+    !s2
+    !exports_len
+    !exports_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_EXPORTS:
+    !ok2
+    panic(103)
+L_ERR_ENTRY_TYPES:
+    !ok3
+    panic(103)
+L_ERR_CONSTANTS:
+    !ok4
+    panic(103)
+L_ERR_PERFORMANCE:
+    !ok5
+    panic(103)
+L_ERR_FEATURES:
+    !ok6
+    panic(103)

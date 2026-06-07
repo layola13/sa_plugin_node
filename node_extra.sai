@@ -408,6 +408,12 @@
 @extern sa_node_plugin_perf_hooks_entries_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_perf_hooks_clear_marks() -> u64
 @extern sa_node_plugin_perf_hooks_clear_measures() -> u64
+@extern sa_node_plugin_perf_hooks_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_supported_entry_types_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_performance_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_perf_hooks_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_report_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_report_get_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_report_write_file(filename_ptr: ptr, filename_len: u64, &out_ptr: ptr, &out_len: u64) -> u64

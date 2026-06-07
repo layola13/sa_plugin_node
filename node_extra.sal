@@ -4719,6 +4719,54 @@
     !__m_status_3ff1a891
 [END_MACRO]
 
+[MACRO] NODE_PERF_HOOKS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_status_ptr_slot = stack_alloc 8
+    __m_perf_hooks_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_status_json(&__m_perf_hooks_status_ptr_slot, &__m_perf_hooks_status_len_slot)
+    %out_ptr = load __m_perf_hooks_status_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_exports_ptr_slot = stack_alloc 8
+    __m_perf_hooks_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_exports_json(&__m_perf_hooks_exports_ptr_slot, &__m_perf_hooks_exports_len_slot)
+    %out_ptr = load __m_perf_hooks_exports_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_SUPPORTED_ENTRY_TYPES_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_entry_types_ptr_slot = stack_alloc 8
+    __m_perf_hooks_entry_types_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_supported_entry_types_json(&__m_perf_hooks_entry_types_ptr_slot, &__m_perf_hooks_entry_types_len_slot)
+    %out_ptr = load __m_perf_hooks_entry_types_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_entry_types_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_constants_ptr_slot = stack_alloc 8
+    __m_perf_hooks_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_constants_json(&__m_perf_hooks_constants_ptr_slot, &__m_perf_hooks_constants_len_slot)
+    %out_ptr = load __m_perf_hooks_constants_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_PERFORMANCE_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_performance_ptr_slot = stack_alloc 8
+    __m_perf_hooks_performance_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_performance_json(&__m_perf_hooks_performance_ptr_slot, &__m_perf_hooks_performance_len_slot)
+    %out_ptr = load __m_perf_hooks_performance_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_performance_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_feature_ptr_slot = stack_alloc 8
+    __m_perf_hooks_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_feature_support_json(&__m_perf_hooks_feature_ptr_slot, &__m_perf_hooks_feature_len_slot)
+    %out_ptr = load __m_perf_hooks_feature_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_REPORT_STATUS_JSON %p_0, %p_1
     __m_slot_32c1ecff_0 = stack_alloc 8
     __m_slot_32c1ecff_1 = stack_alloc 8

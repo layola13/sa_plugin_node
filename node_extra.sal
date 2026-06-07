@@ -3595,6 +3595,50 @@
     !__m_load_15917300_p_1
 [END_MACRO]
 
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_async_context_tracking_snapshot_ptr_slot = stack_alloc 8
+    __m_async_context_tracking_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_snapshot_json(&__m_async_context_tracking_snapshot_ptr_slot, &__m_async_context_tracking_snapshot_len_slot)
+    %out_ptr = load __m_async_context_tracking_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_async_context_tracking_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_ENTER %out_depth, %out_status, %handle
+    __m_async_context_tracking_enter_depth_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_enter(%handle, &__m_async_context_tracking_enter_depth_slot)
+    %out_depth = load __m_async_context_tracking_enter_depth_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_EXIT %out_async_id, %out_popped, %out_status
+    __m_async_context_tracking_exit_async_id_slot = stack_alloc 8
+    __m_async_context_tracking_exit_popped_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_exit(&__m_async_context_tracking_exit_async_id_slot, &__m_async_context_tracking_exit_popped_slot)
+    %out_async_id = load __m_async_context_tracking_exit_async_id_slot+0 as u64
+    %out_popped = load __m_async_context_tracking_exit_popped_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_EXECUTION_ASYNC_ID %out_id, %out_status
+    __m_async_context_tracking_exec_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_execution_async_id(&__m_async_context_tracking_exec_id_slot)
+    %out_id = load __m_async_context_tracking_exec_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_TRIGGER_ASYNC_ID %out_id, %out_status
+    __m_async_context_tracking_trigger_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_trigger_async_id(&__m_async_context_tracking_trigger_id_slot)
+    %out_id = load __m_async_context_tracking_trigger_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_DEPTH %out_depth, %out_status
+    __m_async_context_tracking_depth_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_depth(&__m_async_context_tracking_depth_slot)
+    %out_depth = load __m_async_context_tracking_depth_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_RESET %out_status
+    %out_status = call @sa_node_plugin_async_context_tracking_reset()
+[END_MACRO]
+
 [MACRO] NODE_COMMAND_LINE_OPTIONS_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_493e3735_0 = stack_alloc 8
     __m_slot_493e3735_1 = stack_alloc 8

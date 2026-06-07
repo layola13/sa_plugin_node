@@ -1,0 +1,119 @@
+// SA tests for Node async_context_tracking native helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_TEST_RESOURCE = utf8:"TestResource"
+
+@test "node.async_context_tracking native helpers"():
+L_ENTRY:
+    reset_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_RESET reset_status
+    ok_reset = eq reset_status, 0
+    br ok_reset -> L_STATUS, L_ERR_RESET
+L_STATUS:
+    !ok_reset
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    status_code = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON status_ptr, status_len, status_code
+    ok_status = eq status_code, 0
+    br ok_status -> L_SNAPSHOT0, L_ERR_STATUS
+L_SNAPSHOT0:
+    !ok_status
+    snap0_ptr = add 0, 0
+    snap0_len = add 0, 0
+    snap0_code = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_SNAPSHOT_JSON snap0_ptr, snap0_len, snap0_code
+    ok_snap0 = eq snap0_code, 0
+    br ok_snap0 -> L_RESOURCE, L_ERR_SNAPSHOT0
+L_RESOURCE:
+    !ok_snap0
+    handle = add 0, 0
+    EXPAND NODE_ASYNC_HOOKS_ASYNC_RESOURCE_CREATE S_TEST_RESOURCE, 12, 77, handle
+    ok_handle = ne handle, 0
+    br ok_handle -> L_ENTER, L_ERR_RESOURCE
+L_ENTER:
+    !ok_handle
+    enter_depth = add 0, 0
+    enter_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_ENTER enter_depth, enter_status, handle
+    ok_enter = eq enter_status, 0
+    br ok_enter -> L_DEPTH, L_ERR_ENTER
+L_DEPTH:
+    !ok_enter
+    depth = add 0, 0
+    depth_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_DEPTH depth, depth_status
+    ok_depth = eq depth_status, 0
+    br ok_depth -> L_EXEC, L_ERR_DEPTH
+L_EXEC:
+    !ok_depth
+    exec_id = add 0, 0
+    exec_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_EXECUTION_ASYNC_ID exec_id, exec_status
+    ok_exec = eq exec_status, 0
+    br ok_exec -> L_TRIGGER, L_ERR_EXEC
+L_TRIGGER:
+    !ok_exec
+    trigger_id = add 0, 0
+    trigger_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_TRIGGER_ASYNC_ID trigger_id, trigger_status
+    ok_trigger = eq trigger_status, 0
+    br ok_trigger -> L_SNAPSHOT1, L_ERR_TRIGGER
+L_SNAPSHOT1:
+    !ok_trigger
+    snap1_ptr = add 0, 0
+    snap1_len = add 0, 0
+    snap1_code = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_SNAPSHOT_JSON snap1_ptr, snap1_len, snap1_code
+    ok_snap1 = eq snap1_code, 0
+    br ok_snap1 -> L_EXIT, L_ERR_SNAPSHOT1
+L_EXIT:
+    !ok_snap1
+    popped_async_id = add 0, 0
+    popped = add 0, 0
+    exit_status = add 0, 0
+    EXPAND NODE_ASYNC_CONTEXT_TRACKING_EXIT popped_async_id, popped, exit_status
+    ok_exit = eq exit_status, 0
+    br ok_exit -> L_FREE, L_ERR_EXIT
+L_FREE:
+    !ok_exit
+    free_resource = call @sa_node_plugin_async_hooks_async_resource_free(handle)
+    free_snap1 = call @sa_node_plugin_free_buffer(snap1_ptr, snap1_len)
+    free_snap0 = call @sa_node_plugin_free_buffer(snap0_ptr, snap0_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_snap0
+    !free_snap1
+    !free_resource
+    return
+L_ERR_RESET:
+    !ok_reset
+    panic(103)
+L_ERR_STATUS:
+    !ok_status
+    panic(103)
+L_ERR_SNAPSHOT0:
+    !ok_snap0
+    panic(103)
+L_ERR_RESOURCE:
+    !ok_handle
+    panic(103)
+L_ERR_ENTER:
+    !ok_enter
+    panic(103)
+L_ERR_DEPTH:
+    !ok_depth
+    panic(103)
+L_ERR_EXEC:
+    !ok_exec
+    panic(103)
+L_ERR_TRIGGER:
+    !ok_trigger
+    panic(103)
+L_ERR_SNAPSHOT1:
+    !ok_snap1
+    panic(103)
+L_ERR_EXIT:
+    !ok_exit
+    panic(103)

@@ -67,6 +67,7 @@ fn writeStatusJson(out_ptr: ?*?[*]const u8, out_len: ?*u64, module_name: []const
 // --- Async hooks ---
 var async_resource_next_id: u64 = 1;
 var async_resource_last_id: u64 = 0;
+var async_context_stack = std.ArrayListUnmanaged(AsyncContextFrame){};
 
 fn jsonEscapeAppend(out: *std.ArrayList(u8), bytes: []const u8) !void {
     for (bytes) |b| {
@@ -139,14 +140,74 @@ const AsyncResourceHandle = struct {
     }
 };
 
+const AsyncContextFrame = struct {
+    allocator: std.mem.Allocator,
+    async_id: u64,
+    trigger_async_id: u64,
+    type_name: []u8,
+
+    fn initFromHandle(allocator: std.mem.Allocator, handle: *const AsyncResourceHandle) !AsyncContextFrame {
+        return .{
+            .allocator = allocator,
+            .async_id = handle.id,
+            .trigger_async_id = handle.trigger_async_id,
+            .type_name = try allocator.dupe(u8, handle.type_name),
+        };
+    }
+
+    fn deinit(self: *AsyncContextFrame) void {
+        self.allocator.free(self.type_name);
+    }
+};
+
+fn asyncContextTrackingCurrent() ?*const AsyncContextFrame {
+    if (async_context_stack.items.len == 0) return null;
+    return &async_context_stack.items[async_context_stack.items.len - 1];
+}
+
+fn asyncContextTrackingClear() void {
+    for (async_context_stack.items) |*frame| frame.deinit();
+    async_context_stack.clearRetainingCapacity();
+}
+
+fn asyncContextTrackingWriteSnapshotJson(out: *std.ArrayList(u8)) !void {
+    try out.appendSlice("{\"supported\":true,\"model\":\"explicit-native-stack\",\"depth\":");
+    try out.writer().print("{d}", .{async_context_stack.items.len});
+    try out.appendSlice(",\"executionAsyncId\":");
+    if (asyncContextTrackingCurrent()) |frame| {
+        try out.writer().print("{d}", .{frame.async_id});
+    } else {
+        try out.writer().print("{d}", .{async_resource_last_id});
+    }
+    try out.appendSlice(",\"triggerAsyncId\":");
+    if (asyncContextTrackingCurrent()) |frame| {
+        try out.writer().print("{d}", .{frame.trigger_async_id});
+    } else {
+        try out.appendSlice("0");
+    }
+    try out.appendSlice(",\"stack\":[");
+    for (async_context_stack.items, 0..) |frame, i| {
+        if (i != 0) try out.append(',');
+        try out.appendSlice("{\"asyncId\":");
+        try out.writer().print("{d}", .{frame.async_id});
+        try out.appendSlice(",\"triggerAsyncId\":");
+        try out.writer().print("{d}", .{frame.trigger_async_id});
+        try out.appendSlice(",\"type\":");
+        try appendJsonString(out, frame.type_name);
+        try out.append('}');
+    }
+    try out.appendSlice("]}");
+}
+
 pub export fn sa_node_plugin_async_hooks_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var buffer: [256]u8 = undefined;
-    const json = std.fmt.bufPrint(
-        &buffer,
-        "{{\"executionAsyncId\":{d},\"triggerAsyncId\":0,\"providers\":[]}}",
-        .{async_resource_last_id},
-    ) catch return fail();
-    return writeOwnedString(out_ptr, out_len, json);
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    asyncContextTrackingWriteSnapshotJson(&out) catch return fail();
+    if (out.items.len > 1 and out.items[out.items.len - 1] == '}') {
+        _ = out.pop();
+    }
+    out.appendSlice(",\"providers\":[]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_async_hooks_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -154,12 +215,12 @@ pub export fn sa_node_plugin_async_hooks_status_json(out_ptr: ?*?[*]const u8, ou
 }
 
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
-    out_id.?.* = async_resource_last_id;
+    out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
 }
 
 pub export fn sa_node_plugin_async_hooks_trigger_async_id(out_id: ?*u64) u32 {
-    out_id.?.* = 0;
+    out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.trigger_async_id else 0;
     return 0;
 }
 
@@ -286,7 +347,64 @@ pub export fn sa_node_plugin_diagnostics_channel_snapshot_json(channel_ptr: ?*an
 }
 
 pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "async_context_tracking", true, "async_hooks compatibility shims");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"async_context_tracking\",\"supported\":true,\"mode\":\"explicit-native-stack\",\"capabilities\":[\"async resource handle integration\",\"explicit enter and exit\",\"execution and trigger async id lookup\",\"stack depth and snapshot JSON\",\"reset current native stack\"],\"limitations\":[\"no automatic propagation across host callbacks\",\"no JavaScript AsyncLocalStorage or promise hook semantics\",\"context changes occur only through explicit native enter/exit helpers\"],\"depth\":") catch return fail();
+    out.writer().print("{d}", .{async_context_stack.items.len}) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_async_context_tracking_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    asyncContextTrackingWriteSnapshotJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_async_context_tracking_enter(handle_ptr: ?*anyopaque, out_depth: ?*u64) u32 {
+    const handle: *AsyncResourceHandle = @ptrCast(@alignCast(handle_ptr orelse return fail()));
+    const frame = AsyncContextFrame.initFromHandle(std.heap.page_allocator, handle) catch return fail();
+    async_context_stack.append(std.heap.page_allocator, frame) catch {
+        var frame_mut = frame;
+        frame_mut.deinit();
+        return fail();
+    };
+    out_depth.?.* = async_context_stack.items.len;
+    return 0;
+}
+
+pub export fn sa_node_plugin_async_context_tracking_exit(out_async_id: ?*u64, out_popped: ?*u64) u32 {
+    if (async_context_stack.items.len == 0) {
+        out_async_id.?.* = 0;
+        out_popped.?.* = 0;
+        return 0;
+    }
+    var frame = async_context_stack.pop().?;
+    defer frame.deinit();
+    out_async_id.?.* = frame.async_id;
+    out_popped.?.* = 1;
+    return 0;
+}
+
+pub export fn sa_node_plugin_async_context_tracking_execution_async_id(out_id: ?*u64) u32 {
+    out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
+    return 0;
+}
+
+pub export fn sa_node_plugin_async_context_tracking_trigger_async_id(out_id: ?*u64) u32 {
+    out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.trigger_async_id else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_async_context_tracking_depth(out_depth: ?*u64) u32 {
+    out_depth.?.* = async_context_stack.items.len;
+    return 0;
+}
+
+pub export fn sa_node_plugin_async_context_tracking_reset() u32 {
+    asyncContextTrackingClear();
+    return 0;
 }
 
 const CommandLineOptionsConfig = struct {

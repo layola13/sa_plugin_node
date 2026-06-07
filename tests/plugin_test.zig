@@ -53,6 +53,70 @@ test "node plugin events create and free" {
     _ = plugin.sa_node_plugin_events_free(ee);
 }
 
+test "node plugin async context tracking native stack helpers" {
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_reset());
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullAsyncContextTrackingStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"async_context_tracking\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "explicit enter and exit") != null);
+
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_snapshot_json(&snapshot_ptr, &snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+    const empty_snapshot = (snapshot_ptr orelse return error.NullAsyncContextTrackingSnapshot0)[0..@intCast(snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, empty_snapshot, "\"depth\":0") != null);
+
+    var handle: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_async_resource_create("TestResource".ptr, 12, 41, &handle));
+    defer _ = plugin.sa_node_plugin_async_hooks_async_resource_free(handle);
+
+    var enter_depth: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_enter(handle, &enter_depth));
+    try std.testing.expectEqual(@as(u64, 1), enter_depth);
+
+    var depth: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_depth(&depth));
+    try std.testing.expectEqual(@as(u64, 1), depth);
+
+    var execution_async_id: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_execution_async_id(&execution_async_id));
+    try std.testing.expect(execution_async_id != 0);
+
+    var trigger_async_id: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_trigger_async_id(&trigger_async_id));
+    try std.testing.expectEqual(@as(u64, 41), trigger_async_id);
+
+    var hooks_execution_async_id: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_execution_async_id(&hooks_execution_async_id));
+    try std.testing.expectEqual(execution_async_id, hooks_execution_async_id);
+
+    var active_snapshot_ptr: ?[*]const u8 = null;
+    var active_snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_snapshot_json(&active_snapshot_ptr, &active_snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(active_snapshot_ptr, active_snapshot_len);
+    const active_snapshot = (active_snapshot_ptr orelse return error.NullAsyncContextTrackingSnapshot1)[0..@intCast(active_snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, active_snapshot, "\"depth\":1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, active_snapshot, "TestResource") != null);
+    try std.testing.expect(std.mem.indexOf(u8, active_snapshot, "\"triggerAsyncId\":41") != null);
+
+    var popped_async_id: u64 = 0;
+    var popped: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_exit(&popped_async_id, &popped));
+    try std.testing.expectEqual(@as(u64, 1), popped);
+    try std.testing.expectEqual(execution_async_id, popped_async_id);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_depth(&depth));
+    try std.testing.expectEqual(@as(u64, 0), depth);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_exit(&popped_async_id, &popped));
+    try std.testing.expectEqual(@as(u64, 0), popped);
+}
+
 test "node plugin events stateful extra APIs" {
     const ee = plugin.sa_node_plugin_events_create();
     try std.testing.expect(ee != null);

@@ -296,6 +296,13 @@
 @extern sa_node_plugin_diagnostics_channel_free(channel_ptr: ptr) -> u64
 @extern sa_node_plugin_diagnostics_channel_snapshot_json(channel_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_async_context_tracking_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_enter(handle_ptr: ptr, &out_depth: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_exit(&out_async_id: u64, &out_popped: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_execution_async_id(&out_id: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_trigger_async_id(&out_id: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_depth(&out_depth: u64) -> u64
+@extern sa_node_plugin_async_context_tracking_reset() -> u64
 @extern sa_node_plugin_command_line_options_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_command_line_options_argv_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_command_line_options_node_options_tokens_json(&out_ptr: ptr, &out_len: u64) -> u64

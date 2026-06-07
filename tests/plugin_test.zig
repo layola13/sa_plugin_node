@@ -2394,6 +2394,58 @@ test "node plugin internationalization reports native config introspection" {
     try std.testing.expectEqual(@as(u64, 1), has_icu);
 }
 
+test "node plugin iterable streams reports native bridge metadata" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullIterableStreamsStatus2)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"iterable_streams\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"bridge\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "classic and web stream bridge metadata") != null);
+
+    var types_ptr: ?[*]const u8 = null;
+    var types_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_stream_types_json(&types_ptr, &types_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(types_ptr, types_len);
+    const types = (types_ptr orelse return error.NullIterableStreamsTypes)[0..@intCast(types_len)];
+    try std.testing.expect(std.mem.indexOf(u8, types, "WebReadableStream") != null);
+    try std.testing.expect(std.mem.indexOf(u8, types, "PassThrough") != null);
+
+    var caps_ptr: ?[*]const u8 = null;
+    var caps_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_capabilities_json(&caps_ptr, &caps_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(caps_ptr, caps_len);
+    const caps = (caps_ptr orelse return error.NullIterableStreamsCapabilities)[0..@intCast(caps_len)];
+    try std.testing.expect(std.mem.indexOf(u8, caps, "pipeline state tracking") != null);
+    try std.testing.expect(std.mem.indexOf(u8, caps, "web stream read/write/enqueue helpers") != null);
+
+    var bridge_ptr: ?[*]const u8 = null;
+    var bridge_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_bridge_json(&bridge_ptr, &bridge_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(bridge_ptr, bridge_len);
+    const bridge = (bridge_ptr orelse return error.NullIterableStreamsBridge)[0..@intCast(bridge_len)];
+    try std.testing.expect(std.mem.indexOf(u8, bridge, "\"asyncIterator\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, bridge, "stream.pipeline") != null);
+    try std.testing.expect(std.mem.indexOf(u8, bridge, "web_streams.read") != null);
+
+    var has_type: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_has_stream_type("Readable".ptr, 8, &has_type));
+    try std.testing.expectEqual(@as(u64, 1), has_type);
+
+    var has_missing_type: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_has_stream_type("Generator".ptr, 9, &has_missing_type));
+    try std.testing.expectEqual(@as(u64, 0), has_missing_type);
+
+    var has_cap: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_has_capability("stream.pipeline".ptr, 15, &has_cap));
+    try std.testing.expectEqual(@as(u64, 1), has_cap);
+
+    var has_missing_cap: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_iterable_streams_has_capability("Readable.from".ptr, 13, &has_missing_cap));
+    try std.testing.expectEqual(@as(u64, 0), has_missing_cap);
+}
+
 test "node plugin deprecated registry helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_deprecated_clear());
 

@@ -1382,14 +1382,106 @@ pub export fn sa_node_plugin_internationalization_has_icu_config(out_bool: ?*u64
     return 0;
 }
 
+const iterable_stream_types = [_][]const u8{
+    "Readable",
+    "Writable",
+    "Duplex",
+    "Transform",
+    "PassThrough",
+    "WebReadableStream",
+    "WebWritableStream",
+    "WebTransformStream",
+};
+
+const iterable_stream_capabilities = [_][]const u8{
+    "native stream handles",
+    "pipeline state tracking",
+    "finished/destroyed state tracking",
+    "compose state tracking",
+    "web stream read/write/enqueue helpers",
+    "classic and web stream bridge metadata",
+};
+
+const iterable_stream_bridge_ops = [_][]const u8{
+    "stream.readable_new",
+    "stream.writable_new",
+    "stream.duplex_new",
+    "stream.transform_new",
+    "stream.passthrough_new",
+    "stream.pipeline",
+    "stream.finished",
+    "stream.compose",
+    "web_streams.readable_new",
+    "web_streams.writable_new",
+    "web_streams.transform_new",
+    "web_streams.enqueue",
+    "web_streams.write",
+    "web_streams.read",
+    "web_streams.snapshot_json",
+    "web_streams.close",
+};
+
+fn iterableStreamsHasValue(items: []const []const u8, name: []const u8) bool {
+    for (items) |item| {
+        if (std.ascii.eqlIgnoreCase(item, name)) return true;
+    }
+    return false;
+}
+
+fn iterableStreamsWriteBridgeJson(out: *std.ArrayList(u8)) !void {
+    try out.appendSlice("{\"mode\":\"poll-read-byte-iterators\",\"classic\":{");
+    try out.appendSlice("\"readableNew\":true,\"writableNew\":true,\"duplexNew\":true,\"transformNew\":true,\"passthroughNew\":true,\"pipeline\":true,\"finished\":true,\"compose\":true");
+    try out.appendSlice("},\"web\":{");
+    try out.appendSlice("\"readableNew\":true,\"writableNew\":true,\"transformNew\":true,\"enqueue\":true,\"write\":true,\"read\":true,\"snapshot\":true,\"close\":true");
+    try out.appendSlice("},\"asyncIterator\":false,\"iteratorProtocol\":\"explicit native read/poll\",\"bridgeOps\":");
+    try appendStringArray(out, &iterable_stream_bridge_ops);
+    try out.append('}');
+}
+
 pub export fn sa_node_plugin_iterable_streams_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const stream_types = [_][]const u8{ "Readable", "Writable", "Duplex", "Transform", "PassThrough", "WebReadableStream", "WebWritableStream", "WebTransformStream" };
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"iterable_streams\",\"supported\":true,\"mode\":\"poll-read-byte-iterators\",\"streamTypes\":") catch return fail();
-    appendStringArray(&out, &stream_types) catch return fail();
-    out.appendSlice(",\"capabilities\":[\"native stream handles\",\"pipeline state tracking\",\"finished/destroyed state tracking\",\"compose state tracking\",\"web stream read/write/enqueue helpers\"],\"limitations\":[\"no JavaScript Symbol.asyncIterator callbacks\",\"iteration is exposed through explicit native read/poll helpers\"]}") catch return fail();
+    appendStringArray(&out, &iterable_stream_types) catch return fail();
+    out.appendSlice(",\"capabilities\":") catch return fail();
+    appendStringArray(&out, &iterable_stream_capabilities) catch return fail();
+    out.appendSlice(",\"bridge\":") catch return fail();
+    iterableStreamsWriteBridgeJson(&out) catch return fail();
+    out.appendSlice(",\"limitations\":[\"no JavaScript Symbol.asyncIterator callbacks\",\"Readable.from()/fromWeb()/toWeb() object-model semantics are not emulated\",\"iteration is exposed through explicit native read/poll helpers\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_iterable_streams_stream_types_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &iterable_stream_types) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_iterable_streams_capabilities_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &iterable_stream_capabilities) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_iterable_streams_bridge_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    iterableStreamsWriteBridgeJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_iterable_streams_has_stream_type(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    out_bool.?.* = if (iterableStreamsHasValue(&iterable_stream_types, name)) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_iterable_streams_has_capability(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
+    const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
+    out_bool.?.* = if (iterableStreamsHasValue(&iterable_stream_capabilities, name) or iterableStreamsHasValue(&iterable_stream_bridge_ops, name)) 1 else 0;
+    return 0;
 }
 
 const permissions_available_flags = [_][]const u8{

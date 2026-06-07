@@ -329,6 +329,11 @@
 @extern sa_node_plugin_internationalization_has_encoding(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_internationalization_has_icu_config(&out_bool: u64) -> u64
 @extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_iterable_streams_stream_types_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_iterable_streams_capabilities_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_iterable_streams_bridge_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_iterable_streams_has_stream_type(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_iterable_streams_has_capability(name_ptr: ptr, name_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_is_enabled(&out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_is_audit_mode(&out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_available_flags_json(&out_ptr: ptr, &out_len: u64) -> u64

@@ -3908,6 +3908,42 @@
     !__m_load_4eec8950_p_1
 [END_MACRO]
 
+[MACRO] NODE_ITERABLE_STREAMS_STREAM_TYPES_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_streams_types_ptr_slot = stack_alloc 8
+    __m_iterable_streams_types_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_stream_types_json(&__m_iterable_streams_types_ptr_slot, &__m_iterable_streams_types_len_slot)
+    %out_ptr = load __m_iterable_streams_types_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_streams_types_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_CAPABILITIES_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_streams_caps_ptr_slot = stack_alloc 8
+    __m_iterable_streams_caps_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_capabilities_json(&__m_iterable_streams_caps_ptr_slot, &__m_iterable_streams_caps_len_slot)
+    %out_ptr = load __m_iterable_streams_caps_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_streams_caps_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_BRIDGE_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_streams_bridge_ptr_slot = stack_alloc 8
+    __m_iterable_streams_bridge_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_bridge_json(&__m_iterable_streams_bridge_ptr_slot, &__m_iterable_streams_bridge_len_slot)
+    %out_ptr = load __m_iterable_streams_bridge_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_streams_bridge_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_HAS_STREAM_TYPE %out_bool, %out_status, %name, %name_len
+    __m_iterable_streams_has_type_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_has_stream_type(%name, %name_len, &__m_iterable_streams_has_type_slot)
+    %out_bool = load __m_iterable_streams_has_type_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_HAS_CAPABILITY %out_bool, %out_status, %name, %name_len
+    __m_iterable_streams_has_cap_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_has_capability(%name, %name_len, &__m_iterable_streams_has_cap_slot)
+    %out_bool = load __m_iterable_streams_has_cap_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_PERMISSIONS_IS_ENABLED %out_bool, %out_status
     __m_permissions_enabled_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_permissions_is_enabled(&__m_permissions_enabled_slot)

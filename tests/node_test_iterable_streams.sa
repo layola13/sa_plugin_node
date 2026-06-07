@@ -1,0 +1,98 @@
+// SA tests for Node iterable_streams native helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_READABLE = utf8:"Readable"
+@const S_PIPELINE = utf8:"stream.pipeline"
+
+@test "node.iterable_streams native helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_TYPES, L_ERR_STATUS
+L_TYPES:
+    !ok1
+    types_ptr = add 0, 0
+    types_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_STREAM_TYPES_JSON types_ptr, types_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CAPS, L_ERR_TYPES
+L_CAPS:
+    !ok2
+    caps_ptr = add 0, 0
+    caps_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_CAPABILITIES_JSON caps_ptr, caps_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_BRIDGE, L_ERR_CAPS
+L_BRIDGE:
+    !ok3
+    bridge_ptr = add 0, 0
+    bridge_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_BRIDGE_JSON bridge_ptr, bridge_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_HAS_TYPE, L_ERR_BRIDGE
+L_HAS_TYPE:
+    !ok4
+    has_type = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_HAS_STREAM_TYPE has_type, s5, S_READABLE, 8
+    ok5 = eq s5, 0
+    br ok5 -> L_HAS_CAP, L_ERR_HAS_TYPE
+L_HAS_CAP:
+    !ok5
+    has_cap = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_ITERABLE_STREAMS_HAS_CAPABILITY has_cap, s6, S_PIPELINE, 15
+    ok6 = eq s6, 0
+    br ok6 -> L_FREE, L_ERR_HAS_CAP
+L_FREE:
+    !ok6
+    free_bridge = call @sa_node_plugin_free_buffer(bridge_ptr, bridge_len)
+    free_caps = call @sa_node_plugin_free_buffer(caps_ptr, caps_len)
+    free_types = call @sa_node_plugin_free_buffer(types_ptr, types_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_types
+    !free_caps
+    !free_bridge
+    !s6
+    !has_cap
+    !s5
+    !has_type
+    !s4
+    !bridge_len
+    !bridge_ptr
+    !s3
+    !caps_len
+    !caps_ptr
+    !s2
+    !types_len
+    !types_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_TYPES:
+    !ok2
+    panic(103)
+L_ERR_CAPS:
+    !ok3
+    panic(103)
+L_ERR_BRIDGE:
+    !ok4
+    panic(103)
+L_ERR_HAS_TYPE:
+    !ok5
+    panic(103)
+L_ERR_HAS_CAP:
+    !ok6
+    panic(103)

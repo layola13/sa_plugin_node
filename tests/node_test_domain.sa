@@ -1,0 +1,103 @@
+// SA tests for Node domain native compatibility subset
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.domain native handle helpers"():
+L_ENTRY:
+    domain = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_DOMAIN_CREATE domain, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_ADD, L_ERR_CREATE
+L_ADD:
+    !ok1
+    s2 = add 0, 0
+    EXPAND NODE_DOMAIN_ADD s2, domain, 0
+    ok2 = eq s2, 0
+    br ok2 -> L_COUNT1, L_ERR_ADD
+L_COUNT1:
+    !ok2
+    count1 = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_DOMAIN_MEMBER_COUNT count1, s3, domain
+    ok3 = eq s3, 0
+    br ok3 -> L_ENTER, L_ERR_COUNT1
+L_ENTER:
+    !ok3
+    s4 = add 0, 0
+    EXPAND NODE_DOMAIN_ENTER s4, domain
+    ok4 = eq s4, 0
+    br ok4 -> L_ACTIVE, L_ERR_ENTER
+L_ACTIVE:
+    !ok4
+    active = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_DOMAIN_GET_ACTIVE active, s5
+    ok5 = eq s5, 0
+    active_ok = eq active, domain
+    both_ok = and ok5, active_ok
+    br both_ok -> L_SNAPSHOT, L_ERR_ACTIVE
+L_SNAPSHOT:
+    !both_ok
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_DOMAIN_SNAPSHOT_JSON snap_ptr, snap_len, s6, domain
+    ok6 = eq s6, 0
+    br ok6 -> L_EXIT, L_ERR_SNAPSHOT
+L_EXIT:
+    !ok6
+    s7 = add 0, 0
+    EXPAND NODE_DOMAIN_EXIT s7, domain
+    ok7 = eq s7, 0
+    br ok7 -> L_DISPOSE, L_ERR_EXIT
+L_DISPOSE:
+    !ok7
+    s8 = add 0, 0
+    EXPAND NODE_DOMAIN_DISPOSE s8, domain
+    ok8 = eq s8, 0
+    br ok8 -> L_FREE, L_ERR_DISPOSE
+L_FREE:
+    !ok8
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    free_domain = call @sa_node_plugin_domain_free(domain)
+    !free_domain
+    !free_snap
+    !s8
+    !s7
+    !s6
+    !snap_len
+    !snap_ptr
+    !s5
+    !active
+    !s4
+    !s3
+    !count1
+    !s2
+    !s1
+    !domain
+    return
+L_ERR_CREATE:
+    !ok1
+    panic(103)
+L_ERR_ADD:
+    !ok2
+    panic(103)
+L_ERR_COUNT1:
+    !ok3
+    panic(103)
+L_ERR_ENTER:
+    !ok4
+    panic(103)
+L_ERR_ACTIVE:
+    !both_ok
+    panic(103)
+L_ERR_SNAPSHOT:
+    !ok6
+    panic(103)
+L_ERR_EXIT:
+    !ok7
+    panic(103)
+L_ERR_DISPOSE:
+    !ok8
+    panic(103)

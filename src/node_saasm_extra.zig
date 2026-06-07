@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const build_options = @import("build_options");
 const plugin_api = @import("plugin_api");
 const base = @import("node_saasm_api.zig");
 const linux = std.os.linux;
@@ -11,6 +12,14 @@ const SaSlice = extern struct {
 };
 
 const UnsupportedStatus = @intFromEnum(plugin_api.AbiStatus.failed);
+
+fn pluginRootDir() []const u8 {
+    return build_options.plugin_root;
+}
+
+fn pluginManifestPath() []const u8 {
+    return std.fmt.comptimePrint("{s}/sap.json", .{build_options.plugin_root});
+}
 
 fn fail() u32 {
     return UnsupportedStatus;
@@ -309,13 +318,227 @@ pub export fn sa_node_plugin_iterable_streams_status_json(out_ptr: ?*?[*]const u
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+const permissions_available_flags = [_][]const u8{
+    "--allow-fs-read",
+    "--allow-fs-write",
+    "--allow-addons",
+    "--allow-child-process",
+    "--allow-net",
+    "--allow-inspector",
+    "--allow-wasi",
+    "--allow-worker",
+    "--allow-ffi",
+};
+
+fn permissionsNodeOptions() []const u8 {
+    return std.posix.getenv("NODE_OPTIONS") orelse "";
+}
+
+fn permissionsIsAuditModeInternal() bool {
+    return std.mem.indexOf(u8, permissionsNodeOptions(), "--permission-audit") != null;
+}
+
+fn permissionsIsEnabledInternal() bool {
+    const options = permissionsNodeOptions();
+    return std.mem.indexOf(u8, options, "--permission") != null or std.mem.indexOf(u8, options, "--permission-audit") != null;
+}
+
+fn permissionsReadManifestJson(allocator: std.mem.Allocator) ![]u8 {
+    const manifest_path = pluginManifestPath();
+    var file = if (std.fs.path.isAbsolute(manifest_path))
+        std.fs.openFileAbsolute(manifest_path, .{}) catch return error.ManifestNotFound
+    else
+        std.fs.cwd().openFile(manifest_path, .{}) catch return error.ManifestNotFound;
+    defer file.close();
+    return file.readToEndAlloc(allocator, 1024 * 1024);
+}
+
+fn permissionsNormalizePathAlloc(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    if (std.fs.path.isAbsolute(path)) return allocator.dupe(u8, path);
+    if (std.fs.path.isAbsolute(pluginRootDir())) {
+        return std.fs.path.resolve(allocator, &.{ pluginRootDir(), path });
+    }
+    return std.fs.path.resolve(allocator, &.{ pluginRootDir(), path });
+}
+
+fn permissionsExpandProjectPathAlloc(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    if (!std.mem.startsWith(u8, path, "$PROJECT")) return allocator.dupe(u8, path);
+    const root = if (std.fs.path.isAbsolute(pluginRootDir()))
+        try allocator.dupe(u8, pluginRootDir())
+    else
+        try std.fs.path.resolve(allocator, &.{pluginRootDir()});
+    defer allocator.free(root);
+    return std.fmt.allocPrint(allocator, "{s}{s}", .{ root, path[8..] });
+}
+
+fn permissionsPathMatches(allocator: std.mem.Allocator, declared_path: []const u8, reference: []const u8) bool {
+    const expanded = permissionsExpandProjectPathAlloc(allocator, declared_path) catch return false;
+    defer allocator.free(expanded);
+    const normalized_ref = permissionsNormalizePathAlloc(allocator, reference) catch return false;
+    defer allocator.free(normalized_ref);
+
+    if (std.mem.endsWith(u8, expanded, "/**")) {
+        const root_path = expanded[0 .. expanded.len - 3];
+        if (std.mem.eql(u8, normalized_ref, root_path)) return true;
+        return normalized_ref.len > root_path.len and std.mem.startsWith(u8, normalized_ref, root_path) and normalized_ref[root_path.len] == '/';
+    }
+
+    return std.mem.eql(u8, normalized_ref, expanded);
+}
+
+fn permissionsEnvMatches(pattern: []const u8, reference: []const u8) bool {
+    if (std.mem.endsWith(u8, pattern, "*")) {
+        return std.mem.startsWith(u8, reference, pattern[0 .. pattern.len - 1]);
+    }
+    return std.mem.eql(u8, pattern, reference);
+}
+
+fn permissionsHasFs(allocator: std.mem.Allocator, permissions: std.json.Value, scope: []const u8, reference: ?[]const u8) bool {
+    const fs_value = permissions.object.get("fs") orelse return false;
+    if (fs_value != .array) return false;
+    const op = if (std.mem.eql(u8, scope, "fs")) null else scope[3..];
+    for (fs_value.array.items) |item| {
+        if (item != .object) continue;
+        const item_op = item.object.get("op") orelse continue;
+        const item_path = item.object.get("path") orelse continue;
+        if (item_op != .string or item_path != .string) continue;
+        if (op) |needed| {
+            if (!std.mem.eql(u8, item_op.string, needed)) continue;
+        }
+        if (reference) |ref| {
+            if (!permissionsPathMatches(allocator, item_path.string, ref)) continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+fn permissionsHasNet(permissions: std.json.Value, reference: ?[]const u8) bool {
+    const net_value = permissions.object.get("net") orelse return false;
+    if (net_value != .array) return false;
+    if (reference == null) return net_value.array.items.len > 0;
+    for (net_value.array.items) |item| {
+        if (item != .object) continue;
+        const url_value = item.object.get("url") orelse continue;
+        if (url_value != .string) continue;
+        if (std.mem.eql(u8, url_value.string, reference.?)) return true;
+    }
+    return false;
+}
+
+fn permissionsHasEnv(permissions: std.json.Value, reference: ?[]const u8) bool {
+    const env_value = permissions.object.get("env") orelse return false;
+    if (env_value != .array) return false;
+    if (reference == null) return env_value.array.items.len > 0;
+    for (env_value.array.items) |item| {
+        if (item != .string) continue;
+        if (permissionsEnvMatches(item.string, reference.?)) return true;
+    }
+    return false;
+}
+
+fn permissionsHasProcess(permissions: std.json.Value, scope: []const u8, reference: ?[]const u8) bool {
+    const process_value = permissions.object.get("process") orelse return false;
+    if (process_value != .object) return false;
+    if (std.mem.eql(u8, scope, "child") or std.mem.eql(u8, scope, "child_process") or std.mem.eql(u8, scope, "process.spawn")) {
+        const spawn_value = process_value.object.get("spawn") orelse return false;
+        return spawn_value == .bool and spawn_value.bool;
+    }
+    if (std.mem.eql(u8, scope, "process.exec")) {
+        const exec_value = process_value.object.get("exec") orelse return false;
+        if (exec_value != .array) return false;
+        if (reference == null) return exec_value.array.items.len > 0;
+        for (exec_value.array.items) |item| {
+            if (item != .object) continue;
+            const path_value = item.object.get("path") orelse continue;
+            if (path_value != .string) continue;
+            if (std.mem.eql(u8, path_value.string, reference.?)) return true;
+        }
+    }
+    return false;
+}
+
+fn permissionsHasDeclared(scope: []const u8, reference: ?[]const u8) bool {
+    const allocator = std.heap.page_allocator;
+    const json_text = permissionsReadManifestJson(allocator) catch return false;
+    defer allocator.free(json_text);
+    var parsed = std.json.parseFromSlice(std.json.Value, allocator, json_text, .{}) catch return false;
+    defer parsed.deinit();
+    const permissions = parsed.value.object.get("permissions") orelse return false;
+    if (permissions != .object) return false;
+
+    if (std.mem.eql(u8, scope, "fs") or std.mem.eql(u8, scope, "fs.read") or std.mem.eql(u8, scope, "fs.write") or std.mem.eql(u8, scope, "fs.create") or std.mem.eql(u8, scope, "fs.delete") or std.mem.eql(u8, scope, "fs.metadata")) {
+        return permissionsHasFs(allocator, permissions, scope, reference);
+    }
+    if (std.mem.eql(u8, scope, "net")) return permissionsHasNet(permissions, reference);
+    if (std.mem.eql(u8, scope, "env")) return permissionsHasEnv(permissions, reference);
+    if (std.mem.eql(u8, scope, "child") or std.mem.eql(u8, scope, "child_process") or std.mem.eql(u8, scope, "process.spawn") or std.mem.eql(u8, scope, "process.exec")) {
+        return permissionsHasProcess(permissions, scope, reference);
+    }
+    return false;
+}
+
+pub export fn sa_node_plugin_permissions_is_enabled(out_bool: ?*u64) u32 {
+    out_bool.?.* = if (permissionsIsEnabledInternal()) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_permissions_is_audit_mode(out_bool: ?*u64) u32 {
+    out_bool.?.* = if (permissionsIsAuditModeInternal()) 1 else 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_permissions_available_flags_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &permissions_available_flags) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_permissions_declared_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    const json_text = permissionsReadManifestJson(allocator) catch return fail();
+    defer allocator.free(json_text);
+    var parsed = std.json.parseFromSlice(std.json.Value, allocator, json_text, .{}) catch return fail();
+    defer parsed.deinit();
+    const permissions = parsed.value.object.get("permissions") orelse return fail();
+    return writeJsonValue(out_ptr, out_len, permissions);
+}
+
+pub export fn sa_node_plugin_permissions_has(scope_ptr: ?[*]const u8, scope_len: u64, reference_ptr: ?[*]const u8, reference_len: u64, out_bool: ?*u64) u32 {
+    const scope = if (scope_len == 0) "" else (scope_ptr orelse return fail())[0..scope_len];
+    const reference = if (reference_len == 0) null else (reference_ptr orelse return fail())[0..reference_len];
+    out_bool.?.* = if (permissionsHasDeclared(scope, reference)) 1 else 0;
+    return 0;
+}
+
 pub export fn sa_node_plugin_permissions_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const dev_mode = std.posix.getenv("SA_PLUGIN_DEV") != null;
+    var flags_ptr: ?[*]const u8 = null;
+    var flags_len: u64 = 0;
+    if (sa_node_plugin_permissions_available_flags_json(&flags_ptr, &flags_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(flags_ptr, flags_len);
+
+    var declared_ptr: ?[*]const u8 = null;
+    var declared_len: u64 = 0;
+    if (sa_node_plugin_permissions_declared_json(&declared_ptr, &declared_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(declared_ptr, declared_len);
+
+    const flags = if (flags_ptr) |ptr| ptr[0..@intCast(flags_len)] else "[]";
+    const declared = if (declared_ptr) |ptr| ptr[0..@intCast(declared_len)] else "null";
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"permissions\",\"supported\":true,\"model\":\"sa-plugin-manifest\",\"sandboxEnforced\":false,\"devMode\":") catch return fail();
     out.appendSlice(if (dev_mode) "true" else "false") catch return fail();
-    out.appendSlice(",\"declared\":{\"fs\":10,\"net\":2,\"env\":5,\"processSpawn\":true},\"limitations\":[\"Node --permission runtime flags are not enforced by this plugin\",\"host sandbox and sap.json are authoritative\"]}") catch return fail();
+    out.appendSlice(",\"enabled\":") catch return fail();
+    out.appendSlice(if (permissionsIsEnabledInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"auditMode\":") catch return fail();
+    out.appendSlice(if (permissionsIsAuditModeInternal()) "true" else "false") catch return fail();
+    out.appendSlice(",\"availableFlags\":") catch return fail();
+    out.appendSlice(flags) catch return fail();
+    out.appendSlice(",\"declared\":") catch return fail();
+    out.appendSlice(declared) catch return fail();
+    out.appendSlice(",\"limitations\":[\"Node --permission runtime flags are not enforced by this plugin\",\"has() reports declared manifest allowances rather than runtime interception state\",\"host sandbox and sap.json are authoritative\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -325,6 +548,177 @@ pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: 
 
 pub export fn sa_node_plugin_test_runner_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"module\":\"test_runner\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"sync-native-harness\",\"capabilities\":[\"status\",\"tests\",\"assertions\"],\"limitations\":[\"no JavaScript callback scheduling\",\"no TAP stream object model\"]}");
+}
+
+// --- Domain ---
+const DomainHandle = struct {
+    allocator: std.mem.Allocator,
+    id: u64,
+    members: std.ArrayList(?*anyopaque),
+    disposed: bool = false,
+
+    fn init(allocator: std.mem.Allocator, id: u64) !*DomainHandle {
+        const handle = try allocator.create(DomainHandle);
+        handle.* = .{
+            .allocator = allocator,
+            .id = id,
+            .members = std.ArrayList(?*anyopaque).init(allocator),
+            .disposed = false,
+        };
+        return handle;
+    }
+
+    fn deinit(self: *DomainHandle) void {
+        self.members.deinit();
+        self.allocator.destroy(self);
+    }
+};
+
+var domain_next_id: u64 = 1;
+var domain_active: ?*DomainHandle = null;
+var domain_stack = std.ArrayList(*DomainHandle).init(std.heap.page_allocator);
+
+fn domainHandle(domain_ptr: ?*anyopaque) ?*DomainHandle {
+    return if (domain_ptr) |ptr| @ptrCast(@alignCast(ptr)) else null;
+}
+
+fn domainSyncActive() void {
+    domain_active = if (domain_stack.items.len == 0) null else domain_stack.items[domain_stack.items.len - 1];
+}
+
+fn domainRemoveFromStack(domain: *DomainHandle, remove_all: bool) void {
+    var i: usize = 0;
+    while (i < domain_stack.items.len) {
+        if (domain_stack.items[i] == domain) {
+            _ = domain_stack.orderedRemove(i);
+            if (!remove_all) break;
+            continue;
+        }
+        i += 1;
+    }
+    domainSyncActive();
+}
+
+fn domainLastIndexOf(domain: *DomainHandle) ?usize {
+    var i = domain_stack.items.len;
+    while (i > 0) {
+        i -= 1;
+        if (domain_stack.items[i] == domain) return i;
+    }
+    return null;
+}
+
+fn domainStackDepthFor(domain: *DomainHandle) u64 {
+    var count: u64 = 0;
+    for (domain_stack.items) |entry| {
+        if (entry == domain) count += 1;
+    }
+    return count;
+}
+
+fn domainSnapshotJson(domain: *DomainHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"id\":") catch return fail();
+    out.writer().print("{d}", .{domain.id}) catch return fail();
+    out.appendSlice(",\"disposed\":") catch return fail();
+    out.appendSlice(if (domain.disposed) "true" else "false") catch return fail();
+    out.appendSlice(",\"active\":") catch return fail();
+    out.appendSlice(if (domain_active == domain) "true" else "false") catch return fail();
+    out.appendSlice(",\"stackDepth\":") catch return fail();
+    out.writer().print("{d}", .{domainStackDepthFor(domain)}) catch return fail();
+    out.appendSlice(",\"memberCount\":") catch return fail();
+    out.writer().print("{d}", .{domain.members.items.len}) catch return fail();
+    out.appendSlice(",\"members\":[") catch return fail();
+    for (domain.members.items, 0..) |member, i| {
+        if (i != 0) out.append(',') catch return fail();
+        if (member) |ptr| {
+            out.writer().print("{d}", .{@intFromPtr(ptr)}) catch return fail();
+        } else {
+            out.appendSlice("0") catch return fail();
+        }
+    }
+    out.appendSlice("]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_domain_create(out_domain: ?*?*anyopaque) u32 {
+    const handle = DomainHandle.init(std.heap.page_allocator, domain_next_id) catch return fail();
+    domain_next_id += 1;
+    out_domain.?.* = @ptrCast(handle);
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_add(domain_ptr: ?*anyopaque, member_ptr: ?*anyopaque) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    if (domain.disposed) return fail();
+    for (domain.members.items) |member| {
+        if (member == member_ptr) return 0;
+    }
+    domain.members.append(member_ptr) catch return fail();
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_remove(domain_ptr: ?*anyopaque, member_ptr: ?*anyopaque) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    if (domain.disposed) return fail();
+    var i: usize = 0;
+    while (i < domain.members.items.len) : (i += 1) {
+        if (domain.members.items[i] == member_ptr) {
+            _ = domain.members.orderedRemove(i);
+            break;
+        }
+    }
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_enter(domain_ptr: ?*anyopaque) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    if (domain.disposed) return fail();
+    domain_stack.append(domain) catch return fail();
+    domainSyncActive();
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_exit(domain_ptr: ?*anyopaque) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    const index = domainLastIndexOf(domain) orelse return 0;
+    domain_stack.shrinkRetainingCapacity(index);
+    domainSyncActive();
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_dispose(domain_ptr: ?*anyopaque) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    domain.disposed = true;
+    domain.members.clearRetainingCapacity();
+    domainRemoveFromStack(domain, true);
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_get_active(out_domain: ?*?*anyopaque) u32 {
+    out_domain.?.* = if (domain_active) |domain| @ptrCast(domain) else null;
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_member_count(domain_ptr: ?*anyopaque, out_count: ?*u64) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    out_count.?.* = domain.members.items.len;
+    return 0;
+}
+
+pub export fn sa_node_plugin_domain_snapshot_json(domain_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const domain = domainHandle(domain_ptr) orelse return fail();
+    return domainSnapshotJson(domain, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_domain_free(domain_ptr: ?*anyopaque) u32 {
+    if (domain_ptr) |ptr| {
+        const domain: *DomainHandle = @ptrCast(@alignCast(ptr));
+        domainRemoveFromStack(domain, true);
+        domain.deinit();
+    }
+    return 0;
 }
 
 pub export fn sa_node_plugin_web_crypto_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -2499,7 +2893,18 @@ pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_le
 }
 
 pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "domain", false, "legacy Node domain API is not modeled");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"domain\",\"supported\":true,\"mode\":\"native-domain-stack\",\"active\":") catch return fail();
+    if (domain_active) |active| {
+        out.writer().print("{d}", .{active.id}) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"stackDepth\":") catch return fail();
+    out.writer().print("{d}", .{domain_stack.items.len}) catch return fail();
+    out.appendSlice(",\"capabilities\":[\"create domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain lookup\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance\",\"no bind/intercept callback wrapping\",\"no uncaught exception capture callback integration\",\"no async_hooks or timer callback domain propagation\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

@@ -303,6 +303,11 @@
 @extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_internationalization_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_iterable_streams_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_permissions_is_enabled(&out_bool: u64) -> u64
+@extern sa_node_plugin_permissions_is_audit_mode(&out_bool: u64) -> u64
+@extern sa_node_plugin_permissions_available_flags_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_permissions_declared_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_permissions_has(scope_ptr: ptr, scope_len: u64, reference_ptr: ptr, reference_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_permissions_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_repl_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
@@ -394,6 +399,16 @@
 @extern sa_node_plugin_cluster_worker_snapshot_json(worker_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_cluster_worker_free(worker_ptr: ptr) -> u64
 @extern sa_node_plugin_cluster_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_domain_create(&out_domain: ptr) -> u64
+@extern sa_node_plugin_domain_add(domain_ptr: ptr, member_ptr: ptr) -> u64
+@extern sa_node_plugin_domain_remove(domain_ptr: ptr, member_ptr: ptr) -> u64
+@extern sa_node_plugin_domain_enter(domain_ptr: ptr) -> u64
+@extern sa_node_plugin_domain_exit(domain_ptr: ptr) -> u64
+@extern sa_node_plugin_domain_dispose(domain_ptr: ptr) -> u64
+@extern sa_node_plugin_domain_get_active(&out_domain: ptr) -> u64
+@extern sa_node_plugin_domain_member_count(domain_ptr: ptr, &out_count: u64) -> u64
+@extern sa_node_plugin_domain_snapshot_json(domain_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_domain_free(domain_ptr: ptr) -> u64
 @extern sa_node_plugin_domain_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http_status_json(&out_ptr: ptr, &out_len: u64) -> u64

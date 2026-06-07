@@ -3,6 +3,8 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const build_options = b.addOptions();
+    build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
 
     const plugin_api = b.createModule(.{
         .root_source_file = b.path("src/plugin_api.zig"),
@@ -36,6 +38,7 @@ pub fn build(b: *std.Build) void {
     http_server_module.addImport("plugin_api", plugin_api);
     root_module.addImport("http_client", http_client_module);
     root_module.addImport("http_server", http_server_module);
+    root_module.addOptions("build_options", build_options);
 
     const lib = b.addLibrary(.{
         .name = "node",

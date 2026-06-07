@@ -1,0 +1,143 @@
+// SA tests for Node permissions native manifest helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_SCOPE_FS_READ = utf8:"fs.read"
+@const S_SCOPE_ENV = utf8:"env"
+@const S_SCOPE_NET = utf8:"net"
+@const S_SCOPE_SPAWN = utf8:"process.spawn"
+@const S_SCOPE_EXEC = utf8:"process.exec"
+@const S_REF_FILE = utf8:"sap.json"
+@const S_REF_ENV = utf8:"SA_PLUGIN_DEV"
+@const S_REF_EXEC = utf8:"/bin/echo"
+@const S_REF_NET = utf8:"http://example.com"
+
+@test "node.permissions native helpers"():
+L_ENTRY:
+    enabled = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_PERMISSIONS_IS_ENABLED enabled, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_AUDIT, L_ERR_ENABLED
+L_AUDIT:
+    !ok1
+    audit = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_PERMISSIONS_IS_AUDIT_MODE audit, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_FLAGS, L_ERR_AUDIT
+L_FLAGS:
+    !ok2
+    flags_ptr = add 0, 0
+    flags_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_PERMISSIONS_AVAILABLE_FLAGS_JSON flags_ptr, flags_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_DECLARED, L_ERR_FLAGS
+L_DECLARED:
+    !ok3
+    declared_ptr = add 0, 0
+    declared_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_PERMISSIONS_DECLARED_JSON declared_ptr, declared_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_FS, L_ERR_DECLARED
+L_FS:
+    !ok4
+    has_fs = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_PERMISSIONS_HAS has_fs, s5, S_SCOPE_FS_READ, 7, S_REF_FILE, 8
+    ok5 = eq s5, 0
+    fs_ok = eq has_fs, 1
+    both5 = and ok5, fs_ok
+    br both5 -> L_ENV, L_ERR_FS
+L_ENV:
+    !both5
+    has_env = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_PERMISSIONS_HAS has_env, s6, S_SCOPE_ENV, 3, S_REF_ENV, 13
+    ok6 = eq s6, 0
+    env_ok = eq has_env, 1
+    both6 = and ok6, env_ok
+    br both6 -> L_SPAWN, L_ERR_ENV
+L_SPAWN:
+    !both6
+    has_spawn = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_PERMISSIONS_HAS has_spawn, s7, S_SCOPE_SPAWN, 13, 0, 0
+    ok7 = eq s7, 0
+    spawn_ok = eq has_spawn, 1
+    both7 = and ok7, spawn_ok
+    br both7 -> L_EXEC, L_ERR_SPAWN
+L_EXEC:
+    !both7
+    has_exec = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_PERMISSIONS_HAS has_exec, s8, S_SCOPE_EXEC, 12, S_REF_EXEC, 9
+    ok8 = eq s8, 0
+    exec_ok = eq has_exec, 1
+    both8 = and ok8, exec_ok
+    br both8 -> L_NET, L_ERR_EXEC
+L_NET:
+    !both8
+    has_net = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_PERMISSIONS_HAS has_net, s9, S_SCOPE_NET, 3, S_REF_NET, 18
+    ok9 = eq s9, 0
+    net_ok = eq has_net, 0
+    both9 = and ok9, net_ok
+    br both9 -> L_FREE, L_ERR_NET
+L_FREE:
+    !both9
+    free_flags = call @sa_node_plugin_free_buffer(flags_ptr, flags_len)
+    free_declared = call @sa_node_plugin_free_buffer(declared_ptr, declared_len)
+    !free_declared
+    !free_flags
+    !s9
+    !has_net
+    !s8
+    !has_exec
+    !s7
+    !has_spawn
+    !s6
+    !has_env
+    !s5
+    !has_fs
+    !s4
+    !declared_len
+    !declared_ptr
+    !s3
+    !flags_len
+    !flags_ptr
+    !s2
+    !audit
+    !s1
+    !enabled
+    return
+L_ERR_ENABLED:
+    !ok1
+    panic(103)
+L_ERR_AUDIT:
+    !ok2
+    panic(103)
+L_ERR_FLAGS:
+    !ok3
+    panic(103)
+L_ERR_DECLARED:
+    !ok4
+    panic(103)
+L_ERR_FS:
+    !both5
+    panic(103)
+L_ERR_ENV:
+    !both6
+    panic(103)
+L_ERR_SPAWN:
+    !both7
+    panic(103)
+L_ERR_EXEC:
+    !both8
+    panic(103)
+L_ERR_NET:
+    !both9
+    panic(103)

@@ -3714,6 +3714,40 @@
     !__m_load_4eec8950_p_1
 [END_MACRO]
 
+[MACRO] NODE_PERMISSIONS_IS_ENABLED %out_bool, %out_status
+    __m_permissions_enabled_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_is_enabled(&__m_permissions_enabled_slot)
+    %out_bool = load __m_permissions_enabled_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_IS_AUDIT_MODE %out_bool, %out_status
+    __m_permissions_audit_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_is_audit_mode(&__m_permissions_audit_slot)
+    %out_bool = load __m_permissions_audit_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_AVAILABLE_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __m_permissions_flags_ptr_slot = stack_alloc 8
+    __m_permissions_flags_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_available_flags_json(&__m_permissions_flags_ptr_slot, &__m_permissions_flags_len_slot)
+    %out_ptr = load __m_permissions_flags_ptr_slot+0 as ptr
+    %out_len = load __m_permissions_flags_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_DECLARED_JSON %out_ptr, %out_len, %out_status
+    __m_permissions_declared_ptr_slot = stack_alloc 8
+    __m_permissions_declared_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_declared_json(&__m_permissions_declared_ptr_slot, &__m_permissions_declared_len_slot)
+    %out_ptr = load __m_permissions_declared_ptr_slot+0 as ptr
+    %out_len = load __m_permissions_declared_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_HAS %out_bool, %out_status, %scope, %scope_len, %reference, %reference_len
+    __m_permissions_has_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_has(%scope, %scope_len, %reference, %reference_len, &__m_permissions_has_slot)
+    %out_bool = load __m_permissions_has_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_PERMISSIONS_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_5777a059_0 = stack_alloc 8
     __m_slot_5777a059_1 = stack_alloc 8
@@ -4726,6 +4760,56 @@
     !%p_1
     %p_1 = add __m_load_6dfdb1cc_p_1, 0
     !__m_load_6dfdb1cc_p_1
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_CREATE %out_domain, %out_status
+    __m_domain_create_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_create(&__m_domain_create_slot)
+    %out_domain = load __m_domain_create_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_ADD %out_status, %domain, %member
+    %out_status = call @sa_node_plugin_domain_add(%domain, %member)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_REMOVE %out_status, %domain, %member
+    %out_status = call @sa_node_plugin_domain_remove(%domain, %member)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_ENTER %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_enter(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_EXIT %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_exit(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_DISPOSE %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_dispose(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_GET_ACTIVE %out_domain, %out_status
+    __m_domain_active_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_get_active(&__m_domain_active_slot)
+    %out_domain = load __m_domain_active_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_MEMBER_COUNT %out_count, %out_status, %domain
+    __m_domain_member_count_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_member_count(%domain, &__m_domain_member_count_slot)
+    %out_count = load __m_domain_member_count_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %domain
+    __m_domain_snapshot_ptr_slot = stack_alloc 8
+    __m_domain_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_snapshot_json(%domain, &__m_domain_snapshot_ptr_slot, &__m_domain_snapshot_len_slot)
+    %out_ptr = load __m_domain_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_domain_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_FREE %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_free(%domain)
 [END_MACRO]
 
 [MACRO] NODE_DOMAIN_STATUS_JSON %p_0, %p_1

@@ -1855,6 +1855,58 @@ test "node plugin cluster setup_primary_json and signal wait helpers" {
     try std.testing.expectEqual(@as(u64, 0), exited_after_disconnect);
 }
 
+test "node plugin domain handle helpers" {
+    var domain: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_create(&domain));
+    defer _ = plugin.sa_node_plugin_domain_free(domain);
+
+    var active: ?*anyopaque = @ptrFromInt(1);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_get_active(&active));
+    try std.testing.expectEqual(@as(?*anyopaque, null), active);
+
+    const member1: ?*anyopaque = @ptrFromInt(@as(usize, 0x1001));
+    const member2: ?*anyopaque = @ptrFromInt(@as(usize, 0x1002));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_add(domain, member1));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_add(domain, member1));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_add(domain, member2));
+
+    var member_count: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_member_count(domain, &member_count));
+    try std.testing.expectEqual(@as(u64, 2), member_count);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_enter(domain));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_get_active(&active));
+    try std.testing.expectEqual(domain, active);
+
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_snapshot_json(domain, &snapshot_ptr, &snapshot_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+    const snapshot = (snapshot_ptr orelse return error.NullDomainSnapshot)[0..@intCast(snapshot_len)];
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"active\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"memberCount\":2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, snapshot, "\"stackDepth\":1") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_remove(domain, member1));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_member_count(domain, &member_count));
+    try std.testing.expectEqual(@as(u64, 1), member_count);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_exit(domain));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_get_active(&active));
+    try std.testing.expectEqual(@as(?*anyopaque, null), active);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_dispose(domain));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_member_count(domain, &member_count));
+    try std.testing.expectEqual(@as(u64, 0), member_count);
+
+    var disposed_ptr: ?[*]const u8 = null;
+    var disposed_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_domain_snapshot_json(domain, &disposed_ptr, &disposed_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(disposed_ptr, disposed_len);
+    const disposed_snapshot = (disposed_ptr orelse return error.NullDisposedDomainSnapshot)[0..@intCast(disposed_len)];
+    try std.testing.expect(std.mem.indexOf(u8, disposed_snapshot, "\"disposed\":true") != null);
+}
+
 test "node plugin timers promises helpers" {
     var timeout_ptr: ?[*]const u8 = null;
     var timeout_len: u64 = 0;
@@ -1947,6 +1999,53 @@ test "node plugin errors and permissions report native compatibility status" {
     try std.testing.expect(std.mem.indexOf(u8, permissions, "\"module\":\"permissions\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, permissions, "\"model\":\"sa-plugin-manifest\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, permissions, "\"declared\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, permissions, "\"availableFlags\":") != null);
+}
+
+test "node plugin permissions native manifest helpers" {
+    var enabled: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_is_enabled(&enabled));
+    try std.testing.expect(enabled == 0 or enabled == 1);
+
+    var audit_mode: u64 = 99;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_is_audit_mode(&audit_mode));
+    try std.testing.expect(audit_mode == 0 or audit_mode == 1);
+
+    var flags_ptr: ?[*]const u8 = null;
+    var flags_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_available_flags_json(&flags_ptr, &flags_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(flags_ptr, flags_len);
+    const flags = (flags_ptr orelse return error.NullPermissionsFlags)[0..@intCast(flags_len)];
+    try std.testing.expect(std.mem.indexOf(u8, flags, "--allow-fs-read") != null);
+    try std.testing.expect(std.mem.indexOf(u8, flags, "--allow-net") != null);
+
+    var declared_ptr: ?[*]const u8 = null;
+    var declared_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_declared_json(&declared_ptr, &declared_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(declared_ptr, declared_len);
+    const declared = (declared_ptr orelse return error.NullPermissionsDeclared)[0..@intCast(declared_len)];
+    try std.testing.expect(std.mem.indexOf(u8, declared, "\"process\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, declared, "\"net\"") != null);
+
+    var has_fs_read: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_has("fs.read".ptr, 7, "sap.json".ptr, 8, &has_fs_read));
+    try std.testing.expectEqual(@as(u64, 1), has_fs_read);
+
+    var has_env: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_has("env".ptr, 3, "SA_PLUGIN_DEV".ptr, 13, &has_env));
+    try std.testing.expectEqual(@as(u64, 1), has_env);
+
+    var has_spawn: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_has("process.spawn".ptr, 13, null, 0, &has_spawn));
+    try std.testing.expectEqual(@as(u64, 1), has_spawn);
+
+    var has_exec_echo: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_has("process.exec".ptr, 12, "/bin/echo".ptr, 9, &has_exec_echo));
+    try std.testing.expectEqual(@as(u64, 1), has_exec_echo);
+
+    var has_denied_net: u64 = 1;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_permissions_has("net".ptr, 3, "http://example.com".ptr, 18, &has_denied_net));
+    try std.testing.expectEqual(@as(u64, 0), has_denied_net);
 }
 
 test "node plugin status reports native command line i18n deprecation and iterable stream support" {

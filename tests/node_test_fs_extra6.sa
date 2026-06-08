@@ -3,17 +3,81 @@
 @import "../node_extra.sal"
 @const S_SRC = utf8:"/tmp/sa_fs6_src.txt"
 @const S_DST = utf8:"/tmp/sa_fs6_dst.txt"
+@const S_CP = utf8:"/tmp/sa_fs6_cp.txt"
+@const S_CP_P = utf8:"/tmp/sa_fs6_cp_p.txt"
+@const S_DATA = utf8:"hello"
 @const S_TMPDIR = utf8:"/tmp"
 
 @test "node.fs copy_file"():
 L_ENTRY:
-    s1 = add 0, 0
-    s2 = add 0, 0
-    EXPAND NODE_FS_COPY_FILE s1, S_SRC, 18, S_DST, 18
-    EXPAND NODE_FS_RM S_DST, 18, 0, s2
-    !s2
-    !s1
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_COPY, L_ERR
+L_COPY:
+    !ok
+    !s
+    EXPAND NODE_FS_COPY_FILE s, S_SRC, 19, S_DST, 19
+    ok = eq s, 0
+    br ok -> L_CLEAN, L_ERR
+L_CLEAN:
+    !ok
+    EXPAND NODE_FS_RM S_SRC, 19, 0, s
+    EXPAND NODE_FS_RM S_DST, 19, 0, s
+    !s
     return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.fs cp"():
+L_ENTRY:
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_CP, L_ERR
+L_CP:
+    !ok
+    !s
+    EXPAND NODE_FS_CP s, S_SRC, 19, S_CP, 18, 0, 1, 0
+    ok = eq s, 0
+    br ok -> L_CLEAN, L_ERR
+L_CLEAN:
+    !ok
+    EXPAND NODE_FS_RM S_SRC, 19, 0, s
+    EXPAND NODE_FS_RM S_CP, 18, 0, s
+    !s
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+
+@test "node.fs promises cp"():
+L_ENTRY:
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    ok = eq s, 0
+    br ok -> L_CP, L_ERR
+L_CP:
+    !ok
+    !s
+    s2 = add 0, 0
+    EXPAND NODE_FS_PROMISES_CP s2, S_SRC, 19, S_CP_P, 20, 0, 1, 0
+    ok = eq s2, 0
+    br ok -> L_CLEAN, L_ERR2
+L_CLEAN:
+    !ok
+    EXPAND NODE_FS_RM S_SRC, 19, 0, s2
+    EXPAND NODE_FS_RM S_CP_P, 20, 0, s2
+    !s2
+    return
+L_ERR:
+    !ok
+    !s
+    panic(103)
+L_ERR2:
+    !ok
+    !s2
+    panic(103)
 
 @test "node.fs readlink"():
 L_ENTRY:

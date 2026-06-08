@@ -761,6 +761,13 @@
     !__fsp_copy_file_status
 [END_MACRO]
 
+[MACRO] NODE_FS_PROMISES_CP %out_status, %src, %src_len, %dst, %dst_len, %recursive, %force, %error_on_exist
+    __fsp_cp_status = call @sa_node_plugin_fs_promises_cp(%src, %src_len, %dst, %dst_len, %recursive, %force, %error_on_exist)
+    !%out_status
+    %out_status = add __fsp_cp_status, 0
+    !__fsp_cp_status
+[END_MACRO]
+
 [MACRO] NODE_FS_PROMISES_CHMOD %out_status, %path, %path_len, %mode
     __fsp_chmod_status = call @sa_node_plugin_fs_promises_chmod(%path, %path_len, %mode)
     !%out_status

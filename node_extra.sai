@@ -45,6 +45,7 @@
 @extern sa_node_plugin_fs_opendir_next(handle_ptr: ptr, &out_name_ptr: ptr, &out_name_len: u64, &out_entry_type: u64) -> u64
 @extern sa_node_plugin_fs_opendir_free(handle_ptr: ptr) -> u64
 @extern sa_node_plugin_fs_rm(path_ptr: ptr, path_len: u64, recursive: u64) -> u64
+@extern sa_node_plugin_fs_cp(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) -> u64
 @extern sa_node_plugin_fs_statfs(path_ptr: ptr, &out_json_ptr: ptr, &out_json_len: u64) -> u64
 @extern sa_node_plugin_fs_symlink(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
 @extern sa_node_plugin_fs_truncate(path_ptr: ptr, path_len: u64, len: u64) -> u64
@@ -64,6 +65,7 @@
 @extern sa_node_plugin_fs_promises_unlink(path_ptr: ptr, path_len: u64) -> u64
 @extern sa_node_plugin_fs_promises_rename(old_ptr: ptr, old_len: u64, new_ptr: ptr, new_len: u64) -> u64
 @extern sa_node_plugin_fs_promises_copy_file(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64
+@extern sa_node_plugin_fs_promises_cp(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) -> u64
 @extern sa_node_plugin_fs_promises_chmod(path_ptr: ptr, path_len: u64, mode: u64) -> u64
 @extern sa_node_plugin_fs_promises_chown(path_ptr: ptr, path_len: u64, uid: u64, gid: u64) -> u64
 @extern sa_node_plugin_fs_promises_link(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u64

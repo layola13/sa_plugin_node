@@ -63,14 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `zlib` helper parity by exposing static constants and code-name snapshots through the native facade
+- Scope: public non-VM/V8 `fs` helper parity by exposing native copy helpers through the sync and promises facades
 - Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `zlib.constants`
-  - `zlib.codes`
+  - `fs.cp`
+  - `fs.promises.cp`
 
 ## Recent Completed Helper Features
 
+- `fs` helper tranche completed:
+  - `fs.cp`
+  - `fs.promises.cp`
 - `zlib` helper tranche completed:
   - `zlib.constants`
   - `zlib.codes`

@@ -2630,6 +2630,7 @@ test "node plugin fs top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"fs\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-fs-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"promises\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"cp\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"ReadStream\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -2647,6 +2648,7 @@ test "node plugin fs top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullFsTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"syncModel\":\"explicit native file and directory helpers") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"cpModel\":") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"constantsModel\":\"native constants aggregate") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2655,6 +2657,7 @@ test "node plugin fs top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullFsTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"readFile\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"cp\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"watch\":{\"supported\":false") != null);
 }
@@ -4560,12 +4563,17 @@ test "node plugin fs promises helpers" {
     const dir_path = "zig-cache-fs-promises-test";
     const file_path = "zig-cache-fs-promises-test/a.txt";
     const copy_path = "zig-cache-fs-promises-test/b.txt";
+    const cp_file_path = "zig-cache-fs-promises-test/cp.txt";
     const renamed_path = "zig-cache-fs-promises-test/c.txt";
     const hardlink_path = "zig-cache-fs-promises-test/d.txt";
     const symlink_path = "zig-cache-fs-promises-test/e.txt";
+    const cp_tree_path = "zig-cache-fs-promises-test-copy";
+    const cp_tree_file_path = "zig-cache-fs-promises-test-copy/a.txt";
     const mkdtemp_template = "zig-cache-fs-promises-temp-XXXXXX";
     _ = plugin.sa_node_plugin_fs_rm(dir_path.ptr, dir_path.len, 1);
+    _ = plugin.sa_node_plugin_fs_rm(cp_tree_path.ptr, cp_tree_path.len, 1);
     defer _ = plugin.sa_node_plugin_fs_rm(dir_path.ptr, dir_path.len, 1);
+    defer _ = plugin.sa_node_plugin_fs_rm(cp_tree_path.ptr, cp_tree_path.len, 1);
     var temp_dir_ptr: ?[*]const u8 = null;
     var temp_dir_len: u64 = 0;
     defer if (temp_dir_ptr != null) {
@@ -4581,6 +4589,20 @@ test "node plugin fs promises helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_read_file(file_path.ptr, file_path.len, &read_ptr, &read_len));
     defer _ = plugin.sa_node_plugin_free_buffer(read_ptr, read_len);
     try std.testing.expectEqualStrings("hello", (read_ptr orelse return error.NullFsPromisesReadFile)[0..@intCast(read_len)]);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_cp(file_path.ptr, file_path.len, cp_file_path.ptr, cp_file_path.len, 0, 1, 0));
+    var cp_file_ptr: ?[*]const u8 = null;
+    var cp_file_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_read_file(cp_file_path.ptr, cp_file_path.len, &cp_file_ptr, &cp_file_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cp_file_ptr, cp_file_len);
+    try std.testing.expectEqualStrings("hello", (cp_file_ptr orelse return error.NullFsCpFile)[0..@intCast(cp_file_len)]);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_cp(dir_path.ptr, dir_path.len, cp_tree_path.ptr, cp_tree_path.len, 1, 1, 0));
+    var cp_tree_ptr: ?[*]const u8 = null;
+    var cp_tree_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_read_file(cp_tree_file_path.ptr, cp_tree_file_path.len, &cp_tree_ptr, &cp_tree_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cp_tree_ptr, cp_tree_len);
+    try std.testing.expectEqualStrings("hello", (cp_tree_ptr orelse return error.NullFsPromisesCpTree)[0..@intCast(cp_tree_len)]);
 
     var stat_ptr: ?[*]const u8 = null;
     var stat_len: u64 = 0;
@@ -4701,6 +4723,7 @@ test "node plugin fs promises helpers" {
     try std.testing.expect(name_len > 0);
 
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(file_path.ptr, file_path.len));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(cp_file_path.ptr, cp_file_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(renamed_path.ptr, renamed_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(hardlink_path.ptr, hardlink_path.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_fs_promises_unlink(symlink_path.ptr, symlink_path.len));

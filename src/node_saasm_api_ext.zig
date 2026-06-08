@@ -1762,6 +1762,90 @@ pub export fn sa_node_plugin_fs_rm(path_ptr: ?[*]const u8, path_len: u64, recurs
     return 0;
 }
 
+fn fsPathExists(path: []const u8) bool {
+    _ = fs.cwd().statFile(path) catch return false;
+    return true;
+}
+
+fn fsEnsureParentPath(path: []const u8) !void {
+    if (fs.path.dirname(path)) |parent| {
+        if (parent.len > 0) try fs.cwd().makePath(parent);
+    }
+}
+
+fn fsCopySymlink(src_dir: fs.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
+    var target_buffer: [fs.max_path_bytes]u8 = undefined;
+    const target = try src_dir.readLink(src_path, &target_buffer);
+
+    try fsEnsureParentPath(dst_path);
+    if (force) fs.cwd().deleteFile(dst_path) catch {};
+    try fs.cwd().symLink(target, dst_path, .{});
+}
+
+fn fsCopyFilePath(src_path: []const u8, dst_path: []const u8, force: bool) !void {
+    try fsEnsureParentPath(dst_path);
+    if (force) fs.cwd().deleteFile(dst_path) catch {};
+    if (fs.path.isAbsolute(src_path) and fs.path.isAbsolute(dst_path)) {
+        try fs.copyFileAbsolute(src_path, dst_path, .{});
+    } else {
+        try fs.cwd().copyFile(src_path, fs.cwd(), dst_path, .{});
+    }
+}
+
+fn fsCopyDirectoryRecursive(src_path: []const u8, dst_path: []const u8, force: bool) !void {
+    try fs.cwd().makePath(dst_path);
+
+    var source_dir = try fs.cwd().openDir(src_path, .{ .iterate = true });
+    defer source_dir.close();
+
+    var walker = try source_dir.walk(std.heap.page_allocator);
+    defer walker.deinit();
+
+    while (try walker.next()) |entry| {
+        const child_dst = try fs.path.join(std.heap.page_allocator, &.{ dst_path, entry.path });
+        defer std.heap.page_allocator.free(child_dst);
+
+        switch (entry.kind) {
+            .directory => try fs.cwd().makePath(child_dst),
+            .file => {
+                const child_src = try fs.path.join(std.heap.page_allocator, &.{ src_path, entry.path });
+                defer std.heap.page_allocator.free(child_src);
+                try fsCopyFilePath(child_src, child_dst, force);
+            },
+            .sym_link => try fsCopySymlink(entry.dir, entry.basename, child_dst, force),
+            else => {},
+        }
+    }
+}
+
+fn fsCpPath(src_path: []const u8, dst_path: []const u8, recursive: bool, force: bool, error_on_exist: bool) !void {
+    if (src_path.len == 0 or dst_path.len == 0) return error.InvalidPath;
+    if (std.mem.eql(u8, src_path, dst_path)) return error.SamePath;
+    if (std.mem.startsWith(u8, dst_path, src_path) and dst_path.len > src_path.len and dst_path[src_path.len] == fs.path.sep) return error.InvalidPath;
+
+    const dst_exists = fsPathExists(dst_path);
+    if (dst_exists and error_on_exist) return error.PathAlreadyExists;
+    if (dst_exists and !force) return;
+
+    const src_stat = try fs.cwd().statFile(src_path);
+    switch (src_stat.kind) {
+        .directory => {
+            if (!recursive) return error.IsDir;
+            try fsCopyDirectoryRecursive(src_path, dst_path, force);
+        },
+        .file => try fsCopyFilePath(src_path, dst_path, force),
+        .sym_link => try fsCopySymlink(fs.cwd(), src_path, dst_path, force),
+        else => return error.UnsupportedFileType,
+    }
+}
+
+pub export fn sa_node_plugin_fs_cp(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) u32 {
+    const src_path = src_ptr.?[0..src_len];
+    const dst_path = dst_ptr.?[0..dst_len];
+    fsCpPath(src_path, dst_path, recursive != 0, force != 0, error_on_exist != 0) catch return fail();
+    return 0;
+}
+
 pub export fn sa_node_plugin_fs_statfs(path_ptr: ?[*]const u8, out_json_ptr: ?*?[*]const u8, out_json_len: ?*u64) u32 {
     const path = cStringSliceBounded(path_ptr.?);
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
@@ -1853,6 +1937,9 @@ pub export fn sa_node_plugin_fs_promises_rename(old_ptr: ?[*]const u8, old_len: 
 }
 pub export fn sa_node_plugin_fs_promises_copy_file(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
     return base.sa_node_plugin_fs_copy_file(src_ptr, src_len, dst_ptr, dst_len);
+}
+pub export fn sa_node_plugin_fs_promises_cp(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) u32 {
+    return sa_node_plugin_fs_cp(src_ptr, src_len, dst_ptr, dst_len, recursive, force, error_on_exist);
 }
 pub export fn sa_node_plugin_fs_promises_chmod(path_ptr: ?[*]const u8, path_len: u64, mode: u64) u32 {
     return sa_node_plugin_fs_chmod(path_ptr, path_len, mode);

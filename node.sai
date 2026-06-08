@@ -261,6 +261,7 @@
 @extern sa_node_plugin_fs_unlink(path_ptr: ptr, path_len: u64) -> u32
 @extern sa_node_plugin_fs_rename(old_ptr: ptr, old_len: u64, new_ptr: ptr, new_len: u64) -> u32
 @extern sa_node_plugin_fs_copy_file(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64) -> u32
+@extern sa_node_plugin_fs_cp(src_ptr: ptr, src_len: u64, dst_ptr: ptr, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) -> u32
 @extern sa_node_plugin_process_exec(argv_ptr: ptr, argv_len: u64, cwd_ptr: ptr, cwd_len: u64, &out_code: ptr, &out_stdout_ptr: ptr, &out_stdout_len: ptr, &out_stderr_ptr: ptr, &out_stderr_len: ptr) -> u32
 
 // --- Console, Timers, and String Decoder ---

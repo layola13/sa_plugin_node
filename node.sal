@@ -1319,6 +1319,10 @@
     %out_status = call @sa_node_plugin_fs_copy_file(&%src, %src_len, &%dst, %dst_len)
 [END_MACRO]
 
+[MACRO] NODE_FS_CP %out_status, %src, %src_len, %dst, %dst_len, %recursive, %force, %error_on_exist
+    %out_status = call @sa_node_plugin_fs_cp(%src, %src_len, %dst, %dst_len, %recursive, %force, %error_on_exist)
+[END_MACRO]
+
 [MACRO] NODE_PROCESS_EXEC %out_code, %out_stdout_ptr, %out_stdout_len, %out_stderr_ptr, %out_stderr_len, %out_status, %p_argv, %l_argv, %p_cwd, %l_cwd
     __exec_code_slot = stack_alloc 4
     __exec_out_ptr_slot = stack_alloc 8

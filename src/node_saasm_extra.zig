@@ -659,7 +659,7 @@ pub export fn sa_node_plugin_punycode_status_json(out_ptr: ?*?[*]const u8, out_l
     defer out.deinit();
     out.appendSlice("{\"module\":\"punycode\",\"supported\":true,\"mode\":\"top-level-native-punycode-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &punycode_export_names) catch return fail();
-    out.appendSlice(",\"featureSupport\":{\"encode\":true,\"decode\":true,\"toASCII\":true,\"toUnicode\":true,\"ucs2\":false,\"version\":false},\"capabilities\":[\"native punycode encode and decode helpers over UTF-8 text\",\"native IDNA-style toASCII and toUnicode helpers through the existing libidn2-backed ABI\",\"top-level export-name and support metadata for the public punycode module surface\"],\"limitations\":[\"no punycode.ucs2 namespace helpers for JavaScript UTF-16 code-unit arrays\",\"no top-level version constant export in this native facade\",\"encode and decode operate on explicit native string buffers and do not model JavaScript exception identity or deprecated warning emission\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"encode\":true,\"decode\":true,\"toASCII\":true,\"toUnicode\":true,\"ucs2\":false,\"version\":true},\"capabilities\":[\"native punycode encode and decode helpers over UTF-8 text\",\"native IDNA-style toASCII and toUnicode helpers through the existing libidn2-backed ABI\",\"static deprecated punycode.version constant metadata\",\"top-level export-name and support metadata for the public punycode module surface\"],\"limitations\":[\"no punycode.ucs2 namespace helpers for JavaScript UTF-16 code-unit arrays\",\"version is exposed as a read-only native string helper rather than a mutable JavaScript property\",\"encode and decode operate on explicit native string buffers and do not model JavaScript exception identity or deprecated warning emission\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -670,12 +670,16 @@ pub export fn sa_node_plugin_punycode_exports_json(out_ptr: ?*?[*]const u8, out_
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+pub export fn sa_node_plugin_punycode_version(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "2.1.0");
+}
+
 pub export fn sa_node_plugin_punycode_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"encodeModel\":\"native punycode encode helper over explicit UTF-8 input text\",\"decodeModel\":\"native punycode decode helper returning UTF-8 text\",\"domainModel\":\"toASCII and toUnicode use the existing libidn2-backed domain conversion helpers\",\"objectModel\":\"not-modeled for punycode.ucs2 namespace objects, version constant exports, or JavaScript deprecation-warning side effects\"}");
+    return writeOwnedString(out_ptr, out_len, "{\"encodeModel\":\"native punycode encode helper over explicit UTF-8 input text\",\"decodeModel\":\"native punycode decode helper returning UTF-8 text\",\"domainModel\":\"toASCII and toUnicode use the existing libidn2-backed domain conversion helpers\",\"versionModel\":\"static Node-compatible punycode.version string value 2.1.0\",\"objectModel\":\"not-modeled for punycode.ucs2 namespace objects or JavaScript deprecation-warning side effects\"}");
 }
 
 pub export fn sa_node_plugin_punycode_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"encode\":{\"supported\":true,\"mode\":\"native punycode encode helper over UTF-8 text\"},\"decode\":{\"supported\":true,\"mode\":\"native punycode decode helper returning UTF-8 text\"},\"toASCII\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-ASCII helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"toUnicode\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-Unicode helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"ucs2\":{\"supported\":false,\"reason\":\"JavaScript UTF-16 code-unit array helpers are not modeled in the current native ABI\"},\"version\":{\"supported\":false,\"reason\":\"the deprecated punycode module version constant is not exposed as a dedicated native export\"}}");
+    return writeOwnedString(out_ptr, out_len, "{\"encode\":{\"supported\":true,\"mode\":\"native punycode encode helper over UTF-8 text\"},\"decode\":{\"supported\":true,\"mode\":\"native punycode decode helper returning UTF-8 text\"},\"toASCII\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-ASCII helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"toUnicode\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-Unicode helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"version\":{\"supported\":true,\"mode\":\"native read-only string helper returning 2.1.0\",\"limitations\":[\"does not emit Node's runtime deprecation warning\"]},\"ucs2\":{\"supported\":false,\"reason\":\"JavaScript UTF-16 code-unit array helpers are not modeled in the current native ABI\"}}");
 }
 
 pub export fn sa_node_plugin_string_decoder_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

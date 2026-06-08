@@ -3119,6 +3119,7 @@ test "node plugin punycode top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"punycode\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-punycode-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"toASCII\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"version\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"ucs2\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -3130,13 +3131,21 @@ test "node plugin punycode top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"toUnicode\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"version\"") != null);
 
+    var version_ptr: ?[*]const u8 = null;
+    var version_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_punycode_version(&version_ptr, &version_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(version_ptr, version_len);
+    const version = (version_ptr orelse return error.NullPunycodeVersion)[0..@intCast(version_len)];
+    try std.testing.expectEqualStrings("2.1.0", version);
+
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_punycode_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullPunycodeTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"encodeModel\":\"native punycode encode helper over explicit UTF-8 input text\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for punycode.ucs2 namespace objects, version constant exports, or JavaScript deprecation-warning side effects\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"versionModel\":\"static Node-compatible punycode.version string value 2.1.0\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for punycode.ucs2 namespace objects or JavaScript deprecation-warning side effects\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -3145,7 +3154,7 @@ test "node plugin punycode top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullPunycodeTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"encode\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"toASCII\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
 }
 
 test "node plugin string_decoder top-level facade helpers" {

@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `buffer` helper parity by exposing Node-compatible read-only constants metadata through the native facade
+- Scope: public non-VM/V8 `punycode` helper parity by exposing the deprecated static version constant through the native facade
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `buffer.constants` / `buffer.kMaxLength` / `buffer.kStringMaxLength`
+  - `punycode.version`
 
 ## Recent Completed Helper Features
 
+- `punycode` helper tranche completed:
+  - `punycode.version`
 - `buffer` helper tranche completed:
   - `buffer.constants` / `buffer.kMaxLength` / `buffer.kStringMaxLength`
 - `string_decoder` helper tranche completed:

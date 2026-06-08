@@ -2513,6 +2513,23 @@
     !__punycode_top_exports_len
 [END_MACRO]
 
+[MACRO] NODE_PUNYCODE_VERSION %out_ptr, %out_len, %out_status
+    __punycode_version_ptr_slot = stack_alloc 8
+    __punycode_version_len_slot = stack_alloc 8
+    __punycode_version_status = call @sa_node_plugin_punycode_version(&__punycode_version_ptr_slot, &__punycode_version_len_slot)
+    !%out_status
+    %out_status = add __punycode_version_status, 0
+    !__punycode_version_status
+    __punycode_version_ptr = load __punycode_version_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __punycode_version_ptr, 0
+    !__punycode_version_ptr
+    __punycode_version_len = load __punycode_version_len_slot+0 as u64
+    !%out_len
+    %out_len = add __punycode_version_len, 0
+    !__punycode_version_len
+[END_MACRO]
+
 [MACRO] NODE_PUNYCODE_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
     __punycode_top_config_ptr_slot = stack_alloc 8
     __punycode_top_config_len_slot = stack_alloc 8

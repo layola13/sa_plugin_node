@@ -282,6 +282,7 @@
 @extern sa_node_plugin_querystring_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_punycode_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_punycode_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_punycode_version(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_punycode_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_punycode_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_string_decoder_status_json(&out_ptr: ptr, &out_len: u64) -> u64

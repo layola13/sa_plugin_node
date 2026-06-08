@@ -94,9 +94,23 @@ L_ENTRY:
     parsed = add 0, 0
     sParse = add 0, 0
     EXPAND NODE_NET_SOCKET_ADDRESS_PARSE parsed, sParse, S_SOCKET_LOOP, 14
+    isSocketAddress = add 0, 0
+    sIsSocketAddress = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_IS_SOCKET_ADDRESS parsed, isSocketAddress, sIsSocketAddress
+    socketAddressOk = eq isSocketAddress, 1
+    br socketAddressOk -> L_SOCKET_ADDRESS_OK, L_ERR_SOCKET_ADDRESS_IS
+L_SOCKET_ADDRESS_OK:
+    !socketAddressOk
     bl = add 0, 0
     sBl = add 0, 0
     EXPAND NODE_NET_BLOCKLIST_NEW bl, sBl
+    isBlocklistInSocketTest = add 0, 0
+    sIsBlocklistInSocketTest = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_IS_BLOCKLIST bl, isBlocklistInSocketTest, sIsBlocklistInSocketTest
+    blocklistInSocketOk = eq isBlocklistInSocketTest, 1
+    br blocklistInSocketOk -> L_BLOCKLIST_IN_SOCKET_OK, L_ERR_BLOCKLIST_IN_SOCKET_IS
+L_BLOCKLIST_IN_SOCKET_OK:
+    !blocklistInSocketOk
     sAdd = add 0, 0
     EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS_HANDLE bl, parsed, sAdd
     hit = add 0, 0
@@ -121,6 +135,10 @@ L_ENTRY:
     !hit
     !sAdd
     !sBl
+    !sIsBlocklistInSocketTest
+    !isBlocklistInSocketTest
+    !sIsSocketAddress
+    !isSocketAddress
     !sParse
     !sJson
     !jsonLen
@@ -138,6 +156,12 @@ L_ENTRY:
     !sNew
     !addr
     return
+L_ERR_SOCKET_ADDRESS_IS:
+    !socketAddressOk
+    panic(103)
+L_ERR_BLOCKLIST_IN_SOCKET_IS:
+    !blocklistInSocketOk
+    panic(103)
 
 @test "node.net blocklist socket_address range"():
 L_ENTRY:
@@ -188,6 +212,13 @@ L_ENTRY:
     bl = add 0, 0
     sNew = add 0, 0
     EXPAND NODE_NET_BLOCKLIST_NEW bl, sNew
+    isBlocklist = add 0, 0
+    sIsBlocklist = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_IS_BLOCKLIST bl, isBlocklist, sIsBlocklist
+    blocklistOk = eq isBlocklist, 1
+    br blocklistOk -> L_BLOCKLIST_OK, L_ERR_BLOCKLIST_IS
+L_BLOCKLIST_OK:
+    !blocklistOk
     sAddr = add 0, 0
     EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS bl, S_LOOP, 9, sAddr
     sRange = add 0, 0
@@ -224,12 +255,17 @@ L_ENTRY:
     !hitRange
     !sHitLoop
     !hitLoop
+    !sIsBlocklist
+    !isBlocklist
     !sSubnet
     !sRange
     !sAddr
     !sNew
     !bl
     return
+L_ERR_BLOCKLIST_IS:
+    !blocklistOk
+    panic(103)
 
 @test "node.net tcp blocklist abi"():
 L_ENTRY:

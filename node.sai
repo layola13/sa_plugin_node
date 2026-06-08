@@ -152,6 +152,7 @@
 @extern sa_node_plugin_net_has_ref(handle: ptr, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_new(&address: ptr, address_len: u64, port: u64, &family: ptr, family_len: u64, flowlabel: u64, &out_addr: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_parse(&input: ptr, input_len: u64, &out_addr: ptr) -> u32
+@extern sa_node_plugin_net_socket_address_is_socket_address(addr: ptr, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_free(addr: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_address(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_family(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
@@ -159,6 +160,7 @@
 @extern sa_node_plugin_net_socket_address_flowlabel(addr: ptr, &out_flowlabel: ptr) -> u32
 @extern sa_node_plugin_net_socket_address_json(addr: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_new(&out_blocklist: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_is_blocklist(blocklist: ptr, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_free(blocklist: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_add_address(blocklist: ptr, &address: ptr, address_len: u64) -> u32
 @extern sa_node_plugin_net_blocklist_add_address_handle(blocklist: ptr, addr: ptr) -> u32

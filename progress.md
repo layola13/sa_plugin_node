@@ -63,13 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `tls` helper parity by exposing native hostname identity validation
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `net` helper parity by exposing native static handle-type checks
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `tls.checkServerIdentity`
+  - `net.BlockList.isBlockList`
+  - `net.SocketAddress.isSocketAddress`
 
 ## Recent Completed Helper Features
 
+- `net` helper tranche completed:
+  - `net.BlockList.isBlockList`
+  - `net.SocketAddress.isSocketAddress`
 - `tls` helper tranche completed:
   - `tls.checkServerIdentity`
 - `http2` helper tranche completed:

@@ -745,6 +745,12 @@
     %out_addr = load __n_socket_address_parse_slot+0 as ptr
 [END_MACRO]
 
+[MACRO] NODE_NET_SOCKET_ADDRESS_IS_SOCKET_ADDRESS %addr, %out_bool, %out_status
+    __n_socket_address_is_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_socket_address_is_socket_address(%addr, &__n_socket_address_is_slot)
+    %out_bool = load __n_socket_address_is_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_NET_SOCKET_ADDRESS_FREE %addr, %out_status
     %out_status = call @sa_node_plugin_net_socket_address_free(%addr)
 [END_MACRO]
@@ -789,6 +795,12 @@
     __n_blocklist_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_net_blocklist_new(&__n_blocklist_slot)
     %out_blocklist = load __n_blocklist_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_IS_BLOCKLIST %blocklist, %out_bool, %out_status
+    __n_blocklist_is_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_is_blocklist(%blocklist, &__n_blocklist_is_slot)
+    %out_bool = load __n_blocklist_is_slot+0 as u64
 [END_MACRO]
 
 [MACRO] NODE_NET_BLOCKLIST_FREE %blocklist, %out_status

@@ -5132,6 +5132,12 @@ test "node plugin net socket address exposes properties and JSON" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_new("127.0.0.1", 9, 8080, "ipv4", 4, 0, &addr));
     defer _ = plugin.sa_node_plugin_net_socket_address_free(addr);
 
+    var is_socket_address: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_is_socket_address(addr, &is_socket_address));
+    try std.testing.expectEqual(@as(u64, 1), is_socket_address);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_is_socket_address(null, &is_socket_address));
+    try std.testing.expectEqual(@as(u64, 0), is_socket_address);
+
     var address_ptr: ?[*]const u8 = null;
     var address_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_address(addr, &address_ptr, &address_len));
@@ -5212,6 +5218,12 @@ test "node plugin net socket address parse and blocklist handle rules" {
     var blocklist: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_new(&blocklist));
     defer _ = plugin.sa_node_plugin_net_blocklist_free(blocklist);
+
+    var is_blocklist: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_is_blocklist(blocklist, &is_blocklist));
+    try std.testing.expectEqual(@as(u64, 1), is_blocklist);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_is_blocklist(null, &is_blocklist));
+    try std.testing.expectEqual(@as(u64, 0), is_blocklist);
 
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_address_handle(blocklist, parsed_v4));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_range_handle(blocklist, range_start, range_end));
@@ -5310,6 +5322,8 @@ test "node plugin net top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"createServer\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Socket\":{\"supported\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"BlockList\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"BlockList.isBlockList\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"SocketAddress.isSocketAddress\":{\"supported\":true") != null);
 }
 
 test "node plugin tcp server close updates listening state" {

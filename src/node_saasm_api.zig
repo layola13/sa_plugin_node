@@ -2204,6 +2204,8 @@ pub export fn sa_node_plugin_dns_resolve(hostname: ?[*]const u8, len: u64, rrtyp
 
 const BlockListFamily = enum { ipv4, ipv6 };
 const BlockListRuleKind = enum { address, range, subnet };
+const net_socket_address_magic: u64 = 0x5341_4e45_5453_4144;
+const net_blocklist_magic: u64 = 0x5341_4e45_5442_4c4b;
 
 const BlockListAddress = struct {
     family: BlockListFamily,
@@ -2212,6 +2214,7 @@ const BlockListAddress = struct {
 };
 
 const SaNetSocketAddress = struct {
+    magic: u64 = net_socket_address_magic,
     allocator: std.mem.Allocator,
     family: BlockListFamily,
     bytes: [16]u8,
@@ -2220,6 +2223,7 @@ const SaNetSocketAddress = struct {
     flowlabel: u32,
 
     fn deinit(self: *SaNetSocketAddress) void {
+        self.magic = 0;
         self.allocator.free(self.text);
         self.allocator.destroy(self);
     }
@@ -2235,6 +2239,7 @@ const BlockListRule = struct {
 };
 
 const SaNetBlockList = struct {
+    magic: u64 = net_blocklist_magic,
     allocator: std.mem.Allocator,
     rules: std.ArrayList(BlockListRule),
 
@@ -2245,6 +2250,7 @@ const SaNetBlockList = struct {
     }
 
     fn deinit(self: *SaNetBlockList) void {
+        self.magic = 0;
         for (self.rules.items) |rule| self.allocator.free(rule.text);
         self.rules.deinit();
         self.allocator.destroy(self);
@@ -2333,7 +2339,15 @@ fn socketAddressCreate(address: []const u8, port: u64, family_text: []const u8, 
 }
 
 fn socketAddressHandle(ptr: ?*anyopaque) ?*SaNetSocketAddress {
-    return @ptrCast(@alignCast(ptr orelse return null));
+    const handle: *SaNetSocketAddress = @ptrCast(@alignCast(ptr orelse return null));
+    if (handle.magic != net_socket_address_magic) return null;
+    return handle;
+}
+
+fn blockListHandle(ptr: ?*anyopaque) ?*SaNetBlockList {
+    const handle: *SaNetBlockList = @ptrCast(@alignCast(ptr orelse return null));
+    if (handle.magic != net_blocklist_magic) return null;
+    return handle;
 }
 
 fn blockListAddressFromSocketAddress(addr: *const SaNetSocketAddress) BlockListAddress {
@@ -2427,6 +2441,12 @@ pub export fn sa_node_plugin_net_blocklist_new(out_blocklist: ?*?*anyopaque) u32
     return 0;
 }
 
+pub export fn sa_node_plugin_net_blocklist_is_blocklist(blocklist_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const out = out_bool orelse return 2;
+    out.* = if (blockListHandle(blocklist_ptr) != null) 1 else 0;
+    return 0;
+}
+
 pub export fn sa_node_plugin_net_socket_address_new(address_ptr: ?[*]const u8, address_len: u64, port: u64, family_ptr: ?[*]const u8, family_len: u64, flowlabel: u64, out_addr: ?*?*anyopaque) u32 {
     const out = out_addr orelse return 2;
     const address = if (address_len == 0) "" else (address_ptr orelse return 2)[0..address_len];
@@ -2462,6 +2482,12 @@ pub export fn sa_node_plugin_net_socket_address_parse(input_ptr: ?[*]const u8, i
     const port = std.fmt.parseInt(u16, input[colon + 1 ..], 10) catch return 2;
     const handle = socketAddressCreate(input[0..colon], port, "ipv4", 0) catch return 2;
     out.* = @ptrCast(handle);
+    return 0;
+}
+
+pub export fn sa_node_plugin_net_socket_address_is_socket_address(addr_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
+    const out = out_bool orelse return 2;
+    out.* = if (socketAddressHandle(addr_ptr) != null) 1 else 0;
     return 0;
 }
 
@@ -2521,15 +2547,12 @@ pub export fn sa_node_plugin_net_socket_address_json(addr_ptr: ?*anyopaque, out_
 }
 
 pub export fn sa_node_plugin_net_blocklist_free(blocklist_ptr: ?*anyopaque) u32 {
-    if (blocklist_ptr) |ptr| {
-        const handle: *SaNetBlockList = @ptrCast(@alignCast(ptr));
-        handle.deinit();
-    }
+    if (blockListHandle(blocklist_ptr)) |handle| handle.deinit();
     return 0;
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_address(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const address = blockListParseAddress(handle.allocator, address_ptr, address_len) catch return 2;
     defer handle.allocator.free(address.text);
     const text = std.fmt.allocPrint(handle.allocator, "Address: {s} {s}", .{ blockListFamilyName(address.family), address.text }) catch return 2;
@@ -2542,7 +2565,7 @@ pub export fn sa_node_plugin_net_blocklist_add_address(blocklist_ptr: ?*anyopaqu
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_address_handle(blocklist_ptr: ?*anyopaque, addr_ptr: ?*anyopaque) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const address = socketAddressHandle(addr_ptr) orelse return 2;
     const text = std.fmt.allocPrint(handle.allocator, "Address: {s} {s}", .{ blockListFamilyName(address.family), address.text }) catch return 2;
     const rule: BlockListRule = .{ .kind = .address, .family = address.family, .start = address.bytes, .end = address.bytes, .prefix = 0, .text = text };
@@ -2554,7 +2577,7 @@ pub export fn sa_node_plugin_net_blocklist_add_address_handle(blocklist_ptr: ?*a
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_range(blocklist_ptr: ?*anyopaque, start_ptr: ?[*]const u8, start_len: u64, end_ptr: ?[*]const u8, end_len: u64) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const start = blockListParseAddress(handle.allocator, start_ptr, start_len) catch return 2;
     defer handle.allocator.free(start.text);
     const end = blockListParseAddress(handle.allocator, end_ptr, end_len) catch return 2;
@@ -2571,7 +2594,7 @@ pub export fn sa_node_plugin_net_blocklist_add_range(blocklist_ptr: ?*anyopaque,
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_range_handle(blocklist_ptr: ?*anyopaque, start_ptr: ?*anyopaque, end_ptr: ?*anyopaque) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const start = socketAddressHandle(start_ptr) orelse return 2;
     const end = socketAddressHandle(end_ptr) orelse return 2;
     if (start.family != end.family) return 2;
@@ -2586,7 +2609,7 @@ pub export fn sa_node_plugin_net_blocklist_add_range_handle(blocklist_ptr: ?*any
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_subnet(blocklist_ptr: ?*anyopaque, network_ptr: ?[*]const u8, network_len: u64, prefix: u32) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const network = blockListParseAddress(handle.allocator, network_ptr, network_len) catch return 2;
     defer handle.allocator.free(network.text);
     const max_prefix: u32 = if (network.family == .ipv4) 32 else 128;
@@ -2601,7 +2624,7 @@ pub export fn sa_node_plugin_net_blocklist_add_subnet(blocklist_ptr: ?*anyopaque
 }
 
 pub export fn sa_node_plugin_net_blocklist_add_subnet_handle(blocklist_ptr: ?*anyopaque, network_ptr: ?*anyopaque, prefix: u32) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const network = socketAddressHandle(network_ptr) orelse return 2;
     const max_prefix: u32 = if (network.family == .ipv4) 32 else 128;
     if (prefix > max_prefix) return 2;
@@ -2615,7 +2638,7 @@ pub export fn sa_node_plugin_net_blocklist_add_subnet_handle(blocklist_ptr: ?*an
 }
 
 pub export fn sa_node_plugin_net_blocklist_check(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64, out_bool: ?*u64) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const address = blockListParseAddress(handle.allocator, address_ptr, address_len) catch return 2;
     defer handle.allocator.free(address.text);
     for (handle.rules.items) |rule| {
@@ -2635,7 +2658,7 @@ pub export fn sa_node_plugin_net_blocklist_check(blocklist_ptr: ?*anyopaque, add
 }
 
 pub export fn sa_node_plugin_net_blocklist_check_handle(blocklist_ptr: ?*anyopaque, addr_ptr: ?*anyopaque, out_bool: ?*u64) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const address_handle = socketAddressHandle(addr_ptr) orelse return 2;
     const address = blockListAddressFromSocketAddress(address_handle);
     for (handle.rules.items) |rule| {
@@ -2655,7 +2678,7 @@ pub export fn sa_node_plugin_net_blocklist_check_handle(blocklist_ptr: ?*anyopaq
 }
 
 pub export fn sa_node_plugin_net_blocklist_rules(blocklist_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const handle: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr orelse return 2));
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const out_slot = out_ptr orelse return 2;
     const len_slot = out_len orelse return 2;
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -2765,7 +2788,7 @@ fn netSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaq
         blockListFreeRuleList(allocator, dest);
         return 0;
     }
-    const blocklist: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr.?));
+    const blocklist = blockListHandle(blocklist_ptr) orelse return 2;
     blockListCopyRules(allocator, blocklist, dest) catch return 2;
     return 0;
 }
@@ -2951,7 +2974,7 @@ fn netConnectWithOptionalBlockList(host_ptr: ?[*]const u8, host_len: u64, port: 
     const address = netResolveAddress(host_z, port) catch return 2;
 
     if (blocklist_ptr) |ptr| {
-        const blocklist: *SaNetBlockList = @ptrCast(@alignCast(ptr));
+        const blocklist = blockListHandle(ptr) orelse return 2;
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
 
@@ -2974,7 +2997,7 @@ pub export fn sa_node_plugin_net_connect_options(host_ptr: ?[*]const u8, host_le
     const host = (host_ptr orelse return 2)[0..host_len];
     const address = netParseRemoteAddress(host, port, family) catch return 2;
     if (blocklist_ptr) |ptr| {
-        const blocklist: *SaNetBlockList = @ptrCast(@alignCast(ptr));
+        const blocklist = blockListHandle(ptr) orelse return 2;
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
     const stream = netConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch return 2;
@@ -3619,7 +3642,7 @@ fn dgramSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyop
         blockListFreeRuleList(allocator, dest);
         return 0;
     }
-    const blocklist: *SaNetBlockList = @ptrCast(@alignCast(blocklist_ptr.?));
+    const blocklist = blockListHandle(blocklist_ptr) orelse return 2;
     blockListCopyRules(allocator, blocklist, dest) catch return 2;
     return 0;
 }

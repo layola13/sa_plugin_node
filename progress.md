@@ -4,7 +4,7 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `40 / 43` modules completed (`93.0%`)
+- Current status: `41 / 43` modules completed (`95.3%`)
 
 ## Completed Modules
 
@@ -39,6 +39,7 @@
 - `sea`
 - `stream`
 - `string_decoder`
+- `sys`
 - `timers`
 - `trace_events`
 - `tls`
@@ -52,7 +53,6 @@
 ## Remaining Modules In Current Sweep
 
 - `module`
-- `sys`
 - `test`
 
 ## Notes

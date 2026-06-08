@@ -4,7 +4,7 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `39 / 43` modules completed (`90.7%`)
+- Current status: `40 / 43` modules completed (`93.0%`)
 
 ## Completed Modules
 
@@ -14,6 +14,7 @@
 - `child_process`
 - `cluster`
 - `console`
+- `constants`
 - `crypto`
 - `diagnostics_channel`
 - `dgram`
@@ -50,7 +51,6 @@
 
 ## Remaining Modules In Current Sweep
 
-- `constants`
 - `module`
 - `sys`
 - `test`

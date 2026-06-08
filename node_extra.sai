@@ -195,6 +195,10 @@
 @extern sa_node_plugin_stream_duplex_pair(&out_h1: ptr, &out_h2: ptr) -> u64
 @extern sa_node_plugin_stream_readable_destroy(handle_ptr: ptr) -> u64
 @extern sa_node_plugin_stream_writable_destroy(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_stream_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_stream_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_net_is_ip(str_ptr: ptr, str_len: u64, &out_version: u64) -> u64
 @extern sa_node_plugin_net_is_ipv4(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_net_is_ipv6(str_ptr: ptr, str_len: u64, &out_bool: u64) -> u64

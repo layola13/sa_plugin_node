@@ -296,6 +296,30 @@ pub export fn sa_node_plugin_async_hooks_feature_support_json(out_ptr: ?*?[*]con
     return writeOwnedString(out_ptr, out_len, "{\"executionAsyncId\":{\"supported\":true,\"mode\":\"read current explicit native execution async id\"},\"triggerAsyncId\":{\"supported\":true,\"mode\":\"read current explicit native trigger async id\"},\"AsyncResource\":{\"supported\":true,\"mode\":\"explicit native AsyncResource handle with create/free/snapshot helpers\",\"limitations\":[\"not a JavaScript AsyncResource class instance\"]},\"asyncWrapProviders\":{\"supported\":true,\"mode\":\"static empty provider catalog metadata\"},\"snapshot\":{\"supported\":true,\"mode\":\"native async-context snapshot JSON\"},\"createHook\":{\"supported\":false,\"reason\":\"JavaScript async hook callback registration and dispatch are not modeled\"},\"executionAsyncResource\":{\"supported\":false,\"reason\":\"JavaScript executionAsyncResource object identity is not modeled\"},\"AsyncLocalStorage\":{\"supported\":false,\"reason\":\"AsyncLocalStorage store propagation semantics are not modeled in this facade\"}}");
 }
 
+pub export fn sa_node_plugin_stream_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"stream\",\"supported\":true,\"mode\":\"top-level-native-stream-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &stream_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"Readable\":false,\"Writable\":false,\"Duplex\":true,\"Transform\":true,\"PassThrough\":true,\"duplexPair\":true,\"pipeline\":true,\"finished\":true,\"compose\":true,\"destroy\":true,\"promises\":false,\"addAbortSignal\":false,\"setDefaultHighWaterMark\":false,\"getDefaultHighWaterMark\":false},\"capabilities\":[\"explicit native duplex, transform, passthrough, and composed stream handles\",\"pipeline and finished state JSON helpers\",\"explicit destroy helpers for stream handles\",\"duplex pair construction for connected native handles\"],\"limitations\":[\"no JavaScript Readable, Writable, Duplex, Transform, or PassThrough class instances\",\"no EventEmitter data, end, error, close, or drain lifecycle\",\"no stream.promises or addAbortSignal semantics\",\"default high-water-mark global tuning and prototype methods are not modeled\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_stream_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &stream_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_stream_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"handleModel\":\"explicit native stream handles with kind tags such as duplex, transform, passthrough, and composed\",\"pipelineModel\":\"native pipeline helper returns summary JSON rather than wiring JavaScript stream events\",\"finishedModel\":\"native finished helper returns snapshot JSON\",\"objectModel\":\"not-modeled for JavaScript stream class instances\",\"promisesModel\":\"not-modeled\"}");
+}
+
+pub export fn sa_node_plugin_stream_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"Readable\":{\"supported\":false,\"reason\":\"JavaScript Readable class instances and prototype semantics are not modeled\"},\"Writable\":{\"supported\":false,\"reason\":\"JavaScript Writable class instances and prototype semantics are not modeled\"},\"Duplex\":{\"supported\":true,\"mode\":\"explicit native duplex handle allocation\"},\"Transform\":{\"supported\":true,\"mode\":\"explicit native transform handle allocation\"},\"PassThrough\":{\"supported\":true,\"mode\":\"explicit native passthrough handle allocation\"},\"duplexPair\":{\"supported\":true,\"mode\":\"allocates two connected native duplex handles\"},\"pipeline\":{\"supported\":true,\"mode\":\"native pipeline summary JSON helper\",\"limitations\":[\"does not expose JavaScript callback or Promise completion semantics\"]},\"finished\":{\"supported\":true,\"mode\":\"native stream state snapshot JSON\"},\"compose\":{\"supported\":true,\"mode\":\"native composed stream handle helper\"},\"destroy\":{\"supported\":true,\"mode\":\"explicit native handle destroy helper\"},\"promises\":{\"supported\":false,\"reason\":\"stream.promises namespace and Promise object identity are not modeled\"},\"addAbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal to stream cancellation wiring is not modeled\"},\"setDefaultHighWaterMark\":{\"supported\":false,\"reason\":\"global JavaScript stream high-water-mark tuning is not modeled\"},\"getDefaultHighWaterMark\":{\"supported\":false,\"reason\":\"global JavaScript stream high-water-mark tuning is not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -5725,6 +5749,29 @@ const tls_export_names = [_][]const u8{
 const dgram_export_names = [_][]const u8{
     "createSocket",
     "Socket",
+};
+
+const stream_export_names = [_][]const u8{
+    "isDestroyed",
+    "isDisturbed",
+    "isErrored",
+    "isReadable",
+    "isWritable",
+    "Readable",
+    "Writable",
+    "Duplex",
+    "Transform",
+    "PassThrough",
+    "duplexPair",
+    "pipeline",
+    "addAbortSignal",
+    "finished",
+    "destroy",
+    "compose",
+    "setDefaultHighWaterMark",
+    "getDefaultHighWaterMark",
+    "promises",
+    "Stream",
 };
 
 const net_export_names = [_][]const u8{

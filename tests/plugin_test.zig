@@ -1736,6 +1736,42 @@ test "node plugin stream pipeline finished and compose track state" {
     defer _ = plugin.sa_node_plugin_free_buffer(composed_ptr, composed_len);
     const composed_json = (composed_ptr orelse return error.NullStreamComposed)[0..@intCast(composed_len)];
     try std.testing.expect(std.mem.indexOf(u8, composed_json, "\"finished\":false") != null);
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_stream_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullStreamTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"stream\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-stream-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Duplex\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Readable\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_stream_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullStreamTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"pipeline\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"finished\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Readable\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_stream_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullStreamTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native stream handles") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"promisesModel\":\"not-modeled\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_stream_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullStreamTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Duplex\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Readable\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":false") != null);
 }
 
 test "node plugin os network interfaces returns json" {

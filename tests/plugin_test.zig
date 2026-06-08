@@ -2718,7 +2718,35 @@ test "node plugin util top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullUtilTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"format\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"MIMEType\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"TextEncoder\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"parseEnv\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"getSystemErrorMap\":{\"supported\":true") != null);
+
+    var parse_env_ptr: ?[*]const u8 = null;
+    var parse_env_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_parse_env("FOO=bar\nBAR=baz\n".ptr, 16, &parse_env_ptr, &parse_env_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(parse_env_ptr, parse_env_len);
+    const parse_env = (parse_env_ptr orelse return error.NullUtilParseEnv)[0..@intCast(parse_env_len)];
+    try std.testing.expect(std.mem.indexOf(u8, parse_env, "\"FOO\":\"bar\"") != null);
+
+    var error_name_ptr: ?[*]const u8 = null;
+    var error_name_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_get_system_error_name(2, &error_name_ptr, &error_name_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(error_name_ptr, error_name_len);
+    try std.testing.expectEqualStrings("ENOENT", (error_name_ptr orelse return error.NullUtilSystemErrorName)[0..@intCast(error_name_len)]);
+
+    var error_message_ptr: ?[*]const u8 = null;
+    var error_message_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_get_system_error_message(2, &error_message_ptr, &error_message_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(error_message_ptr, error_message_len);
+    const error_message = (error_message_ptr orelse return error.NullUtilSystemErrorMessage)[0..@intCast(error_message_len)];
+    try std.testing.expect(error_message.len > 0);
+
+    var error_map_ptr: ?[*]const u8 = null;
+    var error_map_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_get_system_error_map(&error_map_ptr, &error_map_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(error_map_ptr, error_map_len);
+    const error_map = (error_map_ptr orelse return error.NullUtilSystemErrorMap)[0..@intCast(error_map_len)];
+    try std.testing.expect(std.mem.indexOf(u8, error_map, "\"system\":{") != null);
 }
 
 test "node plugin buffer top-level facade helpers" {

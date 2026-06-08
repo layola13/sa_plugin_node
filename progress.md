@@ -63,18 +63,21 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `url` helper parity without JavaScript object-model claims
-- Current status: `6 / 6` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `util` helper parity by reusing existing environment/error surfaces
+- Current status: `4 / 4` helper features completed (`100.0%`)
 - Planned helpers:
-  - `domainToASCII`
-  - `domainToUnicode`
-  - `pathToFileURL`
-  - `fileURLToPath`
-  - `fileURLToPathBuffer`
-  - `canParse`
+  - `parseEnv`
+  - `getSystemErrorName`
+  - `getSystemErrorMessage`
+  - `getSystemErrorMap`
 
-## Latest Completed Helper Feature
+## Recent Completed Helper Features
 
+- `util` helper tranche completed:
+  - `parseEnv`
+  - `getSystemErrorName`
+  - `getSystemErrorMessage`
+  - `getSystemErrorMap`
 - `url` helper tranche completed:
   - `domainToASCII`
   - `domainToUnicode`

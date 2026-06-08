@@ -4266,6 +4266,74 @@
     !__m_load_869951e5_p_5
 [END_MACRO]
 
+[MACRO] NODE_UTIL_PARSE_ENV %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_util_parse_env_0 = stack_alloc 8
+    __m_slot_util_parse_env_1 = stack_alloc 8
+    __m_status_util_parse_env = call @sa_node_plugin_util_parse_env(%p_0, %p_1, &__m_slot_util_parse_env_0, &__m_slot_util_parse_env_1)
+    !%p_4
+    %p_4 = add __m_status_util_parse_env, 0
+    !__m_status_util_parse_env
+    __m_load_util_parse_env_p_2 = load __m_slot_util_parse_env_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_util_parse_env_p_2, 0
+    !__m_load_util_parse_env_p_2
+    __m_load_util_parse_env_p_3 = load __m_slot_util_parse_env_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_util_parse_env_p_3, 0
+    !__m_load_util_parse_env_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_NAME %p_0, %p_1, %p_2, %p_3
+    __m_slot_util_error_name_0 = stack_alloc 8
+    __m_slot_util_error_name_1 = stack_alloc 8
+    __m_status_util_error_name = call @sa_node_plugin_util_get_system_error_name(%p_0, &__m_slot_util_error_name_0, &__m_slot_util_error_name_1)
+    !%p_3
+    %p_3 = add __m_status_util_error_name, 0
+    !__m_status_util_error_name
+    __m_load_util_error_name_p_1 = load __m_slot_util_error_name_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_util_error_name_p_1, 0
+    !__m_load_util_error_name_p_1
+    __m_load_util_error_name_p_2 = load __m_slot_util_error_name_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_util_error_name_p_2, 0
+    !__m_load_util_error_name_p_2
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_slot_util_error_message_0 = stack_alloc 8
+    __m_slot_util_error_message_1 = stack_alloc 8
+    __m_status_util_error_message = call @sa_node_plugin_util_get_system_error_message(%p_0, &__m_slot_util_error_message_0, &__m_slot_util_error_message_1)
+    !%p_3
+    %p_3 = add __m_status_util_error_message, 0
+    !__m_status_util_error_message
+    __m_load_util_error_message_p_1 = load __m_slot_util_error_message_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_util_error_message_p_1, 0
+    !__m_load_util_error_message_p_1
+    __m_load_util_error_message_p_2 = load __m_slot_util_error_message_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_util_error_message_p_2, 0
+    !__m_load_util_error_message_p_2
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_MAP %p_0, %p_1, %p_2
+    __m_slot_util_error_map_0 = stack_alloc 8
+    __m_slot_util_error_map_1 = stack_alloc 8
+    __m_status_util_error_map = call @sa_node_plugin_util_get_system_error_map(&__m_slot_util_error_map_0, &__m_slot_util_error_map_1)
+    !%p_2
+    %p_2 = add __m_status_util_error_map, 0
+    !__m_status_util_error_map
+    __m_load_util_error_map_p_0 = load __m_slot_util_error_map_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_util_error_map_p_0, 0
+    !__m_load_util_error_map_p_0
+    __m_load_util_error_map_p_1 = load __m_slot_util_error_map_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_util_error_map_p_1, 0
+    !__m_load_util_error_map_p_1
+[END_MACRO]
+
 [MACRO] NODE_UTIL_MIME_TYPE %p_0, %p_1, %p_2, %p_3, %p_4
     __m_slot_554f8baa_0 = stack_alloc 8
     __m_slot_554f8baa_1 = stack_alloc 8

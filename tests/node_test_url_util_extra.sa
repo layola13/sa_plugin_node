@@ -12,6 +12,7 @@
 @const S_NAME = utf8:"name"
 @const S_HINT = utf8:"use old fn"
 @const S_FILE = utf8:"test.js"
+@const S_ENV_CONTENT = utf8:"FOO=bar\nBAR=baz\n"
 
 @test "node.url new and free succeeds"():
 L_ENTRY:
@@ -396,4 +397,120 @@ L_ERR:
     !p
     !l
     !s
+    panic(103)
+
+@test "node.util parse_env succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_PARSE_ENV S_ENV_CONTENT, 16, p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_ERR
+L_STATUS_OK:
+    !ok
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.util get_system_error_name succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_GET_SYSTEM_ERROR_NAME 2, p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_ERR
+L_STATUS_OK:
+    !ok
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.util get_system_error_message succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_GET_SYSTEM_ERROR_MESSAGE 2, p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_ERR
+L_STATUS_OK:
+    !ok
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.util get_system_error_map succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_GET_SYSTEM_ERROR_MAP p, l, s
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_ERR
+L_STATUS_OK:
+    !ok
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
     panic(103)

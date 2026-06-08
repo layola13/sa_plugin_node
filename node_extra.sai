@@ -324,6 +324,10 @@
 @extern sa_node_plugin_util_deprecate(fn_ptr: ptr, fn_len: u64, msg_ptr: ptr, msg_len: u64) -> u64
 @extern sa_node_plugin_util_diff(actual_ptr: ptr, actual_len: u64, expected_ptr: ptr, expected_len: u64, operator_ptr: ptr, operator_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_parse_args(config_ptr: ptr, config_len: u64, args_ptr: ptr, args_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_parse_env(content_ptr: ptr, content_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_get_system_error_name(errnum: i64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_get_system_error_message(errnum: i64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_get_system_error_map(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_mime_type(str_ptr: ptr, str_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_style_text(style_ptr: ptr, style_len: u64, text_ptr: ptr, text_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_readline_clear_line(fd: u64, dir: u64) -> u64

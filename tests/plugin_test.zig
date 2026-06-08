@@ -2539,7 +2539,10 @@ test "node plugin console top-level facade helpers" {
     const status = (status_ptr orelse return error.NullConsoleTopStatus)[0..@intCast(status_len)];
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"console\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-console-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"time\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"timeEnd\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"timeLog\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"clear\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"Console\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -2557,6 +2560,7 @@ test "node plugin console top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullConsoleTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"writeModel\":\"native stdout/stderr text output helpers\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"clearModel\":\"explicit stdout ANSI clear-screen helper\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Console instances\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2565,8 +2569,18 @@ test "node plugin console top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullConsoleTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"log\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"time\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"time\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"timeEnd\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"clear\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Console\":{\"supported\":false") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_console_time("timer".ptr, 5));
+
+    var elapsed_ms: f64 = -1.0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_console_time_end("timer".ptr, 5, &elapsed_ms));
+    try std.testing.expect(elapsed_ms >= 0.0);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_console_clear());
 }
 
 test "node plugin trace_events top-level facade helpers" {

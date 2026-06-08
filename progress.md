@@ -63,17 +63,19 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process`/`os` identity helper parity without claiming JavaScript object semantics
-- Current status: `5 / 5` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `console` helper parity by reusing existing native timing and terminal helpers
+- Current status: `3 / 3` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.arch`
-  - `process.platform`
-  - `process.version`
-  - `os.devNull`
-  - `os.EOL`
+  - `console.time`
+  - `console.timeEnd`
+  - `console.clear`
 
 ## Recent Completed Helper Features
 
+- `console` helper tranche completed:
+  - `console.time`
+  - `console.timeEnd`
+  - `console.clear`
 - `process`/`os` helper tranche completed:
   - `process.arch`
   - `process.platform`

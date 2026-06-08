@@ -3961,7 +3961,39 @@ pub export fn sa_node_plugin_child_process_exec_sync_json(argv_ptr: ?*const anyo
 }
 
 pub export fn sa_node_plugin_child_process_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "child_process", true, "sync exec wrapper over process_exec");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"child_process\",\"supported\":true,\"mode\":\"top-level-native-child-process-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &child_process_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"exec\":true,\"execFile\":true,\"execFileSync\":true,\"execSync\":true,\"fork\":true,\"spawn\":true,\"spawnSync\":true,\"ChildProcess\":false,\"_forkChild\":false,\"ipc\":false,\"streamingStdio\":false,\"abortSignal\":false},\"capabilities\":[\"real subprocess execution for exec, execFile, spawn, spawnSync, and fork-style helpers\",\"argv-vector parsing compatible with SA argument slices\",\"pid reporting for spawned and forked processes\",\"captured stdout JSON for synchronous execution helpers\",\"process_exec-backed structured sync exec JSON with code, stdout, and stderr\"],\"limitations\":[\"no JavaScript ChildProcess class instances or EventEmitter lifecycle\",\"no streaming stdio object model, IPC channels, or message events\",\"exec and spawn helpers expose explicit pid or captured-buffer results rather than live process objects\",\"_forkChild internal bootstrap and AbortSignal wiring are not modeled\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+const child_process_export_names = [_][]const u8{
+    "_forkChild",
+    "ChildProcess",
+    "exec",
+    "execFile",
+    "execFileSync",
+    "execSync",
+    "fork",
+    "spawn",
+    "spawnSync",
+};
+
+pub export fn sa_node_plugin_child_process_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &child_process_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_child_process_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"execModel\":\"real subprocess execution with captured stdout or structured stdout/stderr JSON helpers\",\"spawnModel\":\"real subprocess spawn returning pid only\",\"forkModel\":\"spawns external node executable with module path and args when available\",\"stdioModel\":\"captured sync stdout buffers only; no live JavaScript stream objects\",\"objectModel\":\"not-modeled for JavaScript ChildProcess instances\"}");
+}
+
+pub export fn sa_node_plugin_child_process_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"exec\":{\"supported\":true,\"mode\":\"real subprocess shell execution with pid output and captured stdout buffer\",\"limitations\":[\"no live ChildProcess object or callback/event lifecycle\"]},\"execFile\":{\"supported\":true,\"mode\":\"real subprocess execution from argv-vector input with captured stdout buffer\"},\"execFileSync\":{\"supported\":true,\"mode\":\"sync execFile compatibility over the same captured stdout helper\"},\"execSync\":{\"supported\":true,\"mode\":\"process_exec-backed structured JSON containing code, stdout, and stderr\"},\"fork\":{\"supported\":true,\"mode\":\"spawns external node executable with module path and args and returns pid\",\"limitations\":[\"requires node to be present on PATH\",\"no IPC channel or message passing\"]},\"spawn\":{\"supported\":true,\"mode\":\"real subprocess spawn returning pid only\",\"limitations\":[\"no stdio stream handles or process object lifecycle\"]},\"spawnSync\":{\"supported\":true,\"mode\":\"real subprocess spawn with captured stdout buffer\"},\"ChildProcess\":{\"supported\":false,\"reason\":\"JavaScript ChildProcess class instances and EventEmitter semantics are not modeled\"},\"_forkChild\":{\"supported\":false,\"reason\":\"Node internal child bootstrap helper is not exposed as a public native ABI helper\"},\"ipc\":{\"supported\":false,\"reason\":\"Node child-process IPC channels, send/receive messaging, and serialization modes are not modeled\"},\"streamingStdio\":{\"supported\":false,\"reason\":\"live stdin/stdout/stderr stream objects are not modeled in this facade\"},\"abortSignal\":{\"supported\":false,\"reason\":\"AbortSignal integration and cancellation semantics are not modeled\"}}");
 }
 
 // --- Cluster ---

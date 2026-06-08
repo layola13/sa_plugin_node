@@ -475,6 +475,9 @@
 @extern sa_node_plugin_worker_threads_message_port_free(port_ptr: ptr) -> u64
 @extern sa_node_plugin_child_process_exec_sync_json(argv_ptr: ptr, argv_len: u64, cwd_ptr: ptr, cwd_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_child_process_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_child_process_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_cluster_is_primary(&out_bool: u64) -> u64
 @extern sa_node_plugin_cluster_is_worker(&out_bool: u64) -> u64
 @extern sa_node_plugin_cluster_get_scheduling_policy(&out_policy: u64) -> u64

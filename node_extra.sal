@@ -5471,6 +5471,51 @@
     !__m_load_9f8c1207_p_1
 [END_MACRO]
 
+[MACRO] NODE_CHILD_PROCESS_TOP_EXPORTS_JSON %p_0, %p_1
+    __cp_top_exports_ptr_slot = stack_alloc 8
+    __cp_top_exports_len_slot = stack_alloc 8
+    __cp_top_exports_status = call @sa_node_plugin_child_process_exports_json(&__cp_top_exports_ptr_slot, &__cp_top_exports_len_slot)
+    !__cp_top_exports_status
+    __cp_top_exports_ptr = load __cp_top_exports_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_exports_ptr, 0
+    !__cp_top_exports_ptr
+    __cp_top_exports_len = load __cp_top_exports_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_exports_len, 0
+    !__cp_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_TOP_CONFIG_JSON %p_0, %p_1
+    __cp_top_config_ptr_slot = stack_alloc 8
+    __cp_top_config_len_slot = stack_alloc 8
+    __cp_top_config_status = call @sa_node_plugin_child_process_config_json(&__cp_top_config_ptr_slot, &__cp_top_config_len_slot)
+    !__cp_top_config_status
+    __cp_top_config_ptr = load __cp_top_config_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_config_ptr, 0
+    !__cp_top_config_ptr
+    __cp_top_config_len = load __cp_top_config_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_config_len, 0
+    !__cp_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_TOP_FEATURE_SUPPORT_JSON %p_0, %p_1
+    __cp_top_feature_ptr_slot = stack_alloc 8
+    __cp_top_feature_len_slot = stack_alloc 8
+    __cp_top_feature_status = call @sa_node_plugin_child_process_feature_support_json(&__cp_top_feature_ptr_slot, &__cp_top_feature_len_slot)
+    !__cp_top_feature_status
+    __cp_top_feature_ptr = load __cp_top_feature_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_feature_ptr, 0
+    !__cp_top_feature_ptr
+    __cp_top_feature_len = load __cp_top_feature_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_feature_len, 0
+    !__cp_top_feature_len
+[END_MACRO]
+
 [MACRO] NODE_CLUSTER_IS_PRIMARY %out_bool, %out_status
     __m_cluster_primary_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_cluster_is_primary(&__m_cluster_primary_slot)

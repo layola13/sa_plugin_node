@@ -1,0 +1,39 @@
+// SA tests for Node child_process top-level facade helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.child_process top level facade helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_STATUS_JSON status_ptr, status_len
+
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_TOP_EXPORTS_JSON exports_ptr, exports_len
+
+    config_ptr = add 0, 0
+    config_len = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_TOP_CONFIG_JSON config_ptr, config_len
+
+    feature_ptr = add 0, 0
+    feature_len = add 0, 0
+    EXPAND NODE_CHILD_PROCESS_TOP_FEATURE_SUPPORT_JSON feature_ptr, feature_len
+
+    free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
+    free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_config
+    !free_feature
+    !feature_len
+    !feature_ptr
+    !config_len
+    !config_ptr
+    !exports_len
+    !exports_ptr
+    !status_len
+    !status_ptr
+    return

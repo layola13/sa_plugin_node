@@ -4388,6 +4388,16 @@ pub export fn sa_node_plugin_zlib_crc32(data_ptr: ?[*]const u8, data_len: u64, o
 
 const UrlHandle = struct { href: []u8, protocol: []u8, host: []u8, pathname: []u8 };
 
+fn jsonObjectStringField(obj: std.json.ObjectMap, key: []const u8) []const u8 {
+    if (obj.get(key)) |value| {
+        return switch (value) {
+            .string => |text| text,
+            else => "",
+        };
+    }
+    return "";
+}
+
 pub export fn sa_node_plugin_url_new(href_ptr: ?[*]const u8, href_len: u64, out_handle: ?*?*anyopaque) u32 {
     const href = href_ptr.?[0..href_len];
     const allocator = std.heap.page_allocator;
@@ -4482,6 +4492,60 @@ pub export fn sa_node_plugin_url_file_url_to_path(url_ptr: ?[*]const u8, url_len
 pub export fn sa_node_plugin_url_file_url_to_path_buffer(url_ptr: ?[*]const u8, url_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const url = (url_ptr orelse return fail())[0..url_len];
     return decodeFileUrlPath(url, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_url_to_http_options(h: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const handle: *UrlHandle = @ptrCast(@alignCast(h orelse return fail()));
+
+    var parsed_ptr: ?[*]const u8 = null;
+    var parsed_len: u64 = 0;
+    if (base.sa_node_plugin_url_parse(handle.href.ptr, handle.href.len, &parsed_ptr, &parsed_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(parsed_ptr, parsed_len);
+
+    const parsed_json = (parsed_ptr orelse return fail())[0..@intCast(parsed_len)];
+    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, parsed_json, .{}) catch return fail();
+    defer parsed.deinit();
+
+    const obj = parsed.value.object;
+    const protocol = jsonObjectStringField(obj, "protocol");
+    const auth = jsonObjectStringField(obj, "auth");
+    const host = jsonObjectStringField(obj, "host");
+    const hostname = jsonObjectStringField(obj, "hostname");
+    const port = jsonObjectStringField(obj, "port");
+    const pathname = jsonObjectStringField(obj, "pathname");
+    const search = jsonObjectStringField(obj, "search");
+    const hash = jsonObjectStringField(obj, "hash");
+
+    var path_buf = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer path_buf.deinit();
+    path_buf.appendSlice(pathname) catch return fail();
+    path_buf.appendSlice(search) catch return fail();
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{") catch return fail();
+    out.appendSlice("\"protocol\":") catch return fail();
+    std.json.stringify(protocol, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"auth\":") catch return fail();
+    std.json.stringify(auth, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"host\":") catch return fail();
+    std.json.stringify(host, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"hostname\":") catch return fail();
+    std.json.stringify(hostname, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"port\":") catch return fail();
+    std.json.stringify(port, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"pathname\":") catch return fail();
+    std.json.stringify(pathname, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"search\":") catch return fail();
+    std.json.stringify(search, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"hash\":") catch return fail();
+    std.json.stringify(hash, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"path\":") catch return fail();
+    std.json.stringify(path_buf.items, .{}, out.writer()) catch return fail();
+    out.appendSlice(",\"href\":") catch return fail();
+    std.json.stringify(handle.href, .{}, out.writer()) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwned(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_url_can_parse(url_ptr: ?[*]const u8, url_len: u64, base_ptr: ?[*]const u8, base_len: u64, out_bool: ?*u64) u32 {

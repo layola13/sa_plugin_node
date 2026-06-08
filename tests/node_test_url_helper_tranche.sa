@@ -7,6 +7,7 @@
 @const S_URL_ABS = utf8:"https://example.com/a"
 @const S_URL_BASE = utf8:"https://example.com/base"
 @const S_URL_CHILD = utf8:"/child"
+@const S_URL_HTTP_OPTIONS = utf8:"https://user:pass@example.com:8443/a/b?x=1#frag"
 
 @test "node.url helper tranche extras"():
 L_ENTRY:
@@ -89,9 +90,32 @@ L_CAN_PARSE_CHILD:
 L_CAN_PARSE_CHILD_VALUE:
     !can_parse_child_ok
     can_parse_child_true = eq can_parse_child, 1
-    br can_parse_child_true -> L_FREE, L_ERR_CAN_PARSE_CHILD_VALUE
-L_FREE:
+    br can_parse_child_true -> L_URL_NEW, L_ERR_CAN_PARSE_CHILD_VALUE
+L_URL_NEW:
     !can_parse_child_true
+    url_handle = add 0, 0
+    url_new_status = add 0, 0
+    EXPAND NODE_URL_NEW S_URL_HTTP_OPTIONS, 47, url_handle, url_new_status
+    url_new_ok = eq url_new_status, 0
+    br url_new_ok -> L_URL_TO_HTTP_OPTIONS, L_ERR_URL_NEW_STATUS
+L_URL_TO_HTTP_OPTIONS:
+    !url_new_ok
+    http_options_ptr = add 0, 0
+    http_options_len = add 0, 0
+    http_options_status = add 0, 0
+    EXPAND NODE_URL_TO_HTTP_OPTIONS http_options_ptr, http_options_len, http_options_status, url_handle
+    http_options_ok = eq http_options_status, 0
+    br http_options_ok -> L_URL_TO_HTTP_OPTIONS_LEN, L_ERR_URL_TO_HTTP_OPTIONS_STATUS
+L_URL_TO_HTTP_OPTIONS_LEN:
+    !http_options_ok
+    http_options_has_len = ugt http_options_len, 0
+    br http_options_has_len -> L_FREE, L_ERR_URL_TO_HTTP_OPTIONS_LEN
+L_FREE:
+    !http_options_has_len
+    free_http_options = call @sa_node_plugin_free_buffer(http_options_ptr, http_options_len)
+    free_url_handle = call @sa_node_plugin_url_free(url_handle)
+    !free_http_options
+    !free_url_handle
     free_file_buf = call @sa_node_plugin_free_buffer(file_buf_ptr, file_buf_len)
     free_file_path = call @sa_node_plugin_free_buffer(file_path_ptr, file_path_len)
     free_file_url = call @sa_node_plugin_free_buffer(file_url_ptr, file_url_len)
@@ -102,6 +126,11 @@ L_FREE:
     !free_file_url
     !free_unicode
     !free_ascii
+    !http_options_status
+    !http_options_len
+    !http_options_ptr
+    !url_new_status
+    !url_handle
     !can_parse_child_status
     !can_parse_child
     !can_parse_abs_status
@@ -163,4 +192,13 @@ L_ERR_CAN_PARSE_CHILD_STATUS:
     panic(103)
 L_ERR_CAN_PARSE_CHILD_VALUE:
     !can_parse_child_true
+    panic(103)
+L_ERR_URL_NEW_STATUS:
+    !url_new_ok
+    panic(103)
+L_ERR_URL_TO_HTTP_OPTIONS_STATUS:
+    !http_options_ok
+    panic(103)
+L_ERR_URL_TO_HTTP_OPTIONS_LEN:
+    !http_options_has_len
     panic(103)

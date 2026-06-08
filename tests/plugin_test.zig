@@ -2826,7 +2826,7 @@ test "node plugin url top-level facade helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullUrlTopConfig)[0..@intCast(config_len)];
-    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native URL handle with href, protocol, host, and pathname getters plus free\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native URL handle with href, protocol, host, pathname, and urlToHttpOptions getters plus free\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"queryModel\":\"query strings remain embedded in parse and format text fields rather than separate URLSearchParams objects\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2836,6 +2836,7 @@ test "node plugin url top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullUrlTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"parse\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"URL\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"urlToHttpOptions\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"pathToFileURL\":{\"supported\":true") != null);
 
     var ascii_ptr: ?[*]const u8 = null;
@@ -2879,6 +2880,21 @@ test "node plugin url top-level facade helpers" {
     try std.testing.expectEqual(@as(u64, 1), can_parse);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_can_parse("/child".ptr, 6, "https://example.com/base".ptr, 24, &can_parse));
     try std.testing.expectEqual(@as(u64, 1), can_parse);
+
+    var url_handle: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_new("https://user:pass@example.com:8443/a/b?x=1#frag".ptr, 47, &url_handle));
+    defer _ = plugin.sa_node_plugin_url_free(url_handle);
+
+    var http_options_ptr: ?[*]const u8 = null;
+    var http_options_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_to_http_options(url_handle, &http_options_ptr, &http_options_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(http_options_ptr, http_options_len);
+    const http_options = (http_options_ptr orelse return error.NullUrlToHttpOptions)[0..@intCast(http_options_len)];
+    try std.testing.expect(std.mem.indexOf(u8, http_options, "\"protocol\":\"https:\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, http_options, "\"auth\":\"user:pass\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, http_options, "\"hostname\":\"example.com\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, http_options, "\"port\":\"8443\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, http_options, "\"path\":\"/a/b?x=1\"") != null);
 }
 
 test "node plugin process top-level facade helpers" {

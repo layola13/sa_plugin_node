@@ -4161,6 +4161,14 @@
     %out_len = load __m_url_file_to_path_buf_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_URL_TO_HTTP_OPTIONS %out_ptr, %out_len, %out_status, %handle
+    __m_url_to_http_options_ptr_slot = stack_alloc 8
+    __m_url_to_http_options_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_to_http_options(%handle, &__m_url_to_http_options_ptr_slot, &__m_url_to_http_options_len_slot)
+    %out_ptr = load __m_url_to_http_options_ptr_slot+0 as ptr
+    %out_len = load __m_url_to_http_options_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_URL_CAN_PARSE %out_bool, %out_status, %url, %url_len, %base, %base_len
     __m_url_can_parse_bool_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_url_can_parse(%url, %url_len, %base, %base_len, &__m_url_can_parse_bool_slot)

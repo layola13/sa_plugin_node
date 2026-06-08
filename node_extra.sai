@@ -316,6 +316,7 @@
 @extern sa_node_plugin_url_path_to_file_url(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_url_file_url_to_path(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_url_file_url_to_path_buffer(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_to_http_options(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_url_can_parse(url_ptr: ptr, url_len: u64, base_ptr: ptr, base_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_util_callbackify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_promisify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64

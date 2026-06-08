@@ -63,15 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `console` helper parity by reusing existing native timing and terminal helpers
-- Current status: `3 / 3` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `url` helper parity by reusing the explicit native URL handle model
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `console.time`
-  - `console.timeEnd`
-  - `console.clear`
+  - `url.urlToHttpOptions`
 
 ## Recent Completed Helper Features
 
+- `url` helper tranche completed:
+  - `url.urlToHttpOptions`
 - `console` helper tranche completed:
   - `console.time`
   - `console.timeEnd`

@@ -2759,6 +2759,44 @@ test "node plugin buffer top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Blob\":{\"supported\":false") != null);
 }
 
+test "node plugin url top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullUrlTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"url\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-url-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"resolve\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"URLSearchParams\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullUrlTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"URL\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"parse\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"resolve\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullUrlTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native URL handle with href, protocol, host, and pathname getters plus free\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"queryModel\":\"query strings remain embedded in parse and format text fields rather than separate URLSearchParams objects\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullUrlTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"parse\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"URL\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"pathToFileURL\":{\"supported\":false") != null);
+}
+
 test "node plugin test runner reports native harness support" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
     defer _ = unsetenv("NODE_OPTIONS");

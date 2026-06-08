@@ -530,6 +530,30 @@ pub export fn sa_node_plugin_buffer_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"transcode\":{\"supported\":true,\"mode\":\"native transcoding helper across utf8, utf16le, latin1, ascii, base64, base64url, and hex\"},\"isUtf8\":{\"supported\":true,\"mode\":\"native UTF-8 validation helper\"},\"isAscii\":{\"supported\":true,\"mode\":\"native ASCII validation helper\"},\"atob\":{\"supported\":true,\"mode\":\"native base64 decode helper returning text bytes\"},\"btoa\":{\"supported\":true,\"mode\":\"native base64 encode helper from text bytes\"},\"resolveObjectURL\":{\"supported\":true,\"mode\":\"native blob URL normalization helper\",\"limitations\":[\"does not consult a JavaScript blob URL registry or return Blob objects\"]},\"Buffer_byteLength\":{\"supported\":true,\"mode\":\"native byte-length helper over raw slices\"},\"Buffer_concat\":{\"supported\":true,\"mode\":\"native concatenation helper over explicit slice arrays\"},\"Buffer\":{\"supported\":false,\"reason\":\"JavaScript Buffer constructor, Uint8Array subclass identity, and prototype methods are not modeled\"},\"Blob\":{\"supported\":false,\"reason\":\"JavaScript Blob class instances are not modeled in the buffer facade\"},\"File\":{\"supported\":false,\"reason\":\"JavaScript File class instances are not modeled in the buffer facade\"},\"constants\":{\"supported\":false,\"reason\":\"buffer constants object and its exact Node numeric values are not modeled\"},\"kMaxLength\":{\"supported\":false,\"reason\":\"Node internal maximum Buffer length constant is not exposed\"},\"kStringMaxLength\":{\"supported\":false,\"reason\":\"Node internal maximum string length constant is not exposed\"},\"INSPECT_MAX_BYTES\":{\"supported\":false,\"reason\":\"mutable util.inspect Buffer truncation state is not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_url_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"url\",\"supported\":true,\"mode\":\"top-level-native-url-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &url_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"parse\":true,\"format\":true,\"resolve\":true,\"URL\":true,\"URLSearchParams\":false,\"domainToASCII\":false,\"domainToUnicode\":false,\"pathToFileURL\":false,\"fileURLToPath\":false,\"fileURLToPathBuffer\":false,\"URLPattern\":false,\"urlToHttpOptions\":false,\"canParse\":false},\"capabilities\":[\"legacy-style native url.parse, url.format, and url.resolve helpers over JSON and string inputs\",\"explicit native URL handle creation plus href, protocol, host, and pathname getters\",\"top-level export-name and support metadata for the public url module surface\"],\"limitations\":[\"no WHATWG URLSearchParams, URLPattern, or live JavaScript URL class object graph semantics\",\"domainToASCII, domainToUnicode, pathToFileURL, fileURLToPath, fileURLToPathBuffer, and urlToHttpOptions are not exposed as dedicated native helpers\",\"parse/format/resolve follow this plugin's native subset and do not claim strict Node deprecation warnings, querystring integration, or WHATWG parity\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_url_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &url_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_url_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"legacyModel\":\"native url.parse, url.format, and url.resolve helpers over string and JSON inputs\",\"handleModel\":\"explicit native URL handle with href, protocol, host, and pathname getters plus free\",\"queryModel\":\"query strings remain embedded in parse and format text fields rather than separate URLSearchParams objects\",\"fileUrlModel\":\"file URL conversion helpers are not modeled as dedicated top-level ABI calls\",\"objectModel\":\"not-modeled for WHATWG URLSearchParams, URLPattern, or JavaScript URL instance semantics beyond explicit native handle snapshots\"}");
+}
+
+pub export fn sa_node_plugin_url_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"parse\":{\"supported\":true,\"mode\":\"native legacy-style URL parse helper returning JSON fields\",\"limitations\":[\"does not emit Node deprecation warnings or parse query strings into querystring objects\"]},\"format\":{\"supported\":true,\"mode\":\"native URL format helper from JSON fields\"},\"resolve\":{\"supported\":true,\"mode\":\"native URL resolve helper combining base and relative inputs\"},\"URL\":{\"supported\":true,\"mode\":\"explicit native handle with href, protocol, host, pathname, and free operations\",\"limitations\":[\"does not expose full JavaScript URL property mutation, searchParams, or WHATWG serialization semantics\"]},\"URLSearchParams\":{\"supported\":false,\"reason\":\"WHATWG URLSearchParams object semantics are not modeled\"},\"domainToASCII\":{\"supported\":false,\"reason\":\"IDNA domain conversion is not exposed as a dedicated native helper in the url facade\"},\"domainToUnicode\":{\"supported\":false,\"reason\":\"IDNA domain conversion is not exposed as a dedicated native helper in the url facade\"},\"pathToFileURL\":{\"supported\":false,\"reason\":\"path-to-file-URL conversion helper is not exposed in the current native ABI\"},\"fileURLToPath\":{\"supported\":false,\"reason\":\"file-URL-to-path conversion helper is not exposed in the current native ABI\"},\"fileURLToPathBuffer\":{\"supported\":false,\"reason\":\"buffer-returning file URL conversion helper is not exposed in the current native ABI\"},\"URLPattern\":{\"supported\":false,\"reason\":\"WHATWG URLPattern class semantics are not modeled\"},\"urlToHttpOptions\":{\"supported\":false,\"reason\":\"conversion from WHATWG URL objects to HTTP options is not exposed as a dedicated helper\"},\"canParse\":{\"supported\":false,\"reason\":\"WHATWG URL.canParse helper is not exposed in the current native ABI\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6181,6 +6205,22 @@ const buffer_export_names = [_][]const u8{
     "kStringMaxLength",
     "resolveObjectURL",
     "transcode",
+};
+
+const url_export_names = [_][]const u8{
+    "URL",
+    "URLPattern",
+    "URLSearchParams",
+    "canParse",
+    "domainToASCII",
+    "domainToUnicode",
+    "fileURLToPath",
+    "fileURLToPathBuffer",
+    "format",
+    "parse",
+    "pathToFileURL",
+    "resolve",
+    "urlToHttpOptions",
 };
 
 const timers_export_names = [_][]const u8{

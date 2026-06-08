@@ -368,6 +368,30 @@ pub export fn sa_node_plugin_timers_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"setTimeout\":{\"supported\":true,\"mode\":\"native timer id allocation with optional callback pointer bookkeeping\"},\"clearTimeout\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"setImmediate\":{\"supported\":true,\"mode\":\"native immediate id allocation\"},\"clearImmediate\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"setInterval\":{\"supported\":true,\"mode\":\"native interval id allocation with optional callback pointer bookkeeping\"},\"clearInterval\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"promises\":{\"supported\":true,\"mode\":\"native timers.promises helpers for timeout, immediate, scheduler, and explicit interval handles\",\"limitations\":[\"returns native buffers and explicit handles rather than JavaScript Promise or AsyncIterator objects\"]},\"TimeoutObject\":{\"supported\":false,\"reason\":\"JavaScript Timeout class instances and ref/unref methods are not modeled\"},\"ImmediateObject\":{\"supported\":false,\"reason\":\"JavaScript Immediate class instances are not modeled\"},\"AbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal cancellation wiring is not modeled\"},\"PromiseObjectIdentity\":{\"supported\":false,\"reason\":\"timers.promises does not return JavaScript Promise object identity or microtask semantics\"}}");
 }
 
+pub export fn sa_node_plugin_console_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"console\",\"supported\":true,\"mode\":\"top-level-native-console-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &console_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"log\":true,\"info\":true,\"debug\":true,\"warn\":true,\"error\":true,\"dir\":true,\"dirxml\":true,\"table\":true,\"trace\":true,\"assert\":true,\"count\":true,\"countReset\":true,\"group\":true,\"groupCollapsed\":true,\"groupEnd\":true,\"time\":false,\"timeEnd\":false,\"timeLog\":true,\"timeStamp\":true,\"Console\":false},\"capabilities\":[\"global console-style stdout/stderr native text helpers\",\"native count and countReset label registry\",\"compatibility helpers for dir, dirxml, table, trace, and timeLog\",\"group, groupCollapsed, groupEnd, and timeStamp compatibility stubs\"],\"limitations\":[\"no JavaScript Console class instances or custom stream-backed console construction\",\"no inspect option, colorMode, or group indentation object-model parity\",\"time and timeEnd are not modeled; only timeLog metadata output is available\",\"formatting follows this plugin's native text helpers rather than exact Node util.format and inspector behavior\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_console_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &console_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_console_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"writeModel\":\"native stdout/stderr text output helpers\",\"counterModel\":\"native label registry shared by count and countReset\",\"groupModel\":\"status-only compatibility stubs without indentation stack semantics\",\"timingModel\":\"timeLog and timeStamp compatibility helpers without timer start/end registry\",\"objectModel\":\"not-modeled for JavaScript Console instances\"}");
+}
+
+pub export fn sa_node_plugin_console_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"log\":{\"supported\":true,\"mode\":\"native stdout text output helper via node base console ABI\"},\"info\":{\"supported\":true,\"mode\":\"native stdout text output helper\"},\"debug\":{\"supported\":true,\"mode\":\"native stdout text output helper\"},\"warn\":{\"supported\":true,\"mode\":\"native stderr text output helper\"},\"error\":{\"supported\":true,\"mode\":\"native stderr text output helper via node base console ABI\"},\"dir\":{\"supported\":true,\"mode\":\"native text output helper\"},\"dirxml\":{\"supported\":true,\"mode\":\"native text output helper\"},\"table\":{\"supported\":true,\"mode\":\"native text output helper\"},\"trace\":{\"supported\":true,\"mode\":\"native text output helper\"},\"assert\":{\"supported\":true,\"mode\":\"native conditional output helper\"},\"count\":{\"supported\":true,\"mode\":\"native label counter registry with string result output\"},\"countReset\":{\"supported\":true,\"mode\":\"native label counter reset\"},\"group\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"groupCollapsed\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"groupEnd\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"time\":{\"supported\":false,\"reason\":\"timer start registry and JavaScript console timing object semantics are not modeled\"},\"timeEnd\":{\"supported\":false,\"reason\":\"timer completion registry and formatted elapsed-time output are not modeled\"},\"timeLog\":{\"supported\":true,\"mode\":\"native label plus payload text output helper\",\"limitations\":[\"does not depend on a prior time() registration\"]},\"timeStamp\":{\"supported\":true,\"mode\":\"native text output helper\"},\"Console\":{\"supported\":false,\"reason\":\"JavaScript Console class construction with custom streams and inspect options is not modeled\"},\"profile\":{\"supported\":false,\"reason\":\"inspector profiling integration is not modeled\"},\"clear\":{\"supported\":false,\"reason\":\"terminal clearing semantics are not exposed through the console facade\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -5831,6 +5855,29 @@ const readline_export_names = [_][]const u8{
     "emitKeypressEvents",
     "moveCursor",
     "promises",
+};
+
+const console_export_names = [_][]const u8{
+    "Console",
+    "log",
+    "info",
+    "debug",
+    "warn",
+    "error",
+    "dir",
+    "dirxml",
+    "table",
+    "trace",
+    "assert",
+    "count",
+    "countReset",
+    "group",
+    "groupCollapsed",
+    "groupEnd",
+    "time",
+    "timeEnd",
+    "timeLog",
+    "timeStamp",
 };
 
 const timers_export_names = [_][]const u8{

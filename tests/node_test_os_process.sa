@@ -613,3 +613,88 @@ L_ERR:
     !p
     !l
     panic(103)
+
+@test "node.process release returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PROCESS_RELEASE_JSON p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process umask succeeds"():
+L_ENTRY:
+    old_mask = add 0, 0
+    status = add 0, 0
+    EXPAND NODE_PROCESS_UMASK old_mask, status, 0, 0
+    ok = eq status, 0
+    br ok -> L_RESTORE, L_ERR
+L_RESTORE:
+    !ok
+    !status
+    restore_old = add 0, 0
+    restore_status = add 0, 0
+    EXPAND NODE_PROCESS_UMASK restore_old, restore_status, old_mask, 1
+    restore_ok = eq restore_status, 0
+    br restore_ok -> L_DONE, L_RESTORE_ERR
+L_DONE:
+    !restore_ok
+    !restore_status
+    !restore_old
+    !old_mask
+    return
+L_ERR:
+    !ok
+    !status
+    !old_mask
+    panic(103)
+L_RESTORE_ERR:
+    !restore_ok
+    !restore_status
+    !restore_old
+    !old_mask
+    panic(103)
+
+@test "node.process chdir current cwd succeeds"():
+L_ENTRY:
+    cwd_ptr = add 0, 0
+    cwd_len = add 0, 0
+    cwd_status = add 0, 0
+    EXPAND NODE_PROCESS_CWD cwd_ptr, cwd_len, cwd_status
+    cwd_ok = eq cwd_status, 0
+    br cwd_ok -> L_CHDIR, L_CWD_ERR
+L_CHDIR:
+    !cwd_ok
+    !cwd_status
+    chdir_status = add 0, 0
+    EXPAND NODE_PROCESS_CHDIR chdir_status, cwd_ptr, cwd_len
+    chdir_ok = eq chdir_status, 0
+    br chdir_ok -> L_DONE, L_CHDIR_ERR
+L_DONE:
+    !chdir_ok
+    !chdir_status
+    !cwd_ptr
+    !cwd_len
+    return
+L_CWD_ERR:
+    !cwd_ok
+    !cwd_status
+    !cwd_ptr
+    !cwd_len
+    panic(103)
+L_CHDIR_ERR:
+    !chdir_ok
+    !chdir_status
+    !cwd_ptr
+    !cwd_len
+    panic(103)

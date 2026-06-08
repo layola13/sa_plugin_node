@@ -2934,6 +2934,9 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"kill\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"arch\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"chdir\":{\"supported\":true") != null);
 
     var process_arch_ptr: ?[*]const u8 = null;
     var process_arch_len: u64 = 0;
@@ -2946,6 +2949,26 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_platform(&process_platform_ptr, &process_platform_len));
     defer _ = plugin.sa_node_plugin_free_buffer(process_platform_ptr, process_platform_len);
     try std.testing.expectEqualStrings("linux", (process_platform_ptr orelse return error.NullProcessPlatform)[0..@intCast(process_platform_len)]);
+
+    var release_ptr: ?[*]const u8 = null;
+    var release_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_release_json(&release_ptr, &release_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(release_ptr, release_len);
+    const release_json = (release_ptr orelse return error.NullProcessRelease)[0..@intCast(release_len)];
+    try std.testing.expect(std.mem.indexOf(u8, release_json, "\"name\":\"node\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, release_json, "\"headersUrl\":") != null);
+
+    var current_umask: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_umask(0, 0, &current_umask));
+    var previous_umask: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_umask(current_umask, 1, &previous_umask));
+    try std.testing.expectEqual(current_umask, previous_umask);
+
+    var cwd_ptr: ?[*]const u8 = null;
+    var cwd_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_cwd(&cwd_ptr, &cwd_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cwd_ptr, cwd_len);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_chdir(cwd_ptr, cwd_len));
 }
 
 test "node plugin os top-level facade helpers" {

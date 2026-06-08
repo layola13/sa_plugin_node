@@ -19,6 +19,8 @@ const ZstdGetFrameContentSizeFn = *const fn ([*]const u8, usize) callconv(.c) u6
 const ZstdIsErrorFn = *const fn (usize) callconv(.c) c_uint;
 
 extern fn chown(path: [*:0]const u8, owner: std.c.uid_t, group: std.c.gid_t) c_int;
+extern fn chdir(path: [*:0]const u8) c_int;
+extern fn umask(mask: c_uint) c_uint;
 extern fn statvfs(path: [*:0]const u8, buf: *Statvfs) c_int;
 
 const StructSockaddr = extern struct {
@@ -5027,6 +5029,24 @@ pub export fn sa_node_plugin_process_arch(out_ptr: ?*?[*]const u8, out_len: ?*u6
 
 pub export fn sa_node_plugin_process_platform(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return base.sa_node_plugin_os_platform(out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_process_release_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwned(out_ptr, out_len, "{\"name\":\"node\",\"sourceUrl\":\"https://nodejs.org/download/release/v20.11.1/node-v20.11.1.tar.gz\",\"headersUrl\":\"https://nodejs.org/download/release/v20.11.1/node-v20.11.1-headers.tar.gz\"}");
+}
+
+pub export fn sa_node_plugin_process_umask(mask: u32, set_mask: u32, out_old: ?*u32) u32 {
+    const old = umask(if (set_mask != 0) mask else 0);
+    if (set_mask == 0) _ = umask(old);
+    out_old.?.* = old;
+    return 0;
+}
+
+pub export fn sa_node_plugin_process_chdir(path_ptr: ?[*]const u8, path_len: u64) u32 {
+    const path = (path_ptr orelse return fail())[0..path_len];
+    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    defer std.heap.page_allocator.free(path_z);
+    return if (chdir(path_z.ptr) == 0) 0 else fail();
 }
 
 // ============================================================

@@ -358,6 +358,9 @@
 @extern sa_node_plugin_os_set_priority(pid: u64, priority: u64) -> u64
 @extern sa_node_plugin_process_arch(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_platform(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_release_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_umask(mask: u64, set_mask: u64, &out_old: u64) -> u64
+@extern sa_node_plugin_process_chdir(path_ptr: ptr, path_len: u64) -> u64
 @extern sa_node_plugin_process_exit(code: u64) -> u64
 @extern sa_node_plugin_process_kill(pid: u64, signal: u64) -> u64
 @extern sa_node_plugin_process_kill_signal(pid: u64, signal_ptr: ptr, signal_len: u64) -> u64

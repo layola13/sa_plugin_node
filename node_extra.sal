@@ -4716,6 +4716,31 @@
     !__m_load_process_platform_p_1
 [END_MACRO]
 
+[MACRO] NODE_PROCESS_RELEASE_JSON %p_0, %p_1
+    __m_slot_process_release_0 = stack_alloc 8
+    __m_slot_process_release_1 = stack_alloc 8
+    __m_status_process_release = call @sa_node_plugin_process_release_json(&__m_slot_process_release_0, &__m_slot_process_release_1)
+    !__m_status_process_release
+    __m_load_process_release_p_0 = load __m_slot_process_release_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_release_p_0, 0
+    !__m_load_process_release_p_0
+    __m_load_process_release_p_1 = load __m_slot_process_release_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_release_p_1, 0
+    !__m_load_process_release_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_UMASK %out_old, %out_status, %mask, %set_mask
+    __m_slot_process_umask_old = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_umask(%mask, %set_mask, &__m_slot_process_umask_old)
+    %out_old = load __m_slot_process_umask_old+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_CHDIR %out_status, %path, %path_len
+    %out_status = call @sa_node_plugin_process_chdir(%path, %path_len)
+[END_MACRO]
+
 [MACRO] NODE_PROCESS_EXIT %p_0, %p_1
     __m_status_71423e0b = call @sa_node_plugin_process_exit(%p_0)
     !%p_1

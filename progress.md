@@ -63,13 +63,19 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `url` helper parity by reusing the explicit native URL handle model
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process` helper parity by reusing native host process APIs
+- Current status: `3 / 3` helper features completed (`100.0%`)
 - Planned helpers:
-  - `url.urlToHttpOptions`
+  - `process.release`
+  - `process.umask`
+  - `process.chdir`
 
 ## Recent Completed Helper Features
 
+- `process` helper tranche completed:
+  - `process.release`
+  - `process.umask`
+  - `process.chdir`
 - `url` helper tranche completed:
   - `url.urlToHttpOptions`
 - `console` helper tranche completed:

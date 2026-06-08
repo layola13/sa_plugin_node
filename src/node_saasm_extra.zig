@@ -506,6 +506,30 @@ pub export fn sa_node_plugin_util_feature_support_json(out_ptr: ?*?[*]const u8, 
     return writeOwnedString(out_ptr, out_len, "{\"callbackify\":{\"supported\":true,\"mode\":\"native metadata wrapper describing callbackified function intent\",\"limitations\":[\"does not return a JavaScript callable wrapper or nextTick rejection timing\"]},\"promisify\":{\"supported\":true,\"mode\":\"native metadata wrapper describing promisified function intent\",\"limitations\":[\"does not return a JavaScript Promise-returning wrapper function\"]},\"debuglog\":{\"supported\":true,\"mode\":\"NODE_DEBUG-aware native section metadata helper\"},\"deprecate\":{\"supported\":true,\"mode\":\"native deprecation registry keyed by code\",\"limitations\":[\"does not wrap JavaScript functions or emit process warning events\"]},\"format\":{\"supported\":true,\"mode\":\"native printf-style formatter over JSON argument arrays\"},\"styleText\":{\"supported\":true,\"mode\":\"native passthrough helper preserving input text\",\"limitations\":[\"ANSI style expansion and stream validation are not modeled\"]},\"inherits\":{\"supported\":true,\"mode\":\"native compatibility stub for inheritance intent\",\"limitations\":[\"does not mutate JavaScript prototypes\"]},\"inspect\":{\"supported\":true,\"mode\":\"native pretty-printed JSON formatter\",\"limitations\":[\"does not implement Node inspect custom hooks, colors, getters, or prototype traversal semantics\"]},\"isDeepStrictEqual\":{\"supported\":true,\"mode\":\"native JSON deep strict equality helper\"},\"stripVTControlCharacters\":{\"supported\":true,\"mode\":\"native VT control stripping helper\"},\"parseArgs\":{\"supported\":true,\"mode\":\"native JSON parseArgs subset for long --key=value options and positionals\",\"limitations\":[\"does not implement the full Node option schema, tokens, short-option, strict, or default-value behavior\"]},\"diff\":{\"supported\":true,\"mode\":\"native replace-or-empty diff summary helper\"},\"MIMEType\":{\"supported\":true,\"mode\":\"native filename/path to media-type lookup helper\",\"limitations\":[\"does not construct a WHATWG MIMEType class instance\"]},\"MIMEParams\":{\"supported\":false,\"reason\":\"WHATWG MIME parameter collection semantics are not modeled\"},\"formatWithOptions\":{\"supported\":false,\"reason\":\"inspect option bag handling is not modeled as a dedicated helper\"},\"getCallSites\":{\"supported\":false,\"reason\":\"JavaScript stack frame and source-map call-site inspection requires runtime integration\"},\"getSystemErrorMap\":{\"supported\":false,\"reason\":\"system error map exposure is not modeled in the util facade\"},\"getSystemErrorName\":{\"supported\":false,\"reason\":\"system error name lookup is not exposed through the util facade\"},\"getSystemErrorMessage\":{\"supported\":false,\"reason\":\"system error message lookup is not exposed through the util facade\"},\"TextDecoder\":{\"supported\":false,\"reason\":\"JavaScript TextDecoder class construction and decode semantics are not modeled in util\"},\"TextEncoder\":{\"supported\":false,\"reason\":\"JavaScript TextEncoder class construction and encode semantics are not modeled in util\"},\"types\":{\"supported\":false,\"reason\":\"util.types object and predicate catalog are not modeled\"},\"parseEnv\":{\"supported\":false,\"reason\":\"util.parseEnv is exposed through environment variable helpers, not the util top-level facade\"},\"setTraceSigInt\":{\"supported\":false,\"reason\":\"SIGINT trace integration is not modeled\"},\"transferableAbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal transfer helpers require JavaScript object semantics\"},\"transferableAbortController\":{\"supported\":false,\"reason\":\"AbortController transfer helpers require JavaScript object semantics\"},\"aborted\":{\"supported\":false,\"reason\":\"abort state helper requires JavaScript AbortSignal semantics\"}}");
 }
 
+pub export fn sa_node_plugin_buffer_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"buffer\",\"supported\":true,\"mode\":\"top-level-native-buffer-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &buffer_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"transcode\":true,\"isUtf8\":true,\"isAscii\":true,\"atob\":true,\"btoa\":true,\"resolveObjectURL\":true,\"Buffer\":false,\"Buffer_byteLength\":true,\"Buffer_concat\":true,\"Blob\":false,\"File\":false,\"constants\":false,\"kMaxLength\":false,\"kStringMaxLength\":false,\"INSPECT_MAX_BYTES\":false},\"capabilities\":[\"native base64 helpers, ASCII and UTF-8 classification, and transcoding across common encodings\",\"native blob URL normalization through resolveObjectURL\",\"native byteLength and concat helpers exposed through the core buffer ABI\",\"top-level export-name and support metadata for the common public buffer surface\"],\"limitations\":[\"no JavaScript Buffer class instances, prototype methods, pooling, or Uint8Array subclass semantics\",\"no JavaScript Blob or File class instances or object URL store semantics\",\"buffer constants and mutable INSPECT_MAX_BYTES getter/setter semantics are not modeled\",\"Buffer static methods are available as native ABI helpers rather than through a live Buffer constructor export\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_buffer_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &buffer_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_buffer_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"textModel\":\"native base64 and encoding transcode helpers over raw byte slices\",\"classificationModel\":\"native UTF-8 and ASCII predicates over raw byte slices\",\"objectUrlModel\":\"resolveObjectURL strips the blob: wrapper to a native underlying URL string\",\"bufferStaticModel\":\"byteLength and concat are exposed as direct native helpers rather than through a JavaScript Buffer constructor\",\"objectModel\":\"not-modeled for JavaScript Buffer, Blob, or File class instances\"}");
+}
+
+pub export fn sa_node_plugin_buffer_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"transcode\":{\"supported\":true,\"mode\":\"native transcoding helper across utf8, utf16le, latin1, ascii, base64, base64url, and hex\"},\"isUtf8\":{\"supported\":true,\"mode\":\"native UTF-8 validation helper\"},\"isAscii\":{\"supported\":true,\"mode\":\"native ASCII validation helper\"},\"atob\":{\"supported\":true,\"mode\":\"native base64 decode helper returning text bytes\"},\"btoa\":{\"supported\":true,\"mode\":\"native base64 encode helper from text bytes\"},\"resolveObjectURL\":{\"supported\":true,\"mode\":\"native blob URL normalization helper\",\"limitations\":[\"does not consult a JavaScript blob URL registry or return Blob objects\"]},\"Buffer_byteLength\":{\"supported\":true,\"mode\":\"native byte-length helper over raw slices\"},\"Buffer_concat\":{\"supported\":true,\"mode\":\"native concatenation helper over explicit slice arrays\"},\"Buffer\":{\"supported\":false,\"reason\":\"JavaScript Buffer constructor, Uint8Array subclass identity, and prototype methods are not modeled\"},\"Blob\":{\"supported\":false,\"reason\":\"JavaScript Blob class instances are not modeled in the buffer facade\"},\"File\":{\"supported\":false,\"reason\":\"JavaScript File class instances are not modeled in the buffer facade\"},\"constants\":{\"supported\":false,\"reason\":\"buffer constants object and its exact Node numeric values are not modeled\"},\"kMaxLength\":{\"supported\":false,\"reason\":\"Node internal maximum Buffer length constant is not exposed\"},\"kStringMaxLength\":{\"supported\":false,\"reason\":\"Node internal maximum string length constant is not exposed\"},\"INSPECT_MAX_BYTES\":{\"supported\":false,\"reason\":\"mutable util.inspect Buffer truncation state is not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6141,6 +6165,22 @@ const util_export_names = [_][]const u8{
     "transferableAbortController",
     "transferableAbortSignal",
     "types",
+};
+
+const buffer_export_names = [_][]const u8{
+    "Blob",
+    "Buffer",
+    "File",
+    "INSPECT_MAX_BYTES",
+    "atob",
+    "btoa",
+    "constants",
+    "isAscii",
+    "isUtf8",
+    "kMaxLength",
+    "kStringMaxLength",
+    "resolveObjectURL",
+    "transcode",
 };
 
 const timers_export_names = [_][]const u8{

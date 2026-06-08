@@ -4,12 +4,13 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `34 / 43` modules completed (`79.1%`)
+- Current status: `35 / 43` modules completed (`81.4%`)
 
 ## Completed Modules
 
 - `assert`
 - `async_hooks`
+- `buffer`
 - `child_process`
 - `cluster`
 - `console`
@@ -45,7 +46,6 @@
 
 ## Remaining Modules In Current Sweep
 
-- `buffer`
 - `os`
 - `path`
 - `process`

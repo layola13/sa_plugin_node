@@ -6,6 +6,8 @@
 @const S_TLS_MIN = utf8:"TLSv1.2"
 @const S_TLS_MAX = utf8:"TLSv1.3"
 @const S_ALPN_JSON = utf8:"[\"h2\",\"http/1.1\"]"
+@const S_TLS_HOST = utf8:"api.example.test"
+@const S_TLS_CERT_JSON = utf8:"{\"subjectaltname\":\"DNS:api.example.test, DNS:*.example.test\",\"subject\":{\"CN\":\"fallback.test\"}}"
 
 @test "node.tls top level helpers"():
 L_ENTRY:
@@ -258,4 +260,34 @@ L_ERR_SNAPSHOT_LEN:
     !snap_has_len
     !snap_ptr
     !snap_len
+    panic(103)
+
+@test "node.tls check_server_identity"():
+L_ENTRY:
+    identity_ptr = add 0, 0
+    identity_len = add 0, 0
+    identity_status = add 0, 0
+    EXPAND NODE_TLS_CHECK_SERVER_IDENTITY identity_ptr, identity_len, identity_status, S_TLS_HOST, 16, S_TLS_CERT_JSON, 94
+    identity_ok = eq identity_status, 0
+    br identity_ok -> L_IDENTITY_LEN, L_ERR_IDENTITY
+L_IDENTITY_LEN:
+    !identity_ok
+    identity_has_len = ugt identity_len, 0
+    br identity_has_len -> L_OK, L_ERR_IDENTITY_LEN
+L_OK:
+    !identity_has_len
+    free_identity = call @sa_node_plugin_free_buffer(identity_ptr, identity_len)
+    !free_identity
+    !identity_len
+    !identity_ptr
+    !identity_status
+    return
+L_ERR_IDENTITY:
+    !identity_ok
+    !identity_status
+    panic(103)
+L_ERR_IDENTITY_LEN:
+    !identity_has_len
+    !identity_ptr
+    !identity_len
     panic(103)

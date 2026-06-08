@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `http2` helper parity by exposing native server-side handshake frame handling
+- Scope: public non-VM/V8 `tls` helper parity by exposing native hostname identity validation
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `http2.performServerHandshake`
+  - `tls.checkServerIdentity`
 
 ## Recent Completed Helper Features
 
+- `tls` helper tranche completed:
+  - `tls.checkServerIdentity`
 - `http2` helper tranche completed:
   - `http2.performServerHandshake`
 - `fs` helper tranche completed:

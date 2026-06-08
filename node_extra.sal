@@ -8426,6 +8426,23 @@
     !__tls_alpn_wire_len
 [END_MACRO]
 
+[MACRO] NODE_TLS_CHECK_SERVER_IDENTITY %out_ptr, %out_len, %out_status, %host, %host_len, %cert_json, %cert_json_len
+    __tls_identity_ptr_slot = stack_alloc 8
+    __tls_identity_len_slot = stack_alloc 8
+    __tls_identity_status = call @sa_node_plugin_tls_check_server_identity(%host, %host_len, %cert_json, %cert_json_len, &__tls_identity_ptr_slot, &__tls_identity_len_slot)
+    !%out_status
+    %out_status = add __tls_identity_status, 0
+    !__tls_identity_status
+    __tls_identity_ptr = load __tls_identity_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_identity_ptr, 0
+    !__tls_identity_ptr
+    __tls_identity_len = load __tls_identity_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_identity_len, 0
+    !__tls_identity_len
+[END_MACRO]
+
 [MACRO] NODE_TLS_ROOT_CERTIFICATES_JSON %out_ptr, %out_len, %out_status
     __tls_root_certs_ptr_slot = stack_alloc 8
     __tls_root_certs_len_slot = stack_alloc 8

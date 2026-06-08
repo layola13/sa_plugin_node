@@ -7808,7 +7808,7 @@ pub export fn sa_node_plugin_tls_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     out.appendSlice((ciphers_ptr orelse return fail())[0..@intCast(ciphers_len)]) catch return fail();
     out.appendSlice(",\"rootCertificates\":") catch return fail();
     out.appendSlice((root_ptr orelse return fail())[0..@intCast(root_len)]) catch return fail();
-    out.appendSlice(",\"featureSupport\":{\"getCiphers\":true,\"rootCertificates\":true,\"getCACertificates\":true,\"setDefaultCACertificates\":true,\"convertALPNProtocols\":true,\"createSecureContext\":true,\"connect\":true,\"checkServerIdentity\":false,\"SecureContext\":false,\"TLSSocket\":false,\"Server\":false,\"createServer\":false},\"capabilities\":[\"default TLS constant metadata\",\"native cipher catalog and detailed metadata\",\"native system/default/extra CA certificate snapshots\",\"SecureContext create/snapshot/free handles\",\"TLS client connect/write/read/close plus protocol/cipher/address/timeout/ref metadata\",\"ALPN wire-format conversion helper\"],\"limitations\":[\"no JavaScript TLSSocket, SecureContext, or Server class instances\",\"no HTTPS/TLS server listener object model at the top-level tls facade\",\"checkServerIdentity hostname validation semantics are not modeled as a public top-level helper\",\"connect returns explicit native socket handles rather than JavaScript event-emitter objects\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"getCiphers\":true,\"rootCertificates\":true,\"getCACertificates\":true,\"setDefaultCACertificates\":true,\"convertALPNProtocols\":true,\"checkServerIdentity\":true,\"createSecureContext\":true,\"connect\":true,\"SecureContext\":false,\"TLSSocket\":false,\"Server\":false,\"createServer\":false},\"capabilities\":[\"default TLS constant metadata\",\"native cipher catalog and detailed metadata\",\"native system/default/extra CA certificate snapshots\",\"SecureContext create/snapshot/free handles\",\"TLS client connect/write/read/close plus protocol/cipher/address/timeout/ref metadata\",\"ALPN wire-format conversion helper\",\"native checkServerIdentity helper for DNS/IP SAN and subject CN JSON metadata\"],\"limitations\":[\"no JavaScript TLSSocket, SecureContext, or Server class instances\",\"no HTTPS/TLS server listener object model at the top-level tls facade\",\"checkServerIdentity returns explicit JSON metadata rather than JavaScript Error object identity\",\"connect returns explicit native socket handles rather than JavaScript event-emitter objects\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -7831,12 +7831,147 @@ pub export fn sa_node_plugin_tls_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     defer out.deinit();
     out.appendSlice("{\"defaults\":") catch return fail();
     out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
-    out.appendSlice(",\"caModel\":\"native system/default/extra certificate snapshot helpers\",\"secureContextModel\":\"explicit native SecureContext handle\",\"socketModel\":\"explicit native TLS client handle\",\"serverModel\":\"not-modeled at the tls top-level facade\"}") catch return fail();
+    out.appendSlice(",\"caModel\":\"native system/default/extra certificate snapshot helpers\",\"identityModel\":\"native hostname check over certificate JSON subjectaltname, dnsNames, ipAddresses, and subject.CN fields\",\"secureContextModel\":\"explicit native SecureContext handle\",\"socketModel\":\"explicit native TLS client handle\",\"serverModel\":\"not-modeled at the tls top-level facade\"}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_tls_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"CLIENT_RENEG_LIMIT\":{\"supported\":true,\"mode\":\"static constant metadata value 3\"},\"CLIENT_RENEG_WINDOW\":{\"supported\":true,\"mode\":\"static constant metadata value 600\"},\"DEFAULT_CIPHERS\":{\"supported\":true,\"mode\":\"static default cipher string metadata\"},\"DEFAULT_ECDH_CURVE\":{\"supported\":true,\"mode\":\"static default ECDH curve string metadata\"},\"DEFAULT_MIN_VERSION\":{\"supported\":true,\"mode\":\"static default minimum TLS version metadata\"},\"DEFAULT_MAX_VERSION\":{\"supported\":true,\"mode\":\"static default maximum TLS version metadata\"},\"getCiphers\":{\"supported\":true,\"mode\":\"native cipher list and detailed metadata JSON\"},\"rootCertificates\":{\"supported\":true,\"mode\":\"native system root certificate PEM array JSON snapshot\"},\"getCACertificates\":{\"supported\":true,\"mode\":\"native default/system/bundled/extra CA certificate PEM array JSON snapshot\"},\"setDefaultCACertificates\":{\"supported\":true,\"mode\":\"replace native default CA PEM bundle used by this facade\"},\"convertALPNProtocols\":{\"supported\":true,\"mode\":\"encode JSON protocol array into TLS ALPN wire format\"},\"createSecureContext\":{\"supported\":true,\"mode\":\"explicit native SecureContext handle with snapshot/free helpers\"},\"connect\":{\"supported\":true,\"mode\":\"explicit native TLS client socket handle\",\"limitations\":[\"no JavaScript TLSSocket event emitter object\",\"operations are exposed through explicit native read/write/close/state helpers\"]},\"checkServerIdentity\":{\"supported\":false,\"reason\":\"Node's JavaScript hostname/certificate validation helper is not exposed as a separate top-level ABI helper\"},\"SecureContext\":{\"supported\":false,\"reason\":\"JavaScript SecureContext class instances are not modeled; use explicit native handles instead\"},\"TLSSocket\":{\"supported\":false,\"reason\":\"JavaScript TLSSocket class instances are not modeled; use explicit native handles instead\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript TLS Server class instances are not modeled\"},\"createServer\":{\"supported\":false,\"reason\":\"TLS server listener and JavaScript event-emitter semantics are not modeled at the top-level facade\"}}");
+    return writeOwnedString(out_ptr, out_len, "{\"CLIENT_RENEG_LIMIT\":{\"supported\":true,\"mode\":\"static constant metadata value 3\"},\"CLIENT_RENEG_WINDOW\":{\"supported\":true,\"mode\":\"static constant metadata value 600\"},\"DEFAULT_CIPHERS\":{\"supported\":true,\"mode\":\"static default cipher string metadata\"},\"DEFAULT_ECDH_CURVE\":{\"supported\":true,\"mode\":\"static default ECDH curve string metadata\"},\"DEFAULT_MIN_VERSION\":{\"supported\":true,\"mode\":\"static default minimum TLS version metadata\"},\"DEFAULT_MAX_VERSION\":{\"supported\":true,\"mode\":\"static default maximum TLS version metadata\"},\"getCiphers\":{\"supported\":true,\"mode\":\"native cipher list and detailed metadata JSON\"},\"rootCertificates\":{\"supported\":true,\"mode\":\"native system root certificate PEM array JSON snapshot\"},\"getCACertificates\":{\"supported\":true,\"mode\":\"native default/system/bundled/extra CA certificate PEM array JSON snapshot\"},\"setDefaultCACertificates\":{\"supported\":true,\"mode\":\"replace native default CA PEM bundle used by this facade\"},\"convertALPNProtocols\":{\"supported\":true,\"mode\":\"encode JSON protocol array into TLS ALPN wire format\"},\"createSecureContext\":{\"supported\":true,\"mode\":\"explicit native SecureContext handle with snapshot/free helpers\"},\"connect\":{\"supported\":true,\"mode\":\"explicit native TLS client socket handle\",\"limitations\":[\"no JavaScript TLSSocket event emitter object\",\"operations are exposed through explicit native read/write/close/state helpers\"]},\"checkServerIdentity\":{\"supported\":true,\"mode\":\"native hostname validation over certificate JSON DNS/IP subjectAltName and subject.CN fields\",\"limitations\":[\"returns explicit JSON authorization metadata rather than JavaScript Error object identity\",\"does not parse raw X.509 DER or PEM certificates directly\"]},\"SecureContext\":{\"supported\":false,\"reason\":\"JavaScript SecureContext class instances are not modeled; use explicit native handles instead\"},\"TLSSocket\":{\"supported\":false,\"reason\":\"JavaScript TLSSocket class instances are not modeled; use explicit native handles instead\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript TLS Server class instances are not modeled\"},\"createServer\":{\"supported\":false,\"reason\":\"TLS server listener and JavaScript event-emitter semantics are not modeled at the top-level facade\"}}");
+}
+
+fn tlsIsIpAddressName(hostname: []const u8) bool {
+    _ = std.net.Address.parseIp(hostname, 0) catch return false;
+    return true;
+}
+
+fn tlsHostnameMatchesPattern(hostname: []const u8, pattern: []const u8) bool {
+    if (hostname.len == 0 or pattern.len == 0) return false;
+    if (std.ascii.eqlIgnoreCase(hostname, pattern)) return true;
+    if (!std.mem.startsWith(u8, pattern, "*.")) return false;
+    const suffix = pattern[1..];
+    if (!std.ascii.endsWithIgnoreCase(hostname, suffix)) return false;
+    const prefix = hostname[0 .. hostname.len - suffix.len];
+    return prefix.len > 0 and std.mem.indexOfScalar(u8, prefix, '.') == null;
+}
+
+fn tlsAppendIdentityResult(out: *std.ArrayList(u8), hostname: []const u8, authorized: bool, reason: []const u8, matched: []const u8) !void {
+    try out.appendSlice("{\"hostname\":");
+    try appendJsonString(out, hostname);
+    try out.appendSlice(",\"authorized\":");
+    try out.appendSlice(if (authorized) "true" else "false");
+    try out.appendSlice(",\"reason\":");
+    try appendJsonString(out, reason);
+    try out.appendSlice(",\"matched\":");
+    try appendJsonString(out, matched);
+    try out.append('}');
+}
+
+fn tlsMatchJsonStringArray(hostname: []const u8, value: std.json.Value, ip_mode: bool) ?[]const u8 {
+    if (value != .array) return null;
+    for (value.array.items) |item| {
+        if (item != .string) continue;
+        const candidate = item.string;
+        const matched = if (ip_mode) std.ascii.eqlIgnoreCase(hostname, candidate) else tlsHostnameMatchesPattern(hostname, candidate);
+        if (matched) return candidate;
+    }
+    return null;
+}
+
+fn tlsMatchSubjectAltNameString(hostname: []const u8, subjectaltname: []const u8, ip_mode: bool) ?[]const u8 {
+    var parts = std.mem.splitScalar(u8, subjectaltname, ',');
+    while (parts.next()) |raw_part| {
+        const part = std.mem.trim(u8, raw_part, " \t\r\n");
+        const dns_prefix = "DNS:";
+        const ip_prefix = "IP Address:";
+        if (!ip_mode and std.ascii.startsWithIgnoreCase(part, dns_prefix)) {
+            const candidate = std.mem.trim(u8, part[dns_prefix.len..], " \t\r\n");
+            if (tlsHostnameMatchesPattern(hostname, candidate)) return candidate;
+        } else if (ip_mode and std.ascii.startsWithIgnoreCase(part, ip_prefix)) {
+            const candidate = std.mem.trim(u8, part[ip_prefix.len..], " \t\r\n");
+            if (std.ascii.eqlIgnoreCase(hostname, candidate)) return candidate;
+        }
+    }
+    return null;
+}
+
+fn tlsSubjectCnValue(cert: std.json.Value) ?std.json.Value {
+    if (cert != .object) return null;
+    const subject = cert.object.get("subject") orelse return null;
+    if (subject != .object) return null;
+    return subject.object.get("CN");
+}
+
+fn tlsMatchSubjectCn(hostname: []const u8, cn_value: std.json.Value) ?[]const u8 {
+    switch (cn_value) {
+        .string => |cn| if (tlsHostnameMatchesPattern(hostname, cn)) return cn,
+        .array => |items| {
+            for (items.items) |item| {
+                if (item == .string and tlsHostnameMatchesPattern(hostname, item.string)) return item.string;
+            }
+        },
+        else => {},
+    }
+    return null;
+}
+
+pub export fn sa_node_plugin_tls_check_server_identity(host_ptr: ?[*]const u8, host_len: u64, cert_json_ptr: ?[*]const u8, cert_json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const hostname = (host_ptr orelse return fail())[0..host_len];
+    const cert_json = (cert_json_ptr orelse return fail())[0..cert_json_len];
+    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, cert_json, .{}) catch return fail();
+    defer parsed.deinit();
+    if (parsed.value != .object or hostname.len == 0) return fail();
+
+    const ip_mode = tlsIsIpAddressName(hostname);
+    var san_present = false;
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+
+    if (ip_mode) {
+        if (parsed.value.object.get("ipAddresses")) |ips| {
+            san_present = ips == .array and ips.array.items.len > 0;
+            if (tlsMatchJsonStringArray(hostname, ips, true)) |matched| {
+                tlsAppendIdentityResult(&out, hostname, true, "", matched) catch return fail();
+                return writeOwnedBytes(out_ptr, out_len, out.items);
+            }
+        }
+    } else {
+        if (parsed.value.object.get("dnsNames")) |dns_names| {
+            san_present = dns_names == .array and dns_names.array.items.len > 0;
+            if (tlsMatchJsonStringArray(hostname, dns_names, false)) |matched| {
+                tlsAppendIdentityResult(&out, hostname, true, "", matched) catch return fail();
+                return writeOwnedBytes(out_ptr, out_len, out.items);
+            }
+        }
+    }
+
+    if (parsed.value.object.get("subjectaltname")) |san| {
+        if (san == .string) {
+            san_present = san_present or san.string.len > 0;
+            if (tlsMatchSubjectAltNameString(hostname, san.string, ip_mode)) |matched| {
+                tlsAppendIdentityResult(&out, hostname, true, "", matched) catch return fail();
+                return writeOwnedBytes(out_ptr, out_len, out.items);
+            }
+            tlsAppendIdentityResult(&out, hostname, false, "ERR_TLS_CERT_ALTNAME_INVALID", "") catch return fail();
+            return writeOwnedBytes(out_ptr, out_len, out.items);
+        }
+    }
+
+    if (san_present) {
+        tlsAppendIdentityResult(&out, hostname, false, "ERR_TLS_CERT_ALTNAME_INVALID", "") catch return fail();
+        return writeOwnedBytes(out_ptr, out_len, out.items);
+    }
+
+    if (!ip_mode) {
+        if (tlsSubjectCnValue(parsed.value)) |cn| {
+            if (tlsMatchSubjectCn(hostname, cn)) |matched| {
+                tlsAppendIdentityResult(&out, hostname, true, "", matched) catch return fail();
+                return writeOwnedBytes(out_ptr, out_len, out.items);
+            }
+        }
+    }
+
+    tlsAppendIdentityResult(&out, hostname, false, "ERR_TLS_CERT_ALTNAME_INVALID", "") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

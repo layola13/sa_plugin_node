@@ -6210,6 +6210,36 @@ test "node plugin tls top level constants and cipher helpers" {
     try std.testing.expectEqual(@as(u64, 0), empty_alpn_len);
     try std.testing.expect(plugin.sa_node_plugin_tls_convert_alpn_protocols("[1]", 3, &empty_alpn_ptr, &empty_alpn_len) != 0);
 
+    const cert_json = "{\"subjectaltname\":\"DNS:api.example.test, DNS:*.example.test\",\"subject\":{\"CN\":\"fallback.test\"}}";
+    var identity_ptr: ?[*]const u8 = null;
+    var identity_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_check_server_identity("api.example.test", 16, cert_json.ptr, cert_json.len, &identity_ptr, &identity_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(identity_ptr, identity_len);
+    const identity_json = (identity_ptr orelse return error.NullTlsIdentity)[0..@intCast(identity_len)];
+    try std.testing.expect(std.mem.indexOf(u8, identity_json, "\"authorized\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, identity_json, "api.example.test") != null);
+
+    var wildcard_ptr: ?[*]const u8 = null;
+    var wildcard_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_check_server_identity("www.example.test", 16, cert_json.ptr, cert_json.len, &wildcard_ptr, &wildcard_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(wildcard_ptr, wildcard_len);
+    try std.testing.expect(std.mem.indexOf(u8, (wildcard_ptr orelse return error.NullTlsWildcardIdentity)[0..@intCast(wildcard_len)], "\"authorized\":true") != null);
+
+    const ip_cert_json = "{\"ipAddresses\":[\"127.0.0.1\"],\"subjectaltname\":\"IP Address:127.0.0.1\"}";
+    var ip_identity_ptr: ?[*]const u8 = null;
+    var ip_identity_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_check_server_identity("127.0.0.1", 9, ip_cert_json.ptr, ip_cert_json.len, &ip_identity_ptr, &ip_identity_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(ip_identity_ptr, ip_identity_len);
+    try std.testing.expect(std.mem.indexOf(u8, (ip_identity_ptr orelse return error.NullTlsIpIdentity)[0..@intCast(ip_identity_len)], "\"authorized\":true") != null);
+
+    var mismatch_ptr: ?[*]const u8 = null;
+    var mismatch_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_check_server_identity("bad.other.test", 14, cert_json.ptr, cert_json.len, &mismatch_ptr, &mismatch_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(mismatch_ptr, mismatch_len);
+    const mismatch_json = (mismatch_ptr orelse return error.NullTlsIdentityMismatch)[0..@intCast(mismatch_len)];
+    try std.testing.expect(std.mem.indexOf(u8, mismatch_json, "\"authorized\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, mismatch_json, "ERR_TLS_CERT_ALTNAME_INVALID") != null);
+
     var root_ptr: ?[*]const u8 = null;
     var root_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_root_certificates_json(&root_ptr, &root_len));
@@ -6443,6 +6473,7 @@ test "node plugin tls top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"tls\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-tls-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"connect\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"checkServerIdentity\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"TLSSocket\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -6459,6 +6490,7 @@ test "node plugin tls top-level facade helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_tls_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullTlsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"identityModel\":") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"secureContextModel\":\"explicit native SecureContext handle\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"serverModel\":\"not-modeled at the tls top-level facade\"") != null);
 
@@ -6468,6 +6500,7 @@ test "node plugin tls top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullTlsTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"connect\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"checkServerIdentity\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"TLSSocket\":{\"supported\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"createServer\":{\"supported\":false") != null);
 }

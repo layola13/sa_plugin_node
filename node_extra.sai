@@ -714,6 +714,7 @@
 @extern sa_node_plugin_tls_default_min_version(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_default_max_version(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_convert_alpn_protocols(protocols_json_ptr: ptr, protocols_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_tls_check_server_identity(host_ptr: ptr, host_len: u64, cert_json_ptr: ptr, cert_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_root_certificates_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_get_ca_certificates_json(type_ptr: ptr, type_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_tls_set_default_ca_certificates(certs_pem_ptr: ptr, certs_pem_len: u64) -> u64

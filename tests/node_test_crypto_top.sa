@@ -33,9 +33,22 @@ L_FEATURES:
     s4 = add 0, 0
     EXPAND NODE_CRYPTO_TOP_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s4
     ok4 = eq s4, 0
-    br ok4 -> L_FREE, L_ERR_FEATURES
-L_FREE:
+    br ok4 -> L_SECURE_HEAP, L_ERR_FEATURES
+L_SECURE_HEAP:
     !ok4
+    secure_heap_ptr = add 0, 0
+    secure_heap_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_CRYPTO_SECURE_HEAP_USED_JSON secure_heap_ptr, secure_heap_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_SECURE_HEAP_LEN, L_ERR_SECURE_HEAP
+L_SECURE_HEAP_LEN:
+    !ok5
+    ok6 = gt secure_heap_len, 0
+    br ok6 -> L_FREE, L_ERR_SECURE_HEAP_LEN
+L_FREE:
+    !ok6
+    free_secure_heap = call @sa_node_plugin_free_buffer(secure_heap_ptr, secure_heap_len)
     free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
     free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
     free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
@@ -44,6 +57,10 @@ L_FREE:
     !free_exports
     !free_config
     !free_feature
+    !free_secure_heap
+    !s5
+    !secure_heap_len
+    !secure_heap_ptr
     !s4
     !feature_len
     !feature_ptr
@@ -68,4 +85,10 @@ L_ERR_CONFIG:
     panic(103)
 L_ERR_FEATURES:
     !ok4
+    panic(103)
+L_ERR_SECURE_HEAP:
+    !ok5
+    panic(103)
+L_ERR_SECURE_HEAP_LEN:
+    !ok6
     panic(103)

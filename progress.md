@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `util` helper parity by exposing native `formatWithOptions` formatting
+- Scope: public non-VM/V8 `crypto` helper parity by exposing native secure heap usage snapshot
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `util.formatWithOptions`
+  - `crypto.secureHeapUsed`
 
 ## Recent Completed Helper Features
 
+- `crypto` helper tranche completed:
+  - `crypto.secureHeapUsed`
 - `util` helper tranche completed:
   - `util.formatWithOptions`
 - `path` helper tranche completed:

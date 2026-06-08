@@ -253,6 +253,7 @@
 @extern sa_node_plugin_crypto_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_crypto_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_crypto_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_crypto_secure_heap_used_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_config_json(&out_ptr: ptr, &out_len: u64) -> u64

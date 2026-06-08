@@ -2684,6 +2684,7 @@ test "node plugin crypto top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"crypto\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-crypto-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"randomUUID\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"secureHeapUsed\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"KeyObject\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -2693,6 +2694,7 @@ test "node plugin crypto top-level facade helpers" {
     const exports_json = (exports_ptr orelse return error.NullCryptoTopExports)[0..@intCast(exports_len)];
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createHash\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"webcrypto\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"secureHeapUsed\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"timingSafeEqual\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
@@ -2701,6 +2703,7 @@ test "node plugin crypto top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullCryptoTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"hashModel\":\"one-shot hash plus explicit native hash and HMAC state handles\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"secureHeapModel\":\"disabled secure-heap status snapshot") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript crypto class instances\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2709,8 +2712,15 @@ test "node plugin crypto top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullCryptoTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"createHash\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"secureHeapUsed\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"webcrypto\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"generateKeyPair\":{\"supported\":false") != null);
+
+    var secure_heap_ptr: ?[*]const u8 = null;
+    var secure_heap_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_crypto_secure_heap_used_json(&secure_heap_ptr, &secure_heap_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(secure_heap_ptr, secure_heap_len);
+    try std.testing.expectEqualStrings("{\"total\":0,\"used\":0,\"utilization\":0,\"min\":0}", (secure_heap_ptr orelse return error.NullCryptoSecureHeapUsed)[0..@intCast(secure_heap_len)]);
 }
 
 test "node plugin util top-level facade helpers" {

@@ -1993,6 +1993,23 @@
     !__crypto_top_feature_len
 [END_MACRO]
 
+[MACRO] NODE_CRYPTO_SECURE_HEAP_USED_JSON %out_ptr, %out_len, %out_status
+    __crypto_secure_heap_ptr_slot = stack_alloc 8
+    __crypto_secure_heap_len_slot = stack_alloc 8
+    __crypto_secure_heap_status = call @sa_node_plugin_crypto_secure_heap_used_json(&__crypto_secure_heap_ptr_slot, &__crypto_secure_heap_len_slot)
+    !%out_status
+    %out_status = add __crypto_secure_heap_status, 0
+    !__crypto_secure_heap_status
+    __crypto_secure_heap_ptr = load __crypto_secure_heap_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __crypto_secure_heap_ptr, 0
+    !__crypto_secure_heap_ptr
+    __crypto_secure_heap_len = load __crypto_secure_heap_len_slot+0 as u64
+    !%out_len
+    %out_len = add __crypto_secure_heap_len, 0
+    !__crypto_secure_heap_len
+[END_MACRO]
+
 [MACRO] NODE_UTIL_STATUS_JSON %out_ptr, %out_len, %out_status
     __util_top_status_ptr_slot = stack_alloc 8
     __util_top_status_len_slot = stack_alloc 8

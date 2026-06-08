@@ -3552,6 +3552,44 @@ test "node plugin readline terminal control writes ansi sequences" {
     try std.testing.expectEqualStrings("\x1b[2K\x1b[1K\x1b[0K\x1b[0J\x1b[3;5H\x1b[3C\x1b[2A", buf[0..n]);
 }
 
+test "node plugin readline top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_readline_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullReadlineTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"readline\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-readline-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"promises\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Interface\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_readline_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullReadlineTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createInterface\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"emitKeypressEvents\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"promises\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_readline_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullReadlineTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"promisesInterfaceModel\":\"explicit native Interface handle") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Interface instances\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_readline_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullReadlineTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"clearLine\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createInterface\":{\"supported\":false") != null);
+}
+
 test "node plugin util mime type and parse args" {
     var mime_ptr: ?[*]const u8 = null;
     var mime_len: u64 = 0;

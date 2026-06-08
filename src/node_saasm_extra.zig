@@ -320,6 +320,30 @@ pub export fn sa_node_plugin_stream_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"Readable\":{\"supported\":false,\"reason\":\"JavaScript Readable class instances and prototype semantics are not modeled\"},\"Writable\":{\"supported\":false,\"reason\":\"JavaScript Writable class instances and prototype semantics are not modeled\"},\"Duplex\":{\"supported\":true,\"mode\":\"explicit native duplex handle allocation\"},\"Transform\":{\"supported\":true,\"mode\":\"explicit native transform handle allocation\"},\"PassThrough\":{\"supported\":true,\"mode\":\"explicit native passthrough handle allocation\"},\"duplexPair\":{\"supported\":true,\"mode\":\"allocates two connected native duplex handles\"},\"pipeline\":{\"supported\":true,\"mode\":\"native pipeline summary JSON helper\",\"limitations\":[\"does not expose JavaScript callback or Promise completion semantics\"]},\"finished\":{\"supported\":true,\"mode\":\"native stream state snapshot JSON\"},\"compose\":{\"supported\":true,\"mode\":\"native composed stream handle helper\"},\"destroy\":{\"supported\":true,\"mode\":\"explicit native handle destroy helper\"},\"promises\":{\"supported\":false,\"reason\":\"stream.promises namespace and Promise object identity are not modeled\"},\"addAbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal to stream cancellation wiring is not modeled\"},\"setDefaultHighWaterMark\":{\"supported\":false,\"reason\":\"global JavaScript stream high-water-mark tuning is not modeled\"},\"getDefaultHighWaterMark\":{\"supported\":false,\"reason\":\"global JavaScript stream high-water-mark tuning is not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_readline_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"readline\",\"supported\":true,\"mode\":\"top-level-native-readline-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &readline_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"clearLine\":true,\"clearScreenDown\":true,\"cursorTo\":true,\"moveCursor\":true,\"emitKeypressEvents\":true,\"promises\":true,\"createInterface\":false,\"Interface\":false,\"completer\":false,\"historyEditing\":false},\"capabilities\":[\"terminal cursor and clear helpers over file descriptors\",\"emitKeypressEvents compatibility stub\",\"readline.promises explicit Interface handle with question, close, snapshot, and free helpers\"],\"limitations\":[\"no JavaScript readline.Interface class instances\",\"no callback-based createInterface or EventEmitter line lifecycle\",\"no completer, history editing, raw-mode line editor, or terminal redraw behavior\",\"promises support is limited to explicit native handle operations rather than JavaScript Promise/Interface objects\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_readline_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &readline_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_readline_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"cursorModel\":\"fd-based clear and cursor movement helpers\",\"promisesInterfaceModel\":\"explicit native Interface handle backed by buffered input text\",\"keypressModel\":\"emitKeypressEvents compatibility stub\",\"objectModel\":\"not-modeled for JavaScript Interface instances\"}");
+}
+
+pub export fn sa_node_plugin_readline_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"clearLine\":{\"supported\":true,\"mode\":\"fd-based ANSI clear-line helper\"},\"clearScreenDown\":{\"supported\":true,\"mode\":\"fd-based ANSI clear-screen-down helper\"},\"cursorTo\":{\"supported\":true,\"mode\":\"fd-based ANSI cursor positioning helper\"},\"moveCursor\":{\"supported\":true,\"mode\":\"fd-based ANSI relative cursor movement helper\"},\"emitKeypressEvents\":{\"supported\":true,\"mode\":\"compatibility stub with no event object production\"},\"promises\":{\"supported\":true,\"mode\":\"explicit native Interface handle with create/question/close/snapshot/free helpers\"},\"createInterface\":{\"supported\":false,\"reason\":\"callback-based JavaScript readline Interface creation and event lifecycle are not modeled; use the native promises Interface handle helpers instead\"},\"Interface\":{\"supported\":false,\"reason\":\"JavaScript readline Interface class instances are not modeled\"},\"completer\":{\"supported\":false,\"reason\":\"custom completion callbacks are not modeled\"},\"historyEditing\":{\"supported\":false,\"reason\":\"interactive line editing and history semantics are not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -5772,6 +5796,17 @@ const stream_export_names = [_][]const u8{
     "getDefaultHighWaterMark",
     "promises",
     "Stream",
+};
+
+const readline_export_names = [_][]const u8{
+    "Interface",
+    "clearLine",
+    "clearScreenDown",
+    "createInterface",
+    "cursorTo",
+    "emitKeypressEvents",
+    "moveCursor",
+    "promises",
 };
 
 const net_export_names = [_][]const u8{

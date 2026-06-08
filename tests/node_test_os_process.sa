@@ -294,6 +294,42 @@ L_ERR:
     !l
     panic(103)
 
+@test "node.os dev_null returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_OS_DEV_NULL p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.os eol returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_OS_EOL p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
 @test "node.path sep returns bytes"():
 L_ENTRY:
     p = add 0, 0
@@ -537,6 +573,42 @@ L_ERR:
     !s
     panic(103)
 L_LEN_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process arch returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PROCESS_ARCH p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
+    !non_empty
+    !p
+    !l
+    panic(103)
+
+@test "node.process platform returns bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PROCESS_PLATFORM p, l
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_ERR
+L_OK:
+    !non_empty
+    !p
+    !l
+    return
+L_ERR:
     !non_empty
     !p
     !l

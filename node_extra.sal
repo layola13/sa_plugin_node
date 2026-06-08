@@ -4629,6 +4629,21 @@
     !__m_load_7870af9b_p_1
 [END_MACRO]
 
+[MACRO] NODE_OS_DEV_NULL %p_0, %p_1
+    __m_slot_os_dev_null_0 = stack_alloc 8
+    __m_slot_os_dev_null_1 = stack_alloc 8
+    __m_status_os_dev_null = call @sa_node_plugin_os_dev_null(&__m_slot_os_dev_null_0, &__m_slot_os_dev_null_1)
+    !__m_status_os_dev_null
+    __m_load_os_dev_null_p_0 = load __m_slot_os_dev_null_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_os_dev_null_p_0, 0
+    !__m_load_os_dev_null_p_0
+    __m_load_os_dev_null_p_1 = load __m_slot_os_dev_null_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_os_dev_null_p_1, 0
+    !__m_load_os_dev_null_p_1
+[END_MACRO]
+
 [MACRO] NODE_OS_CONSTANTS %p_0, %p_1
     __m_slot_cd9aaebd_0 = stack_alloc 8
     __m_slot_cd9aaebd_1 = stack_alloc 8
@@ -4661,6 +4676,36 @@
     !%p_2
     %p_2 = add __m_status_93eb6e10, 0
     !__m_status_93eb6e10
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARCH %p_0, %p_1
+    __m_slot_process_arch_0 = stack_alloc 8
+    __m_slot_process_arch_1 = stack_alloc 8
+    __m_status_process_arch = call @sa_node_plugin_process_arch(&__m_slot_process_arch_0, &__m_slot_process_arch_1)
+    !__m_status_process_arch
+    __m_load_process_arch_p_0 = load __m_slot_process_arch_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_arch_p_0, 0
+    !__m_load_process_arch_p_0
+    __m_load_process_arch_p_1 = load __m_slot_process_arch_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_arch_p_1, 0
+    !__m_load_process_arch_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_PLATFORM %p_0, %p_1
+    __m_slot_process_platform_0 = stack_alloc 8
+    __m_slot_process_platform_1 = stack_alloc 8
+    __m_status_process_platform = call @sa_node_plugin_process_platform(&__m_slot_process_platform_0, &__m_slot_process_platform_1)
+    !__m_status_process_platform
+    __m_load_process_platform_p_0 = load __m_slot_process_platform_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_platform_p_0, 0
+    !__m_load_process_platform_p_0
+    __m_load_process_platform_p_1 = load __m_slot_process_platform_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_platform_p_1, 0
+    !__m_load_process_platform_p_1
 [END_MACRO]
 
 [MACRO] NODE_PROCESS_EXIT %p_0, %p_1

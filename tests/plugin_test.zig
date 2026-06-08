@@ -2902,7 +2902,20 @@ test "node plugin process top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullProcessTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"pid\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"kill\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"stdin\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"arch\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
+
+    var process_arch_ptr: ?[*]const u8 = null;
+    var process_arch_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_arch(&process_arch_ptr, &process_arch_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(process_arch_ptr, process_arch_len);
+    try std.testing.expectEqualStrings("x64", (process_arch_ptr orelse return error.NullProcessArch)[0..@intCast(process_arch_len)]);
+
+    var process_platform_ptr: ?[*]const u8 = null;
+    var process_platform_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_platform(&process_platform_ptr, &process_platform_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(process_platform_ptr, process_platform_len);
+    try std.testing.expectEqualStrings("linux", (process_platform_ptr orelse return error.NullProcessPlatform)[0..@intCast(process_platform_len)]);
 }
 
 test "node plugin os top-level facade helpers" {
@@ -2914,7 +2927,7 @@ test "node plugin os top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"os\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-os-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"availableParallelism\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, status, "\"devNull\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"devNull\":true") != null);
 
     var exports_ptr: ?[*]const u8 = null;
     var exports_len: u64 = 0;
@@ -2940,7 +2953,20 @@ test "node plugin os top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullOsTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"arch\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"constants\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"EOL\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"EOL\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"devNull\":{\"supported\":true") != null);
+
+    var eol_ptr: ?[*]const u8 = null;
+    var eol_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_eol(&eol_ptr, &eol_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(eol_ptr, eol_len);
+    try std.testing.expectEqualStrings("\n", (eol_ptr orelse return error.NullOsEol)[0..@intCast(eol_len)]);
+
+    var dev_null_ptr: ?[*]const u8 = null;
+    var dev_null_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_dev_null(&dev_null_ptr, &dev_null_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(dev_null_ptr, dev_null_len);
+    try std.testing.expectEqualStrings("/dev/null", (dev_null_ptr orelse return error.NullOsDevNull)[0..@intCast(dev_null_len)]);
 }
 
 test "node plugin path top-level facade helpers" {

@@ -63,16 +63,23 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `util` helper parity by reusing existing environment/error surfaces
-- Current status: `4 / 4` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process`/`os` identity helper parity without claiming JavaScript object semantics
+- Current status: `5 / 5` helper features completed (`100.0%`)
 - Planned helpers:
-  - `parseEnv`
-  - `getSystemErrorName`
-  - `getSystemErrorMessage`
-  - `getSystemErrorMap`
+  - `process.arch`
+  - `process.platform`
+  - `process.version`
+  - `os.devNull`
+  - `os.EOL`
 
 ## Recent Completed Helper Features
 
+- `process`/`os` helper tranche completed:
+  - `process.arch`
+  - `process.platform`
+  - `process.version`
+  - `os.devNull`
+  - `os.EOL`
 - `util` helper tranche completed:
   - `parseEnv`
   - `getSystemErrorName`

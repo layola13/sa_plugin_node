@@ -351,9 +351,12 @@
 @extern sa_node_plugin_punycode_to_unicode(domain_ptr: ptr, domain_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_querystring_unescape_buffer(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_eol(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_os_dev_null(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_constants(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_get_priority(pid: u64, &out_priority: u64) -> u64
 @extern sa_node_plugin_os_set_priority(pid: u64, priority: u64) -> u64
+@extern sa_node_plugin_process_arch(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_platform(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_exit(code: u64) -> u64
 @extern sa_node_plugin_process_kill(pid: u64, signal: u64) -> u64
 @extern sa_node_plugin_process_kill_signal(pid: u64, signal_ptr: ptr, signal_len: u64) -> u64

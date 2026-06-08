@@ -2956,6 +2956,8 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"process\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-process-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"memoryUsage\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"execPath\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"execArgv\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"nextTick\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -2965,6 +2967,8 @@ test "node plugin process top-level facade helpers" {
     const exports_json = (exports_ptr orelse return error.NullProcessTopExports)[0..@intCast(exports_len)];
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"pid\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"env\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execPath\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execArgv\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"versions\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
@@ -2972,6 +2976,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullProcessTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"commandLineModel\":\"native host argv0 plus resolved executable path") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\"") != null);
 
@@ -2983,6 +2988,9 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"pid\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"kill\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"arch\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"argv0\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"execArgv\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"execPath\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
@@ -2999,6 +3007,26 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_platform(&process_platform_ptr, &process_platform_len));
     defer _ = plugin.sa_node_plugin_free_buffer(process_platform_ptr, process_platform_len);
     try std.testing.expectEqualStrings("linux", (process_platform_ptr orelse return error.NullProcessPlatform)[0..@intCast(process_platform_len)]);
+
+    var exec_path_ptr: ?[*]const u8 = null;
+    var exec_path_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_exec_path(&exec_path_ptr, &exec_path_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exec_path_ptr, exec_path_len);
+    try std.testing.expect(exec_path_len > 0);
+
+    var argv0_ptr: ?[*]const u8 = null;
+    var argv0_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_argv0(&argv0_ptr, &argv0_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(argv0_ptr, argv0_len);
+    try std.testing.expect(argv0_len > 0);
+
+    var exec_argv_ptr: ?[*]const u8 = null;
+    var exec_argv_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_exec_argv_json(&exec_argv_ptr, &exec_argv_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exec_argv_ptr, exec_argv_len);
+    const exec_argv_json = (exec_argv_ptr orelse return error.NullProcessExecArgv)[0..@intCast(exec_argv_len)];
+    try std.testing.expect(std.mem.startsWith(u8, exec_argv_json, "["));
+    try std.testing.expect(std.mem.endsWith(u8, exec_argv_json, "]"));
 
     var release_ptr: ?[*]const u8 = null;
     var release_len: u64 = 0;

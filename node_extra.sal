@@ -2299,6 +2299,57 @@
     !__process_top_feature_len
 [END_MACRO]
 
+[MACRO] NODE_PROCESS_EXEC_PATH %out_ptr, %out_len, %out_status
+    __process_exec_path_ptr_slot = stack_alloc 8
+    __process_exec_path_len_slot = stack_alloc 8
+    __process_exec_path_status = call @sa_node_plugin_process_exec_path(&__process_exec_path_ptr_slot, &__process_exec_path_len_slot)
+    !%out_status
+    %out_status = add __process_exec_path_status, 0
+    !__process_exec_path_status
+    __process_exec_path_ptr = load __process_exec_path_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_exec_path_ptr, 0
+    !__process_exec_path_ptr
+    __process_exec_path_len = load __process_exec_path_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_exec_path_len, 0
+    !__process_exec_path_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARGV0 %out_ptr, %out_len, %out_status
+    __process_argv0_ptr_slot = stack_alloc 8
+    __process_argv0_len_slot = stack_alloc 8
+    __process_argv0_status = call @sa_node_plugin_process_argv0(&__process_argv0_ptr_slot, &__process_argv0_len_slot)
+    !%out_status
+    %out_status = add __process_argv0_status, 0
+    !__process_argv0_status
+    __process_argv0_ptr = load __process_argv0_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_argv0_ptr, 0
+    !__process_argv0_ptr
+    __process_argv0_len = load __process_argv0_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_argv0_len, 0
+    !__process_argv0_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXEC_ARGV_JSON %out_ptr, %out_len, %out_status
+    __process_exec_argv_ptr_slot = stack_alloc 8
+    __process_exec_argv_len_slot = stack_alloc 8
+    __process_exec_argv_status = call @sa_node_plugin_process_exec_argv_json(&__process_exec_argv_ptr_slot, &__process_exec_argv_len_slot)
+    !%out_status
+    %out_status = add __process_exec_argv_status, 0
+    !__process_exec_argv_status
+    __process_exec_argv_ptr = load __process_exec_argv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_exec_argv_ptr, 0
+    !__process_exec_argv_ptr
+    __process_exec_argv_len = load __process_exec_argv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_exec_argv_len, 0
+    !__process_exec_argv_len
+[END_MACRO]
+
 [MACRO] NODE_OS_STATUS_JSON %out_ptr, %out_len, %out_status
     __os_top_status_ptr_slot = stack_alloc 8
     __os_top_status_len_slot = stack_alloc 8

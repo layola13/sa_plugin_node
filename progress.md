@@ -63,13 +63,19 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `crypto` helper parity by exposing native secure heap usage snapshot
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process` command-line helper parity by exposing native launch snapshots
+- Current status: `3 / 3` helper features completed (`100.0%`)
 - Planned helpers:
-  - `crypto.secureHeapUsed`
+  - `process.execPath`
+  - `process.argv0`
+  - `process.execArgv`
 
 ## Recent Completed Helper Features
 
+- `process` command-line helper tranche completed:
+  - `process.execPath`
+  - `process.argv0`
+  - `process.execArgv`
 - `crypto` helper tranche completed:
   - `crypto.secureHeapUsed`
 - `util` helper tranche completed:

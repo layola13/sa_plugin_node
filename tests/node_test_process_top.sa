@@ -33,9 +33,48 @@ L_FEATURES:
     s4 = add 0, 0
     EXPAND NODE_PROCESS_TOP_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s4
     ok4 = eq s4, 0
-    br ok4 -> L_FREE, L_ERR_FEATURES
-L_FREE:
+    br ok4 -> L_EXEC_PATH, L_ERR_FEATURES
+L_EXEC_PATH:
     !ok4
+    exec_path_ptr = add 0, 0
+    exec_path_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_PROCESS_EXEC_PATH exec_path_ptr, exec_path_len, s5
+    ok5 = eq s5, 0
+    br ok5 -> L_EXEC_PATH_LEN, L_ERR_EXEC_PATH
+L_EXEC_PATH_LEN:
+    !ok5
+    ok6 = gt exec_path_len, 0
+    br ok6 -> L_ARGV0, L_ERR_EXEC_PATH_LEN
+L_ARGV0:
+    !ok6
+    argv0_ptr = add 0, 0
+    argv0_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_PROCESS_ARGV0 argv0_ptr, argv0_len, s6
+    ok7 = eq s6, 0
+    br ok7 -> L_ARGV0_LEN, L_ERR_ARGV0
+L_ARGV0_LEN:
+    !ok7
+    ok8 = gt argv0_len, 0
+    br ok8 -> L_EXEC_ARGV, L_ERR_ARGV0_LEN
+L_EXEC_ARGV:
+    !ok8
+    exec_argv_ptr = add 0, 0
+    exec_argv_len = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_PROCESS_EXEC_ARGV_JSON exec_argv_ptr, exec_argv_len, s7
+    ok9 = eq s7, 0
+    br ok9 -> L_EXEC_ARGV_LEN, L_ERR_EXEC_ARGV
+L_EXEC_ARGV_LEN:
+    !ok9
+    ok10 = gt exec_argv_len, 0
+    br ok10 -> L_FREE, L_ERR_EXEC_ARGV_LEN
+L_FREE:
+    !ok10
+    free_exec_argv = call @sa_node_plugin_free_buffer(exec_argv_ptr, exec_argv_len)
+    free_argv0 = call @sa_node_plugin_free_buffer(argv0_ptr, argv0_len)
+    free_exec_path = call @sa_node_plugin_free_buffer(exec_path_ptr, exec_path_len)
     free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
     free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
     free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
@@ -44,6 +83,18 @@ L_FREE:
     !free_exports
     !free_config
     !free_feature
+    !free_exec_path
+    !free_argv0
+    !free_exec_argv
+    !s7
+    !exec_argv_len
+    !exec_argv_ptr
+    !s6
+    !argv0_len
+    !argv0_ptr
+    !s5
+    !exec_path_len
+    !exec_path_ptr
     !s4
     !feature_len
     !feature_ptr
@@ -69,3 +120,21 @@ L_ERR_CONFIG:
 L_ERR_FEATURES:
     !ok4
     panic(103)
+L_ERR_EXEC_PATH:
+    !ok5
+    panic(105)
+L_ERR_EXEC_PATH_LEN:
+    !ok6
+    panic(106)
+L_ERR_ARGV0:
+    !ok7
+    panic(107)
+L_ERR_ARGV0_LEN:
+    !ok8
+    panic(108)
+L_ERR_EXEC_ARGV:
+    !ok9
+    panic(109)
+L_ERR_EXEC_ARGV_LEN:
+    !ok10
+    panic(110)

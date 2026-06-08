@@ -271,6 +271,9 @@
 @extern sa_node_plugin_process_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_exec_path(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_argv0(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_process_exec_argv_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_config_json(&out_ptr: ptr, &out_len: u64) -> u64

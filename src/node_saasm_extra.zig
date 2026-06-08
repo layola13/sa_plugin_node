@@ -449,6 +449,39 @@ pub export fn sa_node_plugin_fs_feature_support_json(out_ptr: ?*?[*]const u8, ou
     return writeOwnedString(out_ptr, out_len, "{\"access\":{\"supported\":true,\"mode\":\"native existence and mode check helper returning boolean result\"},\"exists\":{\"supported\":true,\"mode\":\"native boolean existence helper\"},\"stat\":{\"supported\":true,\"mode\":\"native stat JSON helper\"},\"lstat\":{\"supported\":true,\"mode\":\"native lstat JSON helper\"},\"readdir\":{\"supported\":true,\"mode\":\"native directory listing JSON helper\"},\"readFile\":{\"supported\":true,\"mode\":\"native full-file read helper returning buffer\"},\"writeFile\":{\"supported\":true,\"mode\":\"native full-file write helper\"},\"mkdir\":{\"supported\":true,\"mode\":\"native mkdir helper with recursive flag\"},\"rmdir\":{\"supported\":true,\"mode\":\"native directory removal helper\"},\"rm\":{\"supported\":true,\"mode\":\"native remove helper with recursive flag\"},\"unlink\":{\"supported\":true,\"mode\":\"native unlink helper\"},\"rename\":{\"supported\":true,\"mode\":\"native rename helper\"},\"copyFile\":{\"supported\":true,\"mode\":\"native copy-file helper\"},\"realpath\":{\"supported\":true,\"mode\":\"native realpath helper returning resolved path text\"},\"readlink\":{\"supported\":true,\"mode\":\"native readlink helper returning target path text\"},\"opendir\":{\"supported\":true,\"mode\":\"explicit native directory handle with next and free operations\"},\"open\":{\"supported\":true,\"mode\":\"native open helper returning numeric file descriptor\"},\"statfs\":{\"supported\":true,\"mode\":\"native statfs JSON helper\"},\"glob\":{\"supported\":true,\"mode\":\"native glob helper returning matched path JSON\"},\"promises\":{\"supported\":true,\"mode\":\"fs.promises compatibility entry points over the same native operations\",\"limitations\":[\"returns already-resolved native results rather than JavaScript Promise object identity or microtask timing\"]},\"constants\":{\"supported\":true,\"mode\":\"native constants aggregate with fs access and copyfile flags\"},\"cp\":{\"supported\":false,\"reason\":\"recursive cp option handling is not exposed as a dedicated top-level helper\"},\"watch\":{\"supported\":false,\"reason\":\"FSWatcher event-emitter semantics are not modeled\"},\"watchFile\":{\"supported\":false,\"reason\":\"stat polling watcher semantics are not modeled\"},\"unwatchFile\":{\"supported\":false,\"reason\":\"stat polling watcher teardown semantics are not modeled\"},\"ReadStream\":{\"supported\":false,\"reason\":\"JavaScript ReadStream class instances are not modeled\"},\"WriteStream\":{\"supported\":false,\"reason\":\"JavaScript WriteStream class instances are not modeled\"},\"Dir\":{\"supported\":false,\"reason\":\"JavaScript Dir class instances are not modeled; use explicit native opendir handles instead\"},\"Dirent\":{\"supported\":false,\"reason\":\"JavaScript Dirent class instances are not modeled; directory entries are returned as JSON or scalar metadata\"},\"Stats\":{\"supported\":false,\"reason\":\"JavaScript Stats class instances are not modeled; stat data is returned as JSON\"},\"openAsBlob\":{\"supported\":false,\"reason\":\"Blob construction and stream-backed file blob semantics are not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_crypto_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var hashes_ptr: ?[*]const u8 = null;
+    var hashes_len: u64 = 0;
+    if (ext.sa_node_plugin_crypto_get_hashes(&hashes_ptr, &hashes_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(hashes_ptr, hashes_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"crypto\",\"supported\":true,\"mode\":\"top-level-native-crypto-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &crypto_export_names) catch return fail();
+    out.appendSlice(",\"hashes\":") catch return fail();
+    out.appendSlice((hashes_ptr orelse return fail())[0..@intCast(hashes_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"randomBytes\":true,\"randomFill\":true,\"randomInt\":true,\"randomUUID\":true,\"createHash\":true,\"createHmac\":true,\"pbkdf2\":true,\"hkdf\":true,\"scrypt\":true,\"createCipheriv\":true,\"createDecipheriv\":true,\"sign\":true,\"verify\":true,\"generateKey\":true,\"getHashes\":true,\"timingSafeEqual\":true,\"webcrypto\":true,\"subtle\":true,\"generateKeyPair\":false,\"createPrivateKey\":false,\"createPublicKey\":false,\"createSecretKey\":false,\"KeyObject\":false,\"HashClass\":false,\"HmacClass\":false,\"Certificate\":false,\"X509Certificate\":false,\"secureHeapUsed\":false},\"capabilities\":[\"native random byte, UUID, integer, and fill helpers\",\"explicit native hash, HMAC, cipher, and decipher state handles\",\"PBKDF2, HKDF, scrypt, sign, verify, and symmetric key-generation helpers\",\"native hash catalog metadata and Web Crypto sync subset\"],\"limitations\":[\"no JavaScript Hash, Hmac, Cipheriv, Decipheriv, KeyObject, Certificate, or X509Certificate class instances\",\"no callback scheduling or Promise object identity for async-style Node crypto APIs\",\"generateKeyPair, asymmetric key object construction, and secure heap accounting are not modeled at the top-level facade\",\"webcrypto and subtle are exposed as native sync subsets rather than browser-compatible object graphs\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_crypto_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &crypto_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_crypto_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"randomModel\":\"native random byte, UUID, integer, and fill helpers\",\"hashModel\":\"one-shot hash plus explicit native hash and HMAC state handles\",\"cipherModel\":\"explicit native cipher and decipher state handles over supported symmetric algorithms\",\"keyModel\":\"raw byte buffers and explicit native web crypto key handles rather than JavaScript KeyObject instances\",\"webCryptoModel\":\"native sync subset for getRandomValues, randomUUID, subtle digest/import/generate/export/sign/verify/encrypt/decrypt\",\"objectModel\":\"not-modeled for JavaScript crypto class instances\"}");
+}
+
+pub export fn sa_node_plugin_crypto_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"randomBytes\":{\"supported\":true,\"mode\":\"native random byte buffer helper\"},\"randomFill\":{\"supported\":true,\"mode\":\"native in-place random fill helper\"},\"randomInt\":{\"supported\":true,\"mode\":\"native bounded random integer helper\"},\"randomUUID\":{\"supported\":true,\"mode\":\"native RFC4122 v4 UUID helper\"},\"createHash\":{\"supported\":true,\"mode\":\"explicit native hash state handle with update/final/free helpers\"},\"createHmac\":{\"supported\":true,\"mode\":\"explicit native HMAC state handle with update/final/free helpers\"},\"pbkdf2\":{\"supported\":true,\"mode\":\"native PBKDF2 helper\",\"limitations\":[\"returns derived key bytes directly rather than invoking a callback or returning a JavaScript Promise\"]},\"hkdf\":{\"supported\":true,\"mode\":\"native HKDF helper\"},\"scrypt\":{\"supported\":true,\"mode\":\"native scrypt helper\"},\"createCipheriv\":{\"supported\":true,\"mode\":\"explicit native cipher state handle with update/final/free helpers\"},\"createDecipheriv\":{\"supported\":true,\"mode\":\"explicit native decipher state handle with update/final/free helpers\"},\"sign\":{\"supported\":true,\"mode\":\"native Ed25519 sign helper over raw key bytes\"},\"verify\":{\"supported\":true,\"mode\":\"native Ed25519 verify helper over raw key bytes\"},\"generateKey\":{\"supported\":true,\"mode\":\"native random symmetric key bytes helper\"},\"getHashes\":{\"supported\":true,\"mode\":\"static hash catalog JSON\"},\"timingSafeEqual\":{\"supported\":true,\"mode\":\"native constant-time byte comparison helper\"},\"webcrypto\":{\"supported\":true,\"mode\":\"native sync Web Crypto subset\",\"limitations\":[\"not exposed as a full browser-compatible Crypto object graph\"]},\"subtle\":{\"supported\":true,\"mode\":\"native sync subset for digest/import/generate/export/sign/verify/encrypt/decrypt\",\"limitations\":[\"does not provide JavaScript Promise object identity or asynchronous timing\"]},\"generateKeyPair\":{\"supported\":false,\"reason\":\"Node key-pair generation and JavaScript KeyObject construction are not modeled\"},\"createPrivateKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from PEM/DER/JWK is not modeled\"},\"createPublicKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from PEM/DER/JWK is not modeled\"},\"createSecretKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from secret key bytes is not modeled\"},\"KeyObject\":{\"supported\":false,\"reason\":\"JavaScript KeyObject class instances are not modeled\"},\"HashClass\":{\"supported\":false,\"reason\":\"JavaScript Hash class instances are not modeled; use explicit native handles instead\"},\"HmacClass\":{\"supported\":false,\"reason\":\"JavaScript Hmac class instances are not modeled; use explicit native handles instead\"},\"Certificate\":{\"supported\":false,\"reason\":\"legacy JavaScript Certificate helpers are not modeled\"},\"X509Certificate\":{\"supported\":false,\"reason\":\"JavaScript X509Certificate class instances are not modeled\"},\"secureHeapUsed\":{\"supported\":false,\"reason\":\"OpenSSL secure heap accounting is not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6019,6 +6052,39 @@ const fs_export_names = [_][]const u8{
     "watchFile",
     "writeFile",
     "constants",
+};
+
+const crypto_export_names = [_][]const u8{
+    "Certificate",
+    "Cipheriv",
+    "Decipheriv",
+    "Hash",
+    "Hmac",
+    "KeyObject",
+    "X509Certificate",
+    "createCipheriv",
+    "createDecipheriv",
+    "createHash",
+    "createHmac",
+    "createPrivateKey",
+    "createPublicKey",
+    "createSecretKey",
+    "generateKey",
+    "generateKeyPair",
+    "getHashes",
+    "hkdf",
+    "pbkdf2",
+    "randomBytes",
+    "randomFill",
+    "randomInt",
+    "randomUUID",
+    "scrypt",
+    "secureHeapUsed",
+    "sign",
+    "subtle",
+    "timingSafeEqual",
+    "verify",
+    "webcrypto",
 };
 
 const timers_export_names = [_][]const u8{

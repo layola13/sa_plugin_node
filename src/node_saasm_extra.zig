@@ -650,6 +650,30 @@ pub export fn sa_node_plugin_querystring_feature_support_json(out_ptr: ?*?[*]con
     return writeOwnedString(out_ptr, out_len, "{\"escape\":{\"supported\":true,\"mode\":\"native percent-encoding escape helper\"},\"unescape\":{\"supported\":true,\"mode\":\"native percent-decoding helper with plus-to-space handling\"},\"parse\":{\"supported\":true,\"mode\":\"native query-string parse helper returning a flat JSON object\",\"limitations\":[\"does not model repeated-key arrays, custom separators, or maxKeys options\"]},\"stringify\":{\"supported\":true,\"mode\":\"native flat JSON object stringify helper\",\"limitations\":[\"does not model custom separators, nested objects, or repeated-key array expansion semantics\"]},\"encode\":{\"supported\":true,\"mode\":\"alias metadata over stringify helper\"},\"decode\":{\"supported\":true,\"mode\":\"alias metadata over parse helper\"},\"unescapeBuffer\":{\"supported\":true,\"mode\":\"native raw-byte percent-decoding helper\",\"limitations\":[\"returns bytes through the native ABI rather than a JavaScript Buffer instance\"]}}");
 }
 
+pub export fn sa_node_plugin_punycode_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"punycode\",\"supported\":true,\"mode\":\"top-level-native-punycode-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &punycode_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"encode\":true,\"decode\":true,\"toASCII\":true,\"toUnicode\":true,\"ucs2\":false,\"version\":false},\"capabilities\":[\"native punycode encode and decode helpers over UTF-8 text\",\"native IDNA-style toASCII and toUnicode helpers through the existing libidn2-backed ABI\",\"top-level export-name and support metadata for the public punycode module surface\"],\"limitations\":[\"no punycode.ucs2 namespace helpers for JavaScript UTF-16 code-unit arrays\",\"no top-level version constant export in this native facade\",\"encode and decode operate on explicit native string buffers and do not model JavaScript exception identity or deprecated warning emission\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_punycode_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &punycode_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_punycode_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"encodeModel\":\"native punycode encode helper over explicit UTF-8 input text\",\"decodeModel\":\"native punycode decode helper returning UTF-8 text\",\"domainModel\":\"toASCII and toUnicode use the existing libidn2-backed domain conversion helpers\",\"objectModel\":\"not-modeled for punycode.ucs2 namespace objects, version constant exports, or JavaScript deprecation-warning side effects\"}");
+}
+
+pub export fn sa_node_plugin_punycode_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"encode\":{\"supported\":true,\"mode\":\"native punycode encode helper over UTF-8 text\"},\"decode\":{\"supported\":true,\"mode\":\"native punycode decode helper returning UTF-8 text\"},\"toASCII\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-ASCII helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"toUnicode\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-Unicode helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"ucs2\":{\"supported\":false,\"reason\":\"JavaScript UTF-16 code-unit array helpers are not modeled in the current native ABI\"},\"version\":{\"supported\":false,\"reason\":\"the deprecated punycode module version constant is not exposed as a dedicated native export\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6404,6 +6428,15 @@ const querystring_export_names = [_][]const u8{
     "stringify",
     "unescape",
     "unescapeBuffer",
+};
+
+const punycode_export_names = [_][]const u8{
+    "decode",
+    "encode",
+    "toASCII",
+    "toUnicode",
+    "ucs2",
+    "version",
 };
 
 const timers_export_names = [_][]const u8{

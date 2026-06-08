@@ -2,6 +2,7 @@
 @import "../node.sal"
 @const S_A = utf8:"/usr"
 @const S_B = utf8:"local"
+@const S_NS = utf8:"/tmp/node-path.txt"
 
 @test "node.path join"():
 L_ENTRY:
@@ -34,3 +35,30 @@ L_ENTRY:
     !ol
     !op
     return
+
+@test "node.path to_namespaced_path"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PATH_TO_NAMESPACED_PATH op, ol, s, S_NS, 18
+    ok_status = eq s, 0
+    br ok_status -> L_LEN, L_ERR_STATUS
+L_LEN:
+    !ok_status
+    ok_len = eq ol, 18
+    br ok_len -> L_OK, L_ERR_LEN
+L_OK:
+    !ok_len
+    free_path = call @sa_node_plugin_free_buffer(op, ol)
+    !free_path
+    !s
+    !ol
+    !op
+    return
+L_ERR_STATUS:
+    !ok_status
+    panic(103)
+L_ERR_LEN:
+    !ok_len
+    panic(103)

@@ -3051,6 +3051,12 @@ test "node plugin os top-level facade helpers" {
 }
 
 test "node plugin path top-level facade helpers" {
+    var namespaced_ptr: ?[*]const u8 = null;
+    var namespaced_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_path_to_namespaced_path("/tmp/node-path.txt", 18, &namespaced_ptr, &namespaced_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(namespaced_ptr, namespaced_len);
+    try std.testing.expectEqualStrings("/tmp/node-path.txt", (namespaced_ptr orelse return error.NullPathNamespaced)[0..@intCast(namespaced_len)]);
+
     var status_ptr: ?[*]const u8 = null;
     var status_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_path_status_json(&status_ptr, &status_len));
@@ -3059,6 +3065,7 @@ test "node plugin path top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"path\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-path-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"resolve\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"toNamespacedPath\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"posix\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -3076,7 +3083,7 @@ test "node plugin path top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullPathTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"separatorModel\":\"native sep and delimiter helpers reflect the host path platform surface\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for path.posix and path.win32 namespace objects or Windows namespaced path semantics\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "Windows namespaced path conversion is not claimed") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -3085,6 +3092,7 @@ test "node plugin path top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullPathTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"join\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"matchesGlob\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"toNamespacedPath\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"win32\":{\"supported\":false") != null);
 }
 

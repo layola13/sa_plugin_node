@@ -63,14 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `net` helper parity by exposing native static handle-type checks
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `path` helper parity by exposing POSIX `toNamespacedPath` behavior
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net.BlockList.isBlockList`
-  - `net.SocketAddress.isSocketAddress`
+  - `path.toNamespacedPath`
 
 ## Recent Completed Helper Features
 
+- `path` helper tranche completed:
+  - `path.toNamespacedPath`
 - `net` helper tranche completed:
   - `net.BlockList.isBlockList`
   - `net.SocketAddress.isSocketAddress`

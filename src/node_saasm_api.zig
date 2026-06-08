@@ -631,6 +631,14 @@ pub export fn sa_node_plugin_path_is_absolute(path: ?[*]const u8, len: u64, out_
     return 0;
 }
 
+pub export fn sa_node_plugin_path_to_namespaced_path(path: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const slice = if (len == 0) "" else (path orelse return 2)[0..len];
+    const owned = std.heap.page_allocator.dupe(u8, slice) catch return 2;
+    out_ptr.?.* = owned.ptr;
+    out_len.?.* = owned.len;
+    return 0;
+}
+
 // --- crypto module ---
 
 pub export fn sa_node_plugin_crypto_random_bytes(size: u64, out_ptr: ?*?[*]const u8) u32 {

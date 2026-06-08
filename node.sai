@@ -38,6 +38,7 @@
 @extern sa_node_plugin_path_dirname(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_path_extname(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_path_is_absolute(&path: ptr, len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_path_to_namespaced_path(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 
 // --- crypto module ---
 @extern sa_node_plugin_crypto_random_bytes(size: u64, &out_ptr: ptr) -> u32

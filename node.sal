@@ -221,6 +221,14 @@
     %out_bool = load __paa_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_PATH_TO_NAMESPACED_PATH %out_ptr, %out_len, %out_status, %path, %path_len
+    __ptnp_ptr_slot = stack_alloc 8
+    __ptnp_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_to_namespaced_path(&%path, %path_len, &__ptnp_ptr_slot, &__ptnp_len_slot)
+    %out_ptr = load __ptnp_ptr_slot+0 as ptr
+    %out_len = load __ptnp_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_CRYPTO_RANDOM_BYTES %size, %out_ptr, %out_status
     __rand_ptr_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_crypto_random_bytes(%size, &__rand_ptr_slot)

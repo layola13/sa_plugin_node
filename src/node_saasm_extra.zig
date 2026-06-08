@@ -602,6 +602,30 @@ pub export fn sa_node_plugin_os_feature_support_json(out_ptr: ?*?[*]const u8, ou
     return writeOwnedString(out_ptr, out_len, "{\"arch\":{\"supported\":true,\"mode\":\"native host arch string helper\"},\"availableParallelism\":{\"supported\":true,\"mode\":\"native available parallelism helper\"},\"cpus\":{\"supported\":true,\"mode\":\"native CPU snapshot JSON helper\"},\"endianness\":{\"supported\":true,\"mode\":\"native endianness helper returning LE or BE\"},\"freemem\":{\"supported\":true,\"mode\":\"native free-memory helper\"},\"getPriority\":{\"supported\":true,\"mode\":\"native POSIX getpriority helper\"},\"homedir\":{\"supported\":true,\"mode\":\"native home-directory helper\"},\"hostname\":{\"supported\":true,\"mode\":\"native hostname helper\"},\"loadavg\":{\"supported\":true,\"mode\":\"native load-average helper\"},\"machine\":{\"supported\":true,\"mode\":\"native uname machine helper\"},\"networkInterfaces\":{\"supported\":true,\"mode\":\"native network-interface snapshot JSON helper\"},\"platform\":{\"supported\":true,\"mode\":\"native host platform string helper\"},\"release\":{\"supported\":true,\"mode\":\"native OS release helper\"},\"setPriority\":{\"supported\":true,\"mode\":\"native POSIX setpriority helper\",\"limitations\":[\"subject to host permission constraints and priority range validation\"]},\"tmpdir\":{\"supported\":true,\"mode\":\"native temp-directory helper\"},\"totalmem\":{\"supported\":true,\"mode\":\"native total-memory helper\"},\"type\":{\"supported\":true,\"mode\":\"native OS type helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native system uptime helper\"},\"userInfo\":{\"supported\":true,\"mode\":\"native user-info JSON helper\"},\"version\":{\"supported\":true,\"mode\":\"native uname version helper\"},\"constants\":{\"supported\":true,\"mode\":\"native os.constants JSON aggregate\"},\"devNull\":{\"supported\":false,\"reason\":\"os.devNull path constant is not exposed as a dedicated helper in the current native ABI\"},\"EOL\":{\"supported\":false,\"reason\":\"os.EOL constant is not exposed as a dedicated helper in the current native ABI\"}}");
 }
 
+pub export fn sa_node_plugin_path_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"path\",\"supported\":true,\"mode\":\"top-level-native-path-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &path_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"join\":true,\"resolve\":true,\"normalize\":true,\"basename\":true,\"dirname\":true,\"extname\":true,\"isAbsolute\":true,\"relative\":true,\"format\":true,\"parse\":true,\"sep\":true,\"delimiter\":true,\"matchesGlob\":true,\"posix\":false,\"win32\":false,\"toNamespacedPath\":false},\"capabilities\":[\"native path join, resolve, normalize, basename, dirname, extname, and isAbsolute helpers\",\"native relative, format, parse, sep, delimiter, and matchesGlob helpers\",\"top-level export-name and support metadata for the public path module surface\"],\"limitations\":[\"no separate path.posix or path.win32 namespace objects with platform-specific method tables\",\"toNamespacedPath and Windows namespace path semantics are not exposed as dedicated native helpers\",\"normalization and resolution follow the host-native std.fs.path behavior rather than Node's full cross-platform edge-case matrix\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_path_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &path_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_path_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"joinModel\":\"native std.fs.path join and resolve helpers over explicit slice arrays\",\"analysisModel\":\"native normalize, basename, dirname, extname, isAbsolute, relative, format, and parse helpers\",\"separatorModel\":\"native sep and delimiter helpers reflect the host path platform surface\",\"globModel\":\"matchesGlob is exposed as a native boolean helper\",\"objectModel\":\"not-modeled for path.posix and path.win32 namespace objects or Windows namespaced path semantics\"}");
+}
+
+pub export fn sa_node_plugin_path_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"join\":{\"supported\":true,\"mode\":\"native std.fs.path join helper over explicit slice arrays\"},\"resolve\":{\"supported\":true,\"mode\":\"native std.fs.path resolve helper over explicit slice arrays\"},\"normalize\":{\"supported\":true,\"mode\":\"native path normalization helper\",\"limitations\":[\"uses host-native path resolution semantics\"]},\"basename\":{\"supported\":true,\"mode\":\"native basename helper with optional extension stripping\"},\"dirname\":{\"supported\":true,\"mode\":\"native dirname helper\"},\"extname\":{\"supported\":true,\"mode\":\"native extension helper\"},\"isAbsolute\":{\"supported\":true,\"mode\":\"native absolute-path predicate\"},\"relative\":{\"supported\":true,\"mode\":\"native relative-path helper over resolved inputs\"},\"format\":{\"supported\":true,\"mode\":\"native path format helper from JSON path parts\"},\"parse\":{\"supported\":true,\"mode\":\"native path parse helper returning JSON parts\"},\"sep\":{\"supported\":true,\"mode\":\"native path separator helper\"},\"delimiter\":{\"supported\":true,\"mode\":\"native path delimiter helper\"},\"matchesGlob\":{\"supported\":true,\"mode\":\"native glob-match boolean helper\"},\"posix\":{\"supported\":false,\"reason\":\"path.posix namespace object is not modeled as a distinct method table\"},\"win32\":{\"supported\":false,\"reason\":\"path.win32 namespace object is not modeled as a distinct method table\"},\"toNamespacedPath\":{\"supported\":false,\"reason\":\"Windows namespaced path conversion helper is not exposed in the current native ABI\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6327,6 +6351,25 @@ const os_export_names = [_][]const u8{
     "uptime",
     "userInfo",
     "version",
+};
+
+const path_export_names = [_][]const u8{
+    "basename",
+    "delimiter",
+    "dirname",
+    "extname",
+    "format",
+    "isAbsolute",
+    "join",
+    "matchesGlob",
+    "normalize",
+    "parse",
+    "posix",
+    "relative",
+    "resolve",
+    "sep",
+    "toNamespacedPath",
+    "win32",
 };
 
 const timers_export_names = [_][]const u8{

@@ -674,6 +674,30 @@ pub export fn sa_node_plugin_punycode_feature_support_json(out_ptr: ?*?[*]const 
     return writeOwnedString(out_ptr, out_len, "{\"encode\":{\"supported\":true,\"mode\":\"native punycode encode helper over UTF-8 text\"},\"decode\":{\"supported\":true,\"mode\":\"native punycode decode helper returning UTF-8 text\"},\"toASCII\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-ASCII helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"toUnicode\":{\"supported\":true,\"mode\":\"native libidn2-backed domain-to-Unicode helper\",\"limitations\":[\"depends on libidn2 availability at runtime\"]},\"ucs2\":{\"supported\":false,\"reason\":\"JavaScript UTF-16 code-unit array helpers are not modeled in the current native ABI\"},\"version\":{\"supported\":false,\"reason\":\"the deprecated punycode module version constant is not exposed as a dedicated native export\"}}");
 }
 
+pub export fn sa_node_plugin_string_decoder_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"string_decoder\",\"supported\":true,\"mode\":\"top-level-native-string-decoder-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &string_decoder_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"StringDecoder\":true,\"write\":true,\"end\":false,\"text\":false,\"lastChar\":false,\"lastNeed\":false,\"lastTotal\":false},\"capabilities\":[\"native explicit StringDecoder handle allocation and free\",\"native write helper that preserves incomplete UTF-8 multibyte sequences across chunks\",\"top-level export-name and support metadata for the public string_decoder module surface\"],\"limitations\":[\"only the explicit native handle plus write/free subset is exposed\",\"end, text, lastChar, lastNeed, and lastTotal JavaScript instance semantics are not modeled\",\"encoding selection and broader non-UTF-8 codec families are not exposed as configurable JavaScript constructor behavior\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_string_decoder_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &string_decoder_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_string_decoder_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"handleModel\":\"explicit native StringDecoder handle allocated with create() and released with free()\",\"writeModel\":\"native write helper accumulates incomplete UTF-8 multibyte sequences between chunks\",\"encodingModel\":\"current native implementation exposes a fixed UTF-8-oriented decoder subset rather than full JavaScript encoding selection\",\"objectModel\":\"not-modeled for JavaScript constructor instances, prototype getters, or end/text methods\"}");
+}
+
+pub export fn sa_node_plugin_string_decoder_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"StringDecoder\":{\"supported\":true,\"mode\":\"explicit native handle with create, write, and free operations\"},\"write\":{\"supported\":true,\"mode\":\"native chunk decoder with incomplete UTF-8 sequence buffering\"},\"end\":{\"supported\":false,\"reason\":\"flush semantics for pending buffered bytes are not exposed as a dedicated helper in the current native ABI\"},\"text\":{\"supported\":false,\"reason\":\"legacy text(buf, offset) instance helper is not modeled\"},\"lastChar\":{\"supported\":false,\"reason\":\"JavaScript getter exposing the buffered incomplete character bytes is not modeled\"},\"lastNeed\":{\"supported\":false,\"reason\":\"JavaScript getter exposing missing byte count is not modeled\"},\"lastTotal\":{\"supported\":false,\"reason\":\"JavaScript getter exposing buffered plus missing byte count is not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6437,6 +6461,10 @@ const punycode_export_names = [_][]const u8{
     "toUnicode",
     "ucs2",
     "version",
+};
+
+const string_decoder_export_names = [_][]const u8{
+    "StringDecoder",
 };
 
 const timers_export_names = [_][]const u8{

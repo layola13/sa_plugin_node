@@ -2987,6 +2987,42 @@ test "node plugin punycode top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":false") != null);
 }
 
+test "node plugin string_decoder top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullStringDecoderTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"string_decoder\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-string-decoder-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"StringDecoder\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"end\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullStringDecoderTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"StringDecoder\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullStringDecoderTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native StringDecoder handle allocated with create() and released with free()\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"encodingModel\":\"current native implementation exposes a fixed UTF-8-oriented decoder subset rather than full JavaScript encoding selection\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullStringDecoderTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"StringDecoder\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"write\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"lastNeed\":{\"supported\":false") != null);
+}
+
 test "node plugin test runner reports native harness support" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
     defer _ = unsetenv("NODE_OPTIONS");

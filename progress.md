@@ -4,7 +4,7 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `42 / 43` modules completed (`97.7%`)
+- Current status: `43 / 43` modules completed (`100.0%`)
 
 ## Completed Modules
 
@@ -50,11 +50,11 @@
 - `util`
 - `wasi`
 - `worker_threads`
+- `zlib`
 
 ## Remaining Modules In Current Sweep
 
-- `string_decoder`
-- `zlib`
+- None in the current non-VM/V8 public top-level facade sweep.
 
 ## Notes
 

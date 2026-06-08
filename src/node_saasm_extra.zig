@@ -698,6 +698,30 @@ pub export fn sa_node_plugin_string_decoder_feature_support_json(out_ptr: ?*?[*]
     return writeOwnedString(out_ptr, out_len, "{\"StringDecoder\":{\"supported\":true,\"mode\":\"explicit native handle with create, write, and free operations\"},\"write\":{\"supported\":true,\"mode\":\"native chunk decoder with incomplete UTF-8 sequence buffering\"},\"end\":{\"supported\":false,\"reason\":\"flush semantics for pending buffered bytes are not exposed as a dedicated helper in the current native ABI\"},\"text\":{\"supported\":false,\"reason\":\"legacy text(buf, offset) instance helper is not modeled\"},\"lastChar\":{\"supported\":false,\"reason\":\"JavaScript getter exposing the buffered incomplete character bytes is not modeled\"},\"lastNeed\":{\"supported\":false,\"reason\":\"JavaScript getter exposing missing byte count is not modeled\"},\"lastTotal\":{\"supported\":false,\"reason\":\"JavaScript getter exposing buffered plus missing byte count is not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_zlib_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"zlib\",\"supported\":true,\"mode\":\"top-level-native-zlib-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &zlib_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"gzipSync\":true,\"gunzipSync\":true,\"deflateSync\":true,\"inflateSync\":true,\"deflateRawSync\":true,\"inflateRawSync\":true,\"unzipSync\":true,\"brotliCompressSync\":true,\"brotliDecompressSync\":true,\"zstdCompressSync\":true,\"zstdDecompressSync\":true,\"crc32\":true,\"createGzip\":false,\"createGunzip\":false,\"createDeflate\":false,\"createInflate\":false,\"createDeflateRaw\":false,\"createInflateRaw\":false,\"createUnzip\":false,\"createBrotliCompress\":false,\"createBrotliDecompress\":false,\"createZstdCompress\":false,\"createZstdDecompress\":false,\"gzip\":false,\"gunzip\":false,\"deflate\":false,\"inflate\":false,\"deflateRaw\":false,\"inflateRaw\":false,\"unzip\":false,\"brotliCompress\":false,\"brotliDecompress\":false,\"zstdCompress\":false,\"zstdDecompress\":false,\"constants\":false,\"codes\":false},\"capabilities\":[\"native synchronous gzip, gunzip, deflate, inflate, raw-deflate, raw-inflate, and unzip helpers\",\"native synchronous Brotli and Zstd compress and decompress helpers plus CRC32\",\"top-level export-name and support metadata for the public zlib module surface\"],\"limitations\":[\"no JavaScript Transform stream classes or create* constructor helpers\",\"callback-style asynchronous convenience methods are not modeled; this facade exposes synchronous native helpers only\",\"constants and codes objects are not exposed as dedicated native top-level exports in the current ABI\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_zlib_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &zlib_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_zlib_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"syncModel\":\"native synchronous byte-buffer helpers for gzip, gunzip, deflate, inflate, raw deflate/inflate, unzip, Brotli, and Zstd\",\"checksumModel\":\"native CRC32 helper over explicit byte slices\",\"codecModel\":\"gzip/gunzip and zlib deflate/inflate use std.compress while Brotli and Zstd use dynamically loaded system libraries when available\",\"objectModel\":\"not-modeled for JavaScript Transform stream classes, create* constructors, callback-style async methods, or constants/codes objects\"}");
+}
+
+pub export fn sa_node_plugin_zlib_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"gzipSync\":{\"supported\":true,\"mode\":\"native synchronous gzip helper\"},\"gunzipSync\":{\"supported\":true,\"mode\":\"native synchronous gunzip helper\"},\"deflateSync\":{\"supported\":true,\"mode\":\"native synchronous zlib-deflate helper\"},\"inflateSync\":{\"supported\":true,\"mode\":\"native synchronous zlib-inflate helper\"},\"deflateRawSync\":{\"supported\":true,\"mode\":\"native synchronous raw-deflate helper\"},\"inflateRawSync\":{\"supported\":true,\"mode\":\"native synchronous raw-inflate helper\"},\"unzipSync\":{\"supported\":true,\"mode\":\"native synchronous gzip-or-zlib unzip helper\"},\"brotliCompressSync\":{\"supported\":true,\"mode\":\"native synchronous Brotli compress helper\",\"limitations\":[\"depends on Brotli system library availability at runtime\"]},\"brotliDecompressSync\":{\"supported\":true,\"mode\":\"native synchronous Brotli decompress helper\",\"limitations\":[\"depends on Brotli system library availability at runtime\"]},\"zstdCompressSync\":{\"supported\":true,\"mode\":\"native synchronous Zstd compress helper\",\"limitations\":[\"depends on Zstd system library availability at runtime\"]},\"zstdDecompressSync\":{\"supported\":true,\"mode\":\"native synchronous Zstd decompress helper\",\"limitations\":[\"depends on Zstd system library availability at runtime\"]},\"crc32\":{\"supported\":true,\"mode\":\"native CRC32 helper\"},\"createGzip\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createGunzip\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createDeflate\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createInflate\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createDeflateRaw\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createInflateRaw\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createUnzip\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createBrotliCompress\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createBrotliDecompress\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createZstdCompress\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"createZstdDecompress\":{\"supported\":false,\"reason\":\"JavaScript Transform stream constructors are not modeled\"},\"gzip\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"gunzip\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"deflate\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"inflate\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"deflateRaw\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"inflateRaw\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"unzip\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"brotliCompress\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"brotliDecompress\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"zstdCompress\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"zstdDecompress\":{\"supported\":false,\"reason\":\"callback-style asynchronous convenience helpers are not modeled\"},\"constants\":{\"supported\":false,\"reason\":\"zlib constants are not exposed as a dedicated native object snapshot in the current ABI\"},\"codes\":{\"supported\":false,\"reason\":\"zlib code-name lookup table is not exposed as a dedicated native object snapshot in the current ABI\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6465,6 +6489,45 @@ const punycode_export_names = [_][]const u8{
 
 const string_decoder_export_names = [_][]const u8{
     "StringDecoder",
+};
+
+const zlib_export_names = [_][]const u8{
+    "brotliCompress",
+    "brotliCompressSync",
+    "brotliDecompress",
+    "brotliDecompressSync",
+    "codes",
+    "constants",
+    "createBrotliCompress",
+    "createBrotliDecompress",
+    "createDeflate",
+    "createDeflateRaw",
+    "createGunzip",
+    "createGzip",
+    "createInflate",
+    "createInflateRaw",
+    "createUnzip",
+    "createZstdCompress",
+    "createZstdDecompress",
+    "crc32",
+    "deflate",
+    "deflateRaw",
+    "deflateRawSync",
+    "deflateSync",
+    "gunzip",
+    "gunzipSync",
+    "gzip",
+    "gzipSync",
+    "inflate",
+    "inflateRaw",
+    "inflateRawSync",
+    "inflateSync",
+    "unzip",
+    "unzipSync",
+    "zstdCompress",
+    "zstdCompressSync",
+    "zstdDecompress",
+    "zstdDecompressSync",
 };
 
 const timers_export_names = [_][]const u8{

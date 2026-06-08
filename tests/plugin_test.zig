@@ -3575,7 +3575,31 @@ test "node plugin errors and permissions report native compatibility status" {
     defer _ = plugin.sa_node_plugin_free_buffer(assert_status_ptr, assert_status_len);
     const assert_status = (assert_status_ptr orelse return error.NullAssertStatus)[0..@intCast(assert_status_len)];
     try std.testing.expect(std.mem.indexOf(u8, assert_status, "\"module\":\"assert\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, assert_status, "deepStrictEqual") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_status, "\"mode\":\"top-level-native-assert-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_status, "\"deepStrictEqual\":true") != null);
+
+    var assert_exports_ptr: ?[*]const u8 = null;
+    var assert_exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_exports_json(&assert_exports_ptr, &assert_exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_exports_ptr, assert_exports_len);
+    const assert_exports = (assert_exports_ptr orelse return error.NullAssertExports)[0..@intCast(assert_exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, assert_exports, "\"ok\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_exports, "\"AssertionError\"") != null);
+
+    var assert_config_ptr: ?[*]const u8 = null;
+    var assert_config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_config_json(&assert_config_ptr, &assert_config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_config_ptr, assert_config_len);
+    const assert_config = (assert_config_ptr orelse return error.NullAssertConfig)[0..@intCast(assert_config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, assert_config, "\"resultModel\":\"native assert helpers return explicit success bits plus optional AssertionError JSON payloads\"") != null);
+
+    var assert_feature_ptr: ?[*]const u8 = null;
+    var assert_feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_assert_feature_support_json(&assert_feature_ptr, &assert_feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(assert_feature_ptr, assert_feature_len);
+    const assert_feature = (assert_feature_ptr orelse return error.NullAssertFeatureSupport)[0..@intCast(assert_feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, assert_feature, "\"ok\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, assert_feature, "\"throws\":{\"supported\":false") != null);
 
     var assert_ok_ptr: ?[*]const u8 = null;
     var assert_ok_len: u64 = 0;
@@ -3631,6 +3655,30 @@ test "node plugin errors and permissions report native compatibility status" {
     defer _ = plugin.sa_node_plugin_free_buffer(constants_status_ptr, constants_status_len);
     const constants_status = (constants_status_ptr orelse return error.NullConstantsStatus)[0..@intCast(constants_status_len)];
     try std.testing.expect(std.mem.indexOf(u8, constants_status, "\"module\":\"constants\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants_status, "\"mode\":\"top-level-native-constants-facade\"") != null);
+
+    var constants_exports_ptr: ?[*]const u8 = null;
+    var constants_exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_constants_exports_json(&constants_exports_ptr, &constants_exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_exports_ptr, constants_exports_len);
+    const constants_exports = (constants_exports_ptr orelse return error.NullConstantsExports)[0..@intCast(constants_exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants_exports, "\"F_OK\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants_exports, "\"SIGTERM\"") != null);
+
+    var constants_config_ptr: ?[*]const u8 = null;
+    var constants_config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_constants_config_json(&constants_config_ptr, &constants_config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_config_ptr, constants_config_len);
+    const constants_config = (constants_config_ptr orelse return error.NullConstantsConfig)[0..@intCast(constants_config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants_config, "\"aggregationModel\":\"native constants object assembled from os.constants, fs flag constants, and crypto hash catalog metadata\"") != null);
+
+    var constants_feature_ptr: ?[*]const u8 = null;
+    var constants_feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_constants_feature_support_json(&constants_feature_ptr, &constants_feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_feature_ptr, constants_feature_len);
+    const constants_feature = (constants_feature_ptr orelse return error.NullConstantsFeatureSupport)[0..@intCast(constants_feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants_feature, "\"cryptoHashes\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants_feature, "\"frozenObject\":{\"supported\":false") != null);
 
     var constants_ptr2: ?[*]const u8 = null;
     var constants_len2: u64 = 0;
@@ -3650,6 +3698,30 @@ test "node plugin errors and permissions report native compatibility status" {
     defer _ = plugin.sa_node_plugin_free_buffer(sys_status_ptr2, sys_status_len2);
     const sys_status2 = (sys_status_ptr2 orelse return error.NullSysStatus)[0..@intCast(sys_status_len2)];
     try std.testing.expect(std.mem.indexOf(u8, sys_status2, "DEP0025") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys_status2, "\"mode\":\"top-level-native-sys-facade\"") != null);
+
+    var sys_exports_ptr: ?[*]const u8 = null;
+    var sys_exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_exports_json(&sys_exports_ptr, &sys_exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_exports_ptr, sys_exports_len);
+    const sys_exports = (sys_exports_ptr orelse return error.NullSysExports)[0..@intCast(sys_exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_exports, "\"format\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys_exports, "\"inspect\"") != null);
+
+    var sys_config_ptr: ?[*]const u8 = null;
+    var sys_config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_config_json(&sys_config_ptr, &sys_config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_config_ptr, sys_config_len);
+    const sys_config = (sys_config_ptr orelse return error.NullSysConfig)[0..@intCast(sys_config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_config, "\"aliasModel\":\"deprecated native alias wrapper over a narrow util subset\"") != null);
+
+    var sys_feature_ptr: ?[*]const u8 = null;
+    var sys_feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_feature_support_json(&sys_feature_ptr, &sys_feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(sys_feature_ptr, sys_feature_len);
+    const sys_feature = (sys_feature_ptr orelse return error.NullSysFeatureSupport)[0..@intCast(sys_feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, sys_feature, "\"format\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys_feature, "\"inherits\":{\"supported\":false") != null);
 
     var sys_deprecation_ptr: ?[*]const u8 = null;
     var sys_deprecation_len: u64 = 0;

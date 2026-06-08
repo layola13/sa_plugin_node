@@ -894,8 +894,25 @@ fn assertBuildFailureJson(actual: []const u8, expected: []const u8, operator: []
 pub export fn sa_node_plugin_assert_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.appendSlice("{\"module\":\"assert\",\"supported\":true,\"mode\":\"native-json-assertions\",\"capabilities\":[\"ok/equal/strictEqual style result checks\",\"deepStrictEqual via existing util JSON comparison\",\"AssertionError JSON payloads with diff metadata\",\"strict Assert options snapshot metadata\"],\"limitations\":[\"no JavaScript throw/catch integration\",\"no Promise/rejects callback semantics\",\"results are explicit status codes and JSON diagnostics\"]}") catch return fail();
+    out.appendSlice("{\"module\":\"assert\",\"supported\":true,\"mode\":\"top-level-native-assert-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &assert_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"ok\":true,\"equal\":true,\"strictEqual\":true,\"deepStrictEqual\":true,\"fail\":true,\"strict\":true,\"AssertionError\":true,\"Assert\":false,\"throws\":false,\"rejects\":false},\"capabilities\":[\"ok/equal/strictEqual style result checks\",\"deepStrictEqual via existing util JSON comparison\",\"AssertionError JSON payloads with diff metadata\",\"strict Assert options snapshot metadata\",\"top-level export-name and support metadata for the public assert module surface\"],\"limitations\":[\"no JavaScript throw/catch integration\",\"no Promise/rejects callback semantics\",\"results are explicit status codes and JSON diagnostics\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_assert_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &assert_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_assert_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"resultModel\":\"native assert helpers return explicit success bits plus optional AssertionError JSON payloads\",\"comparisonModel\":\"equal and strictEqual compare explicit text slices while deepStrictEqual delegates to the existing util JSON comparator\",\"strictModel\":\"strict Assert configuration is exposed as snapshot metadata rather than a JavaScript Assert instance\",\"objectModel\":\"not-modeled for JavaScript throw/catch behavior, callback helpers, Promise assertions, or Assert class instances\"}");
+}
+
+pub export fn sa_node_plugin_assert_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"ok\":{\"supported\":true,\"mode\":\"native truthy check returning explicit ok bit and optional AssertionError JSON\"},\"equal\":{\"supported\":true,\"mode\":\"native loose-text equality helper\"},\"strictEqual\":{\"supported\":true,\"mode\":\"native strict-text equality helper\"},\"deepStrictEqual\":{\"supported\":true,\"mode\":\"native deep equality helper using util JSON comparison\"},\"fail\":{\"supported\":true,\"mode\":\"native AssertionError JSON builder\"},\"strict\":{\"supported\":true,\"mode\":\"strict Assert config snapshot metadata\",\"limitations\":[\"not a live JavaScript assert.strict function table\"]},\"AssertionError\":{\"supported\":true,\"mode\":\"AssertionError-style JSON payloads with diff metadata\",\"limitations\":[\"not a JavaScript Error subclass instance\"]},\"Assert\":{\"supported\":false,\"reason\":\"JavaScript Assert class construction and method binding semantics are not modeled\"},\"throws\":{\"supported\":false,\"reason\":\"callback exception capture semantics are not modeled without a JS runtime\"},\"rejects\":{\"supported\":false,\"reason\":\"Promise rejection assertions are not modeled\"}} ");
 }
 
 pub export fn sa_node_plugin_assert_ok(value: u64, message_ptr: ?[*]const u8, message_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_ok: ?*u64) u32 {
@@ -984,11 +1001,71 @@ pub export fn sa_node_plugin_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*
 }
 
 pub export fn sa_node_plugin_constants_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"module\":\"constants\",\"supported\":true,\"mode\":\"native-aggregated-json\",\"sources\":[\"os.constants\",\"fs access/copyfile flags\",\"crypto hash catalog metadata\"],\"limitations\":[\"not a frozen JavaScript object\",\"exports JSON rather than property descriptors\"]}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"constants\",\"supported\":true,\"mode\":\"top-level-native-constants-facade\",\"exports\":") catch return fail();
+    constantsAppendExportNamesJson(&out) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"osConstants\":true,\"fsAccessFlags\":true,\"fsCopyFileFlags\":true,\"cryptoHashes\":true,\"frozenObject\":false},\"sources\":[\"os.constants\",\"fs access/copyfile flags\",\"crypto hash catalog metadata\"],\"limitations\":[\"not a frozen JavaScript object\",\"exports JSON rather than property descriptors\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+fn constantsAppendExportNamesJson(out: *std.ArrayList(u8)) !void {
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_constants_json(&constants_ptr, &constants_len) != 0) return error.Unexpected;
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+    const constants_json = (constants_ptr orelse return error.Unexpected)[0..@intCast(constants_len)];
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, constants_json, .{});
+    defer parsed.deinit();
+    if (parsed.value != .object) return error.Unexpected;
+    try out.append('[');
+    var first = true;
+    var it = parsed.value.object.iterator();
+    while (it.next()) |entry| {
+        if (!first) try out.append(',');
+        first = false;
+        try appendJsonString(out, entry.key_ptr.*);
+    }
+    try out.append(']');
+}
+
+pub export fn sa_node_plugin_constants_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    constantsAppendExportNamesJson(&out) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_constants_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"aggregationModel\":\"native constants object assembled from os.constants, fs flag constants, and crypto hash catalog metadata\",\"exportModel\":\"exports JSON lists the currently aggregated property names rather than a hand-maintained static table\",\"objectModel\":\"not-modeled for frozen JavaScript property descriptors or lazy getter semantics\"}");
+}
+
+pub export fn sa_node_plugin_constants_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"osConstants\":{\"supported\":true,\"mode\":\"native flattened os.constants groups including signals, errno, priority, dlopen, and uv values\"},\"fsAccessFlags\":{\"supported\":true,\"mode\":\"native F_OK, R_OK, W_OK, and X_OK integer constants\"},\"fsCopyFileFlags\":{\"supported\":true,\"mode\":\"native COPYFILE_* integer constants\"},\"cryptoHashes\":{\"supported\":true,\"mode\":\"CRYPTO_HASHES property exported as the current native hash catalog array\"},\"frozenObject\":{\"supported\":false,\"reason\":\"the facade returns JSON snapshots rather than a frozen JavaScript constants object\"}} ");
 }
 
 pub export fn sa_node_plugin_sys_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"module\":\"sys\",\"supported\":true,\"mode\":\"deprecated-util-alias\",\"aliasTarget\":\"util\",\"deprecationCode\":\"DEP0025\"}");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"sys\",\"supported\":true,\"mode\":\"top-level-native-sys-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &sys_export_names) catch return fail();
+    out.appendSlice(",\"aliasTarget\":\"util\",\"deprecationCode\":\"DEP0025\",\"featureSupport\":{\"format\":true,\"inspect\":true,\"debuglog\":true,\"legacyAlias\":true,\"inherits\":false},\"limitations\":[\"only a narrow deprecated util alias subset is exposed\",\"no runtime warning event emission or full util namespace parity\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_sys_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &sys_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_sys_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"aliasModel\":\"deprecated native alias wrapper over a narrow util subset\",\"deprecationModel\":\"DEP0025 metadata is exposed explicitly through sys status and deprecation JSON helpers\",\"objectModel\":\"not-modeled for full util namespace parity, warning events, or JavaScript module identity semantics\"}");
+}
+
+pub export fn sa_node_plugin_sys_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"format\":{\"supported\":true,\"mode\":\"native wrapper over util.format\"},\"inspect\":{\"supported\":true,\"mode\":\"native wrapper over util.inspect\"},\"debuglog\":{\"supported\":true,\"mode\":\"native wrapper over util.debuglog\"},\"legacyAlias\":{\"supported\":true,\"mode\":\"explicit deprecated alias metadata targeting util\"},\"inherits\":{\"supported\":false,\"reason\":\"full legacy sys alias surface is not modeled beyond the current wrapper subset\"}} ");
 }
 
 pub export fn sa_node_plugin_sys_deprecation_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3099,6 +3176,20 @@ pub export fn sa_node_plugin_test_exports_json(out_ptr: ?*?[*]const u8, out_len:
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+pub export fn sa_node_plugin_test_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var config = testRunnerReadConfig(allocator) catch return fail();
+    defer config.deinit();
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"backend\":\"sa test\",\"aliasModel\":{\"describe\":\"suite\",\"it\":\"test\"},\"reporters\":") catch return fail();
+    appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
+    out.appendSlice(",\"runnerConfig\":") catch return fail();
+    testRunnerWriteConfigJson(&config, &out) catch return fail();
+    out.appendSlice(",\"objectModel\":\"not-modeled for JavaScript TestContext, Suite, MockTracker, or snapshot serializer objects\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
 pub export fn sa_node_plugin_test_reporters_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return sa_node_plugin_test_runner_builtin_reporters_json(out_ptr, out_len);
 }
@@ -3109,6 +3200,16 @@ pub export fn sa_node_plugin_test_assert_support_json(out_ptr: ?*?[*]const u8, o
 
 pub export fn sa_node_plugin_test_property_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"mock\":{\"supported\":false,\"reason\":\"MockTracker and JS interception are not modeled\"},\"snapshot\":{\"supported\":false,\"reason\":\"snapshot serializer and resolve path callbacks are not modeled\"},\"getTestContext\":{\"supported\":false,\"reason\":\"JavaScript TestContext objects are not modeled\"},\"run\":{\"supported\":false,\"reason\":\"node:test run() callback/object model is not modeled; use sa test and test_runner metadata instead\"}}");
+}
+
+pub export fn sa_node_plugin_test_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"test\":{\"supported\":true,\"mode\":\"native top-level metadata for sa test integration\"},\"suite\":{\"supported\":true,\"mode\":\"describe alias metadata only\"},\"describe\":{\"supported\":true,\"mode\":\"alias of suite metadata\"},\"it\":{\"supported\":true,\"mode\":\"alias of test metadata\"},\"assert\":") catch return fail();
+    out.appendSlice("{\"supported\":true,\"register\":false,\"reason\":\"native assert compatibility helpers are available, but node:test assert.register callbacks are not modeled\"}") catch return fail();
+    out.appendSlice(",\"mock\":{\"supported\":false,\"reason\":\"MockTracker and JS interception are not modeled\"},\"snapshot\":{\"supported\":false,\"reason\":\"snapshot serializer and resolve path callbacks are not modeled\"},\"getTestContext\":{\"supported\":false,\"reason\":\"JavaScript TestContext objects are not modeled\"},\"run\":{\"supported\":false,\"reason\":\"node:test run() callback/object model is not modeled; use sa test and test_runner metadata instead\"}}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 // --- Domain ---
@@ -6491,6 +6592,26 @@ const string_decoder_export_names = [_][]const u8{
     "StringDecoder",
 };
 
+const assert_export_names = [_][]const u8{
+    "AssertionError",
+    "Assert",
+    "deepStrictEqual",
+    "equal",
+    "fail",
+    "ok",
+    "rejects",
+    "strict",
+    "strictEqual",
+    "throws",
+};
+
+const sys_export_names = [_][]const u8{
+    "debuglog",
+    "format",
+    "inspect",
+    "inherits",
+};
+
 const zlib_export_names = [_][]const u8{
     "brotliCompress",
     "brotliCompressSync",
@@ -7025,6 +7146,29 @@ pub export fn sa_node_plugin_module_set_source_maps_support(enabled: u64, node_m
 
 pub export fn sa_node_plugin_module_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"createRequire\":{\"supported\":false,\"reason\":\"CommonJS loader instances are not modeled\"},\"register\":{\"supported\":false,\"reason\":\"ESM loader registration hooks are not modeled\"},\"registerHooks\":{\"supported\":false,\"reason\":\"ESM hook chaining is not modeled\"},\"runMain\":{\"supported\":false,\"reason\":\"Node main-module bootstrap is not modeled\"},\"syncBuiltinESMExports\":{\"supported\":false,\"reason\":\"builtin ESM/CJS export synchronization is not modeled\"},\"findSourceMap\":{\"supported\":false,\"reason\":\"source map cache lookup is not modeled\"},\"SourceMap\":{\"supported\":false,\"reason\":\"SourceMap object construction is not modeled\"},\"stripTypeScriptTypes\":{\"supported\":false,\"reason\":\"TypeScript syntax stripping is not yet modeled in this native facade\"}}");
+}
+
+pub export fn sa_node_plugin_module_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var source_maps_ptr: ?[*]const u8 = null;
+    var source_maps_len: u64 = 0;
+    if (moduleWriteSourceMapsSupportJson(&source_maps_ptr, &source_maps_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(source_maps_ptr, source_maps_len);
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"builtinModuleModel\":\"builtinModules is exported as a native static name list\",\"compileCacheModel\":{\"enabled\":") catch return fail();
+    out.appendSlice(if (module_compile_cache_enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"disabledByEnv\":") catch return fail();
+    out.appendSlice(if (moduleCompileCacheDisabled()) "true" else "false") catch return fail();
+    out.appendSlice(",\"directory\":") catch return fail();
+    if (module_compile_cache_dir) |dir| {
+        appendJsonString(&out, dir) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice("},\"sourceMapsSupport\":") catch return fail();
+    out.appendSlice((source_maps_ptr orelse return fail())[0..@intCast(source_maps_len)]) catch return fail();
+    out.appendSlice(",\"objectModel\":\"not-modeled for CommonJS or ESM loader execution, SourceMap class instances, or main-module bootstrap semantics\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 const inspector_export_names = [_][]const u8{

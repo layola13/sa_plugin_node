@@ -1,0 +1,71 @@
+// SA tests for Node assert top-level facade helpers
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@test "node.assert top level facade helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_ASSERT_STATUS_JSON status_ptr, status_len, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_EXPORTS, L_ERR_STATUS
+L_EXPORTS:
+    !ok1
+    exports_ptr = add 0, 0
+    exports_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_ASSERT_EXPORTS_JSON exports_ptr, exports_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_CONFIG, L_ERR_EXPORTS
+L_CONFIG:
+    !ok2
+    config_ptr = add 0, 0
+    config_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_ASSERT_CONFIG_JSON config_ptr, config_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_FEATURES, L_ERR_CONFIG
+L_FEATURES:
+    !ok3
+    feature_ptr = add 0, 0
+    feature_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_ASSERT_FEATURE_SUPPORT_JSON feature_ptr, feature_len, s4
+    ok4 = eq s4, 0
+    br ok4 -> L_FREE, L_ERR_FEATURES
+L_FREE:
+    !ok4
+    free_feature = call @sa_node_plugin_free_buffer(feature_ptr, feature_len)
+    free_config = call @sa_node_plugin_free_buffer(config_ptr, config_len)
+    free_exports = call @sa_node_plugin_free_buffer(exports_ptr, exports_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    !free_status
+    !free_exports
+    !free_config
+    !free_feature
+    !s4
+    !feature_len
+    !feature_ptr
+    !s3
+    !config_len
+    !config_ptr
+    !s2
+    !exports_len
+    !exports_ptr
+    !s1
+    !status_len
+    !status_ptr
+    return
+L_ERR_STATUS:
+    !ok1
+    panic(103)
+L_ERR_EXPORTS:
+    !ok2
+    panic(103)
+L_ERR_CONFIG:
+    !ok3
+    panic(103)
+L_ERR_FEATURES:
+    !ok4
+    panic(103)

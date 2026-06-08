@@ -405,6 +405,9 @@
 @extern sa_node_plugin_environment_variables_parse_env_json(content_ptr: ptr, content_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_environment_variables_load_env_file_json(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_assert_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_assert_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_assert_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_assert_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_assert_ok(value: u64, message_ptr: ptr, message_len: u64, &out_ptr: ptr, &out_len: u64, &out_ok: u64) -> u64
 @extern sa_node_plugin_assert_equal(actual_ptr: ptr, actual_len: u64, expected_ptr: ptr, expected_len: u64, strict: u32, message_ptr: ptr, message_len: u64, &out_ptr: ptr, &out_len: u64, &out_ok: u64) -> u64
 @extern sa_node_plugin_assert_deep_strict_equal(actual_ptr: ptr, actual_len: u64, expected_ptr: ptr, expected_len: u64, message_ptr: ptr, message_len: u64, &out_ptr: ptr, &out_len: u64, &out_ok: u64) -> u64
@@ -412,7 +415,13 @@
 @extern sa_node_plugin_assert_strict_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_constants_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_constants_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_constants_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_constants_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sys_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sys_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sys_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_deprecation_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_format(format_ptr: ptr, format_len: u64, args_json_ptr: ptr, args_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_inspect(json_ptr: ptr, json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
@@ -457,9 +466,11 @@
 @extern sa_node_plugin_repl_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_assert_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_property_support_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_test_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_builtin_reporters_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_test_runner_config_json(&out_ptr: ptr, &out_len: u64) -> u64
@@ -593,6 +604,7 @@
 @extern sa_node_plugin_domain_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_module_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_builtin_modules_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_global_paths_json(&out_ptr: ptr, &out_len: u64) -> u64

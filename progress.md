@@ -4,18 +4,17 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `43 / 43` modules completed (`100.0%`)
+- Current status: `39 / 43` modules completed (`90.7%`)
 
 ## Completed Modules
 
-- `assert`
 - `async_hooks`
+- `assert`
 - `buffer`
 - `child_process`
 - `cluster`
 - `console`
 - `crypto`
-- `constants`
 - `diagnostics_channel`
 - `dgram`
 - `dns`
@@ -26,7 +25,6 @@
 - `http2`
 - `https`
 - `inspector`
-- `module`
 - `net`
 - `os`
 - `path`
@@ -40,8 +38,6 @@
 - `sea`
 - `stream`
 - `string_decoder`
-- `sys`
-- `test`
 - `timers`
 - `trace_events`
 - `tls`
@@ -54,7 +50,10 @@
 
 ## Remaining Modules In Current Sweep
 
-- None in the current non-VM/V8 public top-level facade sweep.
+- `constants`
+- `module`
+- `sys`
+- `test`
 
 ## Notes
 

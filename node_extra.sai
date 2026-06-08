@@ -140,6 +140,10 @@
 @extern sa_node_plugin_dns_resolver_resolve(resolver_ptr: ptr, hostname_ptr: ptr, hostname_len: u64, rrtype_ptr: ptr, rrtype_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_resolver_reverse(resolver_ptr: ptr, ip_ptr: ptr, ip_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_dns_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_promises_lookup(hostname_ptr: ptr, hostname_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_promises_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_dns_promises_get_servers(&out_ptr: ptr, &out_len: u64) -> u64

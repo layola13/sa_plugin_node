@@ -5678,6 +5678,59 @@ const net_export_names = [_][]const u8{
     "setDefaultAutoSelectFamilyAttemptTimeout",
 };
 
+const dns_export_names = [_][]const u8{
+    "lookup",
+    "lookupService",
+    "Resolver",
+    "getDefaultResultOrder",
+    "setDefaultResultOrder",
+    "setServers",
+    "getServers",
+    "resolve",
+    "resolve4",
+    "resolve6",
+    "resolveAny",
+    "resolveCaa",
+    "resolveCname",
+    "resolveMx",
+    "resolveNaptr",
+    "resolveNs",
+    "resolvePtr",
+    "resolveSoa",
+    "resolveSrv",
+    "resolveTxt",
+    "resolveTlsa",
+    "reverse",
+    "ADDRCONFIG",
+    "ALL",
+    "V4MAPPED",
+    "NODATA",
+    "FORMERR",
+    "SERVFAIL",
+    "NOTFOUND",
+    "NOTIMP",
+    "REFUSED",
+    "BADQUERY",
+    "BADNAME",
+    "BADFAMILY",
+    "BADRESP",
+    "CONNREFUSED",
+    "TIMEOUT",
+    "EOF",
+    "FILE",
+    "NOMEM",
+    "DESTRUCTION",
+    "BADSTR",
+    "BADFLAGS",
+    "NONAME",
+    "BADHINTS",
+    "NOTINITIALIZED",
+    "LOADIPHLPAPI",
+    "ADDRGETNETWORKPARAMS",
+    "CANCELLED",
+    "promises",
+};
+
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.ArrayList(u8).init(std.heap.page_allocator);
@@ -6698,6 +6751,72 @@ pub export fn sa_node_plugin_net_config_json(out_ptr: ?*?[*]const u8, out_len: ?
 
 pub export fn sa_node_plugin_net_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"explicit native TCP or Unix socket connect helper\"},\"createConnection\":{\"supported\":true,\"mode\":\"alias of native connect helper returning explicit socket handle\"},\"createServer\":{\"supported\":true,\"mode\":\"native listener handle on an ephemeral port\",\"limitations\":[\"returns explicit native listener handle rather than a JavaScript Server object\"]},\"isIP\":{\"supported\":true,\"mode\":\"native IP parser returning 0, 4, or 6\"},\"isIPv4\":{\"supported\":true,\"mode\":\"native IPv4 parser boolean helper\"},\"isIPv6\":{\"supported\":true,\"mode\":\"native IPv6 parser boolean helper\"},\"BlockList\":{\"supported\":true,\"mode\":\"explicit native BlockList handle with add/check/rules helpers\"},\"SocketAddress\":{\"supported\":true,\"mode\":\"explicit native SocketAddress handle with parse/address/family/port/flowlabel/json helpers\"},\"getDefaultAutoSelectFamily\":{\"supported\":true,\"mode\":\"read native default setting metadata\"},\"setDefaultAutoSelectFamily\":{\"supported\":true,\"mode\":\"write native default setting metadata\"},\"getDefaultAutoSelectFamilyAttemptTimeout\":{\"supported\":true,\"mode\":\"read native default timeout metadata\"},\"setDefaultAutoSelectFamilyAttemptTimeout\":{\"supported\":true,\"mode\":\"write native default timeout metadata\"},\"Server\":{\"supported\":false,\"reason\":\"JavaScript Server class instances are not modeled; use explicit native listener handles instead\"},\"Socket\":{\"supported\":false,\"reason\":\"JavaScript Socket class instances are not modeled; use explicit native socket handles instead\"},\"Stream\":{\"supported\":false,\"reason\":\"legacy JavaScript Stream alias semantics are not modeled\"},\"_createServerHandle\":{\"supported\":false,\"reason\":\"Node internal JavaScript server-handle helper is not exposed as a public native ABI helper\"},\"_normalizeArgs\":{\"supported\":false,\"reason\":\"Node internal JavaScript argument normalization helper is not modeled\"}}");
+}
+
+pub export fn sa_node_plugin_dns_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (ext.sa_node_plugin_dns_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var servers_ptr: ?[*]const u8 = null;
+    var servers_len: u64 = 0;
+    if (ext.sa_node_plugin_dns_get_servers(&servers_ptr, &servers_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(servers_ptr, servers_len);
+
+    var order_ptr: ?[*]const u8 = null;
+    var order_len: u64 = 0;
+    if (ext.sa_node_plugin_dns_get_default_result_order(&order_ptr, &order_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(order_ptr, order_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"dns\",\"supported\":true,\"mode\":\"top-level-native-dns-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &dns_export_names) catch return fail();
+    out.appendSlice(",\"defaults\":{\"resultOrder\":") catch return fail();
+    out.appendSlice((order_ptr orelse return fail())[0..@intCast(order_len)]) catch return fail();
+    out.appendSlice(",\"servers\":") catch return fail();
+    out.appendSlice((servers_ptr orelse return fail())[0..@intCast(servers_len)]) catch return fail();
+    out.appendSlice("},\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"lookup\":true,\"lookupService\":true,\"Resolver\":true,\"getDefaultResultOrder\":true,\"setDefaultResultOrder\":true,\"setServers\":true,\"getServers\":true,\"resolve\":true,\"resolve4\":true,\"resolve6\":true,\"resolveAny\":true,\"resolveCaa\":true,\"resolveCname\":true,\"resolveMx\":true,\"resolveNaptr\":true,\"resolveNs\":true,\"resolvePtr\":true,\"resolveSoa\":true,\"resolveSrv\":true,\"resolveTxt\":true,\"resolveTlsa\":true,\"reverse\":true,\"promises\":true,\"ADDRCONFIG\":true,\"ALL\":true,\"V4MAPPED\":true,\"errorCodes\":true,\"cAresChannelSemantics\":false,\"JavaScriptCallbackSemantics\":false,\"JavaScriptPromiseObjectIdentity\":false},\"capabilities\":[\"OS resolver lookup and lookupService helpers\",\"global resolver server configuration and default result-order helpers\",\"resolver-backed RRtype queries for A, AAAA, ANY, CAA, CNAME, MX, NAPTR, NS, PTR, SOA, SRV, TXT, and TLSA\",\"explicit native Resolver handles with independent server lists, local bind addresses, cancel counters, and snapshot JSON\",\"dns.promises namespace compatibility over already-resolved native buffers\",\"Node-style lookup flag and error-code constant metadata\"],\"limitations\":[\"no JavaScript callback scheduling or Promise object identity\",\"no JavaScript Resolver class instances; use explicit native handles instead\",\"full c-ares channel behavior such as search domains, retries, and in-flight cancellation is not modeled\",\"results and errors follow the plugin's synchronous native resolver model rather than Node's event-loop timing semantics\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dns_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &dns_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dns_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var servers_ptr: ?[*]const u8 = null;
+    var servers_len: u64 = 0;
+    if (ext.sa_node_plugin_dns_get_servers(&servers_ptr, &servers_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(servers_ptr, servers_len);
+
+    var order_ptr: ?[*]const u8 = null;
+    var order_len: u64 = 0;
+    if (ext.sa_node_plugin_dns_get_default_result_order(&order_ptr, &order_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(order_ptr, order_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"resolverModel\":\"explicit native Resolver handle with setServers/getServers/setLocalAddress/cancel/resolve/reverse/snapshot helpers\",\"lookupModel\":\"synchronous native OS resolver JSON helpers\",\"promisesModel\":\"dns.promises names return already-resolved native buffers rather than JavaScript Promise objects\",\"customServerModel\":\"resolver handles can issue UDP DNS queries to configured servers\",\"defaultResultOrder\":") catch return fail();
+    out.appendSlice((order_ptr orelse return fail())[0..@intCast(order_len)]) catch return fail();
+    out.appendSlice(",\"defaultServers\":") catch return fail();
+    out.appendSlice((servers_ptr orelse return fail())[0..@intCast(servers_len)]) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dns_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"lookup\":{\"supported\":true,\"mode\":\"synchronous native OS resolver lookup JSON\",\"limitations\":[\"no JavaScript callback scheduling semantics\"]},\"lookupService\":{\"supported\":true,\"mode\":\"native reverse service lookup JSON\"},\"Resolver\":{\"supported\":true,\"mode\":\"explicit native Resolver handle with independent server lists, bind addresses, cancel counters, and snapshot JSON\",\"limitations\":[\"not a JavaScript Resolver class instance\"]},\"getDefaultResultOrder\":{\"supported\":true,\"mode\":\"read native dns default result-order setting\"},\"setDefaultResultOrder\":{\"supported\":true,\"mode\":\"write native dns default result-order setting\"},\"setServers\":{\"supported\":true,\"mode\":\"replace the global resolver server list for subsequent native lookups\"},\"getServers\":{\"supported\":true,\"mode\":\"read the global resolver server list as JSON\"},\"resolve\":{\"supported\":true,\"mode\":\"native RRtype-dispatched resolve helper\"},\"resolve4\":{\"supported\":true,\"mode\":\"native A record lookup\"},\"resolve6\":{\"supported\":true,\"mode\":\"native AAAA record lookup\"},\"resolveAny\":{\"supported\":true,\"mode\":\"native ANY record lookup\"},\"resolveCaa\":{\"supported\":true,\"mode\":\"native CAA record lookup\"},\"resolveCname\":{\"supported\":true,\"mode\":\"native CNAME record lookup\"},\"resolveMx\":{\"supported\":true,\"mode\":\"native MX record lookup\"},\"resolveNaptr\":{\"supported\":true,\"mode\":\"native NAPTR record lookup\"},\"resolveNs\":{\"supported\":true,\"mode\":\"native NS record lookup\"},\"resolvePtr\":{\"supported\":true,\"mode\":\"native PTR record lookup\"},\"resolveSoa\":{\"supported\":true,\"mode\":\"native SOA record lookup\"},\"resolveSrv\":{\"supported\":true,\"mode\":\"native SRV record lookup\"},\"resolveTxt\":{\"supported\":true,\"mode\":\"native TXT record lookup\"},\"resolveTlsa\":{\"supported\":true,\"mode\":\"native TLSA record lookup\"},\"reverse\":{\"supported\":true,\"mode\":\"native reverse DNS lookup\"},\"promises\":{\"supported\":true,\"mode\":\"dns.promises namespace over already-resolved native buffers\",\"limitations\":[\"no JavaScript Promise object identity or microtask scheduling\"]},\"ADDRCONFIG\":{\"supported\":true,\"mode\":\"static lookup hint constant metadata\"},\"ALL\":{\"supported\":true,\"mode\":\"static lookup hint constant metadata\"},\"V4MAPPED\":{\"supported\":true,\"mode\":\"static lookup hint constant metadata\"},\"errorCodes\":{\"supported\":true,\"mode\":\"static Node-style DNS error code catalog JSON\"},\"cAresChannelSemantics\":{\"supported\":false,\"reason\":\"full c-ares search domain, retry, rotation, and in-flight cancellation behavior is not modeled\"},\"JavaScriptCallbackSemantics\":{\"supported\":false,\"reason\":\"callback scheduling and request object identity are not modeled\"},\"JavaScriptPromiseObjectIdentity\":{\"supported\":false,\"reason\":\"dns.promises returns already-resolved native buffers rather than JavaScript Promise objects\"}}");
 }
 
 const wasi_supported_versions = [_][]const u8{ "unstable", "preview1" };

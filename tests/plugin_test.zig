@@ -606,6 +606,44 @@ test "node plugin dns resolve tlsa" {
     try std.testing.expect(std.mem.indexOf(u8, result, "\"data\":") != null);
 }
 
+test "node plugin dns top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullDnsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"dns\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-dns-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"lookup\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"promises\":true") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullDnsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"lookupService\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Resolver\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"promises\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullDnsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"resolverModel\":\"explicit native Resolver handle") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"promisesModel\":\"dns.promises names return already-resolved native buffers") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullDnsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Resolver\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"JavaScriptPromiseObjectIdentity\":{\"supported\":false") != null);
+}
+
 test "node plugin punycode to ascii" {
     var ptr: ?[*]const u8 = null;
     var len: u64 = 0;

@@ -2835,6 +2835,44 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"stdin\":{\"supported\":false") != null);
 }
 
+test "node plugin os top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullOsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"os\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-os-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"availableParallelism\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"devNull\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullOsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"cpus\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"networkInterfaces\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"constants\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullOsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"snapshotModel\":\"native JSON snapshots for cpus, networkInterfaces, userInfo, and os.constants\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"constantsModel\":\"native os.constants aggregate including signals, errno, priority, and dlopen fields\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_os_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullOsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"arch\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"constants\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"EOL\":{\"supported\":false") != null);
+}
+
 test "node plugin test runner reports native harness support" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
     defer _ = unsetenv("NODE_OPTIONS");

@@ -578,6 +578,30 @@ pub export fn sa_node_plugin_process_feature_support_json(out_ptr: ?*?[*]const u
     return writeOwnedString(out_ptr, out_len, "{\"pid\":{\"supported\":true,\"mode\":\"native process pid helper\"},\"ppid\":{\"supported\":true,\"mode\":\"native parent pid helper\"},\"cwd\":{\"supported\":true,\"mode\":\"native cwd string helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native process uptime helper in seconds\"},\"hrtime\":{\"supported\":true,\"mode\":\"native monotonic hrtime bigint helper\"},\"memoryUsage\":{\"supported\":true,\"mode\":\"native process memory usage JSON snapshot\"},\"argv\":{\"supported\":true,\"mode\":\"native argv JSON snapshot\"},\"versions\":{\"supported\":true,\"mode\":\"native versions JSON snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.versions object\"]},\"env\":{\"supported\":true,\"mode\":\"explicit native env get, set, delete, and snapshot helpers\",\"limitations\":[\"not exposed as a live JavaScript process.env proxy object\"]},\"getuid\":{\"supported\":true,\"mode\":\"native uid helper\"},\"getgid\":{\"supported\":true,\"mode\":\"native gid helper\"},\"kill\":{\"supported\":true,\"mode\":\"real POSIX signal delivery by numeric or named signal\"},\"resourceUsage\":{\"supported\":true,\"mode\":\"native getrusage-based JSON snapshot\"},\"availableMemory\":{\"supported\":true,\"mode\":\"native host and cgroup-aware available-memory helper\"},\"constrainedMemory\":{\"supported\":true,\"mode\":\"native cgroup memory limit helper\"},\"features\":{\"supported\":true,\"mode\":\"native build capability JSON snapshot\"},\"exit\":{\"supported\":true,\"mode\":\"explicit native process exit helper\",\"limitations\":[\"terminates the host process immediately rather than coordinating JavaScript exit events\"]},\"arch\":{\"supported\":false,\"reason\":\"process.arch string is not exposed as a dedicated helper in the current native ABI\"},\"platform\":{\"supported\":false,\"reason\":\"process.platform string is not exposed as a dedicated helper in the current native ABI\"},\"release\":{\"supported\":false,\"reason\":\"process.release metadata is not exposed as a dedicated helper in the current native ABI\"},\"version\":{\"supported\":false,\"reason\":\"process.version string is not exposed as a dedicated helper in the current native ABI\"},\"stdin\":{\"supported\":false,\"reason\":\"live stdin stream object semantics are not modeled\"},\"stdout\":{\"supported\":false,\"reason\":\"live stdout stream object semantics are not modeled\"},\"stderr\":{\"supported\":false,\"reason\":\"live stderr stream object semantics are not modeled\"},\"nextTick\":{\"supported\":false,\"reason\":\"JavaScript nextTick queue semantics require runtime integration\"},\"emitWarning\":{\"supported\":false,\"reason\":\"JavaScript warning event and Error object semantics are not modeled\"},\"dlopen\":{\"supported\":false,\"reason\":\"process.dlopen and native module loader semantics are not modeled\"},\"umask\":{\"supported\":false,\"reason\":\"process.umask is not exposed as a dedicated helper in the current native ABI\"},\"chdir\":{\"supported\":false,\"reason\":\"process.chdir is not exposed as a dedicated helper in the current native ABI\"}}");
 }
 
+pub export fn sa_node_plugin_os_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"os\",\"supported\":true,\"mode\":\"top-level-native-os-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &os_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"arch\":true,\"availableParallelism\":true,\"cpus\":true,\"endianness\":true,\"freemem\":true,\"getPriority\":true,\"homedir\":true,\"hostname\":true,\"loadavg\":true,\"machine\":true,\"networkInterfaces\":true,\"platform\":true,\"release\":true,\"setPriority\":true,\"tmpdir\":true,\"totalmem\":true,\"type\":true,\"uptime\":true,\"userInfo\":true,\"version\":true,\"constants\":true,\"devNull\":false,\"EOL\":false},\"capabilities\":[\"native CPU, memory, load average, uptime, and network-interface snapshots\",\"native platform, arch, release, type, version, machine, hostname, tmpdir, homedir, and endianness helpers\",\"native os.constants aggregate plus process-priority get/set helpers\",\"top-level export-name and support metadata for the public os module surface\"],\"limitations\":[\"devNull and EOL are not exposed as dedicated native helpers in this facade\",\"platform and arch follow the plugin's native host reporting rather than Node's exact cross-build target matrix semantics\",\"cpus and networkInterfaces return snapshot JSON rather than live JavaScript object graphs or typed class instances\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_os_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &os_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_os_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"snapshotModel\":\"native JSON snapshots for cpus, networkInterfaces, userInfo, and os.constants\",\"identityModel\":\"native platform, arch, release, type, version, machine, hostname, tmpdir, homedir, and endianness helpers\",\"resourceModel\":\"native totalmem, freemem, loadavg, uptime, availableParallelism, and priority helpers\",\"constantsModel\":\"native os.constants aggregate including signals, errno, priority, and dlopen fields\",\"objectModel\":\"not-modeled for live JavaScript getter properties or frozen constants objects beyond returned JSON snapshots\"}");
+}
+
+pub export fn sa_node_plugin_os_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"arch\":{\"supported\":true,\"mode\":\"native host arch string helper\"},\"availableParallelism\":{\"supported\":true,\"mode\":\"native available parallelism helper\"},\"cpus\":{\"supported\":true,\"mode\":\"native CPU snapshot JSON helper\"},\"endianness\":{\"supported\":true,\"mode\":\"native endianness helper returning LE or BE\"},\"freemem\":{\"supported\":true,\"mode\":\"native free-memory helper\"},\"getPriority\":{\"supported\":true,\"mode\":\"native POSIX getpriority helper\"},\"homedir\":{\"supported\":true,\"mode\":\"native home-directory helper\"},\"hostname\":{\"supported\":true,\"mode\":\"native hostname helper\"},\"loadavg\":{\"supported\":true,\"mode\":\"native load-average helper\"},\"machine\":{\"supported\":true,\"mode\":\"native uname machine helper\"},\"networkInterfaces\":{\"supported\":true,\"mode\":\"native network-interface snapshot JSON helper\"},\"platform\":{\"supported\":true,\"mode\":\"native host platform string helper\"},\"release\":{\"supported\":true,\"mode\":\"native OS release helper\"},\"setPriority\":{\"supported\":true,\"mode\":\"native POSIX setpriority helper\",\"limitations\":[\"subject to host permission constraints and priority range validation\"]},\"tmpdir\":{\"supported\":true,\"mode\":\"native temp-directory helper\"},\"totalmem\":{\"supported\":true,\"mode\":\"native total-memory helper\"},\"type\":{\"supported\":true,\"mode\":\"native OS type helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native system uptime helper\"},\"userInfo\":{\"supported\":true,\"mode\":\"native user-info JSON helper\"},\"version\":{\"supported\":true,\"mode\":\"native uname version helper\"},\"constants\":{\"supported\":true,\"mode\":\"native os.constants JSON aggregate\"},\"devNull\":{\"supported\":false,\"reason\":\"os.devNull path constant is not exposed as a dedicated helper in the current native ABI\"},\"EOL\":{\"supported\":false,\"reason\":\"os.EOL constant is not exposed as a dedicated helper in the current native ABI\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6277,6 +6301,32 @@ const process_export_names = [_][]const u8{
     "uptime",
     "version",
     "versions",
+};
+
+const os_export_names = [_][]const u8{
+    "EOL",
+    "arch",
+    "availableParallelism",
+    "constants",
+    "cpus",
+    "devNull",
+    "endianness",
+    "freemem",
+    "getPriority",
+    "homedir",
+    "hostname",
+    "loadavg",
+    "machine",
+    "networkInterfaces",
+    "platform",
+    "release",
+    "setPriority",
+    "tmpdir",
+    "totalmem",
+    "type",
+    "uptime",
+    "userInfo",
+    "version",
 };
 
 const timers_export_names = [_][]const u8{

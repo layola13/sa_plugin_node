@@ -2455,6 +2455,42 @@ test "node plugin timers create and clear registry entries" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_set_immediate(null, &immediate_id));
     try std.testing.expect(immediate_id > interval_id);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_clear_immediate(immediate_id));
+
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullTimersTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"timers\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-timers-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"setTimeout\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"TimeoutObject\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullTimersTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"setImmediate\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"clearInterval\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"promises\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullTimersTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"timerModel\":\"native timer registry with numeric ids") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"promisesModel\":\"already-resolved native buffer helpers") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_timers_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullTimersTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"setTimeout\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"PromiseObjectIdentity\":{\"supported\":false") != null);
 }
 
 test "node plugin test runner reports native harness support" {

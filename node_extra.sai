@@ -227,6 +227,10 @@
 @extern sa_node_plugin_timers_promises_interval_return(interval_ptr: ptr) -> u64
 @extern sa_node_plugin_timers_promises_interval_snapshot_json(interval_ptr: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_timers_promises_interval_free(interval_ptr: ptr) -> u64
+@extern sa_node_plugin_timers_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_timers_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_atob(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_btoa(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_is_utf8(data_ptr: ptr, data_len: u64, &out_bool: u64) -> u64

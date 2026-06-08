@@ -344,6 +344,30 @@ pub export fn sa_node_plugin_readline_feature_support_json(out_ptr: ?*?[*]const 
     return writeOwnedString(out_ptr, out_len, "{\"clearLine\":{\"supported\":true,\"mode\":\"fd-based ANSI clear-line helper\"},\"clearScreenDown\":{\"supported\":true,\"mode\":\"fd-based ANSI clear-screen-down helper\"},\"cursorTo\":{\"supported\":true,\"mode\":\"fd-based ANSI cursor positioning helper\"},\"moveCursor\":{\"supported\":true,\"mode\":\"fd-based ANSI relative cursor movement helper\"},\"emitKeypressEvents\":{\"supported\":true,\"mode\":\"compatibility stub with no event object production\"},\"promises\":{\"supported\":true,\"mode\":\"explicit native Interface handle with create/question/close/snapshot/free helpers\"},\"createInterface\":{\"supported\":false,\"reason\":\"callback-based JavaScript readline Interface creation and event lifecycle are not modeled; use the native promises Interface handle helpers instead\"},\"Interface\":{\"supported\":false,\"reason\":\"JavaScript readline Interface class instances are not modeled\"},\"completer\":{\"supported\":false,\"reason\":\"custom completion callbacks are not modeled\"},\"historyEditing\":{\"supported\":false,\"reason\":\"interactive line editing and history semantics are not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_timers_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"timers\",\"supported\":true,\"mode\":\"top-level-native-timers-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &timers_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"setTimeout\":true,\"clearTimeout\":true,\"setImmediate\":true,\"clearImmediate\":true,\"setInterval\":true,\"clearInterval\":true,\"promises\":true,\"TimeoutObject\":false,\"ImmediateObject\":false,\"AbortSignal\":false,\"PromiseObjectIdentity\":false},\"capabilities\":[\"native timer id allocation for timeout, interval, and immediate helpers\",\"clear helpers over the native timer registry\",\"timers.promises setTimeout and setImmediate helpers returning already-resolved native buffers\",\"scheduler.wait and scheduler.yield helpers\",\"explicit timers.promises interval handle with next, return, snapshot, and free operations\"],\"limitations\":[\"no JavaScript Timeout or Immediate class instances\",\"no callback invocation or event-loop scheduling semantics beyond native id bookkeeping\",\"timers.promises does not return JavaScript Promise objects or async iterators\",\"AbortSignal cancellation wiring is not modeled\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_timers_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &timers_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_timers_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"timerModel\":\"native timer registry with numeric ids for timeout, interval, and immediate helpers\",\"promisesModel\":\"already-resolved native buffer helpers plus explicit interval handle operations\",\"schedulerModel\":\"native wait and yield helpers\",\"objectModel\":\"not-modeled for JavaScript Timeout/Immediate instances\"}");
+}
+
+pub export fn sa_node_plugin_timers_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"setTimeout\":{\"supported\":true,\"mode\":\"native timer id allocation with optional callback pointer bookkeeping\"},\"clearTimeout\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"setImmediate\":{\"supported\":true,\"mode\":\"native immediate id allocation\"},\"clearImmediate\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"setInterval\":{\"supported\":true,\"mode\":\"native interval id allocation with optional callback pointer bookkeeping\"},\"clearInterval\":{\"supported\":true,\"mode\":\"native timer registry removal by id\"},\"promises\":{\"supported\":true,\"mode\":\"native timers.promises helpers for timeout, immediate, scheduler, and explicit interval handles\",\"limitations\":[\"returns native buffers and explicit handles rather than JavaScript Promise or AsyncIterator objects\"]},\"TimeoutObject\":{\"supported\":false,\"reason\":\"JavaScript Timeout class instances and ref/unref methods are not modeled\"},\"ImmediateObject\":{\"supported\":false,\"reason\":\"JavaScript Immediate class instances are not modeled\"},\"AbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal cancellation wiring is not modeled\"},\"PromiseObjectIdentity\":{\"supported\":false,\"reason\":\"timers.promises does not return JavaScript Promise object identity or microtask semantics\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -5806,6 +5830,16 @@ const readline_export_names = [_][]const u8{
     "cursorTo",
     "emitKeypressEvents",
     "moveCursor",
+    "promises",
+};
+
+const timers_export_names = [_][]const u8{
+    "setTimeout",
+    "clearTimeout",
+    "setImmediate",
+    "clearImmediate",
+    "setInterval",
+    "clearInterval",
     "promises",
 };
 

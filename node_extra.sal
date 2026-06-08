@@ -2729,6 +2729,74 @@
     !__timers_promises_free_status
 [END_MACRO]
 
+[MACRO] NODE_TIMERS_STATUS_JSON %p_0, %p_1, %p_2
+    __timers_top_status_ptr_slot = stack_alloc 8
+    __timers_top_status_len_slot = stack_alloc 8
+    __timers_top_status = call @sa_node_plugin_timers_status_json(&__timers_top_status_ptr_slot, &__timers_top_status_len_slot)
+    !%p_2
+    %p_2 = add __timers_top_status, 0
+    !__timers_top_status
+    __timers_top_status_ptr = load __timers_top_status_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __timers_top_status_ptr, 0
+    !__timers_top_status_ptr
+    __timers_top_status_len = load __timers_top_status_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __timers_top_status_len, 0
+    !__timers_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_EXPORTS_JSON %p_0, %p_1, %p_2
+    __timers_top_exports_ptr_slot = stack_alloc 8
+    __timers_top_exports_len_slot = stack_alloc 8
+    __timers_top_exports_status = call @sa_node_plugin_timers_exports_json(&__timers_top_exports_ptr_slot, &__timers_top_exports_len_slot)
+    !%p_2
+    %p_2 = add __timers_top_exports_status, 0
+    !__timers_top_exports_status
+    __timers_top_exports_ptr = load __timers_top_exports_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __timers_top_exports_ptr, 0
+    !__timers_top_exports_ptr
+    __timers_top_exports_len = load __timers_top_exports_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __timers_top_exports_len, 0
+    !__timers_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_CONFIG_JSON %p_0, %p_1, %p_2
+    __timers_top_config_ptr_slot = stack_alloc 8
+    __timers_top_config_len_slot = stack_alloc 8
+    __timers_top_config_status = call @sa_node_plugin_timers_config_json(&__timers_top_config_ptr_slot, &__timers_top_config_len_slot)
+    !%p_2
+    %p_2 = add __timers_top_config_status, 0
+    !__timers_top_config_status
+    __timers_top_config_ptr = load __timers_top_config_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __timers_top_config_ptr, 0
+    !__timers_top_config_ptr
+    __timers_top_config_len = load __timers_top_config_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __timers_top_config_len, 0
+    !__timers_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_FEATURE_SUPPORT_JSON %p_0, %p_1, %p_2
+    __timers_top_feature_ptr_slot = stack_alloc 8
+    __timers_top_feature_len_slot = stack_alloc 8
+    __timers_top_feature_status = call @sa_node_plugin_timers_feature_support_json(&__timers_top_feature_ptr_slot, &__timers_top_feature_len_slot)
+    !%p_2
+    %p_2 = add __timers_top_feature_status, 0
+    !__timers_top_feature_status
+    __timers_top_feature_ptr = load __timers_top_feature_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __timers_top_feature_ptr, 0
+    !__timers_top_feature_ptr
+    __timers_top_feature_len = load __timers_top_feature_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __timers_top_feature_len, 0
+    !__timers_top_feature_len
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_ATOB %p_0, %p_1, %p_2, %p_3, %p_4
     __m_slot_73d83d80_0 = stack_alloc 8
     __m_slot_73d83d80_1 = stack_alloc 8

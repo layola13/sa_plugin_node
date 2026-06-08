@@ -2,9 +2,9 @@
 
 ## Tracking Basis
 
-- Scope: common non-VM/V8 Node top-level facade compatibility modules
+- Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `31 / 31` modules completed (`100.0%`)
+- Current status: `32 / 43` modules completed (`74.4%`)
 
 ## Completed Modules
 
@@ -19,6 +19,7 @@
 - `dns`
 - `domain`
 - `events`
+- `fs`
 - `http`
 - `http2`
 - `https`
@@ -42,9 +43,19 @@
 
 ## Remaining Modules In Current Sweep
 
-- none
+- `buffer`
+- `crypto`
+- `os`
+- `path`
+- `process`
+- `punycode`
+- `querystring`
+- `string_decoder`
+- `url`
+- `util`
+- `zlib`
 
 ## Notes
 
-- This file tracks the current top-level facade completion sweep only.
-- If the audit finds another non-VM/V8 common module that should be in this sweep, increase the denominator before updating the percentage.
+- This file tracks the current public non-VM/V8 top-level facade sweep.
+- The current denominator is the set of public Node modules in `lib/` that are not VM/V8-exclusive and do not live only as internal path variants such as `path/posix`, `path/win32`, `assert/strict`, `dns/promises`, `fs/promises`, `stream/promises`, `timers/promises`, or `util/types`.

@@ -416,6 +416,39 @@ pub export fn sa_node_plugin_events_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"EventEmitter\":{\"supported\":true,\"mode\":\"explicit native handle via create/on/once/off/emit/free helpers\",\"limitations\":[\"not exposed as a JavaScript class or prototype object\"]},\"getEventListeners\":{\"supported\":true,\"mode\":\"listener snapshot JSON for an explicit native handle and event name\"},\"getMaxListeners\":{\"supported\":true,\"mode\":\"reads stored max-listener metadata from an explicit native handle\"},\"setMaxListeners\":{\"supported\":true,\"mode\":\"writes stored max-listener metadata on an explicit native handle\",\"limitations\":[\"does not support EventTarget or global defaultMaxListeners mutation\"]},\"listenerCount\":{\"supported\":true,\"mode\":\"counts listeners for an explicit native handle and event name\"},\"errorMonitor\":{\"supported\":false,\"reason\":\"JavaScript symbol-keyed error monitoring semantics are not modeled\"},\"captureRejections\":{\"supported\":false,\"reason\":\"Promise rejection capture on JavaScript listeners is not modeled\"},\"EventEmitterAsyncResource\":{\"supported\":false,\"reason\":\"async resource backed EventEmitter subclass semantics are not modeled\"},\"addAbortListener\":{\"supported\":false,\"reason\":\"AbortSignal listener lifecycle and disposable return semantics are not modeled\"},\"once\":{\"supported\":false,\"reason\":\"top-level events.once() Promise semantics are not modeled; use explicit native emitter once-listener registration instead\"},\"on\":{\"supported\":false,\"reason\":\"top-level events.on() AsyncIterator semantics are not modeled; use explicit native emitter listener registration instead\"}}");
 }
 
+pub export fn sa_node_plugin_fs_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"fs\",\"supported\":true,\"mode\":\"top-level-native-fs-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &fs_export_names) catch return fail();
+    out.appendSlice(",\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"access\":true,\"exists\":true,\"stat\":true,\"lstat\":true,\"readdir\":true,\"readFile\":true,\"writeFile\":true,\"mkdir\":true,\"rmdir\":true,\"rm\":true,\"unlink\":true,\"rename\":true,\"copyFile\":true,\"realpath\":true,\"readlink\":true,\"opendir\":true,\"open\":true,\"statfs\":true,\"glob\":true,\"promises\":true,\"constants\":true,\"cp\":false,\"watch\":false,\"watchFile\":false,\"unwatchFile\":false,\"ReadStream\":false,\"WriteStream\":false,\"Dir\":false,\"Dirent\":false,\"Stats\":false,\"openAsBlob\":false},\"capabilities\":[\"sync-style native file, directory, metadata, fd, link, glob, and statfs helpers\",\"fs.promises compatibility entry points returning already-resolved native results\",\"explicit opendir handle operations for directory iteration\",\"fs constants metadata through the native constants aggregate\"],\"limitations\":[\"no JavaScript ReadStream, WriteStream, Dir, Dirent, or Stats class instances\",\"no callback scheduling or event-emitter watch semantics\",\"promises returns already-resolved native results rather than JavaScript Promise objects\",\"cp, watch, watchFile, unwatchFile, and openAsBlob are not modeled at the top-level facade\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_fs_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &fs_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_fs_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"syncModel\":\"explicit native file and directory helpers returning immediate status plus buffers or scalars\",\"promisesModel\":\"fs.promises compatibility entry points returning already-resolved native results\",\"dirModel\":\"explicit opendir handle with next and free operations\",\"fdModel\":\"numeric file descriptors with explicit read/write/fstat/fsync/fdatasync/ftruncate/futimes helpers\",\"constantsModel\":\"native constants aggregate including fs access and copyfile flags\",\"objectModel\":\"not-modeled for JavaScript stream, Dir, Dirent, or Stats instances\"}");
+}
+
+pub export fn sa_node_plugin_fs_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"access\":{\"supported\":true,\"mode\":\"native existence and mode check helper returning boolean result\"},\"exists\":{\"supported\":true,\"mode\":\"native boolean existence helper\"},\"stat\":{\"supported\":true,\"mode\":\"native stat JSON helper\"},\"lstat\":{\"supported\":true,\"mode\":\"native lstat JSON helper\"},\"readdir\":{\"supported\":true,\"mode\":\"native directory listing JSON helper\"},\"readFile\":{\"supported\":true,\"mode\":\"native full-file read helper returning buffer\"},\"writeFile\":{\"supported\":true,\"mode\":\"native full-file write helper\"},\"mkdir\":{\"supported\":true,\"mode\":\"native mkdir helper with recursive flag\"},\"rmdir\":{\"supported\":true,\"mode\":\"native directory removal helper\"},\"rm\":{\"supported\":true,\"mode\":\"native remove helper with recursive flag\"},\"unlink\":{\"supported\":true,\"mode\":\"native unlink helper\"},\"rename\":{\"supported\":true,\"mode\":\"native rename helper\"},\"copyFile\":{\"supported\":true,\"mode\":\"native copy-file helper\"},\"realpath\":{\"supported\":true,\"mode\":\"native realpath helper returning resolved path text\"},\"readlink\":{\"supported\":true,\"mode\":\"native readlink helper returning target path text\"},\"opendir\":{\"supported\":true,\"mode\":\"explicit native directory handle with next and free operations\"},\"open\":{\"supported\":true,\"mode\":\"native open helper returning numeric file descriptor\"},\"statfs\":{\"supported\":true,\"mode\":\"native statfs JSON helper\"},\"glob\":{\"supported\":true,\"mode\":\"native glob helper returning matched path JSON\"},\"promises\":{\"supported\":true,\"mode\":\"fs.promises compatibility entry points over the same native operations\",\"limitations\":[\"returns already-resolved native results rather than JavaScript Promise object identity or microtask timing\"]},\"constants\":{\"supported\":true,\"mode\":\"native constants aggregate with fs access and copyfile flags\"},\"cp\":{\"supported\":false,\"reason\":\"recursive cp option handling is not exposed as a dedicated top-level helper\"},\"watch\":{\"supported\":false,\"reason\":\"FSWatcher event-emitter semantics are not modeled\"},\"watchFile\":{\"supported\":false,\"reason\":\"stat polling watcher semantics are not modeled\"},\"unwatchFile\":{\"supported\":false,\"reason\":\"stat polling watcher teardown semantics are not modeled\"},\"ReadStream\":{\"supported\":false,\"reason\":\"JavaScript ReadStream class instances are not modeled\"},\"WriteStream\":{\"supported\":false,\"reason\":\"JavaScript WriteStream class instances are not modeled\"},\"Dir\":{\"supported\":false,\"reason\":\"JavaScript Dir class instances are not modeled; use explicit native opendir handles instead\"},\"Dirent\":{\"supported\":false,\"reason\":\"JavaScript Dirent class instances are not modeled; directory entries are returned as JSON or scalar metadata\"},\"Stats\":{\"supported\":false,\"reason\":\"JavaScript Stats class instances are not modeled; stat data is returned as JSON\"},\"openAsBlob\":{\"supported\":false,\"reason\":\"Blob construction and stream-backed file blob semantics are not modeled\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -5949,6 +5982,43 @@ const trace_events_export_names = [_][]const u8{
     "createTracing",
     "getEnabledCategories",
     "Tracing",
+};
+
+const fs_export_names = [_][]const u8{
+    "access",
+    "copyFile",
+    "cp",
+    "createReadStream",
+    "createWriteStream",
+    "Dir",
+    "Dirent",
+    "exists",
+    "glob",
+    "lstat",
+    "mkdir",
+    "open",
+    "openAsBlob",
+    "opendir",
+    "promises",
+    "readFile",
+    "readdir",
+    "readlink",
+    "realpath",
+    "rename",
+    "rm",
+    "rmdir",
+    "stat",
+    "statfs",
+    "Stats",
+    "symlink",
+    "truncate",
+    "unlink",
+    "unwatchFile",
+    "utimes",
+    "watch",
+    "watchFile",
+    "writeFile",
+    "constants",
 };
 
 const timers_export_names = [_][]const u8{

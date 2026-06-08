@@ -1850,6 +1850,74 @@
     !__trace_events_top_feature_len
 [END_MACRO]
 
+[MACRO] NODE_FS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __fs_top_status_ptr_slot = stack_alloc 8
+    __fs_top_status_len_slot = stack_alloc 8
+    __fs_top_status = call @sa_node_plugin_fs_status_json(&__fs_top_status_ptr_slot, &__fs_top_status_len_slot)
+    !%out_status
+    %out_status = add __fs_top_status, 0
+    !__fs_top_status
+    __fs_top_status_ptr = load __fs_top_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fs_top_status_ptr, 0
+    !__fs_top_status_ptr
+    __fs_top_status_len = load __fs_top_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fs_top_status_len, 0
+    !__fs_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_FS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __fs_top_exports_ptr_slot = stack_alloc 8
+    __fs_top_exports_len_slot = stack_alloc 8
+    __fs_top_exports_status = call @sa_node_plugin_fs_exports_json(&__fs_top_exports_ptr_slot, &__fs_top_exports_len_slot)
+    !%out_status
+    %out_status = add __fs_top_exports_status, 0
+    !__fs_top_exports_status
+    __fs_top_exports_ptr = load __fs_top_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fs_top_exports_ptr, 0
+    !__fs_top_exports_ptr
+    __fs_top_exports_len = load __fs_top_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fs_top_exports_len, 0
+    !__fs_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_FS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __fs_top_config_ptr_slot = stack_alloc 8
+    __fs_top_config_len_slot = stack_alloc 8
+    __fs_top_config_status = call @sa_node_plugin_fs_config_json(&__fs_top_config_ptr_slot, &__fs_top_config_len_slot)
+    !%out_status
+    %out_status = add __fs_top_config_status, 0
+    !__fs_top_config_status
+    __fs_top_config_ptr = load __fs_top_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fs_top_config_ptr, 0
+    !__fs_top_config_ptr
+    __fs_top_config_len = load __fs_top_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fs_top_config_len, 0
+    !__fs_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_FS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __fs_top_feature_ptr_slot = stack_alloc 8
+    __fs_top_feature_len_slot = stack_alloc 8
+    __fs_top_feature_status = call @sa_node_plugin_fs_feature_support_json(&__fs_top_feature_ptr_slot, &__fs_top_feature_len_slot)
+    !%out_status
+    %out_status = add __fs_top_feature_status, 0
+    !__fs_top_feature_status
+    __fs_top_feature_ptr = load __fs_top_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __fs_top_feature_ptr, 0
+    !__fs_top_feature_ptr
+    __fs_top_feature_len = load __fs_top_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __fs_top_feature_len, 0
+    !__fs_top_feature_len
+[END_MACRO]
+
 [MACRO] NODE_DNS_PROMISES_LOOKUP %out_ptr, %out_len, %out_status, %hostname, %hostname_len
     __dns_promises_lookup_ptr_slot = stack_alloc 8
     __dns_promises_lookup_len_slot = stack_alloc 8

@@ -554,6 +554,30 @@ pub export fn sa_node_plugin_url_feature_support_json(out_ptr: ?*?[*]const u8, o
     return writeOwnedString(out_ptr, out_len, "{\"parse\":{\"supported\":true,\"mode\":\"native legacy-style URL parse helper returning JSON fields\",\"limitations\":[\"does not emit Node deprecation warnings or parse query strings into querystring objects\"]},\"format\":{\"supported\":true,\"mode\":\"native URL format helper from JSON fields\"},\"resolve\":{\"supported\":true,\"mode\":\"native URL resolve helper combining base and relative inputs\"},\"URL\":{\"supported\":true,\"mode\":\"explicit native handle with href, protocol, host, pathname, and free operations\",\"limitations\":[\"does not expose full JavaScript URL property mutation, searchParams, or WHATWG serialization semantics\"]},\"URLSearchParams\":{\"supported\":false,\"reason\":\"WHATWG URLSearchParams object semantics are not modeled\"},\"domainToASCII\":{\"supported\":false,\"reason\":\"IDNA domain conversion is not exposed as a dedicated native helper in the url facade\"},\"domainToUnicode\":{\"supported\":false,\"reason\":\"IDNA domain conversion is not exposed as a dedicated native helper in the url facade\"},\"pathToFileURL\":{\"supported\":false,\"reason\":\"path-to-file-URL conversion helper is not exposed in the current native ABI\"},\"fileURLToPath\":{\"supported\":false,\"reason\":\"file-URL-to-path conversion helper is not exposed in the current native ABI\"},\"fileURLToPathBuffer\":{\"supported\":false,\"reason\":\"buffer-returning file URL conversion helper is not exposed in the current native ABI\"},\"URLPattern\":{\"supported\":false,\"reason\":\"WHATWG URLPattern class semantics are not modeled\"},\"urlToHttpOptions\":{\"supported\":false,\"reason\":\"conversion from WHATWG URL objects to HTTP options is not exposed as a dedicated helper\"},\"canParse\":{\"supported\":false,\"reason\":\"WHATWG URL.canParse helper is not exposed in the current native ABI\"}}");
 }
 
+pub export fn sa_node_plugin_process_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"process\",\"supported\":true,\"mode\":\"top-level-native-process-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &process_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"pid\":true,\"ppid\":true,\"cwd\":true,\"uptime\":true,\"hrtime\":true,\"memoryUsage\":true,\"argv\":true,\"versions\":true,\"env\":true,\"getuid\":true,\"getgid\":true,\"kill\":true,\"resourceUsage\":true,\"availableMemory\":true,\"constrainedMemory\":true,\"features\":true,\"exit\":true,\"arch\":false,\"platform\":false,\"release\":false,\"version\":false,\"versionsObjectIdentity\":false,\"stdin\":false,\"stdout\":false,\"stderr\":false,\"nextTick\":false,\"emitWarning\":false,\"dlopen\":false,\"umask\":false,\"chdir\":false},\"capabilities\":[\"native process identity, cwd, uptime, hrtime, argv, versions, env, uid, and gid helpers\",\"native process memory usage, resourceUsage, availableMemory, constrainedMemory, and features JSON helpers\",\"real POSIX signal delivery through kill helpers and explicit process exit\",\"top-level export-name and support metadata for the public process surface\"],\"limitations\":[\"no JavaScript EventEmitter process object semantics, warning events, or nextTick queue integration\",\"no live stdin/stdout/stderr stream objects or process.channel/message IPC behavior\",\"arch, platform, release, version, dlopen, umask, and chdir are not exposed as dedicated native helpers in this facade\",\"versions and env are exposed through explicit JSON and getter/setter helpers rather than live JavaScript object identity\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_process_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &process_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_process_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"identityModel\":\"native pid, ppid, uid, gid, cwd, uptime, argv, and versions helpers\",\"memoryModel\":\"native memoryUsage, resourceUsage, availableMemory, constrainedMemory, and features JSON snapshots\",\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\",\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\",\"objectModel\":\"not-modeled for EventEmitter process object semantics, stdio stream instances, or nextTick queues\"}");
+}
+
+pub export fn sa_node_plugin_process_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"pid\":{\"supported\":true,\"mode\":\"native process pid helper\"},\"ppid\":{\"supported\":true,\"mode\":\"native parent pid helper\"},\"cwd\":{\"supported\":true,\"mode\":\"native cwd string helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native process uptime helper in seconds\"},\"hrtime\":{\"supported\":true,\"mode\":\"native monotonic hrtime bigint helper\"},\"memoryUsage\":{\"supported\":true,\"mode\":\"native process memory usage JSON snapshot\"},\"argv\":{\"supported\":true,\"mode\":\"native argv JSON snapshot\"},\"versions\":{\"supported\":true,\"mode\":\"native versions JSON snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.versions object\"]},\"env\":{\"supported\":true,\"mode\":\"explicit native env get, set, delete, and snapshot helpers\",\"limitations\":[\"not exposed as a live JavaScript process.env proxy object\"]},\"getuid\":{\"supported\":true,\"mode\":\"native uid helper\"},\"getgid\":{\"supported\":true,\"mode\":\"native gid helper\"},\"kill\":{\"supported\":true,\"mode\":\"real POSIX signal delivery by numeric or named signal\"},\"resourceUsage\":{\"supported\":true,\"mode\":\"native getrusage-based JSON snapshot\"},\"availableMemory\":{\"supported\":true,\"mode\":\"native host and cgroup-aware available-memory helper\"},\"constrainedMemory\":{\"supported\":true,\"mode\":\"native cgroup memory limit helper\"},\"features\":{\"supported\":true,\"mode\":\"native build capability JSON snapshot\"},\"exit\":{\"supported\":true,\"mode\":\"explicit native process exit helper\",\"limitations\":[\"terminates the host process immediately rather than coordinating JavaScript exit events\"]},\"arch\":{\"supported\":false,\"reason\":\"process.arch string is not exposed as a dedicated helper in the current native ABI\"},\"platform\":{\"supported\":false,\"reason\":\"process.platform string is not exposed as a dedicated helper in the current native ABI\"},\"release\":{\"supported\":false,\"reason\":\"process.release metadata is not exposed as a dedicated helper in the current native ABI\"},\"version\":{\"supported\":false,\"reason\":\"process.version string is not exposed as a dedicated helper in the current native ABI\"},\"stdin\":{\"supported\":false,\"reason\":\"live stdin stream object semantics are not modeled\"},\"stdout\":{\"supported\":false,\"reason\":\"live stdout stream object semantics are not modeled\"},\"stderr\":{\"supported\":false,\"reason\":\"live stderr stream object semantics are not modeled\"},\"nextTick\":{\"supported\":false,\"reason\":\"JavaScript nextTick queue semantics require runtime integration\"},\"emitWarning\":{\"supported\":false,\"reason\":\"JavaScript warning event and Error object semantics are not modeled\"},\"dlopen\":{\"supported\":false,\"reason\":\"process.dlopen and native module loader semantics are not modeled\"},\"umask\":{\"supported\":false,\"reason\":\"process.umask is not exposed as a dedicated helper in the current native ABI\"},\"chdir\":{\"supported\":false,\"reason\":\"process.chdir is not exposed as a dedicated helper in the current native ABI\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6221,6 +6245,38 @@ const url_export_names = [_][]const u8{
     "pathToFileURL",
     "resolve",
     "urlToHttpOptions",
+};
+
+const process_export_names = [_][]const u8{
+    "arch",
+    "argv",
+    "availableMemory",
+    "chdir",
+    "constrainedMemory",
+    "cwd",
+    "dlopen",
+    "emitWarning",
+    "env",
+    "exit",
+    "features",
+    "getgid",
+    "getuid",
+    "hrtime",
+    "kill",
+    "memoryUsage",
+    "nextTick",
+    "pid",
+    "platform",
+    "ppid",
+    "release",
+    "resourceUsage",
+    "stderr",
+    "stdin",
+    "stdout",
+    "umask",
+    "uptime",
+    "version",
+    "versions",
 };
 
 const timers_export_names = [_][]const u8{

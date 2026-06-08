@@ -1,0 +1,166 @@
+// SA tests for Node url helper tranche extras
+@import "../node.sal"
+@import "../node_extra.sal"
+
+@const S_DOMAIN_UNICODE = utf8:"münich.example"
+@const S_PATH_REL = utf8:"./tmp url file.txt"
+@const S_URL_ABS = utf8:"https://example.com/a"
+@const S_URL_BASE = utf8:"https://example.com/base"
+@const S_URL_CHILD = utf8:"/child"
+
+@test "node.url helper tranche extras"():
+L_ENTRY:
+    ascii_ptr = add 0, 0
+    ascii_len = add 0, 0
+    ascii_status = add 0, 0
+    EXPAND NODE_URL_DOMAIN_TO_ASCII ascii_ptr, ascii_len, ascii_status, S_DOMAIN_UNICODE, 15
+    ascii_ok = eq ascii_status, 0
+    br ascii_ok -> L_ASCII_LEN, L_ERR_ASCII_STATUS
+L_ASCII_LEN:
+    !ascii_ok
+    ascii_has_len = ugt ascii_len, 0
+    br ascii_has_len -> L_UNICODE, L_ERR_ASCII_LEN
+L_UNICODE:
+    !ascii_has_len
+    unicode_ptr = add 0, 0
+    unicode_len = add 0, 0
+    unicode_status = add 0, 0
+    EXPAND NODE_URL_DOMAIN_TO_UNICODE unicode_ptr, unicode_len, unicode_status, ascii_ptr, ascii_len
+    unicode_ok = eq unicode_status, 0
+    br unicode_ok -> L_UNICODE_LEN, L_ERR_UNICODE_STATUS
+L_UNICODE_LEN:
+    !unicode_ok
+    unicode_has_len = ugt unicode_len, 0
+    br unicode_has_len -> L_PATH_TO_FILE_URL, L_ERR_UNICODE_LEN
+L_PATH_TO_FILE_URL:
+    !unicode_has_len
+    file_url_ptr = add 0, 0
+    file_url_len = add 0, 0
+    file_url_status = add 0, 0
+    EXPAND NODE_URL_PATH_TO_FILE_URL file_url_ptr, file_url_len, file_url_status, S_PATH_REL, 18
+    file_url_ok = eq file_url_status, 0
+    br file_url_ok -> L_FILE_URL_LEN, L_ERR_FILE_URL_STATUS
+L_FILE_URL_LEN:
+    !file_url_ok
+    file_url_has_len = ugt file_url_len, 0
+    br file_url_has_len -> L_FILE_URL_TO_PATH, L_ERR_FILE_URL_LEN
+L_FILE_URL_TO_PATH:
+    !file_url_has_len
+    file_path_ptr = add 0, 0
+    file_path_len = add 0, 0
+    file_path_status = add 0, 0
+    EXPAND NODE_URL_FILE_URL_TO_PATH file_path_ptr, file_path_len, file_path_status, file_url_ptr, file_url_len
+    file_path_ok = eq file_path_status, 0
+    br file_path_ok -> L_FILE_PATH_LEN, L_ERR_FILE_PATH_STATUS
+L_FILE_PATH_LEN:
+    !file_path_ok
+    file_path_has_len = ugt file_path_len, 0
+    br file_path_has_len -> L_FILE_URL_TO_PATH_BUFFER, L_ERR_FILE_PATH_LEN
+L_FILE_URL_TO_PATH_BUFFER:
+    !file_path_has_len
+    file_buf_ptr = add 0, 0
+    file_buf_len = add 0, 0
+    file_buf_status = add 0, 0
+    EXPAND NODE_URL_FILE_URL_TO_PATH_BUFFER file_buf_ptr, file_buf_len, file_buf_status, file_url_ptr, file_url_len
+    file_buf_ok = eq file_buf_status, 0
+    br file_buf_ok -> L_FILE_BUF_LEN, L_ERR_FILE_BUF_STATUS
+L_FILE_BUF_LEN:
+    !file_buf_ok
+    file_buf_len_ok = eq file_buf_len, file_path_len
+    br file_buf_len_ok -> L_CAN_PARSE_ABS, L_ERR_FILE_BUF_LEN
+L_CAN_PARSE_ABS:
+    !file_buf_len_ok
+    can_parse_abs = add 0, 0
+    can_parse_abs_status = add 0, 0
+    EXPAND NODE_URL_CAN_PARSE can_parse_abs, can_parse_abs_status, S_URL_ABS, 21, 0, 0
+    can_parse_abs_ok = eq can_parse_abs_status, 0
+    br can_parse_abs_ok -> L_CAN_PARSE_ABS_VALUE, L_ERR_CAN_PARSE_ABS_STATUS
+L_CAN_PARSE_ABS_VALUE:
+    !can_parse_abs_ok
+    can_parse_abs_true = eq can_parse_abs, 1
+    br can_parse_abs_true -> L_CAN_PARSE_CHILD, L_ERR_CAN_PARSE_ABS_VALUE
+L_CAN_PARSE_CHILD:
+    !can_parse_abs_true
+    can_parse_child = add 0, 0
+    can_parse_child_status = add 0, 0
+    EXPAND NODE_URL_CAN_PARSE can_parse_child, can_parse_child_status, S_URL_CHILD, 6, S_URL_BASE, 24
+    can_parse_child_ok = eq can_parse_child_status, 0
+    br can_parse_child_ok -> L_CAN_PARSE_CHILD_VALUE, L_ERR_CAN_PARSE_CHILD_STATUS
+L_CAN_PARSE_CHILD_VALUE:
+    !can_parse_child_ok
+    can_parse_child_true = eq can_parse_child, 1
+    br can_parse_child_true -> L_FREE, L_ERR_CAN_PARSE_CHILD_VALUE
+L_FREE:
+    !can_parse_child_true
+    free_file_buf = call @sa_node_plugin_free_buffer(file_buf_ptr, file_buf_len)
+    free_file_path = call @sa_node_plugin_free_buffer(file_path_ptr, file_path_len)
+    free_file_url = call @sa_node_plugin_free_buffer(file_url_ptr, file_url_len)
+    free_unicode = call @sa_node_plugin_free_buffer(unicode_ptr, unicode_len)
+    free_ascii = call @sa_node_plugin_free_buffer(ascii_ptr, ascii_len)
+    !free_file_buf
+    !free_file_path
+    !free_file_url
+    !free_unicode
+    !free_ascii
+    !can_parse_child_status
+    !can_parse_child
+    !can_parse_abs_status
+    !can_parse_abs
+    !file_buf_status
+    !file_buf_len
+    !file_buf_ptr
+    !file_path_status
+    !file_path_len
+    !file_path_ptr
+    !file_url_status
+    !file_url_len
+    !file_url_ptr
+    !unicode_status
+    !unicode_len
+    !unicode_ptr
+    !ascii_status
+    !ascii_len
+    !ascii_ptr
+    return
+L_ERR_ASCII_STATUS:
+    !ascii_ok
+    panic(103)
+L_ERR_ASCII_LEN:
+    !ascii_has_len
+    panic(103)
+L_ERR_UNICODE_STATUS:
+    !unicode_ok
+    panic(103)
+L_ERR_UNICODE_LEN:
+    !unicode_has_len
+    panic(103)
+L_ERR_FILE_URL_STATUS:
+    !file_url_ok
+    panic(103)
+L_ERR_FILE_URL_LEN:
+    !file_url_has_len
+    panic(103)
+L_ERR_FILE_PATH_STATUS:
+    !file_path_ok
+    panic(103)
+L_ERR_FILE_PATH_LEN:
+    !file_path_has_len
+    panic(103)
+L_ERR_FILE_BUF_STATUS:
+    !file_buf_ok
+    panic(103)
+L_ERR_FILE_BUF_LEN:
+    !file_buf_len_ok
+    panic(103)
+L_ERR_CAN_PARSE_ABS_STATUS:
+    !can_parse_abs_ok
+    panic(103)
+L_ERR_CAN_PARSE_ABS_VALUE:
+    !can_parse_abs_true
+    panic(103)
+L_ERR_CAN_PARSE_CHILD_STATUS:
+    !can_parse_child_ok
+    panic(103)
+L_ERR_CAN_PARSE_CHILD_VALUE:
+    !can_parse_child_true
+    panic(103)

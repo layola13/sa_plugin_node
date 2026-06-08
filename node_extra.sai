@@ -311,6 +311,12 @@
 @extern sa_node_plugin_url_get_host(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_url_get_pathname(h: ptr, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_url_free(handle_ptr: ptr) -> u64
+@extern sa_node_plugin_url_domain_to_ascii(domain_ptr: ptr, domain_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_domain_to_unicode(domain_ptr: ptr, domain_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_path_to_file_url(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_file_url_to_path(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_file_url_to_path_buffer(url_ptr: ptr, url_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_url_can_parse(url_ptr: ptr, url_len: u64, base_ptr: ptr, base_len: u64, &out_bool: u64) -> u64
 @extern sa_node_plugin_util_callbackify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_promisify(fn_ptr: ptr, fn_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_inherits(c: ptr, c_len: u64, s: ptr, s_len: u64) -> u64

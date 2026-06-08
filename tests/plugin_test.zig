@@ -2794,7 +2794,49 @@ test "node plugin url top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullUrlTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"parse\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"URL\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"pathToFileURL\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"pathToFileURL\":{\"supported\":true") != null);
+
+    var ascii_ptr: ?[*]const u8 = null;
+    var ascii_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_domain_to_ascii("münich.example".ptr, 15, &ascii_ptr, &ascii_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(ascii_ptr, ascii_len);
+    const ascii = (ascii_ptr orelse return error.NullUrlDomainToAscii)[0..@intCast(ascii_len)];
+    try std.testing.expect(std.mem.indexOf(u8, ascii, "xn--") != null);
+
+    var unicode_ptr: ?[*]const u8 = null;
+    var unicode_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_domain_to_unicode(ascii.ptr, ascii.len, &unicode_ptr, &unicode_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(unicode_ptr, unicode_len);
+    const unicode = (unicode_ptr orelse return error.NullUrlDomainToUnicode)[0..@intCast(unicode_len)];
+    try std.testing.expect(std.mem.indexOf(u8, unicode, "münich") != null);
+
+    var file_url_ptr: ?[*]const u8 = null;
+    var file_url_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_path_to_file_url("./tmp url file.txt".ptr, 18, &file_url_ptr, &file_url_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(file_url_ptr, file_url_len);
+    const file_url = (file_url_ptr orelse return error.NullUrlPathToFileUrl)[0..@intCast(file_url_len)];
+    try std.testing.expect(std.mem.startsWith(u8, file_url, "file://"));
+    try std.testing.expect(std.mem.indexOf(u8, file_url, "%20") != null);
+
+    var file_path_ptr: ?[*]const u8 = null;
+    var file_path_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_file_url_to_path(file_url.ptr, file_url.len, &file_path_ptr, &file_path_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(file_path_ptr, file_path_len);
+    const file_path = (file_path_ptr orelse return error.NullUrlFileUrlToPath)[0..@intCast(file_path_len)];
+    try std.testing.expect(std.mem.indexOf(u8, file_path, "tmp url file.txt") != null);
+
+    var file_path_buf_ptr: ?[*]const u8 = null;
+    var file_path_buf_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_file_url_to_path_buffer(file_url.ptr, file_url.len, &file_path_buf_ptr, &file_path_buf_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(file_path_buf_ptr, file_path_buf_len);
+    const file_path_buf = (file_path_buf_ptr orelse return error.NullUrlFileUrlToPathBuffer)[0..@intCast(file_path_buf_len)];
+    try std.testing.expectEqualStrings(file_path, file_path_buf);
+
+    var can_parse: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_can_parse("https://example.com/a".ptr, 21, null, 0, &can_parse));
+    try std.testing.expectEqual(@as(u64, 1), can_parse);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_url_can_parse("/child".ptr, 6, "https://example.com/base".ptr, 24, &can_parse));
+    try std.testing.expectEqual(@as(u64, 1), can_parse);
 }
 
 test "node plugin process top-level facade helpers" {

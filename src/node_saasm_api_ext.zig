@@ -4428,6 +4428,82 @@ pub export fn sa_node_plugin_url_get_pathname(h: ?*anyopaque, out_ptr: ?*?[*]con
     return writeOwned(out_ptr, out_len, @as(*UrlHandle, @ptrCast(@alignCast(h orelse return fail()))).pathname);
 }
 
+pub export fn sa_node_plugin_url_domain_to_ascii(domain_ptr: ?[*]const u8, domain_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return sa_node_plugin_punycode_to_ascii(domain_ptr, domain_len, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_url_domain_to_unicode(domain_ptr: ?[*]const u8, domain_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return sa_node_plugin_punycode_to_unicode(domain_ptr, domain_len, out_ptr, out_len);
+}
+
+fn appendPercentEncodedByte(out: *std.ArrayList(u8), byte: u8) !void {
+    try out.writer().print("%{X:0>2}", .{byte});
+}
+
+fn appendFileUrlPathEncoded(out: *std.ArrayList(u8), path: []const u8) !void {
+    for (path) |c| {
+        switch (c) {
+            'A'...'Z', 'a'...'z', '0'...'9', '-', '.', '_', '~', '/', ':' => try out.append(c),
+            else => try appendPercentEncodedByte(out, c),
+        }
+    }
+}
+
+pub export fn sa_node_plugin_url_path_to_file_url(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const input = if (path_len == 0) "." else (path_ptr orelse return fail())[0..path_len];
+    const resolved = std.fs.path.resolve(std.heap.page_allocator, &.{input}) catch return fail();
+    defer std.heap.page_allocator.free(resolved);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("file://") catch return fail();
+    if (resolved.len == 0 or resolved[0] != '/') out.append('/') catch return fail();
+    appendFileUrlPathEncoded(&out, resolved) catch return fail();
+    return writeOwned(out_ptr, out_len, out.items);
+}
+
+fn decodeFileUrlPath(url: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (!std.mem.startsWith(u8, url, "file://")) return fail();
+    const path_part = url[7..];
+    if (path_part.len == 0 or path_part[0] != '/') return fail();
+
+    var decoded_ptr: ?[*]const u8 = null;
+    var decoded_len: u64 = 0;
+    if (sa_node_plugin_querystring_unescape_buffer(path_part.ptr, path_part.len, &decoded_ptr, &decoded_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(decoded_ptr, decoded_len);
+    return writeOwned(out_ptr, out_len, (decoded_ptr orelse return fail())[0..@intCast(decoded_len)]);
+}
+
+pub export fn sa_node_plugin_url_file_url_to_path(url_ptr: ?[*]const u8, url_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const url = (url_ptr orelse return fail())[0..url_len];
+    return decodeFileUrlPath(url, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_url_file_url_to_path_buffer(url_ptr: ?[*]const u8, url_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const url = (url_ptr orelse return fail())[0..url_len];
+    return decodeFileUrlPath(url, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_url_can_parse(url_ptr: ?[*]const u8, url_len: u64, base_ptr: ?[*]const u8, base_len: u64, out_bool: ?*u64) u32 {
+    const url = (url_ptr orelse return fail())[0..url_len];
+    if (base_len != 0) {
+        const base_text = (base_ptr orelse return fail())[0..base_len];
+        var resolved_ptr: ?[*]const u8 = null;
+        var resolved_len: u64 = 0;
+        const status = base.sa_node_plugin_url_resolve(base_text.ptr, base_text.len, url.ptr, url.len, &resolved_ptr, &resolved_len);
+        if (status == 0) {
+            defer _ = base.sa_node_plugin_free_buffer(resolved_ptr, resolved_len);
+            out_bool.?.* = 1;
+            return 0;
+        }
+        out_bool.?.* = 0;
+        return 0;
+    }
+
+    out_bool.?.* = if (std.Uri.parse(url)) |_| 1 else |_| 0;
+    return 0;
+}
+
 pub export fn sa_node_plugin_url_free(handle_ptr: ?*anyopaque) u32 {
     if (handle_ptr) |ptr| {
         const h: *UrlHandle = @ptrCast(@alignCast(ptr));

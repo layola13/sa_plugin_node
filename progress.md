@@ -60,3 +60,25 @@
 
 - This file tracks the current public non-VM/V8 top-level facade sweep.
 - The current denominator is the set of public Node modules in `lib/` that are not VM/V8-exclusive and do not live only as internal path variants such as `path/posix`, `path/win32`, `assert/strict`, `dns/promises`, `fs/promises`, `stream/promises`, `timers/promises`, or `util/types`.
+
+## Current Helper Tranche
+
+- Scope: public non-VM/V8 `url` helper parity without JavaScript object-model claims
+- Current status: `6 / 6` helper features completed (`100.0%`)
+- Planned helpers:
+  - `domainToASCII`
+  - `domainToUnicode`
+  - `pathToFileURL`
+  - `fileURLToPath`
+  - `fileURLToPathBuffer`
+  - `canParse`
+
+## Latest Completed Helper Feature
+
+- `url` helper tranche completed:
+  - `domainToASCII`
+  - `domainToUnicode`
+  - `pathToFileURL`
+  - `fileURLToPath`
+  - `fileURLToPathBuffer`
+  - `canParse`

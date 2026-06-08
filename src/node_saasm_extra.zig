@@ -255,8 +255,45 @@ pub export fn sa_node_plugin_async_hooks_snapshot_json(out_ptr: ?*?[*]const u8, 
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+const async_hooks_export_names = [_][]const u8{
+    "AsyncLocalStorage",
+    "createHook",
+    "executionAsyncId",
+    "triggerAsyncId",
+    "executionAsyncResource",
+    "asyncWrapProviders",
+    "AsyncResource",
+};
+
 pub export fn sa_node_plugin_async_hooks_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "async_hooks", true, "snapshot and AsyncResource shims are exposed");
+    var snapshot_ptr: ?[*]const u8 = null;
+    var snapshot_len: u64 = 0;
+    if (sa_node_plugin_async_hooks_snapshot_json(&snapshot_ptr, &snapshot_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"async_hooks\",\"supported\":true,\"mode\":\"top-level-native-async-hooks-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &async_hooks_export_names) catch return fail();
+    out.appendSlice(",\"snapshot\":") catch return fail();
+    out.appendSlice((snapshot_ptr orelse return fail())[0..@intCast(snapshot_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"executionAsyncId\":true,\"triggerAsyncId\":true,\"AsyncResource\":true,\"asyncWrapProviders\":true,\"snapshot\":true,\"createHook\":false,\"executionAsyncResource\":false,\"AsyncLocalStorage\":false},\"capabilities\":[\"execution and trigger async id lookup\",\"explicit AsyncResource handle create, free, and snapshot helpers\",\"native async-context snapshot JSON\",\"empty asyncWrapProviders catalog metadata\"],\"limitations\":[\"no JavaScript hook callback registration or lifecycle dispatch\",\"no JavaScript executionAsyncResource object identity\",\"no AsyncLocalStorage store propagation semantics\",\"async state changes occur only through explicit native helpers rather than automatic host callback instrumentation\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_async_hooks_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &async_hooks_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_async_hooks_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"resourceModel\":\"explicit native AsyncResource handle with id, type, and triggerAsyncId metadata\",\"snapshotModel\":\"native async-context stack snapshot JSON\",\"providersModel\":\"empty provider catalog metadata\",\"hookModel\":\"not-modeled for JavaScript callback registration and dispatch\",\"asyncLocalStorageModel\":\"not-modeled\"}");
+}
+
+pub export fn sa_node_plugin_async_hooks_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"executionAsyncId\":{\"supported\":true,\"mode\":\"read current explicit native execution async id\"},\"triggerAsyncId\":{\"supported\":true,\"mode\":\"read current explicit native trigger async id\"},\"AsyncResource\":{\"supported\":true,\"mode\":\"explicit native AsyncResource handle with create/free/snapshot helpers\",\"limitations\":[\"not a JavaScript AsyncResource class instance\"]},\"asyncWrapProviders\":{\"supported\":true,\"mode\":\"static empty provider catalog metadata\"},\"snapshot\":{\"supported\":true,\"mode\":\"native async-context snapshot JSON\"},\"createHook\":{\"supported\":false,\"reason\":\"JavaScript async hook callback registration and dispatch are not modeled\"},\"executionAsyncResource\":{\"supported\":false,\"reason\":\"JavaScript executionAsyncResource object identity is not modeled\"},\"AsyncLocalStorage\":{\"supported\":false,\"reason\":\"AsyncLocalStorage store propagation semantics are not modeled in this facade\"}}");
 }
 
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {

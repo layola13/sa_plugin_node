@@ -3556,6 +3556,57 @@
     !__m_load_63212c43_p_1
 [END_MACRO]
 
+[MACRO] NODE_ASYNC_HOOKS_TOP_EXPORTS_JSON %p_0, %p_1, %p_2
+    __ah_top_exports_ptr_slot = stack_alloc 8
+    __ah_top_exports_len_slot = stack_alloc 8
+    __ah_top_exports_status = call @sa_node_plugin_async_hooks_exports_json(&__ah_top_exports_ptr_slot, &__ah_top_exports_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_exports_status, 0
+    !__ah_top_exports_status
+    __ah_top_exports_ptr = load __ah_top_exports_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_exports_ptr, 0
+    !__ah_top_exports_ptr
+    __ah_top_exports_len = load __ah_top_exports_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_exports_len, 0
+    !__ah_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TOP_CONFIG_JSON %p_0, %p_1, %p_2
+    __ah_top_config_ptr_slot = stack_alloc 8
+    __ah_top_config_len_slot = stack_alloc 8
+    __ah_top_config_status = call @sa_node_plugin_async_hooks_config_json(&__ah_top_config_ptr_slot, &__ah_top_config_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_config_status, 0
+    !__ah_top_config_status
+    __ah_top_config_ptr = load __ah_top_config_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_config_ptr, 0
+    !__ah_top_config_ptr
+    __ah_top_config_len = load __ah_top_config_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_config_len, 0
+    !__ah_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TOP_FEATURE_SUPPORT_JSON %p_0, %p_1, %p_2
+    __ah_top_feature_ptr_slot = stack_alloc 8
+    __ah_top_feature_len_slot = stack_alloc 8
+    __ah_top_feature_status = call @sa_node_plugin_async_hooks_feature_support_json(&__ah_top_feature_ptr_slot, &__ah_top_feature_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_feature_status, 0
+    !__ah_top_feature_status
+    __ah_top_feature_ptr = load __ah_top_feature_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_feature_ptr, 0
+    !__ah_top_feature_ptr
+    __ah_top_feature_len = load __ah_top_feature_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_feature_len, 0
+    !__ah_top_feature_len
+[END_MACRO]
+
 [MACRO] NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID %p_0
     __m_slot_8ddc8ec0_0 = stack_alloc 8
     __m_status_8ddc8ec0 = call @sa_node_plugin_async_hooks_execution_async_id(&__m_slot_8ddc8ec0_0)

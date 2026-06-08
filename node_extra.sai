@@ -291,6 +291,9 @@
 @extern sa_node_plugin_diagnostics_channel_tracing_channel(name_ptr: ptr, name_len: u64, &out_handle: ptr) -> u64
 @extern sa_node_plugin_async_hooks_snapshot_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_async_hooks_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_hooks_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_hooks_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_async_hooks_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_async_hooks_execution_async_id(&out_id: u64) -> u64
 @extern sa_node_plugin_async_hooks_trigger_async_id(&out_id: u64) -> u64
 @extern sa_node_plugin_async_hooks_async_resource_create(type_ptr: ptr, type_len: u64, trigger_async_id: u64, &out_handle: ptr) -> u64

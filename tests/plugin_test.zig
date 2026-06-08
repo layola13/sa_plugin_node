@@ -95,6 +95,42 @@ test "node plugin async context tracking native stack helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_execution_async_id(&hooks_execution_async_id));
     try std.testing.expectEqual(execution_async_id, hooks_execution_async_id);
 
+    var async_hooks_status_ptr: ?[*]const u8 = null;
+    var async_hooks_status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_status_json(&async_hooks_status_ptr, &async_hooks_status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(async_hooks_status_ptr, async_hooks_status_len);
+    const async_hooks_status = (async_hooks_status_ptr orelse return error.NullAsyncHooksTopStatus)[0..@intCast(async_hooks_status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_status, "\"module\":\"async_hooks\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_status, "\"mode\":\"top-level-native-async-hooks-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_status, "\"AsyncResource\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_status, "\"createHook\":false") != null);
+
+    var async_hooks_exports_ptr: ?[*]const u8 = null;
+    var async_hooks_exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_exports_json(&async_hooks_exports_ptr, &async_hooks_exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(async_hooks_exports_ptr, async_hooks_exports_len);
+    const async_hooks_exports = (async_hooks_exports_ptr orelse return error.NullAsyncHooksTopExports)[0..@intCast(async_hooks_exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_exports, "\"createHook\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_exports, "\"AsyncResource\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_exports, "\"AsyncLocalStorage\"") != null);
+
+    var async_hooks_config_ptr: ?[*]const u8 = null;
+    var async_hooks_config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_config_json(&async_hooks_config_ptr, &async_hooks_config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(async_hooks_config_ptr, async_hooks_config_len);
+    const async_hooks_config = (async_hooks_config_ptr orelse return error.NullAsyncHooksTopConfig)[0..@intCast(async_hooks_config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_config, "\"resourceModel\":\"explicit native AsyncResource handle") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_config, "\"hookModel\":\"not-modeled") != null);
+
+    var async_hooks_feature_ptr: ?[*]const u8 = null;
+    var async_hooks_feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_hooks_feature_support_json(&async_hooks_feature_ptr, &async_hooks_feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(async_hooks_feature_ptr, async_hooks_feature_len);
+    const async_hooks_feature = (async_hooks_feature_ptr orelse return error.NullAsyncHooksTopFeatureSupport)[0..@intCast(async_hooks_feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_feature, "\"executionAsyncId\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_feature, "\"createHook\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, async_hooks_feature, "\"AsyncLocalStorage\":{\"supported\":false") != null);
+
     var active_snapshot_ptr: ?[*]const u8 = null;
     var active_snapshot_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_async_context_tracking_snapshot_json(&active_snapshot_ptr, &active_snapshot_len));

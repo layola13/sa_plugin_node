@@ -392,6 +392,30 @@ pub export fn sa_node_plugin_console_feature_support_json(out_ptr: ?*?[*]const u
     return writeOwnedString(out_ptr, out_len, "{\"log\":{\"supported\":true,\"mode\":\"native stdout text output helper via node base console ABI\"},\"info\":{\"supported\":true,\"mode\":\"native stdout text output helper\"},\"debug\":{\"supported\":true,\"mode\":\"native stdout text output helper\"},\"warn\":{\"supported\":true,\"mode\":\"native stderr text output helper\"},\"error\":{\"supported\":true,\"mode\":\"native stderr text output helper via node base console ABI\"},\"dir\":{\"supported\":true,\"mode\":\"native text output helper\"},\"dirxml\":{\"supported\":true,\"mode\":\"native text output helper\"},\"table\":{\"supported\":true,\"mode\":\"native text output helper\"},\"trace\":{\"supported\":true,\"mode\":\"native text output helper\"},\"assert\":{\"supported\":true,\"mode\":\"native conditional output helper\"},\"count\":{\"supported\":true,\"mode\":\"native label counter registry with string result output\"},\"countReset\":{\"supported\":true,\"mode\":\"native label counter reset\"},\"group\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"groupCollapsed\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"groupEnd\":{\"supported\":true,\"mode\":\"compatibility stub returning status only\"},\"time\":{\"supported\":false,\"reason\":\"timer start registry and JavaScript console timing object semantics are not modeled\"},\"timeEnd\":{\"supported\":false,\"reason\":\"timer completion registry and formatted elapsed-time output are not modeled\"},\"timeLog\":{\"supported\":true,\"mode\":\"native label plus payload text output helper\",\"limitations\":[\"does not depend on a prior time() registration\"]},\"timeStamp\":{\"supported\":true,\"mode\":\"native text output helper\"},\"Console\":{\"supported\":false,\"reason\":\"JavaScript Console class construction with custom streams and inspect options is not modeled\"},\"profile\":{\"supported\":false,\"reason\":\"inspector profiling integration is not modeled\"},\"clear\":{\"supported\":false,\"reason\":\"terminal clearing semantics are not exposed through the console facade\"}}");
 }
 
+pub export fn sa_node_plugin_events_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"events\",\"supported\":true,\"mode\":\"top-level-native-events-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &events_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"EventEmitter\":true,\"getEventListeners\":true,\"getMaxListeners\":true,\"setMaxListeners\":true,\"listenerCount\":true,\"errorMonitor\":false,\"captureRejections\":false,\"EventEmitterAsyncResource\":false,\"addAbortListener\":false,\"once\":false,\"on\":false},\"capabilities\":[\"explicit native EventEmitter handle allocation and free\",\"listener registration, prepend, once, remove, emit, and count helpers on native handles\",\"per-emitter max-listener metadata and event-listener snapshot JSON\",\"listenerCount and getEventListeners metadata over explicit native handles\"],\"limitations\":[\"top-level once() and on() Promise or AsyncIterator semantics are not modeled\",\"no JavaScript EventEmitter class/prototype objects, symbols, or thrown error behavior\",\"captureRejections, errorMonitor, EventEmitterAsyncResource, and addAbortListener require JavaScript function, Promise, AbortSignal, or async resource semantics\",\"listener callbacks are opaque native pointers rather than JavaScript functions\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_events_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &events_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_events_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"handleModel\":\"explicit native EventEmitter handle with listener arrays and per-listener once flags\",\"listenerModel\":\"opaque callback pointers stored on explicit native handles\",\"maxListenerModel\":\"per-emitter numeric max-listener metadata initialized to 10\",\"iterationModel\":\"listener snapshots returned as JSON arrays rather than live JavaScript arrays or iterators\",\"objectModel\":\"not-modeled for JavaScript EventEmitter class instances\"}");
+}
+
+pub export fn sa_node_plugin_events_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"EventEmitter\":{\"supported\":true,\"mode\":\"explicit native handle via create/on/once/off/emit/free helpers\",\"limitations\":[\"not exposed as a JavaScript class or prototype object\"]},\"getEventListeners\":{\"supported\":true,\"mode\":\"listener snapshot JSON for an explicit native handle and event name\"},\"getMaxListeners\":{\"supported\":true,\"mode\":\"reads stored max-listener metadata from an explicit native handle\"},\"setMaxListeners\":{\"supported\":true,\"mode\":\"writes stored max-listener metadata on an explicit native handle\",\"limitations\":[\"does not support EventTarget or global defaultMaxListeners mutation\"]},\"listenerCount\":{\"supported\":true,\"mode\":\"counts listeners for an explicit native handle and event name\"},\"errorMonitor\":{\"supported\":false,\"reason\":\"JavaScript symbol-keyed error monitoring semantics are not modeled\"},\"captureRejections\":{\"supported\":false,\"reason\":\"Promise rejection capture on JavaScript listeners is not modeled\"},\"EventEmitterAsyncResource\":{\"supported\":false,\"reason\":\"async resource backed EventEmitter subclass semantics are not modeled\"},\"addAbortListener\":{\"supported\":false,\"reason\":\"AbortSignal listener lifecycle and disposable return semantics are not modeled\"},\"once\":{\"supported\":false,\"reason\":\"top-level events.once() Promise semantics are not modeled; use explicit native emitter once-listener registration instead\"},\"on\":{\"supported\":false,\"reason\":\"top-level events.on() AsyncIterator semantics are not modeled; use explicit native emitter listener registration instead\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -3680,6 +3704,30 @@ pub export fn sa_node_plugin_trace_events_tracing_free(handle_ptr: ?*anyopaque) 
     return 0;
 }
 
+pub export fn sa_node_plugin_trace_events_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"trace_events\",\"supported\":true,\"mode\":\"top-level-native-trace-events-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &trace_events_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"createTracing\":true,\"getEnabledCategories\":true,\"Tracing\":false},\"capabilities\":[\"explicit native tracing handle allocation with stored category string\",\"enable and disable state toggling on explicit tracing handles\",\"enabled-categories snapshot JSON from explicit tracing handles\"],\"limitations\":[\"no JavaScript Tracing class instances or custom inspect behavior\",\"category validation follows this plugin's explicit string handle model rather than Node internal CategorySet semantics\",\"global process trace state, warnings, and internal trace buffer integration are not modeled\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_trace_events_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &trace_events_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_trace_events_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"handleModel\":\"explicit native tracing handle with category string and enabled boolean\",\"categoryModel\":\"comma-delimited category text stored per handle\",\"stateModel\":\"per-handle enable and disable toggles only\",\"objectModel\":\"not-modeled for JavaScript Tracing class instances\"}");
+}
+
+pub export fn sa_node_plugin_trace_events_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"createTracing\":{\"supported\":true,\"mode\":\"allocates an explicit native tracing handle from category text\",\"limitations\":[\"does not return a JavaScript Tracing class instance\"]},\"getEnabledCategories\":{\"supported\":true,\"mode\":\"returns the stored category string for an explicit native tracing handle\"},\"Tracing\":{\"supported\":false,\"reason\":\"JavaScript Tracing class construction, getters, and custom inspect behavior are not modeled\"},\"enable\":{\"supported\":true,\"mode\":\"sets the explicit native handle enabled flag\"},\"disable\":{\"supported\":true,\"mode\":\"clears the explicit native handle enabled flag\"},\"warnings\":{\"supported\":false,\"reason\":\"enabled Tracing object leak warnings and process.emitWarning integration are not modeled\"},\"globalTraceState\":{\"supported\":false,\"reason\":\"Node internal process-wide trace category state and backend integration are not modeled\"}}");
+}
+
 // --- TTY ---
 const TtyHandle = struct {
     allocator: std.mem.Allocator,
@@ -5878,6 +5926,29 @@ const console_export_names = [_][]const u8{
     "timeEnd",
     "timeLog",
     "timeStamp",
+};
+
+const events_export_names = [_][]const u8{
+    "EventEmitter",
+    "EventEmitterAsyncResource",
+    "addAbortListener",
+    "captureRejectionSymbol",
+    "captureRejections",
+    "defaultMaxListeners",
+    "errorMonitor",
+    "getEventListeners",
+    "getMaxListeners",
+    "listenerCount",
+    "on",
+    "once",
+    "setMaxListeners",
+    "usingDomains",
+};
+
+const trace_events_export_names = [_][]const u8{
+    "createTracing",
+    "getEnabledCategories",
+    "Tracing",
 };
 
 const timers_export_names = [_][]const u8{

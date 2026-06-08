@@ -195,6 +195,44 @@ test "node plugin events stateful extra APIs" {
     try std.testing.expectEqual(@as(u64, 0), count);
 }
 
+test "node plugin events top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_events_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullEventsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"events\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-events-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"EventEmitter\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"once\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_events_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullEventsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"EventEmitter\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getEventListeners\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"defaultMaxListeners\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_events_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullEventsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native EventEmitter handle") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript EventEmitter class instances\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_events_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullEventsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"EventEmitter\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"once\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"addAbortListener\":{\"supported\":false") != null);
+}
+
 test "node plugin dns lookup" {
     var ptr: ?[*]const u8 = null;
     var len: u64 = 0;
@@ -2529,6 +2567,44 @@ test "node plugin console top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"log\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"time\":{\"supported\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Console\":{\"supported\":false") != null);
+}
+
+test "node plugin trace_events top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_trace_events_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullTraceEventsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"trace_events\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-trace-events-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createTracing\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"Tracing\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_trace_events_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullTraceEventsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createTracing\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getEnabledCategories\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"Tracing\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_trace_events_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullTraceEventsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handleModel\":\"explicit native tracing handle") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Tracing class instances\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_trace_events_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullTraceEventsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createTracing\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"Tracing\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"globalTraceState\":{\"supported\":false") != null);
 }
 
 test "node plugin test runner reports native harness support" {

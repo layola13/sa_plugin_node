@@ -4,7 +4,7 @@
 
 - Scope: common non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `29 / 31` modules completed (`93.5%`)
+- Current status: `31 / 31` modules completed (`100.0%`)
 
 ## Completed Modules
 
@@ -18,6 +18,7 @@
 - `dgram`
 - `dns`
 - `domain`
+- `events`
 - `http`
 - `http2`
 - `https`
@@ -33,6 +34,7 @@
 - `sys`
 - `test`
 - `timers`
+- `trace_events`
 - `tls`
 - `tty`
 - `wasi`
@@ -40,8 +42,7 @@
 
 ## Remaining Modules In Current Sweep
 
-- `events`
-- `trace_events`
+- none
 
 ## Notes
 

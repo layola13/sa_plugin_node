@@ -5377,6 +5377,9 @@ const HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL: u16 = 0x8;
 const HTTP2_MAX_FRAME_SIZE: u32 = 0x00ff_ffff;
 const HTTP2_MAX_INITIAL_WINDOW_SIZE: u32 = 0x7fff_ffff;
 const HTTP2_MAX_CUSTOM_SETTINGS: usize = 10;
+const HTTP2_CLIENT_PREFACE = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
+const HTTP2_FRAME_SETTINGS: u8 = 0x4;
+const HTTP2_FLAG_ACK: u8 = 0x1;
 
 const Http2SettingPair = struct {
     id: u16,
@@ -5464,6 +5467,45 @@ fn http2ReadSetting(buf: []const u8, offset: usize) Http2SettingPair {
         (@as(u32, buf[offset + 4]) << 8) |
         @as(u32, buf[offset + 5]);
     return .{ .id = id, .value = value };
+}
+
+fn http2AppendFrame(out: *std.ArrayList(u8), frame_type: u8, flags: u8, stream_id: u32, payload: []const u8) !void {
+    if (payload.len > HTTP2_MAX_FRAME_SIZE) return error.FrameTooLarge;
+    try out.append(@intCast((payload.len >> 16) & 0xff));
+    try out.append(@intCast((payload.len >> 8) & 0xff));
+    try out.append(@intCast(payload.len & 0xff));
+    try out.append(frame_type);
+    try out.append(flags);
+    const sid = stream_id & 0x7fff_ffff;
+    try out.append(@intCast((sid >> 24) & 0x7f));
+    try out.append(@intCast((sid >> 16) & 0xff));
+    try out.append(@intCast((sid >> 8) & 0xff));
+    try out.append(@intCast(sid & 0xff));
+    try out.appendSlice(payload);
+}
+
+const Http2FrameHeader = struct {
+    len: usize,
+    frame_type: u8,
+    flags: u8,
+    stream_id: u32,
+};
+
+fn http2ReadFrameHeader(buf: []const u8) !Http2FrameHeader {
+    if (buf.len < 9) return error.ShortFrameHeader;
+    const len = (@as(usize, buf[0]) << 16) | (@as(usize, buf[1]) << 8) | @as(usize, buf[2]);
+    const stream_id = (@as(u32, buf[5] & 0x7f) << 24) |
+        (@as(u32, buf[6]) << 16) |
+        (@as(u32, buf[7]) << 8) |
+        @as(u32, buf[8]);
+    return .{ .len = len, .frame_type = buf[3], .flags = buf[4], .stream_id = stream_id };
+}
+
+fn http2SettingsPayloadToJson(payload: []const u8) ![]const u8 {
+    var out_ptr: ?[*]const u8 = null;
+    var out_len: u64 = 0;
+    if (sa_node_plugin_http2_get_unpacked_settings_json(payload.ptr, payload.len, &out_ptr, &out_len) != 0) return error.InvalidSettings;
+    return (out_ptr orelse return error.InvalidSettings)[0..@intCast(out_len)];
 }
 
 fn http2AppendJsonU32Field(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: u32) !void {
@@ -5560,6 +5602,64 @@ pub export fn sa_node_plugin_http2_get_unpacked_settings_json(buf_ptr: ?[*]const
     const owned = out.toOwnedSlice() catch return fail();
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
+    return 0;
+}
+
+pub export fn sa_node_plugin_http2_perform_server_handshake(
+    input_ptr: ?[*]const u8,
+    input_len: u64,
+    settings_json_ptr: ?[*]const u8,
+    settings_json_len: u64,
+    out_bytes_ptr: ?*?[*]const u8,
+    out_bytes_len: ?*u64,
+    out_json_ptr: ?*?[*]const u8,
+    out_json_len: ?*u64,
+) u32 {
+    const input = (input_ptr orelse return fail())[0..input_len];
+    if (input.len < HTTP2_CLIENT_PREFACE.len + 9) return fail();
+    if (!std.mem.eql(u8, input[0..HTTP2_CLIENT_PREFACE.len], HTTP2_CLIENT_PREFACE)) return fail();
+
+    const frame_start = HTTP2_CLIENT_PREFACE.len;
+    const header = http2ReadFrameHeader(input[frame_start..]) catch return fail();
+    if (header.frame_type != HTTP2_FRAME_SETTINGS or header.stream_id != 0) return fail();
+    if ((header.flags & HTTP2_FLAG_ACK) != 0) return fail();
+    if (header.len % 6 != 0) return fail();
+    const payload_start = frame_start + 9;
+    const payload_end = payload_start + header.len;
+    if (payload_end > input.len) return fail();
+    const client_settings = input[payload_start..payload_end];
+
+    const client_settings_json = http2SettingsPayloadToJson(client_settings) catch return fail();
+    defer _ = base.sa_node_plugin_free_buffer(client_settings_json.ptr, client_settings_json.len);
+
+    var server_settings_ptr: ?[*]const u8 = null;
+    var server_settings_len: u64 = 0;
+    if (sa_node_plugin_http2_get_packed_settings(settings_json_ptr, settings_json_len, &server_settings_ptr, &server_settings_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(server_settings_ptr, server_settings_len);
+    const server_settings = if (server_settings_ptr) |ptr| ptr[0..server_settings_len] else "";
+
+    var outbound = std.ArrayList(u8).init(std.heap.page_allocator);
+    errdefer outbound.deinit();
+    http2AppendFrame(&outbound, HTTP2_FRAME_SETTINGS, 0, 0, server_settings) catch return fail();
+    http2AppendFrame(&outbound, HTTP2_FRAME_SETTINGS, HTTP2_FLAG_ACK, 0, "") catch return fail();
+
+    var meta = std.ArrayList(u8).init(std.heap.page_allocator);
+    errdefer meta.deinit();
+    meta.appendSlice("{\"preface\":true,\"clientSettings\":") catch return fail();
+    meta.appendSlice(client_settings_json) catch return fail();
+    meta.writer().print(",\"clientSettingsBytes\":{d},\"serverSettingsBytes\":{d},\"outboundBytes\":{d},\"frames\":[\"SETTINGS\",\"SETTINGS_ACK\"]}}", .{
+        client_settings.len,
+        server_settings.len,
+        outbound.items.len,
+    }) catch return fail();
+
+    const owned_outbound = outbound.toOwnedSlice() catch return fail();
+    errdefer std.heap.page_allocator.free(owned_outbound);
+    const owned_meta = meta.toOwnedSlice() catch return fail();
+    out_bytes_ptr.?.* = owned_outbound.ptr;
+    out_bytes_len.?.* = owned_outbound.len;
+    out_json_ptr.?.* = owned_meta.ptr;
+    out_json_len.?.* = owned_meta.len;
     return 0;
 }
 
@@ -7618,7 +7718,7 @@ pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len:
     out.appendSlice((defaults_ptr orelse return fail())[0..@intCast(defaults_len)]) catch return fail();
     out.appendSlice(",\"sensitiveHeaders\":") catch return fail();
     out.appendSlice((sensitive_ptr orelse return fail())[0..@intCast(sensitive_len)]) catch return fail();
-    out.appendSlice(",\"featureSupport\":{\"connect\":true,\"constants\":true,\"getDefaultSettings\":true,\"getPackedSettings\":true,\"getUnpackedSettings\":true,\"sensitiveHeaders\":true,\"createServer\":false,\"createSecureServer\":false,\"performServerHandshake\":false,\"Http2ServerRequest\":false,\"Http2ServerResponse\":false,\"pushStreams\":false},\"capabilities\":[\"HTTP/2 constants metadata\",\"default settings metadata\",\"packed and unpacked settings helpers\",\"sensitive header metadata\",\"cleartext prior-knowledge client request helper\"],\"limitations\":[\"no server, session, or stream object model\",\"no TLS ALPN or secure HTTP/2 server support\",\"no push streams, priorities, or lifecycle events\",\"connect maps to the explicit h2c client helper rather than a live ClientHttp2Session object\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"connect\":true,\"constants\":true,\"getDefaultSettings\":true,\"getPackedSettings\":true,\"getUnpackedSettings\":true,\"sensitiveHeaders\":true,\"performServerHandshake\":true,\"createServer\":false,\"createSecureServer\":false,\"Http2ServerRequest\":false,\"Http2ServerResponse\":false,\"pushStreams\":false},\"capabilities\":[\"HTTP/2 constants metadata\",\"default settings metadata\",\"packed and unpacked settings helpers\",\"sensitive header metadata\",\"cleartext prior-knowledge client request helper\",\"explicit server-side preface and SETTINGS handshake helper returning outbound SETTINGS and ACK frames\"],\"limitations\":[\"no JavaScript server, session, or stream object model\",\"no TLS ALPN or secure HTTP/2 server support\",\"no push streams, priorities, or lifecycle events\",\"performServerHandshake validates wire preface/settings and emits frame bytes, but does not allocate a live Http2Session object\",\"connect maps to the explicit h2c client helper rather than a live ClientHttp2Session object\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -7650,12 +7750,12 @@ pub export fn sa_node_plugin_http2_config_json(out_ptr: ?*?[*]const u8, out_len:
     out.appendSlice((sensitive_ptr orelse return fail())[0..@intCast(sensitive_len)]) catch return fail();
     out.appendSlice(",\"transport\":\"cleartext prior-knowledge h2c client helper\",\"nghttp2Available\":") catch return fail();
     out.appendSlice(if (loadNghttp2Api() != null) "true" else "false") catch return fail();
-    out.appendSlice(",\"serverSupport\":false,\"tlsAlpnSupport\":false,\"sessionModel\":\"not-modeled\"}") catch return fail();
+    out.appendSlice(",\"serverHandshakeModel\":\"explicit client preface plus SETTINGS parser returning server SETTINGS and SETTINGS ACK frame bytes\",\"serverSupport\":false,\"tlsAlpnSupport\":false,\"sessionModel\":\"not-modeled\"}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_http2_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"explicit cleartext h2c client request helper\",\"limitations\":[\"no persistent ClientHttp2Session object\",\"no per-stream lifecycle events\"]},\"constants\":{\"supported\":true,\"mode\":\"static constant catalog JSON\"},\"getDefaultSettings\":{\"supported\":true,\"mode\":\"default settings JSON\"},\"getPackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings encoder\"},\"getUnpackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings decoder\"},\"sensitiveHeaders\":{\"supported\":true,\"mode\":\"static sensitive header metadata\"},\"createServer\":{\"supported\":false,\"reason\":\"HTTP/2 server session and stream object model are not modeled\"},\"createSecureServer\":{\"supported\":false,\"reason\":\"TLS ALPN and secure HTTP/2 server support are not modeled\"},\"performServerHandshake\":{\"supported\":false,\"reason\":\"live server-side handshake state is not modeled\"},\"Http2ServerRequest\":{\"supported\":false,\"reason\":\"JavaScript request object instances are not modeled\"},\"Http2ServerResponse\":{\"supported\":false,\"reason\":\"JavaScript response object instances are not modeled\"},\"pushStreams\":{\"supported\":false,\"reason\":\"HTTP/2 push stream lifecycle is not modeled\"}}");
+    return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"explicit cleartext h2c client request helper\",\"limitations\":[\"no persistent ClientHttp2Session object\",\"no per-stream lifecycle events\"]},\"constants\":{\"supported\":true,\"mode\":\"static constant catalog JSON\"},\"getDefaultSettings\":{\"supported\":true,\"mode\":\"default settings JSON\"},\"getPackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings encoder\"},\"getUnpackedSettings\":{\"supported\":true,\"mode\":\"RFC wire-format settings decoder\"},\"sensitiveHeaders\":{\"supported\":true,\"mode\":\"static sensitive header metadata\"},\"performServerHandshake\":{\"supported\":true,\"mode\":\"native server-side HTTP/2 preface and SETTINGS handshake helper returning outbound frame bytes plus JSON metadata\",\"limitations\":[\"does not allocate JavaScript Http2Session or stream objects\",\"does not perform TLS ALPN or request stream dispatch\"]},\"createServer\":{\"supported\":false,\"reason\":\"HTTP/2 JavaScript server session and stream object model are not modeled\"},\"createSecureServer\":{\"supported\":false,\"reason\":\"TLS ALPN and secure HTTP/2 server support are not modeled\"},\"Http2ServerRequest\":{\"supported\":false,\"reason\":\"JavaScript request object instances are not modeled\"},\"Http2ServerResponse\":{\"supported\":false,\"reason\":\"JavaScript response object instances are not modeled\"},\"pushStreams\":{\"supported\":false,\"reason\":\"HTTP/2 push stream lifecycle is not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

@@ -3,6 +3,7 @@
 @import "../node_extra.sal"
 
 @const S_ENABLE_PUSH_FALSE = utf8:"{\"enablePush\":false}"
+@const S_H2_CLIENT_PREFACE_SETTINGS = utf8:"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n\x00\x00\x06\x04\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00"
 
 @test "node.http2 settings helpers"():
 L_ENTRY:
@@ -131,4 +132,45 @@ L_ERR_UNPACK_LEN:
     !unpacked_has_len
     !unpacked_ptr
     !unpacked_len
+    panic(103)
+
+@test "node.http2 perform server handshake"():
+L_ENTRY:
+    bytes_ptr = add 0, 0
+    bytes_len = add 0, 0
+    json_ptr = add 0, 0
+    json_len = add 0, 0
+    status = add 0, 0
+    EXPAND NODE_HTTP2_PERFORM_SERVER_HANDSHAKE bytes_ptr, bytes_len, json_ptr, json_len, status, S_H2_CLIENT_PREFACE_SETTINGS, 39, S_ENABLE_PUSH_FALSE, 20
+    ok = eq status, 0
+    br ok -> L_BYTES_LEN, L_ERR_STATUS
+L_BYTES_LEN:
+    !ok
+    bytes_len_ok = eq bytes_len, 24
+    br bytes_len_ok -> L_JSON_LEN, L_ERR_BYTES_LEN
+L_JSON_LEN:
+    !bytes_len_ok
+    json_has_len = ugt json_len, 0
+    br json_has_len -> L_OK, L_ERR_JSON_LEN
+L_OK:
+    !json_has_len
+    free_bytes = call @sa_node_plugin_free_buffer(bytes_ptr, bytes_len)
+    free_json = call @sa_node_plugin_free_buffer(json_ptr, json_len)
+    !free_json
+    !free_bytes
+    !json_len
+    !json_ptr
+    !bytes_len
+    !bytes_ptr
+    !status
+    return
+L_ERR_STATUS:
+    !ok
+    !status
+    panic(103)
+L_ERR_BYTES_LEN:
+    !bytes_len_ok
+    panic(103)
+L_ERR_JSON_LEN:
+    !json_has_len
     panic(103)

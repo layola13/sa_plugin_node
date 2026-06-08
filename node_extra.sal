@@ -7838,6 +7838,33 @@
     !__http2_unpacked_settings_len
 [END_MACRO]
 
+[MACRO] NODE_HTTP2_PERFORM_SERVER_HANDSHAKE %out_bytes_ptr, %out_bytes_len, %out_json_ptr, %out_json_len, %out_status, %input, %input_len, %settings_json, %settings_json_len
+    __http2_handshake_bytes_ptr_slot = stack_alloc 8
+    __http2_handshake_bytes_len_slot = stack_alloc 8
+    __http2_handshake_json_ptr_slot = stack_alloc 8
+    __http2_handshake_json_len_slot = stack_alloc 8
+    __http2_handshake_status = call @sa_node_plugin_http2_perform_server_handshake(%input, %input_len, %settings_json, %settings_json_len, &__http2_handshake_bytes_ptr_slot, &__http2_handshake_bytes_len_slot, &__http2_handshake_json_ptr_slot, &__http2_handshake_json_len_slot)
+    !%out_status
+    %out_status = add __http2_handshake_status, 0
+    !__http2_handshake_status
+    __http2_handshake_bytes_ptr = load __http2_handshake_bytes_ptr_slot+0 as ptr
+    !%out_bytes_ptr
+    %out_bytes_ptr = add __http2_handshake_bytes_ptr, 0
+    !__http2_handshake_bytes_ptr
+    __http2_handshake_bytes_len = load __http2_handshake_bytes_len_slot+0 as u64
+    !%out_bytes_len
+    %out_bytes_len = add __http2_handshake_bytes_len, 0
+    !__http2_handshake_bytes_len
+    __http2_handshake_json_ptr = load __http2_handshake_json_ptr_slot+0 as ptr
+    !%out_json_ptr
+    %out_json_ptr = add __http2_handshake_json_ptr, 0
+    !__http2_handshake_json_ptr
+    __http2_handshake_json_len = load __http2_handshake_json_len_slot+0 as u64
+    !%out_json_len
+    %out_json_len = add __http2_handshake_json_len, 0
+    !__http2_handshake_json_len
+[END_MACRO]
+
 [MACRO] NODE_HTTP2_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
     __http2_exports_ptr_slot = stack_alloc 8
     __http2_exports_len_slot = stack_alloc 8

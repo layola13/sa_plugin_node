@@ -63,14 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `fs` helper parity by exposing native copy helpers through the sync and promises facades
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `http2` helper parity by exposing native server-side handshake frame handling
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `fs.cp`
-  - `fs.promises.cp`
+  - `http2.performServerHandshake`
 
 ## Recent Completed Helper Features
 
+- `http2` helper tranche completed:
+  - `http2.performServerHandshake`
 - `fs` helper tranche completed:
   - `fs.cp`
   - `fs.promises.cp`

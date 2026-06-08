@@ -670,6 +670,7 @@
 @extern sa_node_plugin_http2_sensitive_headers(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_get_packed_settings(settings_json_ptr: ptr, settings_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_get_unpacked_settings_json(buf_ptr: ptr, buf_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_http2_perform_server_handshake(input_ptr: ptr, input_len: u64, settings_json_ptr: ptr, settings_json_len: u64, &out_bytes_ptr: ptr, &out_bytes_len: u64, &out_json_ptr: ptr, &out_json_len: u64) -> u64
 @extern sa_node_plugin_http2_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64

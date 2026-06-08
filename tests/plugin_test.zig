@@ -27,6 +27,19 @@ fn writeH2Frame(stream: std.net.Stream, frame_type: u8, flags: u8, stream_id: u3
     try stream.writeAll(payload);
 }
 
+fn appendH2Frame(out: *std.ArrayList(u8), frame_type: u8, flags: u8, stream_id: u32, payload: []const u8) !void {
+    try out.append(@intCast((payload.len >> 16) & 0xff));
+    try out.append(@intCast((payload.len >> 8) & 0xff));
+    try out.append(@intCast(payload.len & 0xff));
+    try out.append(frame_type);
+    try out.append(flags);
+    try out.append(@intCast((stream_id >> 24) & 0x7f));
+    try out.append(@intCast((stream_id >> 16) & 0xff));
+    try out.append(@intCast((stream_id >> 8) & 0xff));
+    try out.append(@intCast(stream_id & 0xff));
+    try out.appendSlice(payload);
+}
+
 fn writeDnsNameForTest(out: *std.ArrayList(u8), name: []const u8) !void {
     var labels = std.mem.splitScalar(u8, name, '.');
     while (labels.next()) |label| {
@@ -5964,6 +5977,30 @@ test "node plugin http2 settings pack and unpack helpers" {
     var invalid_ptr: ?[*]const u8 = null;
     var invalid_len: u64 = 0;
     try std.testing.expect(plugin.sa_node_plugin_http2_get_packed_settings(invalid_settings.ptr, invalid_settings.len, &invalid_ptr, &invalid_len) != 0);
+
+    var handshake_input = std.ArrayList(u8).init(std.testing.allocator);
+    defer handshake_input.deinit();
+    try handshake_input.appendSlice("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
+    try appendH2Frame(&handshake_input, 0x4, 0x0, 0, packed_bytes);
+
+    var handshake_bytes_ptr: ?[*]const u8 = null;
+    var handshake_bytes_len: u64 = 0;
+    var handshake_json_ptr: ?[*]const u8 = null;
+    var handshake_json_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http2_perform_server_handshake(handshake_input.items.ptr, handshake_input.items.len, enable_push_false.ptr, enable_push_false.len, &handshake_bytes_ptr, &handshake_bytes_len, &handshake_json_ptr, &handshake_json_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(handshake_bytes_ptr, handshake_bytes_len);
+    defer _ = plugin.sa_node_plugin_free_buffer(handshake_json_ptr, handshake_json_len);
+    const handshake_bytes = (handshake_bytes_ptr orelse return error.NullHttp2HandshakeBytes)[0..@intCast(handshake_bytes_len)];
+    try std.testing.expectEqual(@as(usize, 24), handshake_bytes.len);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x00, 0x00, 0x06, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00 }, handshake_bytes[0..9]);
+    try std.testing.expectEqualSlices(u8, packed_bytes, handshake_bytes[9..15]);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00 }, handshake_bytes[15..24]);
+    const handshake_json = (handshake_json_ptr orelse return error.NullHttp2HandshakeJson)[0..@intCast(handshake_json_len)];
+    try std.testing.expect(std.mem.indexOf(u8, handshake_json, "\"preface\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, handshake_json, "\"enablePush\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, handshake_json, "\"outboundBytes\":24") != null);
+
+    try std.testing.expect(plugin.sa_node_plugin_http2_perform_server_handshake("bad", 3, enable_push_false.ptr, enable_push_false.len, &handshake_bytes_ptr, &handshake_bytes_len, &handshake_json_ptr, &handshake_json_len) != 0);
 }
 
 test "node plugin quic and http3 metadata helpers" {
@@ -6289,6 +6326,7 @@ test "node plugin http2 top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"http2\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-http2-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"getPackedSettings\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"performServerHandshake\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"createServer\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -6307,6 +6345,7 @@ test "node plugin http2 top-level facade helpers" {
     const config = (config_ptr orelse return error.NullHttp2TopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"defaultSettings\":") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"transport\":\"cleartext prior-knowledge h2c client helper\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"serverHandshakeModel\":") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -6314,6 +6353,7 @@ test "node plugin http2 top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullHttp2TopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"connect\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"performServerHandshake\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"createSecureServer\":{\"supported\":false") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"pushStreams\":{\"supported\":false") != null);
 }

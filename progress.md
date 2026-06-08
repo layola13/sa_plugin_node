@@ -4,7 +4,7 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `39 / 43` modules completed (`90.7%`)
+- Current status: `40 / 43` modules completed (`93.0%`)
 
 ## Completed Modules
 
@@ -32,6 +32,7 @@
 - `path`
 - `perf_hooks`
 - `process`
+- `querystring`
 - `readline`
 - `repl`
 - `report`
@@ -51,7 +52,6 @@
 ## Remaining Modules In Current Sweep
 
 - `punycode`
-- `querystring`
 - `string_decoder`
 - `zlib`
 

@@ -2911,6 +2911,44 @@ test "node plugin path top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"win32\":{\"supported\":false") != null);
 }
 
+test "node plugin querystring top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_querystring_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullQuerystringTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"querystring\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-querystring-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"parse\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"unescapeBuffer\":true") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_querystring_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullQuerystringTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"escape\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"stringify\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"decode\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_querystring_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullQuerystringTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"parseModel\":\"native query-string parse helper returning flat JSON object fields\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"bufferModel\":\"unescapeBuffer returns raw bytes through an explicit buffer helper\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_querystring_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullQuerystringTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"escape\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"decode\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"unescapeBuffer\":{\"supported\":true") != null);
+}
+
 test "node plugin test runner reports native harness support" {
     try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--experimental-test-coverage --test-only --test-concurrency=4 --test-timeout=250 --test-isolation=none --test-reporter=tap --test-reporter-destination=stdout", 1));
     defer _ = unsetenv("NODE_OPTIONS");

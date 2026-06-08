@@ -626,6 +626,30 @@ pub export fn sa_node_plugin_path_feature_support_json(out_ptr: ?*?[*]const u8, 
     return writeOwnedString(out_ptr, out_len, "{\"join\":{\"supported\":true,\"mode\":\"native std.fs.path join helper over explicit slice arrays\"},\"resolve\":{\"supported\":true,\"mode\":\"native std.fs.path resolve helper over explicit slice arrays\"},\"normalize\":{\"supported\":true,\"mode\":\"native path normalization helper\",\"limitations\":[\"uses host-native path resolution semantics\"]},\"basename\":{\"supported\":true,\"mode\":\"native basename helper with optional extension stripping\"},\"dirname\":{\"supported\":true,\"mode\":\"native dirname helper\"},\"extname\":{\"supported\":true,\"mode\":\"native extension helper\"},\"isAbsolute\":{\"supported\":true,\"mode\":\"native absolute-path predicate\"},\"relative\":{\"supported\":true,\"mode\":\"native relative-path helper over resolved inputs\"},\"format\":{\"supported\":true,\"mode\":\"native path format helper from JSON path parts\"},\"parse\":{\"supported\":true,\"mode\":\"native path parse helper returning JSON parts\"},\"sep\":{\"supported\":true,\"mode\":\"native path separator helper\"},\"delimiter\":{\"supported\":true,\"mode\":\"native path delimiter helper\"},\"matchesGlob\":{\"supported\":true,\"mode\":\"native glob-match boolean helper\"},\"posix\":{\"supported\":false,\"reason\":\"path.posix namespace object is not modeled as a distinct method table\"},\"win32\":{\"supported\":false,\"reason\":\"path.win32 namespace object is not modeled as a distinct method table\"},\"toNamespacedPath\":{\"supported\":false,\"reason\":\"Windows namespaced path conversion helper is not exposed in the current native ABI\"}}");
 }
 
+pub export fn sa_node_plugin_querystring_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"querystring\",\"supported\":true,\"mode\":\"top-level-native-querystring-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &querystring_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"escape\":true,\"unescape\":true,\"parse\":true,\"stringify\":true,\"encode\":true,\"decode\":true,\"unescapeBuffer\":true},\"capabilities\":[\"native percent-encoding escape and unescape helpers for query string text\",\"native parse and stringify helpers between query strings and flat JSON objects\",\"native unescapeBuffer-style byte helper through explicit buffer-returning ABI\",\"top-level export-name and support metadata for the public querystring module surface\"],\"limitations\":[\"parse and stringify operate on flat key-value objects and do not model full Node custom separator, repeated-key array coercion, or prototype pollution guards\",\"unescapeBuffer returns raw bytes through the native ABI rather than a JavaScript Buffer instance\",\"encode and decode are aliases over stringify and parse metadata rather than distinct implementations\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_querystring_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &querystring_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_querystring_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"escapeModel\":\"native percent-encoding escape and unescape helpers over query text\",\"parseModel\":\"native query-string parse helper returning flat JSON object fields\",\"stringifyModel\":\"native flat JSON object stringify helper producing key=value pairs\",\"bufferModel\":\"unescapeBuffer returns raw bytes through an explicit buffer helper\",\"objectModel\":\"not-modeled for JavaScript Buffer instances, repeated-key array coercion, or custom separator option bags\"}");
+}
+
+pub export fn sa_node_plugin_querystring_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"escape\":{\"supported\":true,\"mode\":\"native percent-encoding escape helper\"},\"unescape\":{\"supported\":true,\"mode\":\"native percent-decoding helper with plus-to-space handling\"},\"parse\":{\"supported\":true,\"mode\":\"native query-string parse helper returning a flat JSON object\",\"limitations\":[\"does not model repeated-key arrays, custom separators, or maxKeys options\"]},\"stringify\":{\"supported\":true,\"mode\":\"native flat JSON object stringify helper\",\"limitations\":[\"does not model custom separators, nested objects, or repeated-key array expansion semantics\"]},\"encode\":{\"supported\":true,\"mode\":\"alias metadata over stringify helper\"},\"decode\":{\"supported\":true,\"mode\":\"alias metadata over parse helper\"},\"unescapeBuffer\":{\"supported\":true,\"mode\":\"native raw-byte percent-decoding helper\",\"limitations\":[\"returns bytes through the native ABI rather than a JavaScript Buffer instance\"]}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6370,6 +6394,16 @@ const path_export_names = [_][]const u8{
     "sep",
     "toNamespacedPath",
     "win32",
+};
+
+const querystring_export_names = [_][]const u8{
+    "decode",
+    "encode",
+    "escape",
+    "parse",
+    "stringify",
+    "unescape",
+    "unescapeBuffer",
 };
 
 const timers_export_names = [_][]const u8{

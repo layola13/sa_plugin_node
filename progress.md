@@ -4,7 +4,7 @@
 
 - Scope: public non-VM/V8 Node top-level facade compatibility modules
 - Progress rule: update this file after each completed module feature
-- Current status: `33 / 43` modules completed (`76.7%`)
+- Current status: `34 / 43` modules completed (`79.1%`)
 
 ## Completed Modules
 
@@ -39,6 +39,7 @@
 - `trace_events`
 - `tls`
 - `tty`
+- `util`
 - `wasi`
 - `worker_threads`
 
@@ -52,7 +53,6 @@
 - `querystring`
 - `string_decoder`
 - `url`
-- `util`
 - `zlib`
 
 ## Notes

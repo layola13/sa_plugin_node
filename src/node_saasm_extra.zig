@@ -482,6 +482,30 @@ pub export fn sa_node_plugin_crypto_feature_support_json(out_ptr: ?*?[*]const u8
     return writeOwnedString(out_ptr, out_len, "{\"randomBytes\":{\"supported\":true,\"mode\":\"native random byte buffer helper\"},\"randomFill\":{\"supported\":true,\"mode\":\"native in-place random fill helper\"},\"randomInt\":{\"supported\":true,\"mode\":\"native bounded random integer helper\"},\"randomUUID\":{\"supported\":true,\"mode\":\"native RFC4122 v4 UUID helper\"},\"createHash\":{\"supported\":true,\"mode\":\"explicit native hash state handle with update/final/free helpers\"},\"createHmac\":{\"supported\":true,\"mode\":\"explicit native HMAC state handle with update/final/free helpers\"},\"pbkdf2\":{\"supported\":true,\"mode\":\"native PBKDF2 helper\",\"limitations\":[\"returns derived key bytes directly rather than invoking a callback or returning a JavaScript Promise\"]},\"hkdf\":{\"supported\":true,\"mode\":\"native HKDF helper\"},\"scrypt\":{\"supported\":true,\"mode\":\"native scrypt helper\"},\"createCipheriv\":{\"supported\":true,\"mode\":\"explicit native cipher state handle with update/final/free helpers\"},\"createDecipheriv\":{\"supported\":true,\"mode\":\"explicit native decipher state handle with update/final/free helpers\"},\"sign\":{\"supported\":true,\"mode\":\"native Ed25519 sign helper over raw key bytes\"},\"verify\":{\"supported\":true,\"mode\":\"native Ed25519 verify helper over raw key bytes\"},\"generateKey\":{\"supported\":true,\"mode\":\"native random symmetric key bytes helper\"},\"getHashes\":{\"supported\":true,\"mode\":\"static hash catalog JSON\"},\"timingSafeEqual\":{\"supported\":true,\"mode\":\"native constant-time byte comparison helper\"},\"webcrypto\":{\"supported\":true,\"mode\":\"native sync Web Crypto subset\",\"limitations\":[\"not exposed as a full browser-compatible Crypto object graph\"]},\"subtle\":{\"supported\":true,\"mode\":\"native sync subset for digest/import/generate/export/sign/verify/encrypt/decrypt\",\"limitations\":[\"does not provide JavaScript Promise object identity or asynchronous timing\"]},\"generateKeyPair\":{\"supported\":false,\"reason\":\"Node key-pair generation and JavaScript KeyObject construction are not modeled\"},\"createPrivateKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from PEM/DER/JWK is not modeled\"},\"createPublicKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from PEM/DER/JWK is not modeled\"},\"createSecretKey\":{\"supported\":false,\"reason\":\"JavaScript KeyObject creation from secret key bytes is not modeled\"},\"KeyObject\":{\"supported\":false,\"reason\":\"JavaScript KeyObject class instances are not modeled\"},\"HashClass\":{\"supported\":false,\"reason\":\"JavaScript Hash class instances are not modeled; use explicit native handles instead\"},\"HmacClass\":{\"supported\":false,\"reason\":\"JavaScript Hmac class instances are not modeled; use explicit native handles instead\"},\"Certificate\":{\"supported\":false,\"reason\":\"legacy JavaScript Certificate helpers are not modeled\"},\"X509Certificate\":{\"supported\":false,\"reason\":\"JavaScript X509Certificate class instances are not modeled\"},\"secureHeapUsed\":{\"supported\":false,\"reason\":\"OpenSSL secure heap accounting is not modeled\"}}");
 }
 
+pub export fn sa_node_plugin_util_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"util\",\"supported\":true,\"mode\":\"top-level-native-util-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &util_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"callbackify\":true,\"promisify\":true,\"debuglog\":true,\"deprecate\":true,\"format\":true,\"styleText\":true,\"inherits\":true,\"inspect\":true,\"isDeepStrictEqual\":true,\"stripVTControlCharacters\":true,\"parseArgs\":true,\"diff\":true,\"MIMEType\":true,\"MIMEParams\":false,\"formatWithOptions\":false,\"getCallSites\":false,\"getSystemErrorMap\":false,\"getSystemErrorName\":false,\"getSystemErrorMessage\":false,\"TextDecoder\":false,\"TextEncoder\":false,\"types\":false,\"parseEnv\":false,\"setTraceSigInt\":false,\"transferableAbortSignal\":false,\"transferableAbortController\":false,\"aborted\":false},\"capabilities\":[\"native util.format and util.inspect style text and JSON formatting helpers\",\"native callbackify and promisify metadata wrappers plus deprecation and debuglog helpers\",\"native parseArgs, diff, MIME type lookup, styleText passthrough, and VT control stripping helpers\",\"deep strict equality and inheritance compatibility helpers without JavaScript prototype mutation semantics\"],\"limitations\":[\"no JavaScript class constructors or lazy property getters for TextEncoder, TextDecoder, MIMEParams, or util.types\",\"MIMEType is exposed as native path-to-media-type lookup metadata rather than a WHATWG MIMEType class instance\",\"formatWithOptions, parseEnv, getSystemErrorMap/Name/Message, getCallSites, setTraceSigInt, and abort-transfer helpers are not modeled\",\"callbackify and promisify expose native wrapper metadata rather than JavaScript function identity, callback timing, or Promise object semantics\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_util_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &util_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_util_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"formatModel\":\"native util.format and util.inspect helpers over JSON text and printf-style placeholders\",\"wrapModel\":\"callbackify and promisify return native wrapper metadata rather than JavaScript callable wrappers\",\"argModel\":\"parseArgs consumes JSON config and argv arrays and returns already-resolved values plus positionals JSON\",\"mimeModel\":\"MIMEType compatibility is modeled as filename/path media-type lookup JSON rather than WHATWG MIME classes\",\"deprecationModel\":\"native deprecation registry with explicit codes and messages\",\"objectModel\":\"not-modeled for JavaScript util.types, TextEncoder/TextDecoder, or MIMEType/MIMEParams class instances\"}");
+}
+
+pub export fn sa_node_plugin_util_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"callbackify\":{\"supported\":true,\"mode\":\"native metadata wrapper describing callbackified function intent\",\"limitations\":[\"does not return a JavaScript callable wrapper or nextTick rejection timing\"]},\"promisify\":{\"supported\":true,\"mode\":\"native metadata wrapper describing promisified function intent\",\"limitations\":[\"does not return a JavaScript Promise-returning wrapper function\"]},\"debuglog\":{\"supported\":true,\"mode\":\"NODE_DEBUG-aware native section metadata helper\"},\"deprecate\":{\"supported\":true,\"mode\":\"native deprecation registry keyed by code\",\"limitations\":[\"does not wrap JavaScript functions or emit process warning events\"]},\"format\":{\"supported\":true,\"mode\":\"native printf-style formatter over JSON argument arrays\"},\"styleText\":{\"supported\":true,\"mode\":\"native passthrough helper preserving input text\",\"limitations\":[\"ANSI style expansion and stream validation are not modeled\"]},\"inherits\":{\"supported\":true,\"mode\":\"native compatibility stub for inheritance intent\",\"limitations\":[\"does not mutate JavaScript prototypes\"]},\"inspect\":{\"supported\":true,\"mode\":\"native pretty-printed JSON formatter\",\"limitations\":[\"does not implement Node inspect custom hooks, colors, getters, or prototype traversal semantics\"]},\"isDeepStrictEqual\":{\"supported\":true,\"mode\":\"native JSON deep strict equality helper\"},\"stripVTControlCharacters\":{\"supported\":true,\"mode\":\"native VT control stripping helper\"},\"parseArgs\":{\"supported\":true,\"mode\":\"native JSON parseArgs subset for long --key=value options and positionals\",\"limitations\":[\"does not implement the full Node option schema, tokens, short-option, strict, or default-value behavior\"]},\"diff\":{\"supported\":true,\"mode\":\"native replace-or-empty diff summary helper\"},\"MIMEType\":{\"supported\":true,\"mode\":\"native filename/path to media-type lookup helper\",\"limitations\":[\"does not construct a WHATWG MIMEType class instance\"]},\"MIMEParams\":{\"supported\":false,\"reason\":\"WHATWG MIME parameter collection semantics are not modeled\"},\"formatWithOptions\":{\"supported\":false,\"reason\":\"inspect option bag handling is not modeled as a dedicated helper\"},\"getCallSites\":{\"supported\":false,\"reason\":\"JavaScript stack frame and source-map call-site inspection requires runtime integration\"},\"getSystemErrorMap\":{\"supported\":false,\"reason\":\"system error map exposure is not modeled in the util facade\"},\"getSystemErrorName\":{\"supported\":false,\"reason\":\"system error name lookup is not exposed through the util facade\"},\"getSystemErrorMessage\":{\"supported\":false,\"reason\":\"system error message lookup is not exposed through the util facade\"},\"TextDecoder\":{\"supported\":false,\"reason\":\"JavaScript TextDecoder class construction and decode semantics are not modeled in util\"},\"TextEncoder\":{\"supported\":false,\"reason\":\"JavaScript TextEncoder class construction and encode semantics are not modeled in util\"},\"types\":{\"supported\":false,\"reason\":\"util.types object and predicate catalog are not modeled\"},\"parseEnv\":{\"supported\":false,\"reason\":\"util.parseEnv is exposed through environment variable helpers, not the util top-level facade\"},\"setTraceSigInt\":{\"supported\":false,\"reason\":\"SIGINT trace integration is not modeled\"},\"transferableAbortSignal\":{\"supported\":false,\"reason\":\"AbortSignal transfer helpers require JavaScript object semantics\"},\"transferableAbortController\":{\"supported\":false,\"reason\":\"AbortController transfer helpers require JavaScript object semantics\"},\"aborted\":{\"supported\":false,\"reason\":\"abort state helper requires JavaScript AbortSignal semantics\"}}");
+}
+
 pub export fn sa_node_plugin_async_hooks_execution_async_id(out_id: ?*u64) u32 {
     out_id.?.* = if (asyncContextTrackingCurrent()) |frame| frame.async_id else async_resource_last_id;
     return 0;
@@ -6085,6 +6109,38 @@ const crypto_export_names = [_][]const u8{
     "timingSafeEqual",
     "verify",
     "webcrypto",
+};
+
+const util_export_names = [_][]const u8{
+    "MIMEParams",
+    "MIMEType",
+    "TextDecoder",
+    "TextEncoder",
+    "aborted",
+    "callbackify",
+    "debug",
+    "debuglog",
+    "deprecate",
+    "diff",
+    "format",
+    "formatWithOptions",
+    "getCallSites",
+    "getSystemErrorMap",
+    "getSystemErrorMessage",
+    "getSystemErrorName",
+    "inherits",
+    "inspect",
+    "isDeepStrictEqual",
+    "parseArgs",
+    "parseEnv",
+    "promisify",
+    "setTraceSigInt",
+    "stripVTControlCharacters",
+    "styleText",
+    "toUSVString",
+    "transferableAbortController",
+    "transferableAbortSignal",
+    "types",
 };
 
 const timers_export_names = [_][]const u8{

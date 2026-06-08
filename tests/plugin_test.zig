@@ -3230,13 +3230,32 @@ test "node plugin zlib top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"brotliDecompressSync\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createZstdCompress\"") != null);
 
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_zlib_constants_json(&constants_ptr, &constants_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+    const constants = (constants_ptr orelse return error.NullZlibConstants)[0..@intCast(constants_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"Z_SYNC_FLUSH\":2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"BROTLI_DEFAULT_QUALITY\":11") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"ZSTD_CLEVEL_DEFAULT\":3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"Z_MAX_CHUNK\":null") != null);
+
+    var codes_ptr: ?[*]const u8 = null;
+    var codes_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_zlib_codes_json(&codes_ptr, &codes_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(codes_ptr, codes_len);
+    const codes = (codes_ptr orelse return error.NullZlibCodes)[0..@intCast(codes_len)];
+    try std.testing.expect(std.mem.indexOf(u8, codes, "\"Z_DATA_ERROR\":-3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, codes, "\"-3\":\"Z_DATA_ERROR\"") != null);
+
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_zlib_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullZlibTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"syncModel\":\"native synchronous byte-buffer helpers for gzip, gunzip, deflate, inflate, raw deflate/inflate, unzip, Brotli, and Zstd\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Transform stream classes, create* constructors, callback-style async methods, or constants/codes objects\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"constantsModel\":\"Node v26-compatible zlib.constants and zlib.codes JSON snapshots; Infinity-valued constants are represented as null under JSON.stringify semantics\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Transform stream classes, create* constructors, callback-style async methods, or frozen constants/codes objects\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -3245,7 +3264,8 @@ test "node plugin zlib top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullZlibTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"gzipSync\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"crc32\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"constants\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"constants\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"codes\":{\"supported\":true") != null);
 }
 
 test "node plugin test runner reports native harness support" {

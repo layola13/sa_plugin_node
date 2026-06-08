@@ -63,13 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `punycode` helper parity by exposing the deprecated static version constant through the native facade
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `zlib` helper parity by exposing static constants and code-name snapshots through the native facade
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `punycode.version`
+  - `zlib.constants`
+  - `zlib.codes`
 
 ## Recent Completed Helper Features
 
+- `zlib` helper tranche completed:
+  - `zlib.constants`
+  - `zlib.codes`
 - `punycode` helper tranche completed:
   - `punycode.version`
 - `buffer` helper tranche completed:

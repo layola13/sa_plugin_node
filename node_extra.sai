@@ -291,6 +291,8 @@
 @extern sa_node_plugin_string_decoder_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_zlib_codes_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_zlib_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_buffer_atob(data_ptr: ptr, data_len: u64, &out_ptr: ptr, &out_len: u64) -> u64

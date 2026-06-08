@@ -2666,6 +2666,40 @@
     !__zlib_top_exports_len
 [END_MACRO]
 
+[MACRO] NODE_ZLIB_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __zlib_constants_ptr_slot = stack_alloc 8
+    __zlib_constants_len_slot = stack_alloc 8
+    __zlib_constants_status = call @sa_node_plugin_zlib_constants_json(&__zlib_constants_ptr_slot, &__zlib_constants_len_slot)
+    !%out_status
+    %out_status = add __zlib_constants_status, 0
+    !__zlib_constants_status
+    __zlib_constants_ptr = load __zlib_constants_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __zlib_constants_ptr, 0
+    !__zlib_constants_ptr
+    __zlib_constants_len = load __zlib_constants_len_slot+0 as u64
+    !%out_len
+    %out_len = add __zlib_constants_len, 0
+    !__zlib_constants_len
+[END_MACRO]
+
+[MACRO] NODE_ZLIB_CODES_JSON %out_ptr, %out_len, %out_status
+    __zlib_codes_ptr_slot = stack_alloc 8
+    __zlib_codes_len_slot = stack_alloc 8
+    __zlib_codes_status = call @sa_node_plugin_zlib_codes_json(&__zlib_codes_ptr_slot, &__zlib_codes_len_slot)
+    !%out_status
+    %out_status = add __zlib_codes_status, 0
+    !__zlib_codes_status
+    __zlib_codes_ptr = load __zlib_codes_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __zlib_codes_ptr, 0
+    !__zlib_codes_ptr
+    __zlib_codes_len = load __zlib_codes_len_slot+0 as u64
+    !%out_len
+    %out_len = add __zlib_codes_len, 0
+    !__zlib_codes_len
+[END_MACRO]
+
 [MACRO] NODE_ZLIB_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
     __zlib_top_config_ptr_slot = stack_alloc 8
     __zlib_top_config_len_slot = stack_alloc 8

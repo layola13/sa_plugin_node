@@ -60,3 +60,65 @@ L_ENTRY:
     !cp
     !s1
     return
+
+@test "node.zlib constants json"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_CONSTANTS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN_CHECK, L_ERR
+L_LEN_CHECK:
+    !ok
+    has_len = gt l, 0
+    br has_len -> L_OK, L_LEN_ERR
+L_OK:
+    !has_len
+    !p
+    !l
+    !s
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has_len
+    !p
+    !l
+    !s
+    panic(103)
+
+@test "node.zlib codes json"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_ZLIB_CODES_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN_CHECK, L_ERR
+L_LEN_CHECK:
+    !ok
+    has_len = gt l, 0
+    br has_len -> L_OK, L_LEN_ERR
+L_OK:
+    !has_len
+    !p
+    !l
+    !s
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !has_len
+    !p
+    !l
+    !s
+    panic(103)

@@ -1313,6 +1313,19 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
     return 0;
 }
 
+pub export fn sa_node_plugin_util_format_with_options(options_json_ptr: ?[*]const u8, options_json_len: u64, format_ptr: ?[*]const u8, format_len: u64, args_json_ptr: ?[*]const u8, args_json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    if (options_json_ptr != null and options_json_len != 0) {
+        const options_js = options_json_ptr.?[0..options_json_len];
+        const parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, options_js, .{}) catch return 2;
+        defer parsed.deinit();
+        switch (parsed.value) {
+            .object, .array => {},
+            else => return 2,
+        }
+    }
+    return sa_node_plugin_util_format(format_ptr, format_len, args_json_ptr, args_json_len, out_ptr, out_len);
+}
+
 pub export fn sa_node_plugin_util_inspect(json_ptr: ?[*]const u8, json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const js = if (json_ptr) |p| p[0..json_len] else "null";
     const parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, js, .{}) catch return 2;

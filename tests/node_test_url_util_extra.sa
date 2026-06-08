@@ -13,6 +13,9 @@
 @const S_HINT = utf8:"use old fn"
 @const S_FILE = utf8:"test.js"
 @const S_ENV_CONTENT = utf8:"FOO=bar\nBAR=baz\n"
+@const S_FMT = utf8:"hello %s"
+@const S_ARGS = utf8:"[\"world\"]"
+@const S_FMT_OPTIONS = utf8:"{\"colors\":false}"
 
 @test "node.url new and free succeeds"():
 L_ENTRY:
@@ -397,6 +400,38 @@ L_ERR:
     !p
     !l
     !s
+    panic(103)
+
+@test "node.util format_with_options succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_FORMAT_WITH_OPTIONS p, l, s, S_FMT_OPTIONS, 16, S_FMT, 8, S_ARGS, 9
+    ok = eq s, 0
+    br ok -> L_STATUS_OK, L_ERR
+L_STATUS_OK:
+    !ok
+    non_empty = ugt l, 0
+    br non_empty -> L_OK, L_LEN_ERR
+L_OK:
+    !non_empty
+    free_fmt = call @sa_node_plugin_free_buffer(p, l)
+    !free_fmt
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !non_empty
+    !p
+    !l
     panic(103)
 
 @test "node.util parse_env succeeds"():

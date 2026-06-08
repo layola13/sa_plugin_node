@@ -74,6 +74,7 @@
 
 // --- Phase 2: util module ---
 @extern sa_node_plugin_util_format(&format: ptr, format_len: u64, &args_json: ptr, args_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_util_format_with_options(&options_json: ptr, options_len: u64, &format: ptr, format_len: u64, &args_json: ptr, args_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_util_inspect(&json: ptr, json_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 
 // --- Phase 2: punycode module ---

@@ -2714,6 +2714,17 @@ test "node plugin crypto top-level facade helpers" {
 }
 
 test "node plugin util top-level facade helpers" {
+    const format_options = "{\"colors\":false}";
+    var format_options_ptr: ?[*]const u8 = null;
+    var format_options_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_format_with_options(format_options.ptr, format_options.len, "hello %s", 8, "[\"world\"]", 9, &format_options_ptr, &format_options_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(format_options_ptr, format_options_len);
+    try std.testing.expectEqualStrings("hello world", (format_options_ptr orelse return error.NullUtilFormatWithOptions)[0..@intCast(format_options_len)]);
+
+    var bad_format_options_ptr: ?[*]const u8 = null;
+    var bad_format_options_len: u64 = 0;
+    try std.testing.expect(plugin.sa_node_plugin_util_format_with_options("1", 1, "x", 1, "[]", 2, &bad_format_options_ptr, &bad_format_options_len) != 0);
+
     var status_ptr: ?[*]const u8 = null;
     var status_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_status_json(&status_ptr, &status_len));
@@ -2722,7 +2733,7 @@ test "node plugin util top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"util\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-util-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"parseArgs\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, status, "\"formatWithOptions\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"formatWithOptions\":true") != null);
 
     var exports_ptr: ?[*]const u8 = null;
     var exports_len: u64 = 0;
@@ -2747,6 +2758,7 @@ test "node plugin util top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature = (feature_ptr orelse return error.NullUtilTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"format\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"formatWithOptions\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"MIMEType\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"parseEnv\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"getSystemErrorMap\":{\"supported\":true") != null);

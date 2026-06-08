@@ -393,6 +393,14 @@
     %out_len = load __ut_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_UTIL_FORMAT_WITH_OPTIONS %out_ptr, %out_len, %out_status, %options_json, %options_len, %format, %format_len, %args_json, %args_len
+    __utwo_ptr_slot = stack_alloc 8
+    __utwo_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_format_with_options(&%options_json, %options_len, &%format, %format_len, &%args_json, %args_len, &__utwo_ptr_slot, &__utwo_len_slot)
+    %out_ptr = load __utwo_ptr_slot+0 as ptr
+    %out_len = load __utwo_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_UTIL_INSPECT %out_ptr, %out_len, %out_status, %in_json, %in_len
     __ui_ptr_slot = stack_alloc 8
     __ui_len_slot = stack_alloc 8

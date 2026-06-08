@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `path` helper parity by exposing POSIX `toNamespacedPath` behavior
+- Scope: public non-VM/V8 `util` helper parity by exposing native `formatWithOptions` formatting
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `path.toNamespacedPath`
+  - `util.formatWithOptions`
 
 ## Recent Completed Helper Features
 
+- `util` helper tranche completed:
+  - `util.formatWithOptions`
 - `path` helper tranche completed:
   - `path.toNamespacedPath`
 - `net` helper tranche completed:

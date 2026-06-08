@@ -1490,6 +1490,56 @@ L_FREE_ERR:
     !l
     panic(103)
 
+@test "node.string_decoder end free"():
+L_ENTRY:
+    EXPAND NODE_STRING_DECODER_CREATE sd
+    created = ne sd, 0
+    br created -> L_CREATED, L_CREATE_ERR
+L_CREATED:
+    !created
+    EXPAND NODE_STRING_DECODER_END s_end, p, l, sd, S_HELLO, 5
+    ok_end = eq s_end, 0
+    br ok_end -> L_END_OK, L_END_ERR
+L_END_OK:
+    !ok_end
+    !s_end
+    expected_len = eq l, 5
+    br expected_len -> L_FREE_DECODER, L_LEN_ERR
+L_FREE_DECODER:
+    !expected_len
+    EXPAND NODE_STRING_DECODER_FREE s_free, sd
+    ok_free = eq s_free, 0
+    br ok_free -> L_OK, L_FREE_ERR
+L_OK:
+    !ok_free
+    !s_free
+    !sd
+    !p
+    !l
+    return
+L_CREATE_ERR:
+    !created
+    !sd
+    panic(103)
+L_END_ERR:
+    !ok_end
+    !s_end
+    !sd
+    panic(103)
+L_LEN_ERR:
+    !expected_len
+    !sd
+    !p
+    !l
+    panic(103)
+L_FREE_ERR:
+    !ok_free
+    !s_free
+    !sd
+    !p
+    !l
+    panic(103)
+
 @test "node.fs stat plugin file"():
 L_ENTRY:
     EXPAND NODE_FS_STAT p, l, s, S_PLUGIN_FILE, 56

@@ -4418,6 +4418,19 @@ pub const StringDecoder = struct {
         return try out.toOwnedSlice();
     }
 
+    fn end(self: *StringDecoder, chunk: []const u8) ![]const u8 {
+        const written = try self.write(chunk);
+        var out = std.ArrayList(u8).init(self.allocator);
+        errdefer out.deinit();
+        try out.appendSlice(written);
+        self.allocator.free(written);
+        if (self.buf_len > 0) {
+            try out.appendSlice("\xEF\xBF\xBD");
+            self.buf_len = 0;
+        }
+        return try out.toOwnedSlice();
+    }
+
     fn deinit(self: *StringDecoder) void {
         self.allocator.destroy(self);
     }
@@ -4440,6 +4453,15 @@ pub export fn sa_node_plugin_string_decoder_write(sd_ptr: ?*anyopaque, chunk_ptr
     const sd = @as(*StringDecoder, @ptrCast(@alignCast(sd_ptr orelse return 2)));
     const chunk = chunk_ptr.?[0..chunk_len];
     const decoded = sd.write(chunk) catch return 2;
+    out_ptr.?.* = decoded.ptr;
+    out_len.?.* = decoded.len;
+    return 0;
+}
+
+pub export fn sa_node_plugin_string_decoder_end(sd_ptr: ?*anyopaque, chunk_ptr: ?[*]const u8, chunk_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const sd = @as(*StringDecoder, @ptrCast(@alignCast(sd_ptr orelse return 2)));
+    const chunk = if (chunk_len == 0) "" else (chunk_ptr orelse return 2)[0..chunk_len];
+    const decoded = sd.end(chunk) catch return 2;
     out_ptr.?.* = decoded.ptr;
     out_len.?.* = decoded.len;
     return 0;

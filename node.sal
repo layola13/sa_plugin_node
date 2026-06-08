@@ -1372,6 +1372,14 @@
     %out_len = load __sdw_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_STRING_DECODER_END %out_status, %out_ptr, %out_len, %sd, %chunk, %chunk_len
+    __sde_ptr_slot = stack_alloc 8
+    __sde_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_end(%sd, &%chunk, %chunk_len, &__sde_ptr_slot, &__sde_len_slot)
+    %out_ptr = load __sde_ptr_slot+0 as ptr
+    %out_len = load __sde_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_STRING_DECODER_FREE %out_status, %sd
     %out_status = call @sa_node_plugin_string_decoder_free(%sd)
 [END_MACRO]

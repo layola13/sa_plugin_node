@@ -3145,7 +3145,7 @@ test "node plugin string_decoder top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"string_decoder\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-string-decoder-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"StringDecoder\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, status, "\"end\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"end\":true") != null);
 
     var exports_ptr: ?[*]const u8 = null;
     var exports_len: u64 = 0;
@@ -3169,7 +3169,24 @@ test "node plugin string_decoder top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullStringDecoderTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"StringDecoder\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"write\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"end\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"lastNeed\":{\"supported\":false") != null);
+
+    const decoder = plugin.sa_node_plugin_string_decoder_create() orelse return error.NullStringDecoderHandle;
+    defer _ = plugin.sa_node_plugin_string_decoder_free(decoder);
+
+    const partial = [_]u8{ 0xe2, 0x82 };
+    var write_ptr: ?[*]const u8 = null;
+    var write_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_write(decoder, partial[0..].ptr, partial.len, &write_ptr, &write_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(write_ptr, write_len);
+    try std.testing.expectEqual(@as(u64, 0), write_len);
+
+    var end_ptr: ?[*]const u8 = null;
+    var end_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_string_decoder_end(decoder, null, 0, &end_ptr, &end_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(end_ptr, end_len);
+    try std.testing.expectEqualStrings("\xEF\xBF\xBD", (end_ptr orelse return error.NullStringDecoderEnd)[0..@intCast(end_len)]);
 }
 
 test "node plugin zlib top-level facade helpers" {

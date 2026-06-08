@@ -274,4 +274,5 @@
 
 @extern sa_node_plugin_string_decoder_create() -> ptr
 @extern sa_node_plugin_string_decoder_write(sd: ptr, chunk_ptr: ptr, chunk_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_string_decoder_end(sd: ptr, chunk_ptr: ptr, chunk_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_string_decoder_free(sd: ptr) -> u32

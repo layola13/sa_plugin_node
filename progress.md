@@ -63,15 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` helper parity by reusing native host process APIs
-- Current status: `3 / 3` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `string_decoder` helper parity by reusing the explicit native decoder handle model
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.release`
-  - `process.umask`
-  - `process.chdir`
+  - `StringDecoder.end`
 
 ## Recent Completed Helper Features
 
+- `string_decoder` helper tranche completed:
+  - `StringDecoder.end`
 - `process` helper tranche completed:
   - `process.release`
   - `process.umask`

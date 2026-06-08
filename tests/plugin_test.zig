@@ -2783,12 +2783,21 @@ test "node plugin buffer top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"resolveObjectURL\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"transcode\"") != null);
 
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_buffer_constants_json(&constants_ptr, &constants_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+    const constants = (constants_ptr orelse return error.NullBufferConstants)[0..@intCast(constants_len)];
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"MAX_LENGTH\":9007199254740991") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"MAX_STRING_LENGTH\":536870888") != null);
+    try std.testing.expect(std.mem.indexOf(u8, constants, "\"INSPECT_MAX_BYTES_DEFAULT\":50") != null);
+
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_buffer_config_json(&config_ptr, &config_len));
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullBufferTopConfig)[0..@intCast(config_len)];
-    try std.testing.expect(std.mem.indexOf(u8, config, "\"bufferStaticModel\":\"byteLength and concat are exposed as direct native helpers rather than through a JavaScript Buffer constructor\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"constantsModel\":\"Node v26-compatible read-only constants JSON snapshot with INSPECT_MAX_BYTES default metadata\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"objectModel\":\"not-modeled for JavaScript Buffer, Blob, or File class instances\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2798,6 +2807,9 @@ test "node plugin buffer top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullBufferTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"transcode\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Buffer_byteLength\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"constants\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"kMaxLength\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"kStringMaxLength\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"Blob\":{\"supported\":false") != null);
 }
 

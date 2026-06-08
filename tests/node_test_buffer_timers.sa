@@ -77,6 +77,37 @@ L_ERR:
     !s
     panic(103)
 
+@test "node.buffer constants json succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_BUFFER_CONSTANTS_JSON p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN_CHECK, L_ERR
+L_LEN_CHECK:
+    !ok
+    has_len = gt l, 0
+    br has_len -> L_OK, L_ERR_LEN
+L_OK:
+    !has_len
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    !p
+    !l
+    !s
+    panic(103)
+
 @test "node.timers set_timeout and clear"():
 L_ENTRY:
     tid = add 0, 0

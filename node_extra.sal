@@ -2088,6 +2088,23 @@
     !__buffer_top_exports_len
 [END_MACRO]
 
+[MACRO] NODE_BUFFER_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __buffer_constants_ptr_slot = stack_alloc 8
+    __buffer_constants_len_slot = stack_alloc 8
+    __buffer_constants_status = call @sa_node_plugin_buffer_constants_json(&__buffer_constants_ptr_slot, &__buffer_constants_len_slot)
+    !%out_status
+    %out_status = add __buffer_constants_status, 0
+    !__buffer_constants_status
+    __buffer_constants_ptr = load __buffer_constants_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __buffer_constants_ptr, 0
+    !__buffer_constants_ptr
+    __buffer_constants_len = load __buffer_constants_len_slot+0 as u64
+    !%out_len
+    %out_len = add __buffer_constants_len, 0
+    !__buffer_constants_len
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
     __buffer_top_config_ptr_slot = stack_alloc 8
     __buffer_top_config_len_slot = stack_alloc 8

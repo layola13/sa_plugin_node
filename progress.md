@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `string_decoder` helper parity by reusing the explicit native decoder handle model
+- Scope: public non-VM/V8 `buffer` helper parity by exposing Node-compatible read-only constants metadata through the native facade
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `StringDecoder.end`
+  - `buffer.constants` / `buffer.kMaxLength` / `buffer.kStringMaxLength`
 
 ## Recent Completed Helper Features
 
+- `buffer` helper tranche completed:
+  - `buffer.constants` / `buffer.kMaxLength` / `buffer.kStringMaxLength`
 - `string_decoder` helper tranche completed:
   - `StringDecoder.end`
 - `process` helper tranche completed:

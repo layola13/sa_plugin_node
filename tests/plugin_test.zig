@@ -2999,6 +2999,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execPath\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execArgv\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"allowedNodeEnvironmentFlags\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"cpuUsage\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"geteuid\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"getegid\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"groups\":true") != null);
@@ -3016,6 +3017,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execArgv\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"versions\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"allowedNodeEnvironmentFlags\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"cpuUsage\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"geteuid\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getegid\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"groups\"") != null);
@@ -3028,6 +3030,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"commandLineModel\":\"native host argv0 plus resolved executable path") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"allowedFlagsModel\":\"native JSON snapshot and membership checks over the plugin's known NODE_OPTIONS-compatible flag set\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"memoryModel\":\"native cpuUsage, memoryUsage, resourceUsage, availableMemory, constrainedMemory, and features JSON snapshots\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "real and effective uid/gid, groups") != null);
 
@@ -3045,6 +3048,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"allowedNodeEnvironmentFlags\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"cpuUsage\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"geteuid\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"getegid\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"groups\":{\"supported\":true") != null);
@@ -3065,6 +3069,14 @@ test "node plugin process top-level facade helpers" {
     const groups_json = (groups_ptr orelse return error.NullProcessGroups)[0..@intCast(groups_len)];
     try std.testing.expect(std.mem.startsWith(u8, groups_json, "["));
     try std.testing.expect(std.mem.endsWith(u8, groups_json, "]"));
+
+    var cpu_usage_ptr: ?[*]const u8 = null;
+    var cpu_usage_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_cpu_usage(&cpu_usage_ptr, &cpu_usage_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(cpu_usage_ptr, cpu_usage_len);
+    const cpu_usage_json = (cpu_usage_ptr orelse return error.NullProcessCpuUsage)[0..@intCast(cpu_usage_len)];
+    try std.testing.expect(std.mem.indexOf(u8, cpu_usage_json, "\"user\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, cpu_usage_json, "\"system\":") != null);
 
     var process_arch_ptr: ?[*]const u8 = null;
     var process_arch_len: u64 = 0;

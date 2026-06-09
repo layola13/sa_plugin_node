@@ -260,3 +260,34 @@ L_ERR_GROUPS:
 L_ERR_GROUPS_LEN:
     !ok4
     panic(120)
+
+@test "node.process cpu_usage top level bytes"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_PROCESS_CPU_USAGE p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN, L_ERR
+L_LEN:
+    !ok
+    non_empty = gt l, 0
+    br non_empty -> L_OK, L_ERR_LEN
+L_OK:
+    !non_empty
+    !s
+    !l
+    !p
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(121)
+L_ERR_LEN:
+    !non_empty
+    !p
+    !l
+    !s
+    panic(122)

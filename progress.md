@@ -63,16 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` credential parity for `geteuid`, `getegid`, `groups`, plus top-level `emitWarning` status alignment
-- Current status: `4 / 4` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process` top-level parity for `cpuUsage`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.geteuid`
-  - `process.getegid`
-  - `process.groups`
-  - `process.emitWarning` top-level status
+  - `process.cpuUsage`
 
 ## Recent Completed Helper Features
 
+- `process` cpu usage helper tranche completed:
+  - `process.cpuUsage`
 - `process` credential helper tranche completed:
   - `process.geteuid`
   - `process.getegid`

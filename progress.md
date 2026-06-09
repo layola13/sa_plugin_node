@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `deprecated`
+- Scope: installed main `node.sal` public macro coverage for `errors/internationalization`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `deprecated` status, flags, record, snapshot, clear, and membership helpers available through `node.sal`
+  - `errors` and `internationalization` status plus runtime helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` errors/internationalization helper macro tranche completed:
+  - `errors` status, code tables, system error name/message/json, `invalidArgType`, `invalidArgValue`, and `outOfRange` helpers available through `node.sal`
+  - `internationalization` status, config, effective-locale, supported-encodings, encoding check, and ICU-config helpers available through `node.sal`
+  - `tests/node_test_errors.sa`, `node_test_internationalization.sa`, and `node_test_status_json8.sa` now validate through `node.sal` only
 
 - installed main `node.sal` deprecated helper macro tranche completed:
   - `deprecated` status, flags, `record`, snapshot, `clear`, and `has` helpers available through `node.sal`

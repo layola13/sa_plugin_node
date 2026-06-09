@@ -7365,3 +7365,129 @@
     %out_status = call @sa_node_plugin_deprecated_has(%code, %code_len, &__m_deprecated_has_slot)
     %out_bool = load __m_deprecated_has_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_ERRORS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_1f27625d_0 = stack_alloc 8
+    __m_slot_1f27625d_1 = stack_alloc 8
+    __m_status_1f27625d = call @sa_node_plugin_errors_status_json(&__m_slot_1f27625d_0, &__m_slot_1f27625d_1)
+    !%p_2
+    %p_2 = add __m_status_1f27625d, 0
+    !__m_status_1f27625d
+    __m_load_1f27625d_p_0 = load __m_slot_1f27625d_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_1f27625d_p_0, 0
+    !__m_load_1f27625d_p_0
+    __m_load_1f27625d_p_1 = load __m_slot_1f27625d_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_1f27625d_p_1, 0
+    !__m_load_1f27625d_p_1
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_CODES_JSON %out_ptr, %out_len, %out_status
+    __m_errors_codes_ptr_slot = stack_alloc 8
+    __m_errors_codes_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_codes_json(&__m_errors_codes_ptr_slot, &__m_errors_codes_len_slot)
+    %out_ptr = load __m_errors_codes_ptr_slot+0 as ptr
+    %out_len = load __m_errors_codes_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_GET_SYSTEM_ERROR_NAME %out_ptr, %out_len, %out_status, %errnum
+    __m_errors_name_ptr_slot = stack_alloc 8
+    __m_errors_name_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_get_system_error_name(%errnum, &__m_errors_name_ptr_slot, &__m_errors_name_len_slot)
+    %out_ptr = load __m_errors_name_ptr_slot+0 as ptr
+    %out_len = load __m_errors_name_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_GET_SYSTEM_ERROR_MESSAGE %out_ptr, %out_len, %out_status, %errnum
+    __m_errors_message_ptr_slot = stack_alloc 8
+    __m_errors_message_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_get_system_error_message(%errnum, &__m_errors_message_ptr_slot, &__m_errors_message_len_slot)
+    %out_ptr = load __m_errors_message_ptr_slot+0 as ptr
+    %out_len = load __m_errors_message_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_SYSTEM_ERROR_JSON %out_ptr, %out_len, %out_status, %errnum, %syscall, %syscall_len, %path, %path_len, %dest, %dest_len
+    __m_errors_system_ptr_slot = stack_alloc 8
+    __m_errors_system_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_system_error_json(%errnum, %syscall, %syscall_len, %path, %path_len, %dest, %dest_len, &__m_errors_system_ptr_slot, &__m_errors_system_len_slot)
+    %out_ptr = load __m_errors_system_ptr_slot+0 as ptr
+    %out_len = load __m_errors_system_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_INVALID_ARG_TYPE_JSON %out_ptr, %out_len, %out_status, %name, %name_len, %expected, %expected_len, %actual_type, %actual_type_len
+    __m_errors_arg_type_ptr_slot = stack_alloc 8
+    __m_errors_arg_type_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_invalid_arg_type_json(%name, %name_len, %expected, %expected_len, %actual_type, %actual_type_len, &__m_errors_arg_type_ptr_slot, &__m_errors_arg_type_len_slot)
+    %out_ptr = load __m_errors_arg_type_ptr_slot+0 as ptr
+    %out_len = load __m_errors_arg_type_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_INVALID_ARG_VALUE_JSON %out_ptr, %out_len, %out_status, %name, %name_len, %value, %value_len, %reason, %reason_len
+    __m_errors_arg_value_ptr_slot = stack_alloc 8
+    __m_errors_arg_value_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_invalid_arg_value_json(%name, %name_len, %value, %value_len, %reason, %reason_len, &__m_errors_arg_value_ptr_slot, &__m_errors_arg_value_len_slot)
+    %out_ptr = load __m_errors_arg_value_ptr_slot+0 as ptr
+    %out_len = load __m_errors_arg_value_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ERRORS_OUT_OF_RANGE_JSON %out_ptr, %out_len, %out_status, %name, %name_len, %range, %range_len, %received, %received_len
+    __m_errors_range_ptr_slot = stack_alloc 8
+    __m_errors_range_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_errors_out_of_range_json(%name, %name_len, %range, %range_len, %received, %received_len, &__m_errors_range_ptr_slot, &__m_errors_range_len_slot)
+    %out_ptr = load __m_errors_range_ptr_slot+0 as ptr
+    %out_len = load __m_errors_range_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_ed263f9c_0 = stack_alloc 8
+    __m_slot_ed263f9c_1 = stack_alloc 8
+    __m_status_ed263f9c = call @sa_node_plugin_internationalization_status_json(&__m_slot_ed263f9c_0, &__m_slot_ed263f9c_1)
+    !%p_2
+    %p_2 = add __m_status_ed263f9c, 0
+    !__m_status_ed263f9c
+    __m_load_ed263f9c_p_0 = load __m_slot_ed263f9c_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_ed263f9c_p_0, 0
+    !__m_load_ed263f9c_p_0
+    __m_load_ed263f9c_p_1 = load __m_slot_ed263f9c_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_ed263f9c_p_1, 0
+    !__m_load_ed263f9c_p_1
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_i18n_config_ptr_slot = stack_alloc 8
+    __m_i18n_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_config_json(&__m_i18n_config_ptr_slot, &__m_i18n_config_len_slot)
+    %out_ptr = load __m_i18n_config_ptr_slot+0 as ptr
+    %out_len = load __m_i18n_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_EFFECTIVE_LOCALE_JSON %out_ptr, %out_len, %out_status
+    __m_i18n_locale_ptr_slot = stack_alloc 8
+    __m_i18n_locale_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_effective_locale_json(&__m_i18n_locale_ptr_slot, &__m_i18n_locale_len_slot)
+    %out_ptr = load __m_i18n_locale_ptr_slot+0 as ptr
+    %out_len = load __m_i18n_locale_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_SUPPORTED_ENCODINGS_JSON %out_ptr, %out_len, %out_status
+    __m_i18n_encodings_ptr_slot = stack_alloc 8
+    __m_i18n_encodings_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_supported_encodings_json(&__m_i18n_encodings_ptr_slot, &__m_i18n_encodings_len_slot)
+    %out_ptr = load __m_i18n_encodings_ptr_slot+0 as ptr
+    %out_len = load __m_i18n_encodings_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_HAS_ENCODING %out_bool, %out_status, %name, %name_len
+    __m_i18n_has_encoding_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_has_encoding(%name, %name_len, &__m_i18n_has_encoding_slot)
+    %out_bool = load __m_i18n_has_encoding_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INTERNATIONALIZATION_HAS_ICU_CONFIG %out_bool, %out_status
+    __m_i18n_has_icu_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_internationalization_has_icu_config(&__m_i18n_has_icu_slot)
+    %out_bool = load __m_i18n_has_icu_slot+0 as u64
+[END_MACRO]

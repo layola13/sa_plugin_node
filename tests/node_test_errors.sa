@@ -1,6 +1,5 @@
 // SA tests for Node errors native helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_SYSCALL = utf8:"open"
 @const S_PATH = utf8:"/tmp/missing"

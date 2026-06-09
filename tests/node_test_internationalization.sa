@@ -1,6 +1,5 @@
 // SA tests for Node internationalization native helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_UTF8 = utf8:"utf-8"
 

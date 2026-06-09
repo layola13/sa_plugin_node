@@ -1,6 +1,5 @@
 // SA tests for more 3-param STATUS_JSON macros
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.errors status_json"():
 L_ENTRY:

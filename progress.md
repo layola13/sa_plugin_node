@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `sqlite`
+- Scope: installed main `node.sal` public macro coverage for `vfs`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - SQLite status/version, connection, exec/query, prepared statement, bind/reset/finalize, backup, session/changeset, and SQLTagStore helpers available through `node.sal`
+  - VFS lifecycle, file, directory, metadata, mutation, symlink, watcher, cwd, and snapshot helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` vfs helper macro tranche completed:
+  - VFS status, lifecycle, file read/write/open handle, directory iteration, metadata, mutation, symlink, watcher, cwd, realpath, and snapshot helpers available through `node.sal`
+  - `tests/node_test_vfs.sa` validates common VFS operations through `node.sal` only
 
 - installed main `node.sal` sqlite helper macro tranche completed:
   - SQLite status/version, open/close, exec/query, prepared statement, bind/reset/clear/finalize, changes/rowid, backup, session/changeset, apply_changeset, and SQLTagStore helpers available through `node.sal`

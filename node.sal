@@ -10308,3 +10308,437 @@
     %out_status = add __sqlite_tagstore_free_status, 0
     !__sqlite_tagstore_free_status
 [END_MACRO]
+[MACRO] NODE_VFS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __vfs_status_ptr_slot = stack_alloc 8
+    __vfs_status_len_slot = stack_alloc 8
+    __vfs_status_status = call @sa_node_plugin_vfs_status_json(&__vfs_status_ptr_slot, &__vfs_status_len_slot)
+    !%out_status
+    %out_status = add __vfs_status_status, 0
+    !__vfs_status_status
+    __vfs_status_ptr = load __vfs_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_status_ptr, 0
+    !__vfs_status_ptr
+    __vfs_status_len = load __vfs_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_status_len, 0
+    !__vfs_status_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_NEW %out_vfs, %out_status
+    __vfs_new_slot = stack_alloc 8
+    __vfs_new_status = call @sa_node_plugin_vfs_new(&__vfs_new_slot)
+    !%out_status
+    %out_status = add __vfs_new_status, 0
+    !__vfs_new_status
+    __vfs_new_handle = load __vfs_new_slot+0 as ptr
+    !%out_vfs
+    %out_vfs = add __vfs_new_handle, 0
+    !__vfs_new_handle
+[END_MACRO]
+
+[MACRO] NODE_VFS_FREE %out_status, %vfs
+    __vfs_free_status = call @sa_node_plugin_vfs_free(%vfs)
+    !%out_status
+    %out_status = add __vfs_free_status, 0
+    !__vfs_free_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_MKDIR %out_status, %vfs, %path, %path_len
+    __vfs_mkdir_status = call @sa_node_plugin_vfs_mkdir(%vfs, %path, %path_len)
+    !%out_status
+    %out_status = add __vfs_mkdir_status, 0
+    !__vfs_mkdir_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_WRITE_FILE %out_status, %vfs, %path, %path_len, %data, %data_len
+    __vfs_write_status = call @sa_node_plugin_vfs_write_file(%vfs, %path, %path_len, %data, %data_len)
+    !%out_status
+    %out_status = add __vfs_write_status, 0
+    !__vfs_write_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_APPEND_FILE %out_status, %vfs, %path, %path_len, %data, %data_len
+    __vfs_append_status = call @sa_node_plugin_vfs_append_file(%vfs, %path, %path_len, %data, %data_len)
+    !%out_status
+    %out_status = add __vfs_append_status, 0
+    !__vfs_append_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_READ_FILE %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_read_ptr_slot = stack_alloc 8
+    __vfs_read_len_slot = stack_alloc 8
+    __vfs_read_status = call @sa_node_plugin_vfs_read_file(%vfs, %path, %path_len, &__vfs_read_ptr_slot, &__vfs_read_len_slot)
+    !%out_status
+    %out_status = add __vfs_read_status, 0
+    !__vfs_read_status
+    __vfs_read_ptr = load __vfs_read_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_read_ptr, 0
+    !__vfs_read_ptr
+    __vfs_read_len = load __vfs_read_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_read_len, 0
+    !__vfs_read_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_OPEN %out_handle, %out_status, %vfs, %path, %path_len, %mode
+    __vfs_open_slot = stack_alloc 8
+    __vfs_open_status = call @sa_node_plugin_vfs_open(%vfs, %path, %path_len, %mode, &__vfs_open_slot)
+    !%out_status
+    %out_status = add __vfs_open_status, 0
+    !__vfs_open_status
+    __vfs_open_handle = load __vfs_open_slot+0 as ptr
+    !%out_handle
+    %out_handle = add __vfs_open_handle, 0
+    !__vfs_open_handle
+[END_MACRO]
+
+[MACRO] NODE_VFS_FILE_CLOSE %out_status, %file
+    __vfs_file_close_status = call @sa_node_plugin_vfs_file_close(%file)
+    !%out_status
+    %out_status = add __vfs_file_close_status, 0
+    !__vfs_file_close_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_FILE_READ %out_n, %out_status, %file, %buf, %len, %position, %use_position
+    __vfs_file_read_n_slot = stack_alloc 8
+    __vfs_file_read_status = call @sa_node_plugin_vfs_file_read(%file, %buf, %len, %position, %use_position, &__vfs_file_read_n_slot)
+    !%out_status
+    %out_status = add __vfs_file_read_status, 0
+    !__vfs_file_read_status
+    __vfs_file_read_n = load __vfs_file_read_n_slot+0 as u64
+    !%out_n
+    %out_n = add __vfs_file_read_n, 0
+    !__vfs_file_read_n
+[END_MACRO]
+
+[MACRO] NODE_VFS_FILE_WRITE %out_n, %out_status, %file, %data, %data_len, %position, %use_position
+    __vfs_file_write_n_slot = stack_alloc 8
+    __vfs_file_write_status = call @sa_node_plugin_vfs_file_write(%file, %data, %data_len, %position, %use_position, &__vfs_file_write_n_slot)
+    !%out_status
+    %out_status = add __vfs_file_write_status, 0
+    !__vfs_file_write_status
+    __vfs_file_write_n = load __vfs_file_write_n_slot+0 as u64
+    !%out_n
+    %out_n = add __vfs_file_write_n, 0
+    !__vfs_file_write_n
+[END_MACRO]
+
+[MACRO] NODE_VFS_FILE_FSTAT_JSON %out_ptr, %out_len, %out_status, %file
+    __vfs_file_fstat_ptr_slot = stack_alloc 8
+    __vfs_file_fstat_len_slot = stack_alloc 8
+    __vfs_file_fstat_status = call @sa_node_plugin_vfs_file_fstat_json(%file, &__vfs_file_fstat_ptr_slot, &__vfs_file_fstat_len_slot)
+    !%out_status
+    %out_status = add __vfs_file_fstat_status, 0
+    !__vfs_file_fstat_status
+    __vfs_file_fstat_ptr = load __vfs_file_fstat_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_file_fstat_ptr, 0
+    !__vfs_file_fstat_ptr
+    __vfs_file_fstat_len = load __vfs_file_fstat_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_file_fstat_len, 0
+    !__vfs_file_fstat_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_FILE_TRUNCATE %out_status, %file, %len
+    __vfs_file_truncate_status = call @sa_node_plugin_vfs_file_truncate(%file, %len)
+    !%out_status
+    %out_status = add __vfs_file_truncate_status, 0
+    !__vfs_file_truncate_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_OPENDIR %out_dir, %out_status, %vfs, %path, %path_len
+    __vfs_opendir_slot = stack_alloc 8
+    __vfs_opendir_status = call @sa_node_plugin_vfs_opendir(%vfs, %path, %path_len, &__vfs_opendir_slot)
+    !%out_status
+    %out_status = add __vfs_opendir_status, 0
+    !__vfs_opendir_status
+    __vfs_opendir_handle = load __vfs_opendir_slot+0 as ptr
+    !%out_dir
+    %out_dir = add __vfs_opendir_handle, 0
+    !__vfs_opendir_handle
+[END_MACRO]
+
+[MACRO] NODE_VFS_DIR_NEXT %out_name_ptr, %out_name_len, %out_entry_type, %out_status, %dir
+    __vfs_dir_next_name_slot = stack_alloc 8
+    __vfs_dir_next_len_slot = stack_alloc 8
+    __vfs_dir_next_type_slot = stack_alloc 8
+    __vfs_dir_next_status = call @sa_node_plugin_vfs_dir_next(%dir, &__vfs_dir_next_name_slot, &__vfs_dir_next_len_slot, &__vfs_dir_next_type_slot)
+    !%out_status
+    %out_status = add __vfs_dir_next_status, 0
+    !__vfs_dir_next_status
+    __vfs_dir_next_name = load __vfs_dir_next_name_slot+0 as ptr
+    !%out_name_ptr
+    %out_name_ptr = add __vfs_dir_next_name, 0
+    !__vfs_dir_next_name
+    __vfs_dir_next_len = load __vfs_dir_next_len_slot+0 as u64
+    !%out_name_len
+    %out_name_len = add __vfs_dir_next_len, 0
+    !__vfs_dir_next_len
+    __vfs_dir_next_type = load __vfs_dir_next_type_slot+0 as u64
+    !%out_entry_type
+    %out_entry_type = add __vfs_dir_next_type, 0
+    !__vfs_dir_next_type
+[END_MACRO]
+
+[MACRO] NODE_VFS_DIR_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %dir
+    __vfs_dir_snapshot_ptr_slot = stack_alloc 8
+    __vfs_dir_snapshot_len_slot = stack_alloc 8
+    __vfs_dir_snapshot_status = call @sa_node_plugin_vfs_dir_snapshot_json(%dir, &__vfs_dir_snapshot_ptr_slot, &__vfs_dir_snapshot_len_slot)
+    !%out_status
+    %out_status = add __vfs_dir_snapshot_status, 0
+    !__vfs_dir_snapshot_status
+    __vfs_dir_snapshot_ptr = load __vfs_dir_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_dir_snapshot_ptr, 0
+    !__vfs_dir_snapshot_ptr
+    __vfs_dir_snapshot_len = load __vfs_dir_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_dir_snapshot_len, 0
+    !__vfs_dir_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_DIR_CLOSE %out_status, %dir
+    __vfs_dir_close_status = call @sa_node_plugin_vfs_dir_close(%dir)
+    !%out_status
+    %out_status = add __vfs_dir_close_status, 0
+    !__vfs_dir_close_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_READDIR %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_readdir_ptr_slot = stack_alloc 8
+    __vfs_readdir_len_slot = stack_alloc 8
+    __vfs_readdir_status = call @sa_node_plugin_vfs_readdir(%vfs, %path, %path_len, &__vfs_readdir_ptr_slot, &__vfs_readdir_len_slot)
+    !%out_status
+    %out_status = add __vfs_readdir_status, 0
+    !__vfs_readdir_status
+    __vfs_readdir_ptr = load __vfs_readdir_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_readdir_ptr, 0
+    !__vfs_readdir_ptr
+    __vfs_readdir_len = load __vfs_readdir_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_readdir_len, 0
+    !__vfs_readdir_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_STAT_JSON %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_stat_ptr_slot = stack_alloc 8
+    __vfs_stat_len_slot = stack_alloc 8
+    __vfs_stat_status = call @sa_node_plugin_vfs_stat_json(%vfs, %path, %path_len, &__vfs_stat_ptr_slot, &__vfs_stat_len_slot)
+    !%out_status
+    %out_status = add __vfs_stat_status, 0
+    !__vfs_stat_status
+    __vfs_stat_ptr = load __vfs_stat_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_stat_ptr, 0
+    !__vfs_stat_ptr
+    __vfs_stat_len = load __vfs_stat_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_stat_len, 0
+    !__vfs_stat_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_LSTAT_JSON %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_lstat_ptr_slot = stack_alloc 8
+    __vfs_lstat_len_slot = stack_alloc 8
+    __vfs_lstat_status = call @sa_node_plugin_vfs_lstat_json(%vfs, %path, %path_len, &__vfs_lstat_ptr_slot, &__vfs_lstat_len_slot)
+    !%out_status
+    %out_status = add __vfs_lstat_status, 0
+    !__vfs_lstat_status
+    __vfs_lstat_ptr = load __vfs_lstat_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_lstat_ptr, 0
+    !__vfs_lstat_ptr
+    __vfs_lstat_len = load __vfs_lstat_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_lstat_len, 0
+    !__vfs_lstat_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_EXISTS %out_bool, %out_status, %vfs, %path, %path_len
+    __vfs_exists_slot = stack_alloc 8
+    __vfs_exists_status = call @sa_node_plugin_vfs_exists(%vfs, %path, %path_len, &__vfs_exists_slot)
+    !%out_status
+    %out_status = add __vfs_exists_status, 0
+    !__vfs_exists_status
+    __vfs_exists_value = load __vfs_exists_slot+0 as u64
+    !%out_bool
+    %out_bool = add __vfs_exists_value, 0
+    !__vfs_exists_value
+[END_MACRO]
+
+[MACRO] NODE_VFS_UNLINK %out_status, %vfs, %path, %path_len
+    __vfs_unlink_status = call @sa_node_plugin_vfs_unlink(%vfs, %path, %path_len)
+    !%out_status
+    %out_status = add __vfs_unlink_status, 0
+    !__vfs_unlink_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_RM %out_status, %vfs, %path, %path_len, %recursive
+    __vfs_rm_status = call @sa_node_plugin_vfs_rm(%vfs, %path, %path_len, %recursive)
+    !%out_status
+    %out_status = add __vfs_rm_status, 0
+    !__vfs_rm_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_RENAME %out_status, %vfs, %old_path, %old_len, %new_path, %new_len
+    __vfs_rename_status = call @sa_node_plugin_vfs_rename(%vfs, %old_path, %old_len, %new_path, %new_len)
+    !%out_status
+    %out_status = add __vfs_rename_status, 0
+    !__vfs_rename_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_COPY_FILE %out_status, %vfs, %src, %src_len, %dst, %dst_len
+    __vfs_copy_status = call @sa_node_plugin_vfs_copy_file(%vfs, %src, %src_len, %dst, %dst_len)
+    !%out_status
+    %out_status = add __vfs_copy_status, 0
+    !__vfs_copy_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_REALPATH %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_realpath_ptr_slot = stack_alloc 8
+    __vfs_realpath_len_slot = stack_alloc 8
+    __vfs_realpath_status = call @sa_node_plugin_vfs_realpath(%vfs, %path, %path_len, &__vfs_realpath_ptr_slot, &__vfs_realpath_len_slot)
+    !%out_status
+    %out_status = add __vfs_realpath_status, 0
+    !__vfs_realpath_status
+    __vfs_realpath_ptr = load __vfs_realpath_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_realpath_ptr, 0
+    !__vfs_realpath_ptr
+    __vfs_realpath_len = load __vfs_realpath_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_realpath_len, 0
+    !__vfs_realpath_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_CHDIR %out_status, %vfs, %path, %path_len
+    __vfs_chdir_status = call @sa_node_plugin_vfs_chdir(%vfs, %path, %path_len)
+    !%out_status
+    %out_status = add __vfs_chdir_status, 0
+    !__vfs_chdir_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_CWD %out_ptr, %out_len, %out_status, %vfs
+    __vfs_cwd_ptr_slot = stack_alloc 8
+    __vfs_cwd_len_slot = stack_alloc 8
+    __vfs_cwd_status = call @sa_node_plugin_vfs_cwd(%vfs, &__vfs_cwd_ptr_slot, &__vfs_cwd_len_slot)
+    !%out_status
+    %out_status = add __vfs_cwd_status, 0
+    !__vfs_cwd_status
+    __vfs_cwd_ptr = load __vfs_cwd_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_cwd_ptr, 0
+    !__vfs_cwd_ptr
+    __vfs_cwd_len = load __vfs_cwd_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_cwd_len, 0
+    !__vfs_cwd_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_SYMLINK %out_status, %vfs, %target, %target_len, %link_path, %link_len
+    __vfs_symlink_status = call @sa_node_plugin_vfs_symlink(%vfs, %target, %target_len, %link_path, %link_len)
+    !%out_status
+    %out_status = add __vfs_symlink_status, 0
+    !__vfs_symlink_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_READLINK %out_ptr, %out_len, %out_status, %vfs, %path, %path_len
+    __vfs_readlink_ptr_slot = stack_alloc 8
+    __vfs_readlink_len_slot = stack_alloc 8
+    __vfs_readlink_status = call @sa_node_plugin_vfs_readlink(%vfs, %path, %path_len, &__vfs_readlink_ptr_slot, &__vfs_readlink_len_slot)
+    !%out_status
+    %out_status = add __vfs_readlink_status, 0
+    !__vfs_readlink_status
+    __vfs_readlink_ptr = load __vfs_readlink_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_readlink_ptr, 0
+    !__vfs_readlink_ptr
+    __vfs_readlink_len = load __vfs_readlink_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_readlink_len, 0
+    !__vfs_readlink_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_WATCH %out_watcher, %out_status, %vfs, %path, %path_len, %recursive
+    __vfs_watch_slot = stack_alloc 8
+    __vfs_watch_status = call @sa_node_plugin_vfs_watch(%vfs, %path, %path_len, %recursive, &__vfs_watch_slot)
+    !%out_status
+    %out_status = add __vfs_watch_status, 0
+    !__vfs_watch_status
+    __vfs_watch_handle = load __vfs_watch_slot+0 as ptr
+    !%out_watcher
+    %out_watcher = add __vfs_watch_handle, 0
+    !__vfs_watch_handle
+[END_MACRO]
+
+[MACRO] NODE_VFS_WATCHER_NEXT %out_event_ptr, %out_event_len, %out_filename_ptr, %out_filename_len, %out_status, %watcher
+    __vfs_watcher_next_event_slot = stack_alloc 8
+    __vfs_watcher_next_event_len_slot = stack_alloc 8
+    __vfs_watcher_next_filename_slot = stack_alloc 8
+    __vfs_watcher_next_filename_len_slot = stack_alloc 8
+    __vfs_watcher_next_status = call @sa_node_plugin_vfs_watcher_next(%watcher, &__vfs_watcher_next_event_slot, &__vfs_watcher_next_event_len_slot, &__vfs_watcher_next_filename_slot, &__vfs_watcher_next_filename_len_slot)
+    !%out_status
+    %out_status = add __vfs_watcher_next_status, 0
+    !__vfs_watcher_next_status
+    __vfs_watcher_next_event = load __vfs_watcher_next_event_slot+0 as ptr
+    !%out_event_ptr
+    %out_event_ptr = add __vfs_watcher_next_event, 0
+    !__vfs_watcher_next_event
+    __vfs_watcher_next_event_len = load __vfs_watcher_next_event_len_slot+0 as u64
+    !%out_event_len
+    %out_event_len = add __vfs_watcher_next_event_len, 0
+    !__vfs_watcher_next_event_len
+    __vfs_watcher_next_filename = load __vfs_watcher_next_filename_slot+0 as ptr
+    !%out_filename_ptr
+    %out_filename_ptr = add __vfs_watcher_next_filename, 0
+    !__vfs_watcher_next_filename
+    __vfs_watcher_next_filename_len = load __vfs_watcher_next_filename_len_slot+0 as u64
+    !%out_filename_len
+    %out_filename_len = add __vfs_watcher_next_filename_len, 0
+    !__vfs_watcher_next_filename_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_WATCHER_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %watcher
+    __vfs_watcher_snapshot_ptr_slot = stack_alloc 8
+    __vfs_watcher_snapshot_len_slot = stack_alloc 8
+    __vfs_watcher_snapshot_status = call @sa_node_plugin_vfs_watcher_snapshot_json(%watcher, &__vfs_watcher_snapshot_ptr_slot, &__vfs_watcher_snapshot_len_slot)
+    !%out_status
+    %out_status = add __vfs_watcher_snapshot_status, 0
+    !__vfs_watcher_snapshot_status
+    __vfs_watcher_snapshot_ptr = load __vfs_watcher_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_watcher_snapshot_ptr, 0
+    !__vfs_watcher_snapshot_ptr
+    __vfs_watcher_snapshot_len = load __vfs_watcher_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_watcher_snapshot_len, 0
+    !__vfs_watcher_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_VFS_WATCHER_CLOSE %out_status, %watcher
+    __vfs_watcher_close_status = call @sa_node_plugin_vfs_watcher_close(%watcher)
+    !%out_status
+    %out_status = add __vfs_watcher_close_status, 0
+    !__vfs_watcher_close_status
+[END_MACRO]
+
+[MACRO] NODE_VFS_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %vfs
+    __vfs_snapshot_ptr_slot = stack_alloc 8
+    __vfs_snapshot_len_slot = stack_alloc 8
+    __vfs_snapshot_status = call @sa_node_plugin_vfs_snapshot_json(%vfs, &__vfs_snapshot_ptr_slot, &__vfs_snapshot_len_slot)
+    !%out_status
+    %out_status = add __vfs_snapshot_status, 0
+    !__vfs_snapshot_status
+    __vfs_snapshot_ptr = load __vfs_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __vfs_snapshot_ptr, 0
+    !__vfs_snapshot_ptr
+    __vfs_snapshot_len = load __vfs_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __vfs_snapshot_len, 0
+    !__vfs_snapshot_len
+[END_MACRO]

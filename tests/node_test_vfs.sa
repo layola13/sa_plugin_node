@@ -1,0 +1,164 @@
+// SA tests for Node VFS helpers
+@import "../node.sal"
+
+@const S_TMP = utf8:"/tmp"
+@const S_APP = utf8:"/tmp/app"
+@const S_HELLO = utf8:"/tmp/app/hello.txt"
+@const S_BIN = utf8:"/tmp/app/data.bin"
+@const S_DATA = utf8:"hello vfs"
+@const S_BANG = utf8:"!"
+@const S_ABCDEF = utf8:"abcdef"
+@const S_XY = utf8:"XY"
+
+@test "node.vfs main facade smoke"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s0 = add 0, 0
+    EXPAND NODE_VFS_STATUS_JSON status_ptr, status_len, s0
+    vfs = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_VFS_NEW vfs, s1
+    s2 = add 0, 0
+    EXPAND NODE_VFS_MKDIR s2, vfs, S_TMP, 4
+    s3 = add 0, 0
+    EXPAND NODE_VFS_MKDIR s3, vfs, S_APP, 8
+    s4 = add 0, 0
+    EXPAND NODE_VFS_WRITE_FILE s4, vfs, S_HELLO, 18, S_DATA, 9
+    s5 = add 0, 0
+    EXPAND NODE_VFS_APPEND_FILE s5, vfs, S_HELLO, 18, S_BANG, 1
+    exists = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_VFS_EXISTS exists, s6, vfs, S_HELLO, 18
+    read_ptr = add 0, 0
+    read_len = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_VFS_READ_FILE read_ptr, read_len, s7, vfs, S_HELLO, 18
+    list_ptr = add 0, 0
+    list_len = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_VFS_READDIR list_ptr, list_len, s8, vfs, S_APP, 8
+    stat_ptr = add 0, 0
+    stat_len = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_VFS_STAT_JSON stat_ptr, stat_len, s9, vfs, S_HELLO, 18
+    fh = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_VFS_OPEN fh, s10, vfs, S_BIN, 17, 3
+    written = add 0, 0
+    s11 = add 0, 0
+    EXPAND NODE_VFS_FILE_WRITE written, s11, fh, S_ABCDEF, 6, 0, 0
+    patched = add 0, 0
+    s12 = add 0, 0
+    EXPAND NODE_VFS_FILE_WRITE patched, s12, fh, S_XY, 2, 2, 1
+    buf = stack_alloc 6
+    nread = add 0, 0
+    s13 = add 0, 0
+    EXPAND NODE_VFS_FILE_READ nread, s13, fh, buf, 6, 0, 1
+    fstat_ptr = add 0, 0
+    fstat_len = add 0, 0
+    s14 = add 0, 0
+    EXPAND NODE_VFS_FILE_FSTAT_JSON fstat_ptr, fstat_len, s14, fh
+    s15 = add 0, 0
+    EXPAND NODE_VFS_FILE_TRUNCATE s15, fh, 4
+    s16 = add 0, 0
+    EXPAND NODE_VFS_FILE_CLOSE s16, fh
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    s17 = add 0, 0
+    EXPAND NODE_VFS_SNAPSHOT_JSON snap_ptr, snap_len, s17, vfs
+    s18 = add 0, 0
+    EXPAND NODE_VFS_FREE s18, vfs
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    free_fstat = call @sa_node_plugin_free_buffer(fstat_ptr, fstat_len)
+    free_stat = call @sa_node_plugin_free_buffer(stat_ptr, stat_len)
+    free_list = call @sa_node_plugin_free_buffer(list_ptr, list_len)
+    free_read = call @sa_node_plugin_free_buffer(read_ptr, read_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    sum1 = add s0, s1
+    sum2 = add sum1, s2
+    sum3 = add sum2, s3
+    sum4 = add sum3, s4
+    sum5 = add sum4, s5
+    sum6 = add sum5, s6
+    sum7 = add sum6, s7
+    sum8 = add sum7, s8
+    sum9 = add sum8, s9
+    sum10 = add sum9, s10
+    sum11 = add sum10, s11
+    sum12 = add sum11, s12
+    sum13 = add sum12, s13
+    sum14 = add sum13, s14
+    sum15 = add sum14, s15
+    sum16 = add sum15, s16
+    sum17 = add sum16, s17
+    sum18 = add sum17, s18
+    ok = eq sum18, 0
+    br ok -> L_DONE, L_ERR
+L_DONE:
+    !ok
+    !sum18
+    !sum17
+    !sum16
+    !sum15
+    !sum14
+    !sum13
+    !sum12
+    !sum11
+    !sum10
+    !sum9
+    !sum8
+    !sum7
+    !sum6
+    !sum5
+    !sum4
+    !sum3
+    !sum2
+    !sum1
+    !free_status
+    !free_read
+    !free_list
+    !free_stat
+    !free_fstat
+    !free_snap
+    !s18
+    !s17
+    !snap_len
+    !snap_ptr
+    !s16
+    !s15
+    !s14
+    !fstat_len
+    !fstat_ptr
+    !s13
+    !nread
+    !s12
+    !patched
+    !s11
+    !written
+    !s10
+    !fh
+    !s9
+    !stat_len
+    !stat_ptr
+    !s8
+    !list_len
+    !list_ptr
+    !s7
+    !read_len
+    !read_ptr
+    !s6
+    !exists
+    !s5
+    !s4
+    !s3
+    !s2
+    !s1
+    !vfs
+    !s0
+    !status_len
+    !status_ptr
+    return
+L_ERR:
+    !ok
+    panic(103)

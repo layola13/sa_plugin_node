@@ -7986,3 +7986,185 @@
     %p_1 = add __m_load_3b6291eb_p_1, 0
     !__m_load_3b6291eb_p_1
 [END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CREATE_HISTOGRAM %p_0
+    __m_slot_7bd92f42_0 = stack_alloc 8
+    __m_status_7bd92f42 = call @sa_node_plugin_perf_hooks_create_histogram(&__m_slot_7bd92f42_0)
+    !__m_status_7bd92f42
+    __m_load_7bd92f42_p_0 = load __m_slot_7bd92f42_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_7bd92f42_p_0, 0
+    !__m_load_7bd92f42_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_RECORD %p_0, %p_1
+    __m_status_dbc0efaa = call @sa_node_plugin_perf_hooks_histogram_record(%p_0, %p_1)
+    !__m_status_dbc0efaa
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_GET_STATISTICS %p_0, %p_1, %p_2
+    __m_slot_5700297d_0 = stack_alloc 8
+    __m_slot_5700297d_1 = stack_alloc 8
+    __m_status_5700297d = call @sa_node_plugin_perf_hooks_histogram_get_statistics(%p_0, &__m_slot_5700297d_0, &__m_slot_5700297d_1)
+    !__m_status_5700297d
+    __m_load_5700297d_p_1 = load __m_slot_5700297d_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_5700297d_p_1, 0
+    !__m_load_5700297d_p_1
+    __m_load_5700297d_p_2 = load __m_slot_5700297d_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_5700297d_p_2, 0
+    !__m_load_5700297d_p_2
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_HISTOGRAM_FREE %p_0
+    __m_status_f29990a7 = call @sa_node_plugin_perf_hooks_histogram_free(%p_0)
+    !__m_status_f29990a7
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_EVENT_LOOP_UTILIZATION %p_0, %p_1, %p_2
+    __m_slot_529c5861_0 = stack_alloc 8
+    __m_slot_529c5861_1 = stack_alloc 8
+    __m_status_529c5861 = call @sa_node_plugin_perf_hooks_event_loop_utilization(&__m_slot_529c5861_0, &__m_slot_529c5861_1)
+    !%p_2
+    %p_2 = add __m_status_529c5861, 0
+    !__m_status_529c5861
+    __m_load_529c5861_p_0 = load __m_slot_529c5861_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_529c5861_p_0, 0
+    !__m_load_529c5861_p_0
+    __m_load_529c5861_p_1 = load __m_slot_529c5861_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_529c5861_p_1, 0
+    !__m_load_529c5861_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_TIMERIFY %p_0, %p_1, %p_2, %p_3
+    __m_slot_ede3627a_0 = stack_alloc 8
+    __m_status_ede3627a = call @sa_node_plugin_perf_hooks_timerify(%p_0, %p_1, &__m_slot_ede3627a_0)
+    !%p_3
+    %p_3 = add __m_status_ede3627a, 0
+    !__m_status_ede3627a
+    __m_load_ede3627a_p_2 = load __m_slot_ede3627a_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_ede3627a_p_2, 0
+    !__m_load_ede3627a_p_2
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_NOW_MS %p_0, %p_1
+    __m_slot_62df6856_0 = stack_alloc 8
+    __m_status_62df6856 = call @sa_node_plugin_perf_hooks_now_ms(&__m_slot_62df6856_0)
+    !%p_1
+    %p_1 = add __m_status_62df6856, 0
+    !__m_status_62df6856
+    __m_load_62df6856_p_0 = load __m_slot_62df6856_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_62df6856_p_0, 0
+    !__m_load_62df6856_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_TIME_ORIGIN_MS %p_0
+    __m_slot_c56f3c03_0 = stack_alloc 8
+    __m_status_c56f3c03 = call @sa_node_plugin_perf_hooks_time_origin_ms(&__m_slot_c56f3c03_0)
+    !__m_status_c56f3c03
+    __m_load_c56f3c03_p_0 = load __m_slot_c56f3c03_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_c56f3c03_p_0, 0
+    !__m_load_c56f3c03_p_0
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_MARK %p_0, %p_1, %p_2
+    __m_status_8929bc56 = call @sa_node_plugin_perf_hooks_mark(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_8929bc56, 0
+    !__m_status_8929bc56
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_MEASURE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_a5279c7b_0 = stack_alloc 8
+    __m_status_a5279c7b = call @sa_node_plugin_perf_hooks_measure(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_a5279c7b_0)
+    !%p_7
+    %p_7 = add __m_status_a5279c7b, 0
+    !__m_status_a5279c7b
+    __m_load_a5279c7b_p_6 = load __m_slot_a5279c7b_0+0 as u64
+    !%p_6
+    %p_6 = add __m_load_a5279c7b_p_6, 0
+    !__m_load_a5279c7b_p_6
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_ENTRIES_JSON %p_0, %p_1
+    __m_slot_506441a0_0 = stack_alloc 8
+    __m_slot_506441a0_1 = stack_alloc 8
+    __m_status_506441a0 = call @sa_node_plugin_perf_hooks_entries_json(&__m_slot_506441a0_0, &__m_slot_506441a0_1)
+    !__m_status_506441a0
+    __m_load_506441a0_p_0 = load __m_slot_506441a0_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_506441a0_p_0, 0
+    !__m_load_506441a0_p_0
+    __m_load_506441a0_p_1 = load __m_slot_506441a0_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_506441a0_p_1, 0
+    !__m_load_506441a0_p_1
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CLEAR_MARKS %p_0
+    __m_status_f9da07ff = call @sa_node_plugin_perf_hooks_clear_marks()
+    !%p_0
+    %p_0 = add __m_status_f9da07ff, 0
+    !__m_status_f9da07ff
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CLEAR_MEASURES %p_0
+    __m_status_3ff1a891 = call @sa_node_plugin_perf_hooks_clear_measures()
+    !%p_0
+    %p_0 = add __m_status_3ff1a891, 0
+    !__m_status_3ff1a891
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_status_ptr_slot = stack_alloc 8
+    __m_perf_hooks_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_status_json(&__m_perf_hooks_status_ptr_slot, &__m_perf_hooks_status_len_slot)
+    %out_ptr = load __m_perf_hooks_status_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_exports_ptr_slot = stack_alloc 8
+    __m_perf_hooks_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_exports_json(&__m_perf_hooks_exports_ptr_slot, &__m_perf_hooks_exports_len_slot)
+    %out_ptr = load __m_perf_hooks_exports_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_SUPPORTED_ENTRY_TYPES_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_entry_types_ptr_slot = stack_alloc 8
+    __m_perf_hooks_entry_types_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_supported_entry_types_json(&__m_perf_hooks_entry_types_ptr_slot, &__m_perf_hooks_entry_types_len_slot)
+    %out_ptr = load __m_perf_hooks_entry_types_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_entry_types_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_constants_ptr_slot = stack_alloc 8
+    __m_perf_hooks_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_constants_json(&__m_perf_hooks_constants_ptr_slot, &__m_perf_hooks_constants_len_slot)
+    %out_ptr = load __m_perf_hooks_constants_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_PERFORMANCE_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_performance_ptr_slot = stack_alloc 8
+    __m_perf_hooks_performance_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_performance_json(&__m_perf_hooks_performance_ptr_slot, &__m_perf_hooks_performance_len_slot)
+    %out_ptr = load __m_perf_hooks_performance_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_performance_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERF_HOOKS_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_perf_hooks_feature_ptr_slot = stack_alloc 8
+    __m_perf_hooks_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_perf_hooks_feature_support_json(&__m_perf_hooks_feature_ptr_slot, &__m_perf_hooks_feature_len_slot)
+    %out_ptr = load __m_perf_hooks_feature_ptr_slot+0 as ptr
+    %out_len = load __m_perf_hooks_feature_len_slot+0 as u64
+[END_MACRO]

@@ -1,6 +1,5 @@
 // SA tests for Node perf_hooks extras: now_ms, time_origin, mark, clear_marks, clear_measures
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_MARK = utf8:"test-mark"
 
 @test "node.perf_hooks now_ms"():

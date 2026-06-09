@@ -1,6 +1,5 @@
 // SA-native unit tests for Node perf hooks + TTY extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_MARK = utf8:"test_mark"
 @const S_START = utf8:"start"

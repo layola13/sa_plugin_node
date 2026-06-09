@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `web_crypto/web_streams` status helpers
+- Scope: installed main `node.sal` public macro coverage for `perf_hooks`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `web_crypto` and `web_streams` status helpers available through `node.sal`
+  - `perf_hooks` top-level metadata, timing, histogram, measurement, entry, and timerify helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` perf_hooks helper macro tranche completed:
+  - `perf_hooks` status, exports, supported-entry-types, constants, performance, feature-support, `now`, `timeOrigin`, `mark`, `measure`, entries, clear helpers, histogram helpers, event-loop utilization, and `timerify` helpers available through `node.sal`
+  - `tests/node_test_perf_hooks_top.sa`, `node_test_perf_extra.sa`, `node_test_perf_entries.sa`, and `node_test_perf_tty.sa` now validate through `node.sal` only
 
 - installed main `node.sal` web_crypto/web_streams status helper tranche completed:
   - `web_crypto` and `web_streams` status helpers available through `node.sal`

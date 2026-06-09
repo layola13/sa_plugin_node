@@ -1,0 +1,44 @@
+// SA tests for small Node punycode/tty compatibility helpers
+@import "../node.sal"
+
+@const S_DOMAIN = utf8:"example.com"
+
+@test "node.punycode to_ascii through main facade"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_PUNYCODE_TO_ASCII S_DOMAIN, 11, p, l
+    ok = eq l, 11
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    !free_p
+    !l
+    !p
+    return
+L_ERR:
+    !ok
+    !l
+    !p
+    panic(103)
+
+@test "node.tty legacy status through main facade"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_TTY_STATUS_JSON p, l
+    ok = gt l, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    !free_p
+    !l
+    !p
+    return
+L_ERR:
+    !ok
+    !l
+    !p
+    panic(103)

@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `timers.promises`
+- Scope: installed main `node.sal` public macro coverage for `punycode` and `tty` compatibility helpers
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `timers.promises` timeout, immediate, scheduler, and explicit interval lifecycle helpers available through `node.sal`
+  - `punycode.toASCII` and legacy `tty` status helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` punycode/tty compatibility helper tranche completed:
+  - `punycode.toASCII` and legacy `tty` status macros available through `node.sal`
+  - `tests/node_test_punycode_tty_misc.sa` validates through `node.sal` only
 
 - installed main `node.sal` timers.promises helper macro tranche completed:
   - `timers.promises` setTimeout, setImmediate, scheduler.wait, scheduler.yield, setInterval, interval next/return/snapshot/free helpers available through `node.sal`

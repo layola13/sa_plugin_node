@@ -9442,3 +9442,33 @@
     %out_status = add __timers_promises_free_status, 0
     !__timers_promises_free_status
 [END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TO_ASCII %p_0, %p_1, %p_2, %p_3
+    __m_slot_9387880f_0 = stack_alloc 8
+    __m_slot_9387880f_1 = stack_alloc 8
+    __m_status_9387880f = call @sa_node_plugin_punycode_to_ascii(%p_0, %p_1, &__m_slot_9387880f_0, &__m_slot_9387880f_1)
+    !__m_status_9387880f
+    __m_load_9387880f_p_2 = load __m_slot_9387880f_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_9387880f_p_2, 0
+    !__m_load_9387880f_p_2
+    __m_load_9387880f_p_3 = load __m_slot_9387880f_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_9387880f_p_3, 0
+    !__m_load_9387880f_p_3
+[END_MACRO]
+
+[MACRO] NODE_TTY_STATUS_JSON %p_0, %p_1
+    __m_slot_b5ddde9f_0 = stack_alloc 8
+    __m_slot_b5ddde9f_1 = stack_alloc 8
+    __m_status_b5ddde9f = call @sa_node_plugin_tty_status_json(&__m_slot_b5ddde9f_0, &__m_slot_b5ddde9f_1)
+    !__m_status_b5ddde9f
+    __m_load_b5ddde9f_p_0 = load __m_slot_b5ddde9f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_b5ddde9f_p_0, 0
+    !__m_load_b5ddde9f_p_0
+    __m_load_b5ddde9f_p_1 = load __m_slot_b5ddde9f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_b5ddde9f_p_1, 0
+    !__m_load_b5ddde9f_p_1
+[END_MACRO]

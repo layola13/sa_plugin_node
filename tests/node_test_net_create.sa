@@ -1,6 +1,5 @@
 // SA tests for Node net: create_connection
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_HOST = utf8:"127.0.0.1"
 
 @test "node.net create_connection"():

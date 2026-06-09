@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `stream`
+- Scope: installed main `node.sal` public macro coverage for `net`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `stream` top-level / constructor / pipeline / destroy macros available through `node.sal`
+  - `net` create / socket-address / blocklist / lifecycle macros validated through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` net helper macro tranche completed:
+  - `net` create / socket-address / blocklist / lifecycle macros available through `node.sal`
+  - `tests/node_test_net_extra.sa`, `node_test_net_create.sa`, and `node_test_net_full.sa` now validate through `node.sal` only
 
 - installed main `node.sal` stream helper macro tranche completed:
   - `stream` top-level / constructor / pipeline / destroy macros available through `node.sal`

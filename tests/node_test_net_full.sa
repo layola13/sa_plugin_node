@@ -1,6 +1,5 @@
 // SA tests for Node net: full listen/connect/accept/write/read/end cycle
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_HOST = utf8:"127.0.0.1"
 @const S_MSG = utf8:"hi"
 

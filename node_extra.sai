@@ -688,6 +688,9 @@
 @extern sa_node_plugin_http2_config_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_http2_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_status_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_config_json(&out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_quic_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_constants_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_capabilities_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_quic_create_endpoint(family: u32, host_ptr: ptr, host_len: u64, port: u64, alpn_ptr: ptr, alpn_len: u64, cc_ptr: ptr, cc_len: u64, idle_timeout_ms: u64, &out_endpoint: ptr) -> u64

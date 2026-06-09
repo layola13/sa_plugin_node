@@ -63,16 +63,21 @@
 
 ## Current Helper Tranche
 
-- Scope: explicit `http3` top-level facade metadata over the existing native session/datagram subset
+- Scope: explicit `quic` top-level facade metadata over the existing native endpoint subset
 - Current status: `4 / 4` helper features completed (`100.0%`)
 - Planned helpers:
-  - `http3.exports`
-  - `http3.config`
-  - `http3.featureSupport`
-  - `http3` top-level status alignment
+  - `quic.exports`
+  - `quic.config`
+  - `quic.featureSupport`
+  - `quic` top-level status alignment
 
 ## Recent Completed Helper Features
 
+- `quic` top-level metadata tranche completed:
+  - `quic.exports`
+  - `quic.config`
+  - `quic.featureSupport`
+  - `quic` top-level status alignment
 - `http3` top-level metadata tranche completed:
   - `http3.exports`
   - `http3.config`

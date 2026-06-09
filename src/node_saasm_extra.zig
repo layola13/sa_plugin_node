@@ -6618,6 +6618,22 @@ const http2_export_names = [_][]const u8{
     "Http2ServerResponse",
 };
 
+const quic_export_names = [_][]const u8{
+    "constants",
+    "capabilities",
+    "createEndpoint",
+    "connect",
+    "listen",
+    "endpointSnapshot",
+    "endpointAddress",
+    "endpointRemoteAddress",
+    "endpointRef",
+    "endpointUnref",
+    "endpointHasRef",
+    "endpointClose",
+    "endpointFree",
+};
+
 const http3_export_names = [_][]const u8{
     "constants",
     "createSession",
@@ -8083,14 +8099,68 @@ pub export fn sa_node_plugin_http2_feature_support_json(out_ptr: ?*?[*]const u8,
 }
 
 pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const supported = quicNgTcp2Available() and quicNgHttp3Available() and quicOpenSslAvailable();
-    return writeStatusJson(
-        out_ptr,
-        out_len,
-        "quic",
-        supported,
-        if (supported) "QUIC constants and native library capability detection are exposed; session APIs require ngtcp2/nghttp3 integration" else "QUIC constants are exposed but ngtcp2/nghttp3/OpenSSL stack is not fully available for sessions",
-    );
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_quic_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var caps_ptr: ?[*]const u8 = null;
+    var caps_len: u64 = 0;
+    if (sa_node_plugin_quic_capabilities_json(&caps_ptr, &caps_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(caps_ptr, caps_len);
+
+    const ngtcp2 = quicNgTcp2Available();
+    const nghttp3 = quicNgHttp3Available();
+    const openssl = quicOpenSslAvailable();
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"quic\",\"supported\":") catch return fail();
+    out.appendSlice(if (ngtcp2 and nghttp3 and openssl) "true" else "false") catch return fail();
+    out.appendSlice(",\"mode\":\"top-level-native-quic-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &quic_export_names) catch return fail();
+    out.appendSlice(",\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"capabilityDetection\":") catch return fail();
+    out.appendSlice((caps_ptr orelse return fail())[0..@intCast(caps_len)]) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"constants\":true,\"capabilities\":true,\"createEndpoint\":true,\"connect\":true,\"listen\":true,\"endpointSnapshot\":true,\"endpointAddress\":true,\"endpointRemoteAddress\":true,\"endpointRef\":true,\"endpointUnref\":true,\"endpointHasRef\":true,\"endpointClose\":true,\"endpointFree\":true,\"clientHello\":false,\"streams\":false,\"server\":false},\"capabilities\":[\"QUIC ALPN, congestion-control, and TLS cipher constant metadata\",\"runtime capability detection for ngtcp2, nghttp3, and OpenSSL availability\",\"explicit UDP-backed endpoint handles for bind, connect, listen, address snapshots, and ref state\",\"endpoint metadata includes ALPN, congestion control name, idle timeout, and local and remote address snapshots\"],\"limitations\":[\"no QUIC handshake packets, TLS record processing, or congestion-control engine execution are modeled\",\"no bidirectional streams, unidirectional streams, or HTTP/3 request multiplexing are modeled\",\"server and client flows use explicit native endpoint handles rather than JavaScript classes or event emitters\",\"capability detection reports library availability separately from this explicit native handle subset\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_quic_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &quic_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_quic_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_quic_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var caps_ptr: ?[*]const u8 = null;
+    var caps_len: u64 = 0;
+    if (sa_node_plugin_quic_capabilities_json(&caps_ptr, &caps_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(caps_ptr, caps_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"capabilityDetection\":") catch return fail();
+    out.appendSlice((caps_ptr orelse return fail())[0..@intCast(caps_len)]) catch return fail();
+    out.appendSlice(",\"endpointModel\":\"explicit UDP-backed QUIC endpoint handle with bind, connect, listen, snapshot, and ref-state helpers\",\"streamModel\":\"not-modeled\",\"serverModel\":\"not-modeled\",\"transport\":\"native UDP socket handles reused for QUIC-compatible endpoint metadata\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_quic_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"constants\":{\"supported\":true,\"mode\":\"static QUIC ALPN, congestion-control, and TLS cipher catalog JSON\"},\"capabilities\":{\"supported\":true,\"mode\":\"native runtime capability detection for ngtcp2, nghttp3, and OpenSSL availability\"},\"createEndpoint\":{\"supported\":true,\"mode\":\"allocate explicit native UDP-backed endpoint handle with host, port, ALPN, congestion-control, and idle-timeout metadata\"},\"connect\":{\"supported\":true,\"mode\":\"connect a native UDP-backed endpoint handle to a remote peer\"},\"listen\":{\"supported\":true,\"mode\":\"bind a native UDP-backed endpoint handle for server-style local listening metadata\"},\"endpointSnapshot\":{\"supported\":true,\"mode\":\"native endpoint metadata snapshot JSON\"},\"endpointAddress\":{\"supported\":true,\"mode\":\"local endpoint address JSON snapshot\"},\"endpointRemoteAddress\":{\"supported\":true,\"mode\":\"remote peer address JSON snapshot for connected endpoints\"},\"endpointRef\":{\"supported\":true,\"mode\":\"native has_ref state toggle on explicit endpoint handles\"},\"endpointUnref\":{\"supported\":true,\"mode\":\"native has_ref state toggle on explicit endpoint handles\"},\"endpointHasRef\":{\"supported\":true,\"mode\":\"native has_ref state query on explicit endpoint handles\"},\"endpointClose\":{\"supported\":true,\"mode\":\"close the underlying UDP socket on the explicit endpoint handle\"},\"endpointFree\":{\"supported\":true,\"mode\":\"release the explicit native endpoint handle\"},\"clientHello\":{\"supported\":false,\"reason\":\"QUIC TLS handshake packets and client hello processing are not modeled\"},\"streams\":{\"supported\":false,\"reason\":\"QUIC bidirectional and unidirectional stream lifecycle is not modeled\"},\"server\":{\"supported\":false,\"reason\":\"JavaScript QUIC server classes and event-emitter semantics are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_http3_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

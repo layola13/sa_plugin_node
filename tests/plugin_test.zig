@@ -6251,6 +6251,47 @@ test "node plugin quic and http3 metadata helpers" {
     try std.testing.expectEqual(@as(i64, 9114), http3_constants.value.object.get("RFC_HTTP3").?.integer);
 }
 
+test "node plugin quic top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullQuicTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"quic\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-quic-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createEndpoint\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"endpointHasRef\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"streams\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullQuicTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"capabilities\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"listen\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"endpointFree\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullQuicTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"endpointModel\":\"explicit UDP-backed QUIC endpoint handle with bind, connect, listen, snapshot, and ref-state helpers\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"streamModel\":\"not-modeled\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"transport\":\"native UDP socket handles reused for QUIC-compatible endpoint metadata\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullQuicTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createEndpoint\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"endpointClose\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"clientHello\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"server\":{\"supported\":false") != null);
+}
+
 test "node plugin quic http3 and dtls native endpoint subsets" {
     var quic_endpoint: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_listen(4, "127.0.0.1", 9, 0, "h3", 2, "cubic", 5, 1500, &quic_endpoint));

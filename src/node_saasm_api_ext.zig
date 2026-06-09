@@ -2099,7 +2099,11 @@ var console_count_map = std.StringHashMap(u64).init(std.heap.page_allocator);
 
 fn consoleWrite(prefix: []const u8, data_ptr: ?[*]const u8, data_len: u64) void {
     const out = std.io.getStdOut().writer();
-    out.print("{s}{s}\n", .{ prefix, data_ptr.?[0..data_len] }) catch {};
+    const data = if (data_len == 0)
+        ""
+    else
+        (data_ptr orelse return)[0..data_len];
+    out.print("{s}{s}\n", .{ prefix, data }) catch {};
 }
 
 pub export fn sa_node_plugin_console_warn(data_ptr: ?[*]const u8, data_len: u64) u32 {

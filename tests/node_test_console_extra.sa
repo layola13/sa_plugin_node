@@ -1,9 +1,9 @@
 // SA-native unit tests for Node console extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_MSG = utf8:"test msg"
 @const S_LABEL = utf8:"unit_test"
+@const S_EMPTY = utf8:""
 
 @test "node.console warn succeeds"():
 L_ENTRY:
@@ -158,7 +158,7 @@ L_ERR:
 @test "node.console time_log succeeds"():
 L_ENTRY:
     s = add 0, 0
-    EXPAND NODE_CONSOLE_TIME_LOG S_LABEL, 9, 0, 0, s
+    EXPAND NODE_CONSOLE_TIME_LOG S_LABEL, 9, S_EMPTY, 0, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:

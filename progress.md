@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `quic/http3/dtls`
+- Scope: installed main `node.sal` public macro coverage for `console`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `quic` endpoint helpers, `http3` session helpers, and `dtls` endpoint helpers validated through `node.sal`
+  - `console` top-level metadata and warn/info/debug/assert/count/group helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` console helper macro tranche completed:
+  - `console` top-level metadata helpers available through `node.sal`
+  - `console.warn`, `console.info`, `console.debug`, `console.dir`, `console.dirxml`, `console.trace`, `console.table`, `console.assert`, `console.count`, `console.countReset`, `console.group`, `console.groupCollapsed`, `console.groupEnd`, `console.timeLog`, and `console.timeStamp` available through `node.sal`
+  - `tests/node_test_console_top.sa` and `node_test_console_extra.sa` now validate through `node.sal` only
 
 - installed main `node.sal` quic/http3/dtls helper macro tranche completed:
   - `quic` endpoint helpers available through `node.sal`

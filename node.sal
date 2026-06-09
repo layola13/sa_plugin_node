@@ -4411,6 +4411,109 @@
     %out_status = call @sa_node_plugin_console_clear()
 [END_MACRO]
 
+[MACRO] NODE_CONSOLE_WARN %data, %data_len
+    __console_warn_status = call @sa_node_plugin_console_warn(&%data, %data_len)
+    !__console_warn_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_INFO %data, %data_len
+    __console_info_status = call @sa_node_plugin_console_info(&%data, %data_len)
+    !__console_info_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DEBUG %data, %data_len
+    __console_debug_status = call @sa_node_plugin_console_debug(&%data, %data_len)
+    !__console_debug_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DIR %data, %data_len
+    __console_dir_status = call @sa_node_plugin_console_dir(&%data, %data_len)
+    !__console_dir_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_DIRXML %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_console_dirxml(&%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME_LOG %label, %label_len, %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_console_time_log(&%label, %label_len, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_COUNT %label, %label_len, %out_ptr, %out_len, %out_status
+    __console_count_ptr_slot = stack_alloc 8
+    __console_count_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_count(&%label, %label_len, &__console_count_ptr_slot, &__console_count_len_slot)
+    %out_ptr = load __console_count_ptr_slot+0 as ptr
+    %out_len = load __console_count_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_COUNT_RESET %label, %label_len, %out_status
+    %out_status = call @sa_node_plugin_console_count_reset(&%label, %label_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_ASSERT %condition, %data, %data_len
+    __console_assert_status = call @sa_node_plugin_console_assert(%condition, &%data, %data_len)
+    !__console_assert_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TRACE %data, %data_len
+    __console_trace_status = call @sa_node_plugin_console_trace(&%data, %data_len)
+    !__console_trace_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TABLE %data, %data_len
+    __console_table_status = call @sa_node_plugin_console_table(&%data, %data_len)
+    !__console_table_status
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP %out_status
+    %out_status = call @sa_node_plugin_console_group()
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP_END %out_status
+    %out_status = call @sa_node_plugin_console_group_end()
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_GROUP_COLLAPSED %out_status
+    %out_status = call @sa_node_plugin_console_group_collapsed()
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TIME_STAMP %data, %data_len, %out_status
+    %out_status = call @sa_node_plugin_console_time_stamp(&%data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_STATUS_JSON %out_ptr, %out_len, %out_status
+    __console_status_ptr_slot = stack_alloc 8
+    __console_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_status_json(&__console_status_ptr_slot, &__console_status_len_slot)
+    %out_ptr = load __console_status_ptr_slot+0 as ptr
+    %out_len = load __console_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __console_exports_ptr_slot = stack_alloc 8
+    __console_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_exports_json(&__console_exports_ptr_slot, &__console_exports_len_slot)
+    %out_ptr = load __console_exports_ptr_slot+0 as ptr
+    %out_len = load __console_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __console_config_ptr_slot = stack_alloc 8
+    __console_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_config_json(&__console_config_ptr_slot, &__console_config_len_slot)
+    %out_ptr = load __console_config_ptr_slot+0 as ptr
+    %out_len = load __console_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSOLE_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __console_feature_ptr_slot = stack_alloc 8
+    __console_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_console_feature_support_json(&__console_feature_ptr_slot, &__console_feature_len_slot)
+    %out_ptr = load __console_feature_ptr_slot+0 as ptr
+    %out_len = load __console_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_TIMERS_SLEEP %out_status, %ms
     %out_status = call @sa_node_plugin_timers_sleep(%ms)
 [END_MACRO]

@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `repl`
+- Scope: installed main `node.sal` public macro coverage for `inspector`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `repl` top-level metadata plus native session/history/eval helpers available through `node.sal`
+  - `inspector` top-level metadata plus enabled/allowed/url/config helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` inspector helper macro tranche completed:
+  - `inspector` top-level status, exports, enabled, allowed, config, url, and feature-support helpers available through `node.sal`
+  - `tests/node_test_inspector_top.sa` now validates through `node.sal` only
 
 - installed main `node.sal` repl helper macro tranche completed:
   - `repl` top-level status, exports, default-config, and feature-support helpers available through `node.sal`

@@ -1991,6 +1991,59 @@
     %out_len = load __repl_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_INSPECTOR_STATUS_JSON %out_ptr, %out_len
+    __inspector_status_ptr_slot = stack_alloc 8
+    __inspector_status_len_slot = stack_alloc 8
+    __inspector_status = call @sa_node_plugin_inspector_status_json(&__inspector_status_ptr_slot, &__inspector_status_len_slot)
+    !__inspector_status
+    %out_ptr = load __inspector_status_ptr_slot+0 as ptr
+    %out_len = load __inspector_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __inspector_exports_ptr_slot = stack_alloc 8
+    __inspector_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_exports_json(&__inspector_exports_ptr_slot, &__inspector_exports_len_slot)
+    %out_ptr = load __inspector_exports_ptr_slot+0 as ptr
+    %out_len = load __inspector_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_IS_ENABLED %out_bool, %out_status
+    __inspector_enabled_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_is_enabled(&__inspector_enabled_slot)
+    %out_bool = load __inspector_enabled_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_IS_ALLOWED %out_bool, %out_status
+    __inspector_allowed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_is_allowed(&__inspector_allowed_slot)
+    %out_bool = load __inspector_allowed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __inspector_config_ptr_slot = stack_alloc 8
+    __inspector_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_config_json(&__inspector_config_ptr_slot, &__inspector_config_len_slot)
+    %out_ptr = load __inspector_config_ptr_slot+0 as ptr
+    %out_len = load __inspector_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_URL_JSON %out_ptr, %out_len, %out_status
+    __inspector_url_ptr_slot = stack_alloc 8
+    __inspector_url_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_url_json(&__inspector_url_ptr_slot, &__inspector_url_len_slot)
+    %out_ptr = load __inspector_url_ptr_slot+0 as ptr
+    %out_len = load __inspector_url_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_INSPECTOR_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __inspector_feature_ptr_slot = stack_alloc 8
+    __inspector_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_inspector_feature_support_json(&__inspector_feature_ptr_slot, &__inspector_feature_len_slot)
+    %out_ptr = load __inspector_feature_ptr_slot+0 as ptr
+    %out_len = load __inspector_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

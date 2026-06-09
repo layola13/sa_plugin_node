@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `net`
+- Scope: installed main `node.sal` public macro coverage for `http2`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net` create / socket-address / blocklist / lifecycle macros validated through `node.sal`
+  - `http2` settings / constants / handshake macros validated through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` http2 helper macro tranche completed:
+  - `http2` settings / constants / handshake macros available through `node.sal`
+  - `tests/node_test_http2_extra.sa` now validates through `node.sal` only
 
 - installed main `node.sal` net helper macro tranche completed:
   - `net` create / socket-address / blocklist / lifecycle macros available through `node.sal`

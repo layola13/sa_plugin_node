@@ -1,6 +1,5 @@
 // SA tests for Node HTTP/2 extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_ENABLE_PUSH_FALSE = utf8:"{\"enablePush\":false}"
 @const S_H2_CLIENT_PREFACE_SETTINGS = utf8:"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n\x00\x00\x06\x04\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00"

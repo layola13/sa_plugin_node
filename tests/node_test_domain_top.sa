@@ -1,6 +1,5 @@
 // SA tests for Node domain top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.domain top level helpers"():
 L_ENTRY:

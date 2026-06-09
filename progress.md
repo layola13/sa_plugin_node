@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `diagnostics_channel`
+- Scope: installed main `node.sal` public macro coverage for `domain`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `diagnostics_channel` top-level metadata plus create/publish/subscriber/snapshot helpers available through `node.sal`
+  - `domain` top-level metadata plus native handle/member/snapshot helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` domain helper macro tranche completed:
+  - `domain` top-level status, exports, active, and feature-support helpers available through `node.sal`
+  - `domain` create, add, remove, enter, exit, dispose, getActive, memberCount, snapshot, and free helpers available through `node.sal`
+  - `tests/node_test_domain_top.sa` and `node_test_domain.sa` now validate through `node.sal` only
 
 - installed main `node.sal` diagnostics_channel helper macro tranche completed:
   - `diagnostics_channel` top-level status, exports, factories, and feature-support helpers available through `node.sal`

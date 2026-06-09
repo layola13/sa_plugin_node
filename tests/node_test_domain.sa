@@ -1,6 +1,5 @@
 // SA tests for Node domain native compatibility subset
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.domain native handle helpers"():
 L_ENTRY:

@@ -1714,6 +1714,89 @@
     %out_len = load __diag_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_DOMAIN_CREATE %out_domain, %out_status
+    __domain_create_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_create(&__domain_create_slot)
+    %out_domain = load __domain_create_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_ADD %out_status, %domain, %member
+    %out_status = call @sa_node_plugin_domain_add(%domain, %member)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_REMOVE %out_status, %domain, %member
+    %out_status = call @sa_node_plugin_domain_remove(%domain, %member)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_ENTER %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_enter(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_EXIT %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_exit(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_DISPOSE %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_dispose(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_GET_ACTIVE %out_domain, %out_status
+    __domain_active_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_get_active(&__domain_active_slot)
+    %out_domain = load __domain_active_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_MEMBER_COUNT %out_count, %out_status, %domain
+    __domain_member_count_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_member_count(%domain, &__domain_member_count_slot)
+    %out_count = load __domain_member_count_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %domain
+    __domain_snapshot_ptr_slot = stack_alloc 8
+    __domain_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_snapshot_json(%domain, &__domain_snapshot_ptr_slot, &__domain_snapshot_len_slot)
+    %out_ptr = load __domain_snapshot_ptr_slot+0 as ptr
+    %out_len = load __domain_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_FREE %out_status, %domain
+    %out_status = call @sa_node_plugin_domain_free(%domain)
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_STATUS_JSON %out_ptr, %out_len
+    __domain_status_ptr_slot = stack_alloc 8
+    __domain_status_len_slot = stack_alloc 8
+    __domain_status = call @sa_node_plugin_domain_status_json(&__domain_status_ptr_slot, &__domain_status_len_slot)
+    !__domain_status
+    %out_ptr = load __domain_status_ptr_slot+0 as ptr
+    %out_len = load __domain_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __domain_exports_ptr_slot = stack_alloc 8
+    __domain_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_exports_json(&__domain_exports_ptr_slot, &__domain_exports_len_slot)
+    %out_ptr = load __domain_exports_ptr_slot+0 as ptr
+    %out_len = load __domain_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_TOP_ACTIVE_JSON %out_ptr, %out_len, %out_status
+    __domain_active_json_ptr_slot = stack_alloc 8
+    __domain_active_json_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_active_json(&__domain_active_json_ptr_slot, &__domain_active_json_len_slot)
+    %out_ptr = load __domain_active_json_ptr_slot+0 as ptr
+    %out_len = load __domain_active_json_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DOMAIN_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __domain_feature_ptr_slot = stack_alloc 8
+    __domain_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_domain_feature_support_json(&__domain_feature_ptr_slot, &__domain_feature_len_slot)
+    %out_ptr = load __domain_feature_ptr_slot+0 as ptr
+    %out_len = load __domain_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

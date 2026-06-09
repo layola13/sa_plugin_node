@@ -6292,6 +6292,47 @@ test "node plugin quic top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"server\":{\"supported\":false") != null);
 }
 
+test "node plugin dtls top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullDtlsTopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"dtls\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-dtls-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"connect\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"recv\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"handshake\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullDtlsTopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"listen\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"endpointSnapshot\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"free\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullDtlsTopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"endpointModel\":\"explicit UDP-backed DTLS-compatible endpoint handle reused from the native QUIC-style endpoint subset\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"handshakeModel\":\"not-modeled\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"serverModel\":\"not-modeled\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullDtlsTopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"connect\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"send\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"secureContext\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"server\":{\"supported\":false") != null);
+}
+
 test "node plugin quic http3 and dtls native endpoint subsets" {
     var quic_endpoint: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_quic_listen(4, "127.0.0.1", 9, 0, "h3", 2, "cubic", 5, 1500, &quic_endpoint));

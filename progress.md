@@ -63,16 +63,21 @@
 
 ## Current Helper Tranche
 
-- Scope: explicit `quic` top-level facade metadata over the existing native endpoint subset
+- Scope: explicit `dtls` top-level facade metadata over the existing native UDP endpoint subset
 - Current status: `4 / 4` helper features completed (`100.0%`)
 - Planned helpers:
-  - `quic.exports`
-  - `quic.config`
-  - `quic.featureSupport`
-  - `quic` top-level status alignment
+  - `dtls.exports`
+  - `dtls.config`
+  - `dtls.featureSupport`
+  - `dtls` top-level status alignment
 
 ## Recent Completed Helper Features
 
+- `dtls` top-level metadata tranche completed:
+  - `dtls.exports`
+  - `dtls.config`
+  - `dtls.featureSupport`
+  - `dtls` top-level status alignment
 - `quic` top-level metadata tranche completed:
   - `quic.exports`
   - `quic.config`

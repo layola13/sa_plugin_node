@@ -8491,6 +8491,57 @@
     !__dtls_status_len
 [END_MACRO]
 
+[MACRO] NODE_DTLS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __dtls_exports_ptr_slot = stack_alloc 8
+    __dtls_exports_len_slot = stack_alloc 8
+    __dtls_exports_status = call @sa_node_plugin_dtls_exports_json(&__dtls_exports_ptr_slot, &__dtls_exports_len_slot)
+    !%out_status
+    %out_status = add __dtls_exports_status, 0
+    !__dtls_exports_status
+    __dtls_exports_ptr = load __dtls_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_exports_ptr, 0
+    !__dtls_exports_ptr
+    __dtls_exports_len = load __dtls_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_exports_len, 0
+    !__dtls_exports_len
+[END_MACRO]
+
+[MACRO] NODE_DTLS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __dtls_config_ptr_slot = stack_alloc 8
+    __dtls_config_len_slot = stack_alloc 8
+    __dtls_config_status = call @sa_node_plugin_dtls_config_json(&__dtls_config_ptr_slot, &__dtls_config_len_slot)
+    !%out_status
+    %out_status = add __dtls_config_status, 0
+    !__dtls_config_status
+    __dtls_config_ptr = load __dtls_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_config_ptr, 0
+    !__dtls_config_ptr
+    __dtls_config_len = load __dtls_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_config_len, 0
+    !__dtls_config_len
+[END_MACRO]
+
+[MACRO] NODE_DTLS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __dtls_feature_ptr_slot = stack_alloc 8
+    __dtls_feature_len_slot = stack_alloc 8
+    __dtls_feature_status = call @sa_node_plugin_dtls_feature_support_json(&__dtls_feature_ptr_slot, &__dtls_feature_len_slot)
+    !%out_status
+    %out_status = add __dtls_feature_status, 0
+    !__dtls_feature_status
+    __dtls_feature_ptr = load __dtls_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_feature_ptr, 0
+    !__dtls_feature_ptr
+    __dtls_feature_len = load __dtls_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_feature_len, 0
+    !__dtls_feature_len
+[END_MACRO]
+
 [MACRO] NODE_DTLS_CONNECT %out_endpoint, %out_status, %family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port
     __dtls_connect_slot = stack_alloc 8
     __dtls_connect_status = call @sa_node_plugin_dtls_connect(%family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, &__dtls_connect_slot)

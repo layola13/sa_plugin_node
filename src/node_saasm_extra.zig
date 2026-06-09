@@ -6283,7 +6283,27 @@ pub export fn sa_node_plugin_http3_session_free(session_ptr: ?*anyopaque) u32 {
 }
 
 pub export fn sa_node_plugin_dtls_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeStatusJson(out_ptr, out_len, "dtls", true, "native UDP endpoint/session metadata and datagram transport helpers are exposed; DTLS handshake and record-layer crypto are not modeled");
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"dtls\",\"supported\":true,\"mode\":\"top-level-native-dtls-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &dtls_export_names) catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"connect\":true,\"listen\":true,\"endpointSnapshot\":true,\"send\":true,\"recv\":true,\"close\":true,\"free\":true,\"handshake\":false,\"secureContext\":false,\"server\":false},\"capabilities\":[\"explicit UDP-backed DTLS-compatible endpoint handles for connect and listen\",\"endpoint snapshot metadata plus datagram send and receive helpers\",\"native close and free lifecycle helpers over the reused endpoint handle model\"],\"limitations\":[\"no DTLS handshake, certificate exchange, or record-layer encryption semantics are modeled\",\"no JavaScript server, socket, or event-emitter object model is exposed\",\"send and recv operate on the underlying UDP transport without DTLS packet processing\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dtls_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &dtls_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_dtls_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"endpointModel\":\"explicit UDP-backed DTLS-compatible endpoint handle reused from the native QUIC-style endpoint subset\",\"transport\":\"underlying native UDP socket with explicit host and port metadata\",\"handshakeModel\":\"not-modeled\",\"securityModel\":\"record-layer crypto and certificate exchange are not modeled\",\"serverModel\":\"not-modeled\"}");
+}
+
+pub export fn sa_node_plugin_dtls_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"connect\":{\"supported\":true,\"mode\":\"allocate and connect an explicit UDP-backed DTLS-compatible endpoint handle\"},\"listen\":{\"supported\":true,\"mode\":\"allocate and bind an explicit UDP-backed DTLS-compatible endpoint handle for local listening metadata\"},\"endpointSnapshot\":{\"supported\":true,\"mode\":\"native endpoint metadata snapshot JSON\"},\"send\":{\"supported\":true,\"mode\":\"explicit datagram send on the underlying UDP transport\",\"limitations\":[\"does not apply DTLS record encryption or handshake framing\"]},\"recv\":{\"supported\":true,\"mode\":\"explicit datagram receive with host and port metadata from the underlying UDP transport\",\"limitations\":[\"does not parse DTLS records\"]},\"close\":{\"supported\":true,\"mode\":\"close the underlying UDP socket on the explicit endpoint handle\"},\"free\":{\"supported\":true,\"mode\":\"release the explicit native endpoint handle\"},\"handshake\":{\"supported\":false,\"reason\":\"DTLS handshake, certificate exchange, and negotiated cipher state are not modeled\"},\"secureContext\":{\"supported\":false,\"reason\":\"DTLS secure-context and certificate object model is not modeled\"},\"server\":{\"supported\":false,\"reason\":\"JavaScript DTLS server classes and event-emitter semantics are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_dtls_connect(family: u32, remote_host_ptr: ?[*]const u8, remote_host_len: u64, remote_port: u64, local_host_ptr: ?[*]const u8, local_host_len: u64, local_port: u64, out_endpoint: ?*?*anyopaque) u32 {
@@ -6632,6 +6652,16 @@ const quic_export_names = [_][]const u8{
     "endpointHasRef",
     "endpointClose",
     "endpointFree",
+};
+
+const dtls_export_names = [_][]const u8{
+    "connect",
+    "listen",
+    "endpointSnapshot",
+    "send",
+    "recv",
+    "close",
+    "free",
 };
 
 const http3_export_names = [_][]const u8{

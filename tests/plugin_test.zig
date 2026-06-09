@@ -3037,6 +3037,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"allowedNodeEnvironmentFlags\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"emitWarning\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"chdir\":{\"supported\":true") != null);
 
@@ -3087,6 +3088,18 @@ test "node plugin process top-level facade helpers" {
     var has_fake_flag: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_allowed_node_environment_flags_has("--definitely-not-a-node-flag".ptr, 28, &has_fake_flag));
     try std.testing.expectEqual(@as(u64, 0), has_fake_flag);
+
+    try std.testing.expectEqual(@as(c_int, 0), setenv("NODE_OPTIONS", "--trace-deprecation", 1));
+    defer _ = unsetenv("NODE_OPTIONS");
+    var warning_ptr: ?[*]const u8 = null;
+    var warning_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_emit_warning_json("careful".ptr, 7, "DeprecationWarning".ptr, 18, "DEP9999".ptr, 7, "extra detail".ptr, 12, &warning_ptr, &warning_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(warning_ptr, warning_len);
+    const warning_json = (warning_ptr orelse return error.NullProcessEmitWarning)[0..@intCast(warning_len)];
+    try std.testing.expect(std.mem.indexOf(u8, warning_json, "\"type\":\"DeprecationWarning\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, warning_json, "\"code\":\"DEP9999\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, warning_json, "\"trace\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, warning_json, "\"shouldEmit\":true") != null);
 
     var release_ptr: ?[*]const u8 = null;
     var release_len: u64 = 0;

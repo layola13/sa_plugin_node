@@ -615,11 +615,11 @@ pub export fn sa_node_plugin_process_exports_json(out_ptr: ?*?[*]const u8, out_l
 }
 
 pub export fn sa_node_plugin_process_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"identityModel\":\"native pid, ppid, arch, platform, uid, gid, cwd, chdir, uptime, argv, argv0, execPath, execArgv, version, release, and versions helpers\",\"commandLineModel\":\"native host argv0 plus resolved executable path and recognized Node-style execArgv option snapshots\",\"allowedFlagsModel\":\"native JSON snapshot and membership checks over the plugin's known NODE_OPTIONS-compatible flag set\",\"memoryModel\":\"native memoryUsage, resourceUsage, availableMemory, constrainedMemory, and features JSON snapshots\",\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\",\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\",\"permissionModel\":\"native POSIX umask getter/setter helper\",\"objectModel\":\"not-modeled for EventEmitter process object semantics, stdio stream instances, or nextTick queues\"}");
+    return writeOwnedString(out_ptr, out_len, "{\"identityModel\":\"native pid, ppid, arch, platform, uid, gid, cwd, chdir, uptime, argv, argv0, execPath, execArgv, version, release, and versions helpers\",\"commandLineModel\":\"native host argv0 plus resolved executable path and recognized Node-style execArgv option snapshots\",\"allowedFlagsModel\":\"native JSON snapshot and membership checks over the plugin's known NODE_OPTIONS-compatible flag set\",\"warningModel\":\"emitWarning returns native warning JSON using existing deprecation and no-warning flag introspection rather than JavaScript Warning objects or process events\",\"memoryModel\":\"native memoryUsage, resourceUsage, availableMemory, constrainedMemory, and features JSON snapshots\",\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\",\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\",\"permissionModel\":\"native POSIX umask getter/setter helper\",\"objectModel\":\"not-modeled for EventEmitter process object semantics, stdio stream instances, or nextTick queues\"}");
 }
 
 pub export fn sa_node_plugin_process_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"pid\":{\"supported\":true,\"mode\":\"native process pid helper\"},\"ppid\":{\"supported\":true,\"mode\":\"native parent pid helper\"},\"cwd\":{\"supported\":true,\"mode\":\"native cwd string helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native process uptime helper in seconds\"},\"hrtime\":{\"supported\":true,\"mode\":\"native monotonic hrtime bigint helper\"},\"memoryUsage\":{\"supported\":true,\"mode\":\"native process memory usage JSON snapshot\"},\"argv\":{\"supported\":true,\"mode\":\"native argv JSON snapshot\"},\"argv0\":{\"supported\":true,\"mode\":\"native original argv[0] string snapshot\"},\"execArgv\":{\"supported\":true,\"mode\":\"native JSON snapshot of recognized Node-style options before the entrypoint\",\"limitations\":[\"does not execute V8 or JavaScript loader flags\"]},\"execPath\":{\"supported\":true,\"mode\":\"native resolved executable path snapshot\"},\"version\":{\"supported\":true,\"mode\":\"native process.version string helper\"},\"versions\":{\"supported\":true,\"mode\":\"native versions JSON snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.versions object\"]},\"env\":{\"supported\":true,\"mode\":\"explicit native env get, set, delete, and snapshot helpers\",\"limitations\":[\"not exposed as a live JavaScript process.env proxy object\"]},\"getuid\":{\"supported\":true,\"mode\":\"native uid helper\"},\"getgid\":{\"supported\":true,\"mode\":\"native gid helper\"},\"kill\":{\"supported\":true,\"mode\":\"real POSIX signal delivery by numeric or named signal\"},\"resourceUsage\":{\"supported\":true,\"mode\":\"native getrusage-based JSON snapshot\"},\"availableMemory\":{\"supported\":true,\"mode\":\"native host and cgroup-aware available-memory helper\"},\"constrainedMemory\":{\"supported\":true,\"mode\":\"native cgroup memory limit helper\"},\"features\":{\"supported\":true,\"mode\":\"native build capability JSON snapshot\"},\"exit\":{\"supported\":true,\"mode\":\"explicit native process exit helper\",\"limitations\":[\"terminates the host process immediately rather than coordinating JavaScript exit events\"]},\"arch\":{\"supported\":true,\"mode\":\"native process.arch string helper aliased from host arch reporting\"},\"platform\":{\"supported\":true,\"mode\":\"native process.platform string helper aliased from host platform reporting\"},\"release\":{\"supported\":true,\"mode\":\"native process.release JSON metadata snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.release object\"]},\"allowedNodeEnvironmentFlags\":{\"supported\":true,\"mode\":\"native JSON snapshot and membership helper over the plugin's known NODE_OPTIONS-compatible flags\",\"limitations\":[\"not exposed as a JavaScript Set instance\",\"does not include arbitrary V8 --v8-options coverage beyond the plugin's recognized host-compatibility flags\"]},\"stdin\":{\"supported\":false,\"reason\":\"live stdin stream object semantics are not modeled\"},\"stdout\":{\"supported\":false,\"reason\":\"live stdout stream object semantics are not modeled\"},\"stderr\":{\"supported\":false,\"reason\":\"live stderr stream object semantics are not modeled\"},\"nextTick\":{\"supported\":false,\"reason\":\"JavaScript nextTick queue semantics require runtime integration\"},\"emitWarning\":{\"supported\":false,\"reason\":\"JavaScript warning event and Error object semantics are not modeled\"},\"dlopen\":{\"supported\":false,\"reason\":\"process.dlopen and native module loader semantics are not modeled\"},\"umask\":{\"supported\":true,\"mode\":\"native POSIX umask getter/setter helper returning the previous mask\",\"limitations\":[\"changes host process umask when set_mask is nonzero\"]},\"chdir\":{\"supported\":true,\"mode\":\"native POSIX chdir helper\",\"limitations\":[\"changes host process cwd on success\"]}}");
+    return writeOwnedString(out_ptr, out_len, "{\"pid\":{\"supported\":true,\"mode\":\"native process pid helper\"},\"ppid\":{\"supported\":true,\"mode\":\"native parent pid helper\"},\"cwd\":{\"supported\":true,\"mode\":\"native cwd string helper\"},\"uptime\":{\"supported\":true,\"mode\":\"native process uptime helper in seconds\"},\"hrtime\":{\"supported\":true,\"mode\":\"native monotonic hrtime bigint helper\"},\"memoryUsage\":{\"supported\":true,\"mode\":\"native process memory usage JSON snapshot\"},\"argv\":{\"supported\":true,\"mode\":\"native argv JSON snapshot\"},\"argv0\":{\"supported\":true,\"mode\":\"native original argv[0] string snapshot\"},\"execArgv\":{\"supported\":true,\"mode\":\"native JSON snapshot of recognized Node-style options before the entrypoint\",\"limitations\":[\"does not execute V8 or JavaScript loader flags\"]},\"execPath\":{\"supported\":true,\"mode\":\"native resolved executable path snapshot\"},\"version\":{\"supported\":true,\"mode\":\"native process.version string helper\"},\"versions\":{\"supported\":true,\"mode\":\"native versions JSON snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.versions object\"]},\"env\":{\"supported\":true,\"mode\":\"explicit native env get, set, delete, and snapshot helpers\",\"limitations\":[\"not exposed as a live JavaScript process.env proxy object\"]},\"getuid\":{\"supported\":true,\"mode\":\"native uid helper\"},\"getgid\":{\"supported\":true,\"mode\":\"native gid helper\"},\"kill\":{\"supported\":true,\"mode\":\"real POSIX signal delivery by numeric or named signal\"},\"resourceUsage\":{\"supported\":true,\"mode\":\"native getrusage-based JSON snapshot\"},\"availableMemory\":{\"supported\":true,\"mode\":\"native host and cgroup-aware available-memory helper\"},\"constrainedMemory\":{\"supported\":true,\"mode\":\"native cgroup memory limit helper\"},\"features\":{\"supported\":true,\"mode\":\"native build capability JSON snapshot\"},\"exit\":{\"supported\":true,\"mode\":\"explicit native process exit helper\",\"limitations\":[\"terminates the host process immediately rather than coordinating JavaScript exit events\"]},\"arch\":{\"supported\":true,\"mode\":\"native process.arch string helper aliased from host arch reporting\"},\"platform\":{\"supported\":true,\"mode\":\"native process.platform string helper aliased from host platform reporting\"},\"release\":{\"supported\":true,\"mode\":\"native process.release JSON metadata snapshot\",\"limitations\":[\"not exposed as a live JavaScript process.release object\"]},\"allowedNodeEnvironmentFlags\":{\"supported\":true,\"mode\":\"native JSON snapshot and membership helper over the plugin's known NODE_OPTIONS-compatible flags\",\"limitations\":[\"not exposed as a JavaScript Set instance\",\"does not include arbitrary V8 --v8-options coverage beyond the plugin's recognized host-compatibility flags\"]},\"stdin\":{\"supported\":false,\"reason\":\"live stdin stream object semantics are not modeled\"},\"stdout\":{\"supported\":false,\"reason\":\"live stdout stream object semantics are not modeled\"},\"stderr\":{\"supported\":false,\"reason\":\"live stderr stream object semantics are not modeled\"},\"nextTick\":{\"supported\":false,\"reason\":\"JavaScript nextTick queue semantics require runtime integration\"},\"emitWarning\":{\"supported\":true,\"mode\":\"native warning JSON helper over message, type, code, and detail text\",\"limitations\":[\"does not emit JavaScript process warning events or Error object identity\",\"stack traces and ctor-based truncation are not modeled\"]},\"dlopen\":{\"supported\":false,\"reason\":\"process.dlopen and native module loader semantics are not modeled\"},\"umask\":{\"supported\":true,\"mode\":\"native POSIX umask getter/setter helper returning the previous mask\",\"limitations\":[\"changes host process umask when set_mask is nonzero\"]},\"chdir\":{\"supported\":true,\"mode\":\"native POSIX chdir helper\",\"limitations\":[\"changes host process cwd on success\"]}}");
 }
 
 const process_allowed_node_environment_flags = [_][]const u8{
@@ -694,6 +694,68 @@ pub export fn sa_node_plugin_process_allowed_node_environment_flags_has(flag_ptr
     const flag = if (flag_len == 0) "" else (flag_ptr orelse return fail())[0..flag_len];
     out_bool.?.* = if (processAllowedNodeEnvironmentFlagsHas(flag)) 1 else 0;
     return 0;
+}
+
+pub export fn sa_node_plugin_process_emit_warning_json(
+    warning_ptr: ?[*]const u8,
+    warning_len: u64,
+    type_ptr: ?[*]const u8,
+    type_len: u64,
+    code_ptr: ?[*]const u8,
+    code_len: u64,
+    detail_ptr: ?[*]const u8,
+    detail_len: u64,
+    out_ptr: ?*?[*]const u8,
+    out_len: ?*u64,
+) u32 {
+    const warning = if (warning_len == 0) return fail() else (warning_ptr orelse return fail())[0..warning_len];
+    const warning_type = if (type_len == 0) "Warning" else (type_ptr orelse return fail())[0..type_len];
+    const code = if (code_len == 0) null else (code_ptr orelse return fail())[0..code_len];
+    const detail = if (detail_len == 0) null else (detail_ptr orelse return fail())[0..detail_len];
+    const is_deprecation = std.mem.eql(u8, warning_type, "DeprecationWarning");
+    const suppressed = deprecatedNoWarningsInternal() or (is_deprecation and deprecatedNoDeprecationInternal());
+    const should_throw = is_deprecation and deprecatedThrowDeprecationInternal();
+    const should_trace = is_deprecation and deprecatedTraceDeprecationInternal();
+
+    if (is_deprecation) {
+        if (code) |deprecation_code| {
+            var ignored_ptr: ?[*]const u8 = null;
+            var ignored_len: u64 = 0;
+            if (sa_node_plugin_deprecated_record_json(deprecation_code.ptr, deprecation_code.len, warning.ptr, warning.len, &ignored_ptr, &ignored_len) != 0) return fail();
+            if (ignored_ptr) |p| _ = base.sa_node_plugin_free_buffer(p, ignored_len);
+        }
+    }
+
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    out.appendSlice("{\"type\":") catch return fail();
+    appendJsonString(&out, warning_type) catch return fail();
+    out.appendSlice(",\"message\":") catch return fail();
+    appendJsonString(&out, warning) catch return fail();
+    out.appendSlice(",\"code\":") catch return fail();
+    if (code) |value| {
+        appendJsonString(&out, value) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"detail\":") catch return fail();
+    if (detail) |value| {
+        appendJsonString(&out, value) catch return fail();
+    } else {
+        out.appendSlice("null") catch return fail();
+    }
+    out.appendSlice(",\"suppressed\":") catch return fail();
+    out.appendSlice(if (suppressed) "true" else "false") catch return fail();
+    out.appendSlice(",\"shouldEmit\":") catch return fail();
+    out.appendSlice(if (!suppressed) "true" else "false") catch return fail();
+    out.appendSlice(",\"shouldThrow\":") catch return fail();
+    out.appendSlice(if (should_throw) "true" else "false") catch return fail();
+    out.appendSlice(",\"trace\":") catch return fail();
+    out.appendSlice(if (should_trace) "true" else "false") catch return fail();
+    out.appendSlice(",\"flags\":") catch return fail();
+    deprecatedAppendFlagsObject(&out) catch return fail();
+    out.append('}') catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_process_exec_path(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

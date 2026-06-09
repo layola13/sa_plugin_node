@@ -2379,6 +2379,23 @@
     !__process_allowed_flags_has_value
 [END_MACRO]
 
+[MACRO] NODE_PROCESS_EMIT_WARNING_JSON %out_ptr, %out_len, %out_status, %warning_ptr, %warning_len, %type_ptr, %type_len, %code_ptr, %code_len, %detail_ptr, %detail_len
+    __process_emit_warning_ptr_slot = stack_alloc 8
+    __process_emit_warning_len_slot = stack_alloc 8
+    __process_emit_warning_status = call @sa_node_plugin_process_emit_warning_json(%warning_ptr, %warning_len, %type_ptr, %type_len, %code_ptr, %code_len, %detail_ptr, %detail_len, &__process_emit_warning_ptr_slot, &__process_emit_warning_len_slot)
+    !%out_status
+    %out_status = add __process_emit_warning_status, 0
+    !__process_emit_warning_status
+    __process_emit_warning_ptr = load __process_emit_warning_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_emit_warning_ptr, 0
+    !__process_emit_warning_ptr
+    __process_emit_warning_len = load __process_emit_warning_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_emit_warning_len, 0
+    !__process_emit_warning_len
+[END_MACRO]
+
 [MACRO] NODE_OS_STATUS_JSON %out_ptr, %out_len, %out_status
     __os_top_status_ptr_slot = stack_alloc 8
     __os_top_status_len_slot = stack_alloc 8

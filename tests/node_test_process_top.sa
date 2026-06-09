@@ -3,6 +3,10 @@
 @import "../node_extra.sal"
 
 @const S_INSPECT = utf8:"inspect=127.0.0.1:9229"
+@const S_WARN = utf8:"careful"
+@const S_WARN_TYPE = utf8:"DeprecationWarning"
+@const S_WARN_CODE = utf8:"DEP9999"
+@const S_WARN_DETAIL = utf8:"extra detail"
 
 @test "node.process top level facade helpers"():
 L_ENTRY:
@@ -94,9 +98,23 @@ L_ALLOWED_HAS:
 L_ALLOWED_VALUE:
     !ok13
     ok14 = eq allowed_has, 1
-    br ok14 -> L_FREE, L_ERR_ALLOWED_VALUE
-L_FREE:
+    br ok14 -> L_EMIT_WARNING, L_ERR_ALLOWED_VALUE
+L_EMIT_WARNING:
     !ok14
+    warning_ptr = add 0, 0
+    warning_len = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_PROCESS_EMIT_WARNING_JSON warning_ptr, warning_len, s10, S_WARN, 7, S_WARN_TYPE, 18, S_WARN_CODE, 7, S_WARN_DETAIL, 12
+    ok15 = eq s10, 0
+    br ok15 -> L_WARNING_LEN, L_ERR_EMIT_WARNING
+L_WARNING_LEN:
+    !ok15
+    ok16 = gt warning_len, 0
+    br ok16 -> L_FREE, L_ERR_WARNING_LEN
+L_FREE:
+    !ok16
+    !s10
+    free_warning = call @sa_node_plugin_free_buffer(warning_ptr, warning_len)
     !s9
     !allowed_has
     free_allowed = call @sa_node_plugin_free_buffer(allowed_ptr, allowed_len)
@@ -114,7 +132,10 @@ L_FREE:
     !free_exec_path
     !free_argv0
     !free_exec_argv
+    !free_warning
     !free_allowed
+    !warning_len
+    !warning_ptr
     !s8
     !allowed_len
     !allowed_ptr
@@ -182,3 +203,9 @@ L_ERR_ALLOWED_HAS:
 L_ERR_ALLOWED_VALUE:
     !ok14
     panic(114)
+L_ERR_EMIT_WARNING:
+    !ok15
+    panic(115)
+L_ERR_WARNING_LEN:
+    !ok16
+    panic(116)

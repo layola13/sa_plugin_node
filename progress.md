@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `sys` deprecated util-alias parity for `inherits`
+- Scope: public non-VM/V8 `process` warning parity for `emitWarning`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `sys.inherits`
+  - `process.emitWarning`
 
 ## Recent Completed Helper Features
 
+- `process` warning helper tranche completed:
+  - `process.emitWarning`
 - `sys` helper tranche completed:
   - `sys.inherits`
 - `process` command-line flag helper tranche completed:

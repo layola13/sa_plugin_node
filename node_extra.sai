@@ -276,6 +276,7 @@
 @extern sa_node_plugin_process_exec_argv_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_allowed_node_environment_flags_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_process_allowed_node_environment_flags_has(flag_ptr: ptr, flag_len: u64, &out_bool: u64) -> u64
+@extern sa_node_plugin_process_emit_warning_json(warning_ptr: ptr, warning_len: u64, type_ptr: ptr, type_len: u64, code_ptr: ptr, code_len: u64, detail_ptr: ptr, detail_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_exports_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_os_config_json(&out_ptr: ptr, &out_len: u64) -> u64

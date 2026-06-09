@@ -165,12 +165,16 @@
 @extern sa_node_plugin_net_blocklist_is_blocklist(blocklist: ptr, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_free(blocklist: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_add_address(blocklist: ptr, &address: ptr, address_len: u64) -> u32
+@extern sa_node_plugin_net_blocklist_add_address_family(blocklist: ptr, &address: ptr, address_len: u64, &family: ptr, family_len: u64) -> u32
 @extern sa_node_plugin_net_blocklist_add_address_handle(blocklist: ptr, addr: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_add_range(blocklist: ptr, &start: ptr, start_len: u64, &end: ptr, end_len: u64) -> u32
+@extern sa_node_plugin_net_blocklist_add_range_family(blocklist: ptr, &start: ptr, start_len: u64, &end: ptr, end_len: u64, &family: ptr, family_len: u64) -> u32
 @extern sa_node_plugin_net_blocklist_add_range_handle(blocklist: ptr, start: ptr, end: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_add_subnet(blocklist: ptr, &network: ptr, network_len: u64, prefix: u32) -> u32
+@extern sa_node_plugin_net_blocklist_add_subnet_family(blocklist: ptr, &network: ptr, network_len: u64, prefix: u32, &family: ptr, family_len: u64) -> u32
 @extern sa_node_plugin_net_blocklist_add_subnet_handle(blocklist: ptr, network: ptr, prefix: u32) -> u32
 @extern sa_node_plugin_net_blocklist_check(blocklist: ptr, &address: ptr, address_len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_net_blocklist_check_family(blocklist: ptr, &address: ptr, address_len: u64, &family: ptr, family_len: u64, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_check_handle(blocklist: ptr, addr: ptr, &out_bool: ptr) -> u32
 @extern sa_node_plugin_net_blocklist_rules(blocklist: ptr, &out_ptr: ptr, &out_len: ptr) -> u32
 @extern sa_node_plugin_net_write(socket: ptr, &data: ptr, data_len: u64) -> u32

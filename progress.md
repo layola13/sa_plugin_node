@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: net.SocketAddress.parse legacy IPv4 normalization compatibility
+- Scope: net.BlockList family argument compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net.SocketAddress.parse` accepts common Node legacy IPv4 URL normalization forms while keeping `SocketAddress` construction strict
+  - `net.BlockList` string add/check helpers support Node-style `ipv4`/`ipv6` family arguments and IPv4-mapped IPv6 normalization
 
 ## Recent Completed Helper Features
+
+- network net.BlockList family argument compatibility completed:
+  - Added family-aware native helpers and `node.sal` macros for `BlockList.addAddress`, `addRange`, `addSubnet`, and `check`
+  - Default string BlockList operations now follow Node's default `ipv4` behavior, while explicit `ipv6` operations reuse the existing native address parser
+  - IPv4-mapped IPv6 inputs such as `::ffff:1.1.1.2` normalize to IPv4 rules/checks, matching Node BlockList behavior
+  - `tests/plugin_test.zig` and `tests/node_test_net_extra.sa` cover explicit IPv6, IPv4-mapped IPv6, and default-family miss behavior
 
 - network net.SocketAddress.parse legacy IPv4 normalization compatibility completed:
   - Added parse-only legacy IPv4 normalization for Node-compatible inputs such as `192.168.257:1`, `256`, `999999999:12`, `0xffffffff`, and `0x.0x.0`

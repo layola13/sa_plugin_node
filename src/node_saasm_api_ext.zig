@@ -478,7 +478,8 @@ fn tlsAddressBlocked(allocator: std.mem.Allocator, blocklist_ptr: ?*anyopaque, a
     const host = tlsAddressToOwnedHost(allocator, address) catch return false;
     defer allocator.free(host);
     var blocked: u64 = 0;
-    if (base.sa_node_plugin_net_blocklist_check(ptr, host.ptr, host.len, &blocked) != 0) return false;
+    const family = if (address.any.family == std.posix.AF.INET6) "ipv6" else "ipv4";
+    if (base.sa_node_plugin_net_blocklist_check_family(ptr, host.ptr, host.len, family.ptr, family.len, &blocked) != 0) return false;
     return blocked != 0;
 }
 

@@ -109,6 +109,11 @@ L_ENTRY:
 @const S_SUBNET_HIT = utf8:"192.168.1.44"
 @const S_PUBLIC = utf8:"8.8.8.8"
 @const S_IPV4 = utf8:"ipv4"
+@const S_IPV6 = utf8:"ipv6"
+@const S_MAPPED_IPV6 = utf8:"::ffff:1.1.1.2"
+@const S_MAPPED_IPV4 = utf8:"1.1.1.2"
+@const S_IPV6_SUBNET = utf8:"2001:db8::"
+@const S_IPV6_SUBNET_HIT = utf8:"2001:db8::1"
 @const S_SOCKET_LOOP = utf8:"127.0.0.1:8080"
 @const S_SOCKET_RANGE_START = utf8:"10.0.0.10:0"
 @const S_SOCKET_RANGE_END = utf8:"10.0.0.20:0"
@@ -320,6 +325,60 @@ L_BLOCKLIST_OK:
     return
 L_ERR_BLOCKLIST_IS:
     !blocklistOk
+    panic(103)
+
+@test "node.net blocklist family arguments"():
+L_ENTRY:
+    bl = add 0, 0
+    sNew = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_NEW bl, sNew
+    sMapped = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_ADDRESS_FAMILY bl, S_MAPPED_IPV6, 14, S_IPV6, 4, sMapped
+    mapped4 = add 0, 0
+    sMapped4 = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_MAPPED_IPV4, 7, mapped4, sMapped4
+    mapped4Ok = eq mapped4, 1
+    br mapped4Ok -> L_SUBNET, L_ERR_MAPPED4
+L_SUBNET:
+    !mapped4Ok
+    sSubnet6 = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_ADD_SUBNET_FAMILY bl, S_IPV6_SUBNET, 10, 32, S_IPV6, 4, sSubnet6
+    hit6Default = add 0, 0
+    sHit6Default = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK bl, S_IPV6_SUBNET_HIT, 11, hit6Default, sHit6Default
+    defaultOk = eq hit6Default, 0
+    br defaultOk -> L_CHECK_FAMILY, L_ERR_DEFAULT_IPV6
+L_CHECK_FAMILY:
+    !defaultOk
+    hit6Family = add 0, 0
+    sHit6Family = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_CHECK_FAMILY bl, S_IPV6_SUBNET_HIT, 11, S_IPV6, 4, hit6Family, sHit6Family
+    familyOk = eq hit6Family, 1
+    br familyOk -> L_CLOSE, L_ERR_FAMILY_IPV6
+L_CLOSE:
+    !familyOk
+    sFree = add 0, 0
+    EXPAND NODE_NET_BLOCKLIST_FREE bl, sFree
+    !sFree
+    !sHit6Family
+    !hit6Family
+    !sHit6Default
+    !hit6Default
+    !sSubnet6
+    !sMapped4
+    !mapped4
+    !sMapped
+    !sNew
+    !bl
+    return
+L_ERR_MAPPED4:
+    !mapped4Ok
+    panic(103)
+L_ERR_DEFAULT_IPV6:
+    !defaultOk
+    panic(103)
+L_ERR_FAMILY_IPV6:
+    !familyOk
     panic(103)
 
 @test "node.net tcp blocklist abi"():

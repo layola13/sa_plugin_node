@@ -5165,26 +5165,46 @@ test "node plugin net blocklist matches address range and subnet rules" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_new(&blocklist));
     defer _ = plugin.sa_node_plugin_net_blocklist_free(blocklist);
 
+    const ipv6 = "ipv6";
+    const mapped_ipv6 = "::ffff:1.1.1.2";
+    const explicit_ipv6 = "8592:757c:efae:4e45:fb5d:d62a:0d00:8e17";
+
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_address(blocklist, "127.0.0.1", 9));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_address_family(blocklist, explicit_ipv6.ptr, explicit_ipv6.len, ipv6.ptr, ipv6.len));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_address_family(blocklist, mapped_ipv6.ptr, mapped_ipv6.len, ipv6.ptr, ipv6.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_range(blocklist, "10.0.0.10", 9, "10.0.0.20", 9));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_range_family(blocklist, "::1", 3, "::f", 3, ipv6.ptr, ipv6.len));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_subnet(blocklist, "192.168.1.0", 11, 24));
-    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_subnet(blocklist, "2001:db8::", 10, 32));
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_add_subnet_family(blocklist, "2001:db8::", 10, 32, ipv6.ptr, ipv6.len));
 
     var blocked: u64 = 99;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "127.0.0.1", 9, &blocked));
     try std.testing.expectEqual(@as(u64, 1), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, explicit_ipv6.ptr, explicit_ipv6.len, &blocked));
+    try std.testing.expectEqual(@as(u64, 0), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check_family(blocklist, explicit_ipv6.ptr, explicit_ipv6.len, ipv6.ptr, ipv6.len, &blocked));
+    try std.testing.expectEqual(@as(u64, 1), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "1.1.1.2", 7, &blocked));
+    try std.testing.expectEqual(@as(u64, 1), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check_family(blocklist, mapped_ipv6.ptr, mapped_ipv6.len, ipv6.ptr, ipv6.len, &blocked));
+    try std.testing.expectEqual(@as(u64, 1), blocked);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "10.0.0.15", 9, &blocked));
+    try std.testing.expectEqual(@as(u64, 1), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check_family(blocklist, "::a", 3, ipv6.ptr, ipv6.len, &blocked));
     try std.testing.expectEqual(@as(u64, 1), blocked);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "192.168.1.44", 12, &blocked));
     try std.testing.expectEqual(@as(u64, 1), blocked);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "2001:db8::1", 11, &blocked));
+    try std.testing.expectEqual(@as(u64, 0), blocked);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check_family(blocklist, "2001:db8::1", 11, ipv6.ptr, ipv6.len, &blocked));
     try std.testing.expectEqual(@as(u64, 1), blocked);
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "8.8.8.8", 7, &blocked));
     try std.testing.expectEqual(@as(u64, 0), blocked);
 
     try std.testing.expect(plugin.sa_node_plugin_net_blocklist_add_range(blocklist, "10.0.0.20", 9, "10.0.0.10", 9) != 0);
     try std.testing.expect(plugin.sa_node_plugin_net_blocklist_add_subnet(blocklist, "192.168.1.0", 11, 33) != 0);
-    try std.testing.expect(plugin.sa_node_plugin_net_blocklist_check(blocklist, "bad-ip", 6, &blocked) != 0);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_blocklist_check(blocklist, "bad-ip", 6, &blocked));
+    try std.testing.expectEqual(@as(u64, 0), blocked);
     try std.testing.expect(plugin.sa_node_plugin_net_blocklist_check(blocklist, "127.0.0.1", 9, null) != 0);
 
     var rules_ptr: ?[*]const u8 = null;
@@ -5193,7 +5213,10 @@ test "node plugin net blocklist matches address range and subnet rules" {
     defer _ = plugin.sa_node_plugin_free_buffer(rules_ptr, rules_len);
     const rules = (rules_ptr orelse return error.NullBlockListRules)[0..@intCast(rules_len)];
     try std.testing.expect(std.mem.indexOf(u8, rules, "Address: IPv4 127.0.0.1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rules, "Address: IPv6 8592:757c:efae:4e45:fb5d:d62a:d00:8e17") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rules, "Address: IPv4 1.1.1.2") != null);
     try std.testing.expect(std.mem.indexOf(u8, rules, "Range: IPv4 10.0.0.10-10.0.0.20") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rules, "Range: IPv6 ::1-::f") != null);
     try std.testing.expect(std.mem.indexOf(u8, rules, "Subnet: IPv4 192.168.1.0/24") != null);
     try std.testing.expect(std.mem.indexOf(u8, rules, "Subnet: IPv6 2001:db8::/32") != null);
 }

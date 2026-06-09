@@ -2798,12 +2798,20 @@
     %out_status = call @sa_node_plugin_net_blocklist_add_address(%blocklist, &%address, %address_len)
 [END_MACRO]
 
+[MACRO] NODE_NET_BLOCKLIST_ADD_ADDRESS_FAMILY %blocklist, %address, %address_len, %family, %family_len, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_address_family(%blocklist, &%address, %address_len, &%family, %family_len)
+[END_MACRO]
+
 [MACRO] NODE_NET_BLOCKLIST_ADD_ADDRESS_HANDLE %blocklist, %addr, %out_status
     %out_status = call @sa_node_plugin_net_blocklist_add_address_handle(%blocklist, %addr)
 [END_MACRO]
 
 [MACRO] NODE_NET_BLOCKLIST_ADD_RANGE %blocklist, %start, %start_len, %end, %end_len, %out_status
     %out_status = call @sa_node_plugin_net_blocklist_add_range(%blocklist, &%start, %start_len, &%end, %end_len)
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_ADD_RANGE_FAMILY %blocklist, %start, %start_len, %end, %end_len, %family, %family_len, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_range_family(%blocklist, &%start, %start_len, &%end, %end_len, &%family, %family_len)
 [END_MACRO]
 
 [MACRO] NODE_NET_BLOCKLIST_ADD_RANGE_HANDLE %blocklist, %start, %end, %out_status
@@ -2814,6 +2822,10 @@
     %out_status = call @sa_node_plugin_net_blocklist_add_subnet(%blocklist, &%network, %network_len, %prefix)
 [END_MACRO]
 
+[MACRO] NODE_NET_BLOCKLIST_ADD_SUBNET_FAMILY %blocklist, %network, %network_len, %prefix, %family, %family_len, %out_status
+    %out_status = call @sa_node_plugin_net_blocklist_add_subnet_family(%blocklist, &%network, %network_len, %prefix, &%family, %family_len)
+[END_MACRO]
+
 [MACRO] NODE_NET_BLOCKLIST_ADD_SUBNET_HANDLE %blocklist, %network, %prefix, %out_status
     %out_status = call @sa_node_plugin_net_blocklist_add_subnet_handle(%blocklist, %network, %prefix)
 [END_MACRO]
@@ -2822,6 +2834,12 @@
     __n_blocklist_check_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_net_blocklist_check(%blocklist, &%address, %address_len, &__n_blocklist_check_slot)
     %out_bool = load __n_blocklist_check_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_BLOCKLIST_CHECK_FAMILY %blocklist, %address, %address_len, %family, %family_len, %out_bool, %out_status
+    __n_blocklist_check_family_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_blocklist_check_family(%blocklist, &%address, %address_len, &%family, %family_len, &__n_blocklist_check_family_slot)
+    %out_bool = load __n_blocklist_check_family_slot+0 as u64
 [END_MACRO]
 
 [MACRO] NODE_NET_BLOCKLIST_CHECK_HANDLE %blocklist, %addr, %out_bool, %out_status

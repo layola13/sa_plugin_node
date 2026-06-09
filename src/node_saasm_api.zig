@@ -2324,6 +2324,35 @@ fn blockListParseAddressForFamily(allocator: std.mem.Allocator, address: []const
     }
 }
 
+fn blockListIsIpv4MappedIpv6(bytes: [16]u8) bool {
+    var i: usize = 0;
+    while (i < 10) : (i += 1) {
+        if (bytes[i] != 0) return false;
+    }
+    return bytes[10] == 0xff and bytes[11] == 0xff;
+}
+
+fn blockListParseAddressForNodeFamily(allocator: std.mem.Allocator, address: []const u8, family: BlockListFamily) !BlockListAddress {
+    const parsed = try blockListParseAddressForFamily(allocator, address, family);
+    if (family != .ipv6 or !blockListIsIpv4MappedIpv6(parsed.bytes)) return parsed;
+
+    defer allocator.free(parsed.text);
+    const canonical = try std.fmt.allocPrint(allocator, "{d}.{d}.{d}.{d}", .{
+        parsed.bytes[12],
+        parsed.bytes[13],
+        parsed.bytes[14],
+        parsed.bytes[15],
+    });
+    defer allocator.free(canonical);
+    return try blockListParseAddressForFamily(allocator, canonical, .ipv4);
+}
+
+fn blockListFamilyFromOptionalText(family_ptr: ?[*]const u8, family_len: u64) !BlockListFamily {
+    if (family_len == 0) return .ipv4;
+    const family_text = (family_ptr orelse return error.InvalidAddressFamily)[0..family_len];
+    return socketAddressFamilyFromText(family_text) orelse error.InvalidAddressFamily;
+}
+
 fn socketAddressFamilyFromText(family: []const u8) ?BlockListFamily {
     if (family.len == 0) return null;
     if (std.ascii.eqlIgnoreCase(family, "ipv4")) return .ipv4;
@@ -2653,7 +2682,23 @@ pub export fn sa_node_plugin_net_blocklist_free(blocklist_ptr: ?*anyopaque) u32 
 
 pub export fn sa_node_plugin_net_blocklist_add_address(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64) u32 {
     const handle = blockListHandle(blocklist_ptr) orelse return 2;
-    const address = blockListParseAddress(handle.allocator, address_ptr, address_len) catch return 2;
+    const address_text = (address_ptr orelse return 2)[0..address_len];
+    const address = blockListParseAddressForNodeFamily(handle.allocator, address_text, .ipv4) catch return 2;
+    defer handle.allocator.free(address.text);
+    const text = std.fmt.allocPrint(handle.allocator, "Address: {s} {s}", .{ blockListFamilyName(address.family), address.text }) catch return 2;
+    const rule: BlockListRule = .{ .kind = .address, .family = address.family, .start = address.bytes, .end = address.bytes, .prefix = 0, .text = text };
+    blockListAppendRule(handle, rule) catch {
+        handle.allocator.free(text);
+        return 2;
+    };
+    return 0;
+}
+
+pub export fn sa_node_plugin_net_blocklist_add_address_family(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64, family_ptr: ?[*]const u8, family_len: u64) u32 {
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
+    const address_text = (address_ptr orelse return 2)[0..address_len];
+    const family = blockListFamilyFromOptionalText(family_ptr, family_len) catch return 2;
+    const address = blockListParseAddressForNodeFamily(handle.allocator, address_text, family) catch return 2;
     defer handle.allocator.free(address.text);
     const text = std.fmt.allocPrint(handle.allocator, "Address: {s} {s}", .{ blockListFamilyName(address.family), address.text }) catch return 2;
     const rule: BlockListRule = .{ .kind = .address, .family = address.family, .start = address.bytes, .end = address.bytes, .prefix = 0, .text = text };
@@ -2678,9 +2723,31 @@ pub export fn sa_node_plugin_net_blocklist_add_address_handle(blocklist_ptr: ?*a
 
 pub export fn sa_node_plugin_net_blocklist_add_range(blocklist_ptr: ?*anyopaque, start_ptr: ?[*]const u8, start_len: u64, end_ptr: ?[*]const u8, end_len: u64) u32 {
     const handle = blockListHandle(blocklist_ptr) orelse return 2;
-    const start = blockListParseAddress(handle.allocator, start_ptr, start_len) catch return 2;
+    const start_text = (start_ptr orelse return 2)[0..start_len];
+    const end_text = (end_ptr orelse return 2)[0..end_len];
+    const start = blockListParseAddressForNodeFamily(handle.allocator, start_text, .ipv4) catch return 2;
     defer handle.allocator.free(start.text);
-    const end = blockListParseAddress(handle.allocator, end_ptr, end_len) catch return 2;
+    const end = blockListParseAddressForNodeFamily(handle.allocator, end_text, .ipv4) catch return 2;
+    defer handle.allocator.free(end.text);
+    if (start.family != end.family) return 2;
+    if (blockListCompareAddress(start.family, start.bytes, end.bytes) == .gt) return 2;
+    const text = std.fmt.allocPrint(handle.allocator, "Range: {s} {s}-{s}", .{ blockListFamilyName(start.family), start.text, end.text }) catch return 2;
+    const rule: BlockListRule = .{ .kind = .range, .family = start.family, .start = start.bytes, .end = end.bytes, .prefix = 0, .text = text };
+    blockListAppendRule(handle, rule) catch {
+        handle.allocator.free(text);
+        return 2;
+    };
+    return 0;
+}
+
+pub export fn sa_node_plugin_net_blocklist_add_range_family(blocklist_ptr: ?*anyopaque, start_ptr: ?[*]const u8, start_len: u64, end_ptr: ?[*]const u8, end_len: u64, family_ptr: ?[*]const u8, family_len: u64) u32 {
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
+    const family = blockListFamilyFromOptionalText(family_ptr, family_len) catch return 2;
+    const start_text = (start_ptr orelse return 2)[0..start_len];
+    const end_text = (end_ptr orelse return 2)[0..end_len];
+    const start = blockListParseAddressForNodeFamily(handle.allocator, start_text, family) catch return 2;
+    defer handle.allocator.free(start.text);
+    const end = blockListParseAddressForNodeFamily(handle.allocator, end_text, family) catch return 2;
     defer handle.allocator.free(end.text);
     if (start.family != end.family) return 2;
     if (blockListCompareAddress(start.family, start.bytes, end.bytes) == .gt) return 2;
@@ -2710,7 +2777,25 @@ pub export fn sa_node_plugin_net_blocklist_add_range_handle(blocklist_ptr: ?*any
 
 pub export fn sa_node_plugin_net_blocklist_add_subnet(blocklist_ptr: ?*anyopaque, network_ptr: ?[*]const u8, network_len: u64, prefix: u32) u32 {
     const handle = blockListHandle(blocklist_ptr) orelse return 2;
-    const network = blockListParseAddress(handle.allocator, network_ptr, network_len) catch return 2;
+    const network_text = (network_ptr orelse return 2)[0..network_len];
+    const network = blockListParseAddressForNodeFamily(handle.allocator, network_text, .ipv4) catch return 2;
+    defer handle.allocator.free(network.text);
+    const max_prefix: u32 = if (network.family == .ipv4) 32 else 128;
+    if (prefix > max_prefix) return 2;
+    const text = std.fmt.allocPrint(handle.allocator, "Subnet: {s} {s}/{d}", .{ blockListFamilyName(network.family), network.text, prefix }) catch return 2;
+    const rule: BlockListRule = .{ .kind = .subnet, .family = network.family, .start = network.bytes, .end = network.bytes, .prefix = @intCast(prefix), .text = text };
+    blockListAppendRule(handle, rule) catch {
+        handle.allocator.free(text);
+        return 2;
+    };
+    return 0;
+}
+
+pub export fn sa_node_plugin_net_blocklist_add_subnet_family(blocklist_ptr: ?*anyopaque, network_ptr: ?[*]const u8, network_len: u64, prefix: u32, family_ptr: ?[*]const u8, family_len: u64) u32 {
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
+    const family = blockListFamilyFromOptionalText(family_ptr, family_len) catch return 2;
+    const network_text = (network_ptr orelse return 2)[0..network_len];
+    const network = blockListParseAddressForNodeFamily(handle.allocator, network_text, family) catch return 2;
     defer handle.allocator.free(network.text);
     const max_prefix: u32 = if (network.family == .ipv4) 32 else 128;
     if (prefix > max_prefix) return 2;
@@ -2739,7 +2824,12 @@ pub export fn sa_node_plugin_net_blocklist_add_subnet_handle(blocklist_ptr: ?*an
 
 pub export fn sa_node_plugin_net_blocklist_check(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64, out_bool: ?*u64) u32 {
     const handle = blockListHandle(blocklist_ptr) orelse return 2;
-    const address = blockListParseAddress(handle.allocator, address_ptr, address_len) catch return 2;
+    const out = out_bool orelse return 2;
+    const address_text = (address_ptr orelse return 2)[0..address_len];
+    const address = blockListParseAddressForNodeFamily(handle.allocator, address_text, .ipv4) catch {
+        out.* = 0;
+        return 0;
+    };
     defer handle.allocator.free(address.text);
     for (handle.rules.items) |rule| {
         if (rule.family != address.family) continue;
@@ -2749,11 +2839,37 @@ pub export fn sa_node_plugin_net_blocklist_check(blocklist_ptr: ?*anyopaque, add
             .subnet => blockListPrefixMatch(rule.family, address.bytes, rule.start, rule.prefix),
         };
         if (matched) {
-            (out_bool orelse return 2).* = 1;
+            out.* = 1;
             return 0;
         }
     }
-    (out_bool orelse return 2).* = 0;
+    out.* = 0;
+    return 0;
+}
+
+pub export fn sa_node_plugin_net_blocklist_check_family(blocklist_ptr: ?*anyopaque, address_ptr: ?[*]const u8, address_len: u64, family_ptr: ?[*]const u8, family_len: u64, out_bool: ?*u64) u32 {
+    const handle = blockListHandle(blocklist_ptr) orelse return 2;
+    const out = out_bool orelse return 2;
+    const family = blockListFamilyFromOptionalText(family_ptr, family_len) catch return 2;
+    const address_text = (address_ptr orelse return 2)[0..address_len];
+    const address = blockListParseAddressForNodeFamily(handle.allocator, address_text, family) catch {
+        out.* = 0;
+        return 0;
+    };
+    defer handle.allocator.free(address.text);
+    for (handle.rules.items) |rule| {
+        if (rule.family != address.family) continue;
+        const matched = switch (rule.kind) {
+            .address => blockListCompareAddress(rule.family, address.bytes, rule.start) == .eq,
+            .range => blockListCompareAddress(rule.family, address.bytes, rule.start) != .lt and blockListCompareAddress(rule.family, address.bytes, rule.end) != .gt,
+            .subnet => blockListPrefixMatch(rule.family, address.bytes, rule.start, rule.prefix),
+        };
+        if (matched) {
+            out.* = 1;
+            return 0;
+        }
+    }
+    out.* = 0;
     return 0;
 }
 

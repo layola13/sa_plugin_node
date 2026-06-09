@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `wasi`
+- Scope: installed main `node.sal` public macro coverage for `trace_events`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `wasi` top-level status, exports, config, supported-versions, import-modules, and feature-support macros available through `node.sal`
+  - `trace_events` top-level metadata plus tracing lifecycle/category helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` trace_events helper macro tranche completed:
+  - `trace_events` top-level status, exports, config, and feature-support helpers available through `node.sal`
+  - `trace_events.createTracing`, `enable`, `disable`, `getEnabledCategories`, and `free` helpers available through `node.sal`
+  - `tests/node_test_trace_events_top.sa`, `node_test_trace_events.sa`, and `node_test_trace_extra.sa` now validate through `node.sal` only
 
 - installed main `node.sal` wasi helper macro tranche completed:
   - `wasi` top-level status, exports, config, supported-versions, import-modules, allow-state, and feature-support helpers available through `node.sal`

@@ -1,6 +1,5 @@
 // SA tests for Node trace_events: get_enabled_categories
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_CAT = utf8:"test-cat"
 
 @test "node.trace_events get_enabled_categories"():

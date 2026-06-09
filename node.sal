@@ -1387,6 +1387,69 @@
     %out_len = load __wasi_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_TRACE_EVENTS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __trace_status_ptr_slot = stack_alloc 8
+    __trace_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_trace_events_status_json(&__trace_status_ptr_slot, &__trace_status_len_slot)
+    %out_ptr = load __trace_status_ptr_slot+0 as ptr
+    %out_len = load __trace_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __trace_exports_ptr_slot = stack_alloc 8
+    __trace_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_trace_events_exports_json(&__trace_exports_ptr_slot, &__trace_exports_len_slot)
+    %out_ptr = load __trace_exports_ptr_slot+0 as ptr
+    %out_len = load __trace_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __trace_config_ptr_slot = stack_alloc 8
+    __trace_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_trace_events_config_json(&__trace_config_ptr_slot, &__trace_config_len_slot)
+    %out_ptr = load __trace_config_ptr_slot+0 as ptr
+    %out_len = load __trace_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __trace_feature_ptr_slot = stack_alloc 8
+    __trace_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_trace_events_feature_support_json(&__trace_feature_ptr_slot, &__trace_feature_len_slot)
+    %out_ptr = load __trace_feature_ptr_slot+0 as ptr
+    %out_len = load __trace_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_CREATE_TRACING %categories_ptr, %categories_len, %out_handle
+    __trace_handle_slot = stack_alloc 8
+    __trace_create_status = call @sa_node_plugin_trace_events_create_tracing(%categories_ptr, %categories_len, &__trace_handle_slot)
+    !__trace_create_status
+    %out_handle = load __trace_handle_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_ENABLE %handle
+    __trace_enable_status = call @sa_node_plugin_trace_events_tracing_enable(%handle)
+    !__trace_enable_status
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_DISABLE %handle
+    __trace_disable_status = call @sa_node_plugin_trace_events_tracing_disable(%handle)
+    !__trace_disable_status
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_GET_ENABLED_CATEGORIES %handle, %out_ptr, %out_len
+    __trace_categories_ptr_slot = stack_alloc 8
+    __trace_categories_len_slot = stack_alloc 8
+    __trace_categories_status = call @sa_node_plugin_trace_events_get_enabled_categories(%handle, &__trace_categories_ptr_slot, &__trace_categories_len_slot)
+    !__trace_categories_status
+    %out_ptr = load __trace_categories_ptr_slot+0 as ptr
+    %out_len = load __trace_categories_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TRACE_EVENTS_TRACING_FREE %handle
+    __trace_free_status = call @sa_node_plugin_trace_events_tracing_free(%handle)
+    !__trace_free_status
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

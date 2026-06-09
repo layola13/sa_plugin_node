@@ -1254,6 +1254,84 @@
     %out_val = load __zlib_crc32_slot+0 as u32
 [END_MACRO]
 
+[MACRO] NODE_TTY_ISATTY %fd, %out_bool, %out_status
+    __tty_isatty_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_isatty(%fd, &__tty_isatty_slot)
+    %out_bool = load __tty_isatty_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_READ_STREAM_NEW %fd, %out_handle, %out_status
+    __tty_read_stream_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_read_stream_new(%fd, &__tty_read_stream_slot)
+    %out_handle = load __tty_read_stream_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TTY_WRITE_STREAM_NEW %fd, %out_handle, %out_status
+    __tty_write_stream_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_write_stream_new(%fd, &__tty_write_stream_slot)
+    %out_handle = load __tty_write_stream_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_SET_RAW_MODE %handle, %flag, %out_status
+    %out_status = call @sa_node_plugin_tty_stream_set_raw_mode(%handle, %flag)
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_GET_WINDOW_SIZE %handle, %out_cols, %out_rows, %out_status
+    __tty_cols_slot = stack_alloc 8
+    __tty_rows_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_stream_get_window_size(%handle, &__tty_cols_slot, &__tty_rows_slot)
+    %out_cols = load __tty_cols_slot+0 as u64
+    %out_rows = load __tty_rows_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_GET_COLOR_DEPTH %handle, %out_depth, %out_status
+    __tty_depth_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_stream_get_color_depth(%handle, &__tty_depth_slot)
+    %out_depth = load __tty_depth_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_HAS_COLORS %handle, %out_bool, %out_status
+    __tty_colors_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_stream_has_colors(%handle, &__tty_colors_slot)
+    %out_bool = load __tty_colors_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_STREAM_FREE %handle, %out_status
+    %out_status = call @sa_node_plugin_tty_stream_free(%handle)
+[END_MACRO]
+
+[MACRO] NODE_TTY_TOP_STATUS_JSON %out_ptr, %out_len, %out_status
+    __tty_status_ptr_slot = stack_alloc 8
+    __tty_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_status_json(&__tty_status_ptr_slot, &__tty_status_len_slot)
+    %out_ptr = load __tty_status_ptr_slot+0 as ptr
+    %out_len = load __tty_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __tty_exports_ptr_slot = stack_alloc 8
+    __tty_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_exports_json(&__tty_exports_ptr_slot, &__tty_exports_len_slot)
+    %out_ptr = load __tty_exports_ptr_slot+0 as ptr
+    %out_len = load __tty_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_TOP_STDIO_JSON %out_ptr, %out_len, %out_status
+    __tty_stdio_ptr_slot = stack_alloc 8
+    __tty_stdio_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_stdio_json(&__tty_stdio_ptr_slot, &__tty_stdio_len_slot)
+    %out_ptr = load __tty_stdio_ptr_slot+0 as ptr
+    %out_len = load __tty_stdio_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TTY_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __tty_feature_ptr_slot = stack_alloc 8
+    __tty_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tty_feature_support_json(&__tty_feature_ptr_slot, &__tty_feature_len_slot)
+    %out_ptr = load __tty_feature_ptr_slot+0 as ptr
+    %out_len = load __tty_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

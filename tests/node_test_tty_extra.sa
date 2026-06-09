@@ -1,6 +1,5 @@
 // SA tests for Node TTY extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.tty isatty"():
 L_ENTRY:

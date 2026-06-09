@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `zlib`
+- Scope: installed main `node.sal` public macro coverage for `tty`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `zlib` top-level metadata, raw/brotli/zstd helpers, and codes/constants macros available through `node.sal`
+  - `tty` top-level metadata plus `isatty` and stream helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` tty helper macro tranche completed:
+  - `tty` top-level metadata helpers available through `node.sal`
+  - `tty.isatty`, `tty.ReadStream`, `tty.WriteStream`, raw-mode, window-size, color-depth, has-colors, and free helpers available through `node.sal`
+  - `tests/node_test_tty_top.sa` and `node_test_tty_extra.sa` now validate through `node.sal` only
 
 - installed main `node.sal` zlib helper macro tranche completed:
   - `zlib` top-level metadata, constants, and codes helpers available through `node.sal`

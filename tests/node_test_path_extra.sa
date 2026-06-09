@@ -1,6 +1,5 @@
 // SA tests for Node path extras: matches_glob
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_GLOB = utf8:"*.txt"
 @const S_FILE = utf8:"test.txt"
 

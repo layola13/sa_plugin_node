@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `console`
+- Scope: installed main `node.sal` public macro coverage for `path`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `console` top-level metadata and warn/info/debug/assert/count/group helpers available through `node.sal`
+  - `path` top-level metadata helpers and `matches_glob` available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` path helper macro tranche completed:
+  - `path` top-level metadata helpers available through `node.sal`
+  - `path.matchesGlob` available through `node.sal`
+  - `tests/node_test_path_top.sa` and `node_test_path_extra.sa` now validate through `node.sal` only
 
 - installed main `node.sal` console helper macro tranche completed:
   - `console` top-level metadata helpers available through `node.sal`

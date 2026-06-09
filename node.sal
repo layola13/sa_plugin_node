@@ -933,6 +933,44 @@
     %out_len = load __pp_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_PATH_STATUS_JSON %out_ptr, %out_len, %out_status
+    __path_status_ptr_slot = stack_alloc 8
+    __path_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_status_json(&__path_status_ptr_slot, &__path_status_len_slot)
+    %out_ptr = load __path_status_ptr_slot+0 as ptr
+    %out_len = load __path_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __path_exports_ptr_slot = stack_alloc 8
+    __path_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_exports_json(&__path_exports_ptr_slot, &__path_exports_len_slot)
+    %out_ptr = load __path_exports_ptr_slot+0 as ptr
+    %out_len = load __path_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __path_config_ptr_slot = stack_alloc 8
+    __path_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_config_json(&__path_config_ptr_slot, &__path_config_len_slot)
+    %out_ptr = load __path_config_ptr_slot+0 as ptr
+    %out_len = load __path_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __path_feature_ptr_slot = stack_alloc 8
+    __path_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_path_feature_support_json(&__path_feature_ptr_slot, &__path_feature_len_slot)
+    %out_ptr = load __path_feature_ptr_slot+0 as ptr
+    %out_len = load __path_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PATH_MATCHES_GLOB %pattern, %pattern_len, %input, %input_len, %out_bool, %out_status
+    __path_matches_glob_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_path_matches_glob(%pattern, %pattern_len, %input, %input_len, &__path_matches_glob_slot)
+    %out_bool = load __path_matches_glob_slot+0 as u32
+[END_MACRO]
+
 [MACRO] NODE_UTIL_IS_DEEP_STRICT_EQUAL %out_bool, %out_status, %a_js, %a_len, %b_js, %b_len
     __de_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_util_is_deep_strict_equal(&%a_js, %a_len, &%b_js, %b_len, &__de_slot)

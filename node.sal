@@ -1,5 +1,6 @@
 // Node compatibility plugin public SA macro facade.
 @import "node.sai"
+@import "node_extra.sai"
 
 [MACRO] NODE_OS_CPUS %out_ptr, %out_len, %out_status
     __c_ptr_slot = stack_alloc 8

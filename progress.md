@@ -63,16 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: explicit `dtls` top-level facade metadata over the existing native UDP endpoint subset
-- Current status: `4 / 4` helper features completed (`100.0%`)
+- Scope: installed SA public facade aggregation for `node_extra` externs and macros
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `dtls.exports`
-  - `dtls.config`
-  - `dtls.featureSupport`
-  - `dtls` top-level status alignment
+  - installed `node.sal` imports `node_extra.sai`
+  - published plugin interface metadata includes `node_extra` companions
 
 ## Recent Completed Helper Features
 
+- installed SA public facade aggregation tranche completed:
+  - installed `node.sal` imports `node_extra.sai`
+  - published plugin interface metadata includes `node_extra` companions
 - `dtls` top-level metadata tranche completed:
   - `dtls.exports`
   - `dtls.config`

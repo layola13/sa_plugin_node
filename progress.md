@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `punycode` and `tty` compatibility helpers
+- Scope: installed main `node.sal` public macro coverage for `web_crypto` and `web_streams`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `punycode.toASCII` and legacy `tty` status helpers available through `node.sal`
+  - `web_crypto` random, digest, key, sign/verify, encrypt/decrypt helpers and `web_streams` readable/writable/transform helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` web_crypto/web_streams helper macro tranche completed:
+  - `web_crypto` random values, UUID, digest, raw key import/generation/export, sign/verify, encrypt/decrypt, and key-free helpers available through `node.sal`
+  - `web_streams` readable/writable/transform construction, enqueue/write/read, snapshot, close, and free helpers available through `node.sal`
+  - `tests/node_test_web_crypto_streams.sa` validates through `node.sal` only
 
 - installed main `node.sal` punycode/tty compatibility helper tranche completed:
   - `punycode.toASCII` and legacy `tty` status macros available through `node.sal`

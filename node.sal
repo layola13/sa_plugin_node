@@ -9472,3 +9472,274 @@
     %p_1 = add __m_load_b5ddde9f_p_1, 0
     !__m_load_b5ddde9f_p_1
 [END_MACRO]
+[MACRO] NODE_WEB_CRYPTO_GET_RANDOM_VALUES %p_0, %p_1, %p_2
+    __m_status_5c4f03fd = call @sa_node_plugin_web_crypto_get_random_values(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_5c4f03fd, 0
+    !__m_status_5c4f03fd
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_RANDOM_UUID %p_0, %p_1, %p_2
+    __m_slot_1b4f8c75_0 = stack_alloc 8
+    __m_slot_1b4f8c75_1 = stack_alloc 8
+    __m_status_1b4f8c75 = call @sa_node_plugin_web_crypto_random_uuid(&__m_slot_1b4f8c75_0, &__m_slot_1b4f8c75_1)
+    !%p_2
+    %p_2 = add __m_status_1b4f8c75, 0
+    !__m_status_1b4f8c75
+    __m_load_1b4f8c75_p_0 = load __m_slot_1b4f8c75_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_1b4f8c75_p_0, 0
+    !__m_load_1b4f8c75_p_0
+    __m_load_1b4f8c75_p_1 = load __m_slot_1b4f8c75_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_1b4f8c75_p_1, 0
+    !__m_load_1b4f8c75_p_1
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_DIGEST %out_ptr, %out_len, %out_status, %algo, %algo_len, %data, %data_len
+    __m_slot_95f75a0d_0 = stack_alloc 8
+    __m_slot_95f75a0d_1 = stack_alloc 8
+    __m_status_95f75a0d = call @sa_node_plugin_web_crypto_digest(%algo, %algo_len, %data, %data_len, &__m_slot_95f75a0d_0, &__m_slot_95f75a0d_1)
+    !%out_status
+    %out_status = add __m_status_95f75a0d, 0
+    !__m_status_95f75a0d
+    __m_load_95f75a0d_p_4 = load __m_slot_95f75a0d_0+0 as ptr
+    !%out_ptr
+    %out_ptr = add __m_load_95f75a0d_p_4, 0
+    !__m_load_95f75a0d_p_4
+    __m_load_95f75a0d_p_5 = load __m_slot_95f75a0d_1+0 as u64
+    !%out_len
+    %out_len = add __m_load_95f75a0d_p_5, 0
+    !__m_load_95f75a0d_p_5
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_IMPORT_KEY_RAW %out_key, %out_status, %algorithm, %algorithm_len, %usage, %usage_len, %key, %key_len
+    __web_crypto_import_key_slot = stack_alloc 8
+    __web_crypto_import_key_status = call @sa_node_plugin_web_crypto_import_key_raw(%algorithm, %algorithm_len, %usage, %usage_len, %key, %key_len, &__web_crypto_import_key_slot)
+    !%out_status
+    %out_status = add __web_crypto_import_key_status, 0
+    !__web_crypto_import_key_status
+    __web_crypto_import_key = load __web_crypto_import_key_slot+0 as ptr
+    !%out_key
+    %out_key = add __web_crypto_import_key, 0
+    !__web_crypto_import_key
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_GENERATE_KEY %out_key, %out_status, %algorithm, %algorithm_len, %usage, %usage_len, %bits
+    __web_crypto_generate_key_slot = stack_alloc 8
+    __web_crypto_generate_key_status = call @sa_node_plugin_web_crypto_generate_key(%algorithm, %algorithm_len, %usage, %usage_len, %bits, &__web_crypto_generate_key_slot)
+    !%out_status
+    %out_status = add __web_crypto_generate_key_status, 0
+    !__web_crypto_generate_key_status
+    __web_crypto_generate_key = load __web_crypto_generate_key_slot+0 as ptr
+    !%out_key
+    %out_key = add __web_crypto_generate_key, 0
+    !__web_crypto_generate_key
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_EXPORT_KEY_RAW %out_ptr, %out_len, %out_status, %key
+    __web_crypto_export_ptr_slot = stack_alloc 8
+    __web_crypto_export_len_slot = stack_alloc 8
+    __web_crypto_export_status = call @sa_node_plugin_web_crypto_export_key_raw(%key, &__web_crypto_export_ptr_slot, &__web_crypto_export_len_slot)
+    !%out_status
+    %out_status = add __web_crypto_export_status, 0
+    !__web_crypto_export_status
+    __web_crypto_export_ptr = load __web_crypto_export_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_crypto_export_ptr, 0
+    !__web_crypto_export_ptr
+    __web_crypto_export_len = load __web_crypto_export_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_crypto_export_len, 0
+    !__web_crypto_export_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_EXPORT_PUBLIC_KEY_RAW %out_ptr, %out_len, %out_status, %key
+    __web_crypto_export_pub_ptr_slot = stack_alloc 8
+    __web_crypto_export_pub_len_slot = stack_alloc 8
+    __web_crypto_export_pub_status = call @sa_node_plugin_web_crypto_export_public_key_raw(%key, &__web_crypto_export_pub_ptr_slot, &__web_crypto_export_pub_len_slot)
+    !%out_status
+    %out_status = add __web_crypto_export_pub_status, 0
+    !__web_crypto_export_pub_status
+    __web_crypto_export_pub_ptr = load __web_crypto_export_pub_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_crypto_export_pub_ptr, 0
+    !__web_crypto_export_pub_ptr
+    __web_crypto_export_pub_len = load __web_crypto_export_pub_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_crypto_export_pub_len, 0
+    !__web_crypto_export_pub_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_SIGN %out_sig_ptr, %out_sig_len, %out_status, %key, %data, %data_len
+    __web_crypto_sign_ptr_slot = stack_alloc 8
+    __web_crypto_sign_len_slot = stack_alloc 8
+    __web_crypto_sign_status = call @sa_node_plugin_web_crypto_sign(%key, %data, %data_len, &__web_crypto_sign_ptr_slot, &__web_crypto_sign_len_slot)
+    !%out_status
+    %out_status = add __web_crypto_sign_status, 0
+    !__web_crypto_sign_status
+    __web_crypto_sign_ptr = load __web_crypto_sign_ptr_slot+0 as ptr
+    !%out_sig_ptr
+    %out_sig_ptr = add __web_crypto_sign_ptr, 0
+    !__web_crypto_sign_ptr
+    __web_crypto_sign_len = load __web_crypto_sign_len_slot+0 as u64
+    !%out_sig_len
+    %out_sig_len = add __web_crypto_sign_len, 0
+    !__web_crypto_sign_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_VERIFY %out_bool, %out_status, %key, %data, %data_len, %sig, %sig_len
+    __web_crypto_verify_bool_slot = stack_alloc 8
+    __web_crypto_verify_status = call @sa_node_plugin_web_crypto_verify(%key, %data, %data_len, %sig, %sig_len, &__web_crypto_verify_bool_slot)
+    !%out_status
+    %out_status = add __web_crypto_verify_status, 0
+    !__web_crypto_verify_status
+    __web_crypto_verify_bool = load __web_crypto_verify_bool_slot+0 as u64
+    !%out_bool
+    %out_bool = add __web_crypto_verify_bool, 0
+    !__web_crypto_verify_bool
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_ENCRYPT %out_ptr, %out_len, %out_status, %key, %iv, %iv_len, %aad, %aad_len, %data, %data_len
+    __web_crypto_encrypt_ptr_slot = stack_alloc 8
+    __web_crypto_encrypt_len_slot = stack_alloc 8
+    __web_crypto_encrypt_status = call @sa_node_plugin_web_crypto_encrypt(%key, %iv, %iv_len, %aad, %aad_len, %data, %data_len, &__web_crypto_encrypt_ptr_slot, &__web_crypto_encrypt_len_slot)
+    !%out_status
+    %out_status = add __web_crypto_encrypt_status, 0
+    !__web_crypto_encrypt_status
+    __web_crypto_encrypt_ptr = load __web_crypto_encrypt_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_crypto_encrypt_ptr, 0
+    !__web_crypto_encrypt_ptr
+    __web_crypto_encrypt_len = load __web_crypto_encrypt_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_crypto_encrypt_len, 0
+    !__web_crypto_encrypt_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_DECRYPT %out_ptr, %out_len, %out_status, %key, %iv, %iv_len, %aad, %aad_len, %data, %data_len
+    __web_crypto_decrypt_ptr_slot = stack_alloc 8
+    __web_crypto_decrypt_len_slot = stack_alloc 8
+    __web_crypto_decrypt_status = call @sa_node_plugin_web_crypto_decrypt(%key, %iv, %iv_len, %aad, %aad_len, %data, %data_len, &__web_crypto_decrypt_ptr_slot, &__web_crypto_decrypt_len_slot)
+    !%out_status
+    %out_status = add __web_crypto_decrypt_status, 0
+    !__web_crypto_decrypt_status
+    __web_crypto_decrypt_ptr = load __web_crypto_decrypt_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_crypto_decrypt_ptr, 0
+    !__web_crypto_decrypt_ptr
+    __web_crypto_decrypt_len = load __web_crypto_decrypt_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_crypto_decrypt_len, 0
+    !__web_crypto_decrypt_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_KEY_FREE %out_status, %key
+    __web_crypto_key_free_status = call @sa_node_plugin_web_crypto_key_free(%key)
+    !%out_status
+    %out_status = add __web_crypto_key_free_status, 0
+    !__web_crypto_key_free_status
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_READABLE_NEW %out_handle, %out_status
+    __web_streams_readable_slot = stack_alloc 8
+    __web_streams_readable_status = call @sa_node_plugin_web_streams_readable_new(&__web_streams_readable_slot)
+    !%out_status
+    %out_status = add __web_streams_readable_status, 0
+    !__web_streams_readable_status
+    __web_streams_readable_handle = load __web_streams_readable_slot+0 as ptr
+    !%out_handle
+    %out_handle = add __web_streams_readable_handle, 0
+    !__web_streams_readable_handle
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_WRITABLE_NEW %out_handle, %out_status
+    __web_streams_writable_slot = stack_alloc 8
+    __web_streams_writable_status = call @sa_node_plugin_web_streams_writable_new(&__web_streams_writable_slot)
+    !%out_status
+    %out_status = add __web_streams_writable_status, 0
+    !__web_streams_writable_status
+    __web_streams_writable_handle = load __web_streams_writable_slot+0 as ptr
+    !%out_handle
+    %out_handle = add __web_streams_writable_handle, 0
+    !__web_streams_writable_handle
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_TRANSFORM_NEW %out_readable, %out_writable, %out_status
+    __web_streams_transform_readable_slot = stack_alloc 8
+    __web_streams_transform_writable_slot = stack_alloc 8
+    __web_streams_transform_status = call @sa_node_plugin_web_streams_transform_new(&__web_streams_transform_readable_slot, &__web_streams_transform_writable_slot)
+    !%out_status
+    %out_status = add __web_streams_transform_status, 0
+    !__web_streams_transform_status
+    __web_streams_transform_readable = load __web_streams_transform_readable_slot+0 as ptr
+    !%out_readable
+    %out_readable = add __web_streams_transform_readable, 0
+    !__web_streams_transform_readable
+    __web_streams_transform_writable = load __web_streams_transform_writable_slot+0 as ptr
+    !%out_writable
+    %out_writable = add __web_streams_transform_writable, 0
+    !__web_streams_transform_writable
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_ENQUEUE %out_status, %handle, %data, %data_len
+    __web_streams_enqueue_status = call @sa_node_plugin_web_streams_enqueue(%handle, %data, %data_len)
+    !%out_status
+    %out_status = add __web_streams_enqueue_status, 0
+    !__web_streams_enqueue_status
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_WRITE %out_status, %handle, %data, %data_len
+    __web_streams_write_status = call @sa_node_plugin_web_streams_write(%handle, %data, %data_len)
+    !%out_status
+    %out_status = add __web_streams_write_status, 0
+    !__web_streams_write_status
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_READ %out_ptr, %out_len, %out_status, %handle, %max_len
+    __web_streams_read_ptr_slot = stack_alloc 8
+    __web_streams_read_len_slot = stack_alloc 8
+    __web_streams_read_status = call @sa_node_plugin_web_streams_read(%handle, %max_len, &__web_streams_read_ptr_slot, &__web_streams_read_len_slot)
+    !%out_status
+    %out_status = add __web_streams_read_status, 0
+    !__web_streams_read_status
+    __web_streams_read_ptr = load __web_streams_read_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_streams_read_ptr, 0
+    !__web_streams_read_ptr
+    __web_streams_read_len = load __web_streams_read_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_streams_read_len, 0
+    !__web_streams_read_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %handle
+    __web_streams_snapshot_ptr_slot = stack_alloc 8
+    __web_streams_snapshot_len_slot = stack_alloc 8
+    __web_streams_snapshot_status = call @sa_node_plugin_web_streams_snapshot_json(%handle, &__web_streams_snapshot_ptr_slot, &__web_streams_snapshot_len_slot)
+    !%out_status
+    %out_status = add __web_streams_snapshot_status, 0
+    !__web_streams_snapshot_status
+    __web_streams_snapshot_ptr = load __web_streams_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __web_streams_snapshot_ptr, 0
+    !__web_streams_snapshot_ptr
+    __web_streams_snapshot_len = load __web_streams_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __web_streams_snapshot_len, 0
+    !__web_streams_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_CLOSE %out_status, %handle
+    __web_streams_close_status = call @sa_node_plugin_web_streams_close(%handle)
+    !%out_status
+    %out_status = add __web_streams_close_status, 0
+    !__web_streams_close_status
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_FREE %out_status, %handle
+    __web_streams_free_status = call @sa_node_plugin_web_streams_free(%handle)
+    !%out_status
+    %out_status = add __web_streams_free_status, 0
+    !__web_streams_free_status
+[END_MACRO]

@@ -1,0 +1,255 @@
+// SA tests for Node web_crypto and web_streams helpers
+@import "../node.sal"
+
+@const S_SHA256 = utf8:"sha-256"
+@const S_ABC = utf8:"abc"
+@const S_HMAC = utf8:"HMAC"
+@const S_SIGN = utf8:"sign"
+@const S_SECRET = utf8:"secret"
+@const S_PAYLOAD = utf8:"payload"
+@const S_AES = utf8:"AES-GCM"
+@const S_ENCRYPT = utf8:"encrypt"
+@const S_AAD = utf8:"aad"
+@const S_PLAIN = utf8:"plain"
+@const S_HELLO = utf8:"hello"
+@const S_SINK = utf8:"sink"
+@const S_PIPE = utf8:"pipe"
+
+@test "node.web_crypto random uuid and digest"():
+L_ENTRY:
+    buf = stack_alloc 16
+    s1 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_GET_RANDOM_VALUES buf, 16, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_UUID, L_ERR_RANDOM
+L_UUID:
+    !ok1
+    uuid_ptr = add 0, 0
+    uuid_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_RANDOM_UUID uuid_ptr, uuid_len, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_DIGEST, L_ERR_UUID
+L_DIGEST:
+    !ok2
+    digest_ptr = add 0, 0
+    digest_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_DIGEST digest_ptr, digest_len, s3, S_SHA256, 7, S_ABC, 3
+    ok3 = eq s3, 0
+    br ok3 -> L_FREE, L_ERR_DIGEST
+L_FREE:
+    !ok3
+    free_digest = call @sa_node_plugin_free_buffer(digest_ptr, digest_len)
+    free_uuid = call @sa_node_plugin_free_buffer(uuid_ptr, uuid_len)
+    !free_uuid
+    !free_digest
+    !s3
+    !digest_len
+    !digest_ptr
+    !s2
+    !uuid_len
+    !uuid_ptr
+    !s1
+    return
+L_ERR_RANDOM:
+    !ok1
+    panic(103)
+L_ERR_UUID:
+    !ok2
+    panic(103)
+L_ERR_DIGEST:
+    !ok3
+    panic(103)
+
+@test "node.web_crypto key sign verify and aes"():
+L_ENTRY:
+    hmac_key = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_IMPORT_KEY_RAW hmac_key, s1, S_HMAC, 4, S_SIGN, 4, S_SECRET, 6
+    ok1 = eq s1, 0
+    br ok1 -> L_SIGN, L_ERR_IMPORT
+L_SIGN:
+    !ok1
+    sig_ptr = add 0, 0
+    sig_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_SIGN sig_ptr, sig_len, s2, hmac_key, S_PAYLOAD, 7
+    ok2 = eq s2, 0
+    br ok2 -> L_VERIFY, L_ERR_SIGN
+L_VERIFY:
+    !ok2
+    verified = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_VERIFY verified, s3, hmac_key, S_PAYLOAD, 7, sig_ptr, sig_len
+    ok3 = eq s3, 0
+    br ok3 -> L_AES, L_ERR_VERIFY
+L_AES:
+    !ok3
+    aes_key = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_GENERATE_KEY aes_key, s4, S_AES, 7, S_ENCRYPT, 7, 256
+    ok4 = eq s4, 0
+    br ok4 -> L_AES_EXPORT, L_ERR_AES
+L_AES_EXPORT:
+    !ok4
+    raw_ptr = add 0, 0
+    raw_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_EXPORT_KEY_RAW raw_ptr, raw_len, s5, aes_key
+    ok5 = eq s5, 0
+    br ok5 -> L_AES_CRYPT, L_ERR_EXPORT
+L_AES_CRYPT:
+    !ok5
+    iv = stack_alloc 12
+    enc_ptr = add 0, 0
+    enc_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_ENCRYPT enc_ptr, enc_len, s6, aes_key, iv, 12, S_AAD, 3, S_PLAIN, 5
+    ok6 = eq s6, 0
+    br ok6 -> L_AES_DECRYPT, L_ERR_ENCRYPT
+L_AES_DECRYPT:
+    !ok6
+    dec_ptr = add 0, 0
+    dec_len = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_DECRYPT dec_ptr, dec_len, s7, aes_key, iv, 12, S_AAD, 3, enc_ptr, enc_len
+    ok7 = eq s7, 0
+    br ok7 -> L_FREE, L_ERR_DECRYPT
+L_FREE:
+    !ok7
+    free_dec = call @sa_node_plugin_free_buffer(dec_ptr, dec_len)
+    free_enc = call @sa_node_plugin_free_buffer(enc_ptr, enc_len)
+    free_raw = call @sa_node_plugin_free_buffer(raw_ptr, raw_len)
+    s8 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_KEY_FREE s8, aes_key
+    s9 = add 0, 0
+    EXPAND NODE_WEB_CRYPTO_KEY_FREE s9, hmac_key
+    free_sig = call @sa_node_plugin_free_buffer(sig_ptr, sig_len)
+    !free_sig
+    !s9
+    !s8
+    !free_raw
+    !free_enc
+    !free_dec
+    !s7
+    !dec_len
+    !dec_ptr
+    !s6
+    !enc_len
+    !enc_ptr
+    !s5
+    !raw_len
+    !raw_ptr
+    !s4
+    !aes_key
+    !s3
+    !verified
+    !s2
+    !sig_len
+    !sig_ptr
+    !s1
+    !hmac_key
+    return
+L_ERR_IMPORT:
+    !ok1
+    panic(103)
+L_ERR_SIGN:
+    !ok2
+    panic(103)
+L_ERR_VERIFY:
+    !ok3
+    panic(103)
+L_ERR_AES:
+    !ok4
+    panic(103)
+L_ERR_EXPORT:
+    !ok5
+    panic(103)
+L_ERR_ENCRYPT:
+    !ok6
+    panic(103)
+L_ERR_DECRYPT:
+    !ok7
+    panic(103)
+
+@test "node.web_streams readable writable transform"():
+L_ENTRY:
+    readable = add 0, 0
+    s1 = add 0, 0
+    s2 = add 0, 0
+    s3 = add 0, 0
+    s4 = add 0, 0
+    s5 = add 0, 0
+    s6 = add 0, 0
+    s7 = add 0, 0
+    s8 = add 0, 0
+    s9 = add 0, 0
+    s10 = add 0, 0
+    s11 = add 0, 0
+    s12 = add 0, 0
+    s13 = add 0, 0
+    s14 = add 0, 0
+    s15 = add 0, 0
+    EXPAND NODE_WEB_STREAMS_READABLE_NEW readable, s1
+    EXPAND NODE_WEB_STREAMS_ENQUEUE s2, readable, S_HELLO, 5
+    out_ptr = add 0, 0
+    out_len = add 0, 0
+    EXPAND NODE_WEB_STREAMS_READ out_ptr, out_len, s3, readable, 2
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    EXPAND NODE_WEB_STREAMS_SNAPSHOT_JSON snap_ptr, snap_len, s4, readable
+    EXPAND NODE_WEB_STREAMS_CLOSE s5, readable
+    EXPAND NODE_WEB_STREAMS_FREE s6, readable
+    writable = add 0, 0
+    EXPAND NODE_WEB_STREAMS_WRITABLE_NEW writable, s7
+    EXPAND NODE_WEB_STREAMS_WRITE s8, writable, S_SINK, 4
+    wsnap_ptr = add 0, 0
+    wsnap_len = add 0, 0
+    EXPAND NODE_WEB_STREAMS_SNAPSHOT_JSON wsnap_ptr, wsnap_len, s9, writable
+    EXPAND NODE_WEB_STREAMS_FREE s10, writable
+    tr = add 0, 0
+    tw = add 0, 0
+    EXPAND NODE_WEB_STREAMS_TRANSFORM_NEW tr, tw, s11
+    EXPAND NODE_WEB_STREAMS_WRITE s12, tw, S_PIPE, 4
+    tp = add 0, 0
+    tl = add 0, 0
+    EXPAND NODE_WEB_STREAMS_READ tp, tl, s13, tr, 16
+    EXPAND NODE_WEB_STREAMS_FREE s14, tw
+    EXPAND NODE_WEB_STREAMS_FREE s15, tr
+    free_tp = call @sa_node_plugin_free_buffer(tp, tl)
+    free_wsnap = call @sa_node_plugin_free_buffer(wsnap_ptr, wsnap_len)
+    free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
+    free_out = call @sa_node_plugin_free_buffer(out_ptr, out_len)
+    !free_out
+    !free_snap
+    !free_wsnap
+    !free_tp
+    !s15
+    !s14
+    !s13
+    !tl
+    !tp
+    !s12
+    !s11
+    !tw
+    !tr
+    !s10
+    !s9
+    !wsnap_len
+    !wsnap_ptr
+    !s8
+    !s7
+    !writable
+    !s6
+    !s5
+    !s4
+    !snap_len
+    !snap_ptr
+    !s3
+    !out_len
+    !out_ptr
+    !s2
+    !s1
+    !readable
+    return

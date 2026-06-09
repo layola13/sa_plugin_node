@@ -1,0 +1,89 @@
+// SA tests for Node FFI helpers
+@import "../node.sal"
+
+@const S_LIBC = utf8:"libc.so.6"
+@const S_STRLEN = utf8:"strlen"
+@const S_GETPID = utf8:"getpid"
+@const S_ABS = utf8:"abs"
+@const S_KILL = utf8:"kill"
+@const S_GETENV = utf8:"getenv"
+@const S_HELLO = utf8:"hello"
+@const S_PATH = utf8:"PATH"
+
+@test "node.ffi native libc helpers"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    s0 = add 0, 0
+    EXPAND NODE_FFI_STATUS_JSON status_ptr, status_len, s0
+    lib = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_FFI_OPEN lib, s1, S_LIBC, 9
+    has_strlen = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_FFI_HAS_SYMBOL has_strlen, s2, lib, S_STRLEN, 6
+    pid = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_FFI_CALL_I64_0 pid, s3, lib, S_GETPID, 6
+    strlen_value = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_FFI_CALL_STRLEN strlen_value, s4, lib, S_STRLEN, 6, S_HELLO, 5
+    abs_value = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_FFI_CALL_I64_1 abs_value, s5, lib, S_ABS, 3, 42
+    kill_value = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_FFI_CALL_I64_2 kill_value, s6, lib, S_KILL, 4, pid, 0
+    env_ptr = add 0, 0
+    env_len = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_FFI_CALL_PTR_STRING env_ptr, env_len, s7, lib, S_GETENV, 6, S_PATH, 4
+    s8 = add 0, 0
+    EXPAND NODE_FFI_CLOSE s8, lib
+    free_env = call @sa_node_plugin_free_buffer(env_ptr, env_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    sum1 = add s0, s1
+    sum2 = add sum1, s2
+    sum3 = add sum2, s3
+    sum4 = add sum3, s4
+    sum5 = add sum4, s5
+    sum6 = add sum5, s6
+    sum7 = add sum6, s7
+    sum8 = add sum7, s8
+    ok = eq sum8, 0
+    br ok -> L_DONE, L_ERR
+L_DONE:
+    !ok
+    !sum8
+    !sum7
+    !sum6
+    !sum5
+    !sum4
+    !sum3
+    !sum2
+    !sum1
+    !free_status
+    !free_env
+    !s8
+    !s7
+    !env_len
+    !env_ptr
+    !s6
+    !kill_value
+    !s5
+    !abs_value
+    !s4
+    !strlen_value
+    !s3
+    !pid
+    !s2
+    !has_strlen
+    !s1
+    !lib
+    !s0
+    !status_len
+    !status_ptr
+    return
+L_ERR:
+    !ok
+    panic(103)

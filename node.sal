@@ -9743,3 +9743,127 @@
     %out_status = add __web_streams_free_status, 0
     !__web_streams_free_status
 [END_MACRO]
+[MACRO] NODE_FFI_STATUS_JSON %out_ptr, %out_len, %out_status
+    __ffi_status_ptr_slot = stack_alloc 8
+    __ffi_status_len_slot = stack_alloc 8
+    __ffi_status_status = call @sa_node_plugin_ffi_status_json(&__ffi_status_ptr_slot, &__ffi_status_len_slot)
+    !%out_status
+    %out_status = add __ffi_status_status, 0
+    !__ffi_status_status
+    __ffi_status_ptr = load __ffi_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __ffi_status_ptr, 0
+    !__ffi_status_ptr
+    __ffi_status_len = load __ffi_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __ffi_status_len, 0
+    !__ffi_status_len
+[END_MACRO]
+
+[MACRO] NODE_FFI_OPEN %out_library, %out_status, %path, %path_len
+    __ffi_open_lib_slot = stack_alloc 8
+    __ffi_open_status = call @sa_node_plugin_ffi_open(%path, %path_len, &__ffi_open_lib_slot)
+    !%out_status
+    %out_status = add __ffi_open_status, 0
+    !__ffi_open_status
+    __ffi_open_lib = load __ffi_open_lib_slot+0 as ptr
+    !%out_library
+    %out_library = add __ffi_open_lib, 0
+    !__ffi_open_lib
+[END_MACRO]
+
+[MACRO] NODE_FFI_CLOSE %out_status, %library
+    __ffi_close_status = call @sa_node_plugin_ffi_close(%library)
+    !%out_status
+    %out_status = add __ffi_close_status, 0
+    !__ffi_close_status
+[END_MACRO]
+
+[MACRO] NODE_FFI_HAS_SYMBOL %out_bool, %out_status, %library, %symbol, %symbol_len
+    __ffi_has_symbol_slot = stack_alloc 8
+    __ffi_has_symbol_status = call @sa_node_plugin_ffi_has_symbol(%library, %symbol, %symbol_len, &__ffi_has_symbol_slot)
+    !%out_status
+    %out_status = add __ffi_has_symbol_status, 0
+    !__ffi_has_symbol_status
+    __ffi_has_symbol = load __ffi_has_symbol_slot+0 as u64
+    !%out_bool
+    %out_bool = add __ffi_has_symbol, 0
+    !__ffi_has_symbol
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_I64_0 %out_value, %out_status, %library, %symbol, %symbol_len
+    __ffi_i64_0_slot = stack_alloc 8
+    __ffi_i64_0_status = call @sa_node_plugin_ffi_call_i64_0(%library, %symbol, %symbol_len, &__ffi_i64_0_slot)
+    !%out_status
+    %out_status = add __ffi_i64_0_status, 0
+    !__ffi_i64_0_status
+    __ffi_i64_0 = load __ffi_i64_0_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_i64_0, 0
+    !__ffi_i64_0
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_I64_1 %out_value, %out_status, %library, %symbol, %symbol_len, %a0
+    __ffi_i64_1_slot = stack_alloc 8
+    __ffi_i64_1_status = call @sa_node_plugin_ffi_call_i64_1(%library, %symbol, %symbol_len, %a0, &__ffi_i64_1_slot)
+    !%out_status
+    %out_status = add __ffi_i64_1_status, 0
+    !__ffi_i64_1_status
+    __ffi_i64_1 = load __ffi_i64_1_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_i64_1, 0
+    !__ffi_i64_1
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_I64_2 %out_value, %out_status, %library, %symbol, %symbol_len, %a0, %a1
+    __ffi_i64_2_slot = stack_alloc 8
+    __ffi_i64_2_status = call @sa_node_plugin_ffi_call_i64_2(%library, %symbol, %symbol_len, %a0, %a1, &__ffi_i64_2_slot)
+    !%out_status
+    %out_status = add __ffi_i64_2_status, 0
+    !__ffi_i64_2_status
+    __ffi_i64_2 = load __ffi_i64_2_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_i64_2, 0
+    !__ffi_i64_2
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_STRLEN %out_value, %out_status, %library, %symbol, %symbol_len, %value, %value_len
+    __ffi_strlen_slot = stack_alloc 8
+    __ffi_strlen_status = call @sa_node_plugin_ffi_call_strlen(%library, %symbol, %symbol_len, %value, %value_len, &__ffi_strlen_slot)
+    !%out_status
+    %out_status = add __ffi_strlen_status, 0
+    !__ffi_strlen_status
+    __ffi_strlen = load __ffi_strlen_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_strlen, 0
+    !__ffi_strlen
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_STRING_I64 %out_value, %out_status, %library, %symbol, %symbol_len, %value, %value_len, %a0
+    __ffi_string_i64_slot = stack_alloc 8
+    __ffi_string_i64_status = call @sa_node_plugin_ffi_call_string_i64(%library, %symbol, %symbol_len, %value, %value_len, %a0, &__ffi_string_i64_slot)
+    !%out_status
+    %out_status = add __ffi_string_i64_status, 0
+    !__ffi_string_i64_status
+    __ffi_string_i64 = load __ffi_string_i64_slot+0 as u64
+    !%out_value
+    %out_value = add __ffi_string_i64, 0
+    !__ffi_string_i64
+[END_MACRO]
+
+[MACRO] NODE_FFI_CALL_PTR_STRING %out_ptr, %out_len, %out_status, %library, %symbol, %symbol_len, %value, %value_len
+    __ffi_ptr_string_ptr_slot = stack_alloc 8
+    __ffi_ptr_string_len_slot = stack_alloc 8
+    __ffi_ptr_string_status = call @sa_node_plugin_ffi_call_ptr_string(%library, %symbol, %symbol_len, %value, %value_len, &__ffi_ptr_string_ptr_slot, &__ffi_ptr_string_len_slot)
+    !%out_status
+    %out_status = add __ffi_ptr_string_status, 0
+    !__ffi_ptr_string_status
+    __ffi_ptr_string_ptr = load __ffi_ptr_string_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __ffi_ptr_string_ptr, 0
+    !__ffi_ptr_string_ptr
+    __ffi_ptr_string_len = load __ffi_ptr_string_len_slot+0 as u64
+    !%out_len
+    %out_len = add __ffi_ptr_string_len, 0
+    !__ffi_ptr_string_len
+[END_MACRO]

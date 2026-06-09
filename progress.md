@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `web_crypto` and `web_streams`
+- Scope: installed main `node.sal` public macro coverage for `ffi`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `web_crypto` random, digest, key, sign/verify, encrypt/decrypt helpers and `web_streams` readable/writable/transform helpers available through `node.sal`
+  - FFI status, dynamic library open/close, symbol lookup, integer calls, string length, string/integer, and pointer-string helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` ffi helper macro tranche completed:
+  - FFI status, `open`, `close`, `hasSymbol`, `call_i64_0/1/2`, `call_strlen`, `call_string_i64`, and `call_ptr_string` helpers available through `node.sal`
+  - `tests/node_test_ffi.sa` validates through `node.sal` only
 
 - installed main `node.sal` web_crypto/web_streams helper macro tranche completed:
   - `web_crypto` random values, UUID, digest, raw key import/generation/export, sign/verify, encrypt/decrypt, and key-free helpers available through `node.sal`

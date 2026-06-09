@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `ffi`
+- Scope: installed main `node.sal` public macro coverage for `sqlite`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - FFI status, dynamic library open/close, symbol lookup, integer calls, string length, string/integer, and pointer-string helpers available through `node.sal`
+  - SQLite status/version, connection, exec/query, prepared statement, bind/reset/finalize, backup, session/changeset, and SQLTagStore helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` sqlite helper macro tranche completed:
+  - SQLite status/version, open/close, exec/query, prepared statement, bind/reset/clear/finalize, changes/rowid, backup, session/changeset, apply_changeset, and SQLTagStore helpers available through `node.sal`
+  - `tests/node_test_sqlite.sa` validates common sqlite operations through `node.sal` only
 
 - installed main `node.sal` ffi helper macro tranche completed:
   - FFI status, `open`, `close`, `hasSymbol`, `call_i64_0/1/2`, `call_strlen`, `call_string_i64`, and `call_ptr_string` helpers available through `node.sal`

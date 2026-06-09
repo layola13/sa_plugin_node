@@ -1,0 +1,128 @@
+// SA tests for Node sqlite helpers
+@import "../node.sal"
+
+@const S_MEMORY = utf8:":memory:"
+@const S_CREATE = utf8:"CREATE TABLE t(id INTEGER PRIMARY KEY, name TEXT, n INTEGER)"
+@const S_INSERT = utf8:"INSERT INTO t(name,n) VALUES ('alpha',7)"
+@const S_SELECT = utf8:"SELECT id,name,n FROM t"
+@const S_BIND_INSERT = utf8:"INSERT INTO t(name,n) VALUES (?1,?2)"
+@const S_BETA = utf8:"beta"
+
+@test "node.sqlite main facade smoke"():
+L_ENTRY:
+    status_ptr = add 0, 0
+    status_len = add 0, 0
+    EXPAND NODE_SQLITE_STATUS_JSON status_ptr, status_len
+    version_ptr = add 0, 0
+    version_len = add 0, 0
+    s0 = add 0, 0
+    EXPAND NODE_SQLITE_VERSION_JSON version_ptr, version_len, s0
+    db = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_SQLITE_OPEN db, s1, S_MEMORY, 8
+    s2 = add 0, 0
+    EXPAND NODE_SQLITE_EXEC s2, db, S_CREATE, 60
+    s3 = add 0, 0
+    EXPAND NODE_SQLITE_EXEC s3, db, S_INSERT, 40
+    changes = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_SQLITE_CHANGES changes, s4, db
+    rowid = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_SQLITE_LAST_INSERT_ROWID rowid, s5, db
+    rows_ptr = add 0, 0
+    rows_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_SQLITE_QUERY_JSON rows_ptr, rows_len, s6, db, S_SELECT, 23
+    stmt = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_SQLITE_PREPARE stmt, s7, db, S_BIND_INSERT, 36
+    s8 = add 0, 0
+    EXPAND NODE_SQLITE_BIND_TEXT s8, stmt, 1, S_BETA, 4
+    s9 = add 0, 0
+    EXPAND NODE_SQLITE_BIND_INT s9, stmt, 2, 8
+    ready = add 0, 0
+    step_ptr = add 0, 0
+    step_len = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_SQLITE_STEP_JSON ready, step_ptr, step_len, s10, stmt
+    s11 = add 0, 0
+    EXPAND NODE_SQLITE_RESET s11, stmt
+    s12 = add 0, 0
+    EXPAND NODE_SQLITE_CLEAR_BINDINGS s12, stmt
+    s13 = add 0, 0
+    EXPAND NODE_SQLITE_FINALIZE s13, stmt
+    s14 = add 0, 0
+    EXPAND NODE_SQLITE_CLOSE s14, db
+    free_step = call @sa_node_plugin_free_buffer(step_ptr, step_len)
+    free_rows = call @sa_node_plugin_free_buffer(rows_ptr, rows_len)
+    free_version = call @sa_node_plugin_free_buffer(version_ptr, version_len)
+    free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
+    sum1 = add s0, s1
+    sum2 = add sum1, s2
+    sum3 = add sum2, s3
+    sum4 = add sum3, s4
+    sum5 = add sum4, s5
+    sum6 = add sum5, s6
+    sum7 = add sum6, s7
+    sum8 = add sum7, s8
+    sum9 = add sum8, s9
+    sum10 = add sum9, s10
+    sum11 = add sum10, s11
+    sum12 = add sum11, s12
+    sum13 = add sum12, s13
+    sum14 = add sum13, s14
+    ok = eq sum14, 0
+    br ok -> L_DONE, L_ERR
+L_DONE:
+    !ok
+    !sum14
+    !sum13
+    !sum12
+    !sum11
+    !sum10
+    !sum9
+    !sum8
+    !sum7
+    !sum6
+    !sum5
+    !sum4
+    !sum3
+    !sum2
+    !sum1
+    !free_status
+    !free_version
+    !free_rows
+    !free_step
+    !s14
+    !s13
+    !s12
+    !s11
+    !s10
+    !step_len
+    !step_ptr
+    !ready
+    !s9
+    !s8
+    !s7
+    !stmt
+    !s6
+    !rows_len
+    !rows_ptr
+    !s5
+    !rowid
+    !s4
+    !changes
+    !s3
+    !s2
+    !s1
+    !db
+    !s0
+    !version_len
+    !version_ptr
+    !status_len
+    !status_ptr
+    return
+L_ERR:
+    !ok
+    panic(103)

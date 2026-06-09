@@ -9867,3 +9867,444 @@
     %out_len = add __ffi_ptr_string_len, 0
     !__ffi_ptr_string_len
 [END_MACRO]
+[MACRO] NODE_SQLITE_STATUS_JSON %p_0, %p_1
+    __m_slot_69bdc633_0 = stack_alloc 8
+    __m_slot_69bdc633_1 = stack_alloc 8
+    __m_status_69bdc633 = call @sa_node_plugin_sqlite_status_json(&__m_slot_69bdc633_0, &__m_slot_69bdc633_1)
+    !__m_status_69bdc633
+    __m_load_69bdc633_p_0 = load __m_slot_69bdc633_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_69bdc633_p_0, 0
+    !__m_load_69bdc633_p_0
+    __m_load_69bdc633_p_1 = load __m_slot_69bdc633_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_69bdc633_p_1, 0
+    !__m_load_69bdc633_p_1
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_VERSION_JSON %out_ptr, %out_len, %out_status
+    __sqlite_version_ptr_slot = stack_alloc 8
+    __sqlite_version_len_slot = stack_alloc 8
+    __sqlite_version_status = call @sa_node_plugin_sqlite_version_json(&__sqlite_version_ptr_slot, &__sqlite_version_len_slot)
+    !%out_status
+    %out_status = add __sqlite_version_status, 0
+    !__sqlite_version_status
+    __sqlite_version_ptr = load __sqlite_version_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_version_ptr, 0
+    !__sqlite_version_ptr
+    __sqlite_version_len = load __sqlite_version_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_version_len, 0
+    !__sqlite_version_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_OPEN %out_db, %out_status, %path, %path_len
+    __sqlite_open_db_slot = stack_alloc 8
+    __sqlite_open_status = call @sa_node_plugin_sqlite_open(%path, %path_len, &__sqlite_open_db_slot)
+    !%out_status
+    %out_status = add __sqlite_open_status, 0
+    !__sqlite_open_status
+    __sqlite_open_db = load __sqlite_open_db_slot+0 as ptr
+    !%out_db
+    %out_db = add __sqlite_open_db, 0
+    !__sqlite_open_db
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_CLOSE %out_status, %db
+    __sqlite_close_status = call @sa_node_plugin_sqlite_close(%db)
+    !%out_status
+    %out_status = add __sqlite_close_status, 0
+    !__sqlite_close_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_EXEC %out_status, %db, %sql, %sql_len
+    __sqlite_exec_status = call @sa_node_plugin_sqlite_exec(%db, %sql, %sql_len)
+    !%out_status
+    %out_status = add __sqlite_exec_status, 0
+    !__sqlite_exec_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_QUERY_JSON %out_ptr, %out_len, %out_status, %db, %sql, %sql_len
+    __sqlite_query_ptr_slot = stack_alloc 8
+    __sqlite_query_len_slot = stack_alloc 8
+    __sqlite_query_status = call @sa_node_plugin_sqlite_query_json(%db, %sql, %sql_len, &__sqlite_query_ptr_slot, &__sqlite_query_len_slot)
+    !%out_status
+    %out_status = add __sqlite_query_status, 0
+    !__sqlite_query_status
+    __sqlite_query_ptr = load __sqlite_query_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_query_ptr, 0
+    !__sqlite_query_ptr
+    __sqlite_query_len = load __sqlite_query_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_query_len, 0
+    !__sqlite_query_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_PREPARE %out_stmt, %out_status, %db, %sql, %sql_len
+    __sqlite_prepare_stmt_slot = stack_alloc 8
+    __sqlite_prepare_status = call @sa_node_plugin_sqlite_prepare(%db, %sql, %sql_len, &__sqlite_prepare_stmt_slot)
+    !%out_status
+    %out_status = add __sqlite_prepare_status, 0
+    !__sqlite_prepare_status
+    __sqlite_prepare_stmt = load __sqlite_prepare_stmt_slot+0 as ptr
+    !%out_stmt
+    %out_stmt = add __sqlite_prepare_stmt, 0
+    !__sqlite_prepare_stmt
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_STEP_JSON %out_ready, %out_ptr, %out_len, %out_status, %stmt
+    __sqlite_step_ready_slot = stack_alloc 8
+    __sqlite_step_ptr_slot = stack_alloc 8
+    __sqlite_step_len_slot = stack_alloc 8
+    __sqlite_step_status = call @sa_node_plugin_sqlite_step_json(%stmt, &__sqlite_step_ready_slot, &__sqlite_step_ptr_slot, &__sqlite_step_len_slot)
+    !%out_status
+    %out_status = add __sqlite_step_status, 0
+    !__sqlite_step_status
+    __sqlite_step_ready = load __sqlite_step_ready_slot+0 as u64
+    !%out_ready
+    %out_ready = add __sqlite_step_ready, 0
+    !__sqlite_step_ready
+    __sqlite_step_ptr = load __sqlite_step_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_step_ptr, 0
+    !__sqlite_step_ptr
+    __sqlite_step_len = load __sqlite_step_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_step_len, 0
+    !__sqlite_step_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BIND_INT %out_status, %stmt, %index, %value
+    __sqlite_bind_int_status = call @sa_node_plugin_sqlite_bind_int(%stmt, %index, %value)
+    !%out_status
+    %out_status = add __sqlite_bind_int_status, 0
+    !__sqlite_bind_int_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BIND_DOUBLE %out_status, %stmt, %index, %value
+    __sqlite_bind_double_status = call @sa_node_plugin_sqlite_bind_double(%stmt, %index, %value)
+    !%out_status
+    %out_status = add __sqlite_bind_double_status, 0
+    !__sqlite_bind_double_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BIND_TEXT %out_status, %stmt, %index, %value, %value_len
+    __sqlite_bind_text_status = call @sa_node_plugin_sqlite_bind_text(%stmt, %index, %value, %value_len)
+    !%out_status
+    %out_status = add __sqlite_bind_text_status, 0
+    !__sqlite_bind_text_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BIND_BLOB %out_status, %stmt, %index, %value, %value_len
+    __sqlite_bind_blob_status = call @sa_node_plugin_sqlite_bind_blob(%stmt, %index, %value, %value_len)
+    !%out_status
+    %out_status = add __sqlite_bind_blob_status, 0
+    !__sqlite_bind_blob_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BIND_NULL %out_status, %stmt, %index
+    __sqlite_bind_null_status = call @sa_node_plugin_sqlite_bind_null(%stmt, %index)
+    !%out_status
+    %out_status = add __sqlite_bind_null_status, 0
+    !__sqlite_bind_null_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_RESET %out_status, %stmt
+    __sqlite_reset_status = call @sa_node_plugin_sqlite_reset(%stmt)
+    !%out_status
+    %out_status = add __sqlite_reset_status, 0
+    !__sqlite_reset_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_CLEAR_BINDINGS %out_status, %stmt
+    __sqlite_clear_bindings_status = call @sa_node_plugin_sqlite_clear_bindings(%stmt)
+    !%out_status
+    %out_status = add __sqlite_clear_bindings_status, 0
+    !__sqlite_clear_bindings_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_FINALIZE %out_status, %stmt
+    __sqlite_finalize_status = call @sa_node_plugin_sqlite_finalize(%stmt)
+    !%out_status
+    %out_status = add __sqlite_finalize_status, 0
+    !__sqlite_finalize_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_CHANGES %out_changes, %out_status, %db
+    __sqlite_changes_slot = stack_alloc 8
+    __sqlite_changes_status = call @sa_node_plugin_sqlite_changes(%db, &__sqlite_changes_slot)
+    !%out_status
+    %out_status = add __sqlite_changes_status, 0
+    !__sqlite_changes_status
+    __sqlite_changes = load __sqlite_changes_slot+0 as u64
+    !%out_changes
+    %out_changes = add __sqlite_changes, 0
+    !__sqlite_changes
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_LAST_INSERT_ROWID %out_rowid, %out_status, %db
+    __sqlite_rowid_slot = stack_alloc 8
+    __sqlite_rowid_status = call @sa_node_plugin_sqlite_last_insert_rowid(%db, &__sqlite_rowid_slot)
+    !%out_status
+    %out_status = add __sqlite_rowid_status, 0
+    !__sqlite_rowid_status
+    __sqlite_rowid = load __sqlite_rowid_slot+0 as u64
+    !%out_rowid
+    %out_rowid = add __sqlite_rowid, 0
+    !__sqlite_rowid
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BACKUP_INIT %out_backup, %out_status, %db, %path, %path_len
+    __sqlite_backup_slot = stack_alloc 8
+    __sqlite_backup_status = call @sa_node_plugin_sqlite_backup_init(%db, %path, %path_len, &__sqlite_backup_slot)
+    !%out_status
+    %out_status = add __sqlite_backup_status, 0
+    !__sqlite_backup_status
+    __sqlite_backup_handle = load __sqlite_backup_slot+0 as ptr
+    !%out_backup
+    %out_backup = add __sqlite_backup_handle, 0
+    !__sqlite_backup_handle
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BACKUP_STEP %out_done, %out_remaining, %out_pagecount, %out_status, %backup, %pages
+    __sqlite_backup_done_slot = stack_alloc 8
+    __sqlite_backup_remaining_slot = stack_alloc 8
+    __sqlite_backup_pagecount_slot = stack_alloc 8
+    __sqlite_backup_step_status = call @sa_node_plugin_sqlite_backup_step(%backup, %pages, &__sqlite_backup_done_slot, &__sqlite_backup_remaining_slot, &__sqlite_backup_pagecount_slot)
+    !%out_status
+    %out_status = add __sqlite_backup_step_status, 0
+    !__sqlite_backup_step_status
+    __sqlite_backup_done = load __sqlite_backup_done_slot+0 as u64
+    !%out_done
+    %out_done = add __sqlite_backup_done, 0
+    !__sqlite_backup_done
+    __sqlite_backup_remaining = load __sqlite_backup_remaining_slot+0 as u64
+    !%out_remaining
+    %out_remaining = add __sqlite_backup_remaining, 0
+    !__sqlite_backup_remaining
+    __sqlite_backup_pagecount = load __sqlite_backup_pagecount_slot+0 as u64
+    !%out_pagecount
+    %out_pagecount = add __sqlite_backup_pagecount, 0
+    !__sqlite_backup_pagecount
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BACKUP_REMAINING %out_remaining, %out_pagecount, %out_status, %backup
+    __sqlite_backup_remaining_slot = stack_alloc 8
+    __sqlite_backup_pagecount_slot = stack_alloc 8
+    __sqlite_backup_remaining_status = call @sa_node_plugin_sqlite_backup_remaining(%backup, &__sqlite_backup_remaining_slot, &__sqlite_backup_pagecount_slot)
+    !%out_status
+    %out_status = add __sqlite_backup_remaining_status, 0
+    !__sqlite_backup_remaining_status
+    __sqlite_backup_remaining = load __sqlite_backup_remaining_slot+0 as u64
+    !%out_remaining
+    %out_remaining = add __sqlite_backup_remaining, 0
+    !__sqlite_backup_remaining
+    __sqlite_backup_pagecount = load __sqlite_backup_pagecount_slot+0 as u64
+    !%out_pagecount
+    %out_pagecount = add __sqlite_backup_pagecount, 0
+    !__sqlite_backup_pagecount
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BACKUP_FINISH %out_status, %backup
+    __sqlite_backup_finish_status = call @sa_node_plugin_sqlite_backup_finish(%backup)
+    !%out_status
+    %out_status = add __sqlite_backup_finish_status, 0
+    !__sqlite_backup_finish_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_BACKUP_TO_FILE %out_pages, %out_status, %db, %path, %path_len, %pages_per_step
+    __sqlite_backup_to_file_pages_slot = stack_alloc 8
+    __sqlite_backup_to_file_status = call @sa_node_plugin_sqlite_backup_to_file(%db, %path, %path_len, %pages_per_step, &__sqlite_backup_to_file_pages_slot)
+    !%out_status
+    %out_status = add __sqlite_backup_to_file_status, 0
+    !__sqlite_backup_to_file_status
+    __sqlite_backup_to_file_pages = load __sqlite_backup_to_file_pages_slot+0 as u64
+    !%out_pages
+    %out_pages = add __sqlite_backup_to_file_pages, 0
+    !__sqlite_backup_to_file_pages
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_CREATE %out_session, %out_status, %db, %db_name, %db_name_len, %table, %table_len
+    __sqlite_session_slot = stack_alloc 8
+    __sqlite_session_status = call @sa_node_plugin_sqlite_session_create(%db, %db_name, %db_name_len, %table, %table_len, &__sqlite_session_slot)
+    !%out_status
+    %out_status = add __sqlite_session_status, 0
+    !__sqlite_session_status
+    __sqlite_session_handle = load __sqlite_session_slot+0 as ptr
+    !%out_session
+    %out_session = add __sqlite_session_handle, 0
+    !__sqlite_session_handle
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_CHANGESET %out_ptr, %out_len, %out_status, %session
+    __sqlite_session_changeset_ptr_slot = stack_alloc 8
+    __sqlite_session_changeset_len_slot = stack_alloc 8
+    __sqlite_session_changeset_status = call @sa_node_plugin_sqlite_session_changeset(%session, &__sqlite_session_changeset_ptr_slot, &__sqlite_session_changeset_len_slot)
+    !%out_status
+    %out_status = add __sqlite_session_changeset_status, 0
+    !__sqlite_session_changeset_status
+    __sqlite_session_changeset_ptr = load __sqlite_session_changeset_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_session_changeset_ptr, 0
+    !__sqlite_session_changeset_ptr
+    __sqlite_session_changeset_len = load __sqlite_session_changeset_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_session_changeset_len, 0
+    !__sqlite_session_changeset_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_PATCHSET %out_ptr, %out_len, %out_status, %session
+    __sqlite_session_patchset_ptr_slot = stack_alloc 8
+    __sqlite_session_patchset_len_slot = stack_alloc 8
+    __sqlite_session_patchset_status = call @sa_node_plugin_sqlite_session_patchset(%session, &__sqlite_session_patchset_ptr_slot, &__sqlite_session_patchset_len_slot)
+    !%out_status
+    %out_status = add __sqlite_session_patchset_status, 0
+    !__sqlite_session_patchset_status
+    __sqlite_session_patchset_ptr = load __sqlite_session_patchset_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_session_patchset_ptr, 0
+    !__sqlite_session_patchset_ptr
+    __sqlite_session_patchset_len = load __sqlite_session_patchset_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_session_patchset_len, 0
+    !__sqlite_session_patchset_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_ISEMPTY %out_empty, %out_status, %session
+    __sqlite_session_empty_slot = stack_alloc 8
+    __sqlite_session_empty_status = call @sa_node_plugin_sqlite_session_isempty(%session, &__sqlite_session_empty_slot)
+    !%out_status
+    %out_status = add __sqlite_session_empty_status, 0
+    !__sqlite_session_empty_status
+    __sqlite_session_empty = load __sqlite_session_empty_slot+0 as u64
+    !%out_empty
+    %out_empty = add __sqlite_session_empty, 0
+    !__sqlite_session_empty
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_MEMORY_USED %out_bytes, %out_status, %session
+    __sqlite_session_memory_slot = stack_alloc 8
+    __sqlite_session_memory_status = call @sa_node_plugin_sqlite_session_memory_used(%session, &__sqlite_session_memory_slot)
+    !%out_status
+    %out_status = add __sqlite_session_memory_status, 0
+    !__sqlite_session_memory_status
+    __sqlite_session_memory = load __sqlite_session_memory_slot+0 as u64
+    !%out_bytes
+    %out_bytes = add __sqlite_session_memory, 0
+    !__sqlite_session_memory
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_SESSION_CLOSE %out_status, %session
+    __sqlite_session_close_status = call @sa_node_plugin_sqlite_session_close(%session)
+    !%out_status
+    %out_status = add __sqlite_session_close_status, 0
+    !__sqlite_session_close_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_APPLY_CHANGESET %out_applied, %out_status, %db, %changeset, %changeset_len
+    __sqlite_apply_changeset_slot = stack_alloc 8
+    __sqlite_apply_changeset_status = call @sa_node_plugin_sqlite_apply_changeset(%db, %changeset, %changeset_len, &__sqlite_apply_changeset_slot)
+    !%out_status
+    %out_status = add __sqlite_apply_changeset_status, 0
+    !__sqlite_apply_changeset_status
+    __sqlite_apply_changeset_applied = load __sqlite_apply_changeset_slot+0 as u64
+    !%out_applied
+    %out_applied = add __sqlite_apply_changeset_applied, 0
+    !__sqlite_apply_changeset_applied
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_NEW %out_store, %out_status, %db, %capacity
+    __sqlite_tagstore_slot = stack_alloc 8
+    __sqlite_tagstore_status = call @sa_node_plugin_sqlite_tagstore_new(%db, %capacity, &__sqlite_tagstore_slot)
+    !%out_status
+    %out_status = add __sqlite_tagstore_status, 0
+    !__sqlite_tagstore_status
+    __sqlite_tagstore_handle = load __sqlite_tagstore_slot+0 as ptr
+    !%out_store
+    %out_store = add __sqlite_tagstore_handle, 0
+    !__sqlite_tagstore_handle
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_ALL %out_ptr, %out_len, %out_status, %store, %sql, %sql_len, %params, %params_len
+    __sqlite_tagstore_all_ptr_slot = stack_alloc 8
+    __sqlite_tagstore_all_len_slot = stack_alloc 8
+    __sqlite_tagstore_all_status = call @sa_node_plugin_sqlite_tagstore_all(%store, %sql, %sql_len, %params, %params_len, &__sqlite_tagstore_all_ptr_slot, &__sqlite_tagstore_all_len_slot)
+    !%out_status
+    %out_status = add __sqlite_tagstore_all_status, 0
+    !__sqlite_tagstore_all_status
+    __sqlite_tagstore_all_ptr = load __sqlite_tagstore_all_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_tagstore_all_ptr, 0
+    !__sqlite_tagstore_all_ptr
+    __sqlite_tagstore_all_len = load __sqlite_tagstore_all_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_tagstore_all_len, 0
+    !__sqlite_tagstore_all_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_GET %out_ptr, %out_len, %out_status, %store, %sql, %sql_len, %params, %params_len
+    __sqlite_tagstore_get_ptr_slot = stack_alloc 8
+    __sqlite_tagstore_get_len_slot = stack_alloc 8
+    __sqlite_tagstore_get_status = call @sa_node_plugin_sqlite_tagstore_get(%store, %sql, %sql_len, %params, %params_len, &__sqlite_tagstore_get_ptr_slot, &__sqlite_tagstore_get_len_slot)
+    !%out_status
+    %out_status = add __sqlite_tagstore_get_status, 0
+    !__sqlite_tagstore_get_status
+    __sqlite_tagstore_get_ptr = load __sqlite_tagstore_get_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_tagstore_get_ptr, 0
+    !__sqlite_tagstore_get_ptr
+    __sqlite_tagstore_get_len = load __sqlite_tagstore_get_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_tagstore_get_len, 0
+    !__sqlite_tagstore_get_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_RUN %out_ptr, %out_len, %out_status, %store, %sql, %sql_len, %params, %params_len
+    __sqlite_tagstore_run_ptr_slot = stack_alloc 8
+    __sqlite_tagstore_run_len_slot = stack_alloc 8
+    __sqlite_tagstore_run_status = call @sa_node_plugin_sqlite_tagstore_run(%store, %sql, %sql_len, %params, %params_len, &__sqlite_tagstore_run_ptr_slot, &__sqlite_tagstore_run_len_slot)
+    !%out_status
+    %out_status = add __sqlite_tagstore_run_status, 0
+    !__sqlite_tagstore_run_status
+    __sqlite_tagstore_run_ptr = load __sqlite_tagstore_run_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_tagstore_run_ptr, 0
+    !__sqlite_tagstore_run_ptr
+    __sqlite_tagstore_run_len = load __sqlite_tagstore_run_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_tagstore_run_len, 0
+    !__sqlite_tagstore_run_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %store
+    __sqlite_tagstore_snapshot_ptr_slot = stack_alloc 8
+    __sqlite_tagstore_snapshot_len_slot = stack_alloc 8
+    __sqlite_tagstore_snapshot_status = call @sa_node_plugin_sqlite_tagstore_snapshot_json(%store, &__sqlite_tagstore_snapshot_ptr_slot, &__sqlite_tagstore_snapshot_len_slot)
+    !%out_status
+    %out_status = add __sqlite_tagstore_snapshot_status, 0
+    !__sqlite_tagstore_snapshot_status
+    __sqlite_tagstore_snapshot_ptr = load __sqlite_tagstore_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __sqlite_tagstore_snapshot_ptr, 0
+    !__sqlite_tagstore_snapshot_ptr
+    __sqlite_tagstore_snapshot_len = load __sqlite_tagstore_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __sqlite_tagstore_snapshot_len, 0
+    !__sqlite_tagstore_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_CLEAR %out_status, %store
+    __sqlite_tagstore_clear_status = call @sa_node_plugin_sqlite_tagstore_clear(%store)
+    !%out_status
+    %out_status = add __sqlite_tagstore_clear_status, 0
+    !__sqlite_tagstore_clear_status
+[END_MACRO]
+
+[MACRO] NODE_SQLITE_TAGSTORE_FREE %out_status, %store
+    __sqlite_tagstore_free_status = call @sa_node_plugin_sqlite_tagstore_free(%store)
+    !%out_status
+    %out_status = add __sqlite_tagstore_free_status, 0
+    !__sqlite_tagstore_free_status
+[END_MACRO]

@@ -1,6 +1,5 @@
 // SA smoke tests for QUIC / HTTP3 / DTLS native endpoint subsets
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_LOOP4 = utf8:"127.0.0.1"
 @const S_H3 = utf8:"h3"
@@ -61,6 +60,12 @@ L_ENTRY:
     !free_h3
     !free_dtls_status
     !free_dsnap
+    !snap_len
+    !snap_ptr
+    !h3_len
+    !h3_ptr
+    !dsnap_len
+    !dsnap_ptr
     !s_quic_close
     !s_session_close
     !s_dtls_close

@@ -1,6 +1,5 @@
 // SA tests for QUIC / HTTP3 metadata helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.quic and http3 metadata helpers"():
 L_ENTRY:

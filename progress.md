@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `http2`
+- Scope: installed main `node.sal` public macro coverage for `quic/http3/dtls`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `http2` settings / constants / handshake macros validated through `node.sal`
+  - `quic` endpoint helpers, `http3` session helpers, and `dtls` endpoint helpers validated through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` quic/http3/dtls helper macro tranche completed:
+  - `quic` endpoint helpers available through `node.sal`
+  - `http3` metadata and session helpers available through `node.sal`
+  - `dtls` metadata and endpoint helpers available through `node.sal`
+  - `tests/node_test_quic_http3_extra.sa` and `node_test_quic_dtls.sa` now validate through `node.sal` only
 
 - installed main `node.sal` http2 helper macro tranche completed:
   - `http2` settings / constants / handshake macros available through `node.sal`

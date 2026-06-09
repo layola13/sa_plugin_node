@@ -1,6 +1,5 @@
 // SA tests for Node string_decoder top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.string_decoder top level facade helpers"():
 L_ENTRY:

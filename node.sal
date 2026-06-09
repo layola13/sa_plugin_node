@@ -1037,6 +1037,93 @@
     %out_len = load __bc_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_BUFFER_STATUS_JSON %out_ptr, %out_len, %out_status
+    __buffer_status_ptr_slot = stack_alloc 8
+    __buffer_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_status_json(&__buffer_status_ptr_slot, &__buffer_status_len_slot)
+    %out_ptr = load __buffer_status_ptr_slot+0 as ptr
+    %out_len = load __buffer_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __buffer_exports_ptr_slot = stack_alloc 8
+    __buffer_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_exports_json(&__buffer_exports_ptr_slot, &__buffer_exports_len_slot)
+    %out_ptr = load __buffer_exports_ptr_slot+0 as ptr
+    %out_len = load __buffer_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __buffer_constants_ptr_slot = stack_alloc 8
+    __buffer_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_constants_json(&__buffer_constants_ptr_slot, &__buffer_constants_len_slot)
+    %out_ptr = load __buffer_constants_ptr_slot+0 as ptr
+    %out_len = load __buffer_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __buffer_config_ptr_slot = stack_alloc 8
+    __buffer_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_config_json(&__buffer_config_ptr_slot, &__buffer_config_len_slot)
+    %out_ptr = load __buffer_config_ptr_slot+0 as ptr
+    %out_len = load __buffer_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __buffer_feature_ptr_slot = stack_alloc 8
+    __buffer_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_feature_support_json(&__buffer_feature_ptr_slot, &__buffer_feature_len_slot)
+    %out_ptr = load __buffer_feature_ptr_slot+0 as ptr
+    %out_len = load __buffer_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_ATOB %input, %input_len, %out_ptr, %out_len, %out_status
+    __buffer_atob_ptr_slot = stack_alloc 8
+    __buffer_atob_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_atob(%input, %input_len, &__buffer_atob_ptr_slot, &__buffer_atob_len_slot)
+    %out_ptr = load __buffer_atob_ptr_slot+0 as ptr
+    %out_len = load __buffer_atob_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_BTOA %input, %input_len, %out_ptr, %out_len
+    __buffer_btoa_ptr_slot = stack_alloc 8
+    __buffer_btoa_len_slot = stack_alloc 8
+    __buffer_btoa_status = call @sa_node_plugin_buffer_btoa(%input, %input_len, &__buffer_btoa_ptr_slot, &__buffer_btoa_len_slot)
+    !__buffer_btoa_status
+    %out_ptr = load __buffer_btoa_ptr_slot+0 as ptr
+    %out_len = load __buffer_btoa_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_IS_UTF8 %input, %input_len, %out_bool
+    __buffer_is_utf8_slot = stack_alloc 4
+    __buffer_is_utf8_status = call @sa_node_plugin_buffer_is_utf8(%input, %input_len, &__buffer_is_utf8_slot)
+    !__buffer_is_utf8_status
+    %out_bool = load __buffer_is_utf8_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_IS_ASCII %input, %input_len, %out_bool
+    __buffer_is_ascii_slot = stack_alloc 4
+    __buffer_is_ascii_status = call @sa_node_plugin_buffer_is_ascii(%input, %input_len, &__buffer_is_ascii_slot)
+    !__buffer_is_ascii_status
+    %out_bool = load __buffer_is_ascii_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_TRANSCODE %src, %src_len, %from_enc, %from_enc_len, %to_enc, %to_enc_len, %out_ptr, %out_len, %out_status
+    __buffer_transcode_ptr_slot = stack_alloc 8
+    __buffer_transcode_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_transcode(%src, %src_len, %from_enc, %from_enc_len, %to_enc, %to_enc_len, &__buffer_transcode_ptr_slot, &__buffer_transcode_len_slot)
+    %out_ptr = load __buffer_transcode_ptr_slot+0 as ptr
+    %out_len = load __buffer_transcode_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_BUFFER_RESOLVE_OBJECT_URL %url, %url_len, %out_ptr, %out_len, %out_status
+    __buffer_resolve_ptr_slot = stack_alloc 8
+    __buffer_resolve_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_buffer_resolve_object_url(%url, %url_len, &__buffer_resolve_ptr_slot, &__buffer_resolve_len_slot)
+    %out_ptr = load __buffer_resolve_ptr_slot+0 as ptr
+    %out_len = load __buffer_resolve_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_EVENTS_CREATE %out_ee
     %out_ee = call @sa_node_plugin_events_create()
 [END_MACRO]
@@ -4617,6 +4704,68 @@
     %out_status = call @sa_node_plugin_timers_sleep(%ms)
 [END_MACRO]
 
+[MACRO] NODE_TIMERS_SET_TIMEOUT %ms, %callback, %out_id, %out_status
+    __timers_timeout_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_set_timeout(%ms, %callback, &__timers_timeout_id_slot)
+    %out_id = load __timers_timeout_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SET_INTERVAL %ms, %callback, %out_id, %out_status
+    __timers_interval_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_set_interval(%ms, %callback, &__timers_interval_id_slot)
+    %out_id = load __timers_interval_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_SET_IMMEDIATE %callback, %out_id, %out_status
+    __timers_immediate_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_set_immediate(%callback, &__timers_immediate_id_slot)
+    %out_id = load __timers_immediate_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_TIMEOUT %id, %out_status
+    %out_status = call @sa_node_plugin_timers_clear_timeout(%id)
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_INTERVAL %id, %out_status
+    %out_status = call @sa_node_plugin_timers_clear_interval(%id)
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_CLEAR_IMMEDIATE %id, %out_status
+    %out_status = call @sa_node_plugin_timers_clear_immediate(%id)
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __timers_status_ptr_slot = stack_alloc 8
+    __timers_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_status_json(&__timers_status_ptr_slot, &__timers_status_len_slot)
+    %out_ptr = load __timers_status_ptr_slot+0 as ptr
+    %out_len = load __timers_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __timers_exports_ptr_slot = stack_alloc 8
+    __timers_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_exports_json(&__timers_exports_ptr_slot, &__timers_exports_len_slot)
+    %out_ptr = load __timers_exports_ptr_slot+0 as ptr
+    %out_len = load __timers_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __timers_config_ptr_slot = stack_alloc 8
+    __timers_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_config_json(&__timers_config_ptr_slot, &__timers_config_len_slot)
+    %out_ptr = load __timers_config_ptr_slot+0 as ptr
+    %out_len = load __timers_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __timers_feature_ptr_slot = stack_alloc 8
+    __timers_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_timers_feature_support_json(&__timers_feature_ptr_slot, &__timers_feature_len_slot)
+    %out_ptr = load __timers_feature_ptr_slot+0 as ptr
+    %out_len = load __timers_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_STRING_DECODER_CREATE %out_sd
     %out_sd = call @sa_node_plugin_string_decoder_create()
 [END_MACRO]
@@ -4639,4 +4788,36 @@
 
 [MACRO] NODE_STRING_DECODER_FREE %out_status, %sd
     %out_status = call @sa_node_plugin_string_decoder_free(%sd)
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_STATUS_JSON %out_ptr, %out_len, %out_status
+    __string_decoder_status_ptr_slot = stack_alloc 8
+    __string_decoder_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_status_json(&__string_decoder_status_ptr_slot, &__string_decoder_status_len_slot)
+    %out_ptr = load __string_decoder_status_ptr_slot+0 as ptr
+    %out_len = load __string_decoder_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __string_decoder_exports_ptr_slot = stack_alloc 8
+    __string_decoder_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_exports_json(&__string_decoder_exports_ptr_slot, &__string_decoder_exports_len_slot)
+    %out_ptr = load __string_decoder_exports_ptr_slot+0 as ptr
+    %out_len = load __string_decoder_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __string_decoder_config_ptr_slot = stack_alloc 8
+    __string_decoder_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_config_json(&__string_decoder_config_ptr_slot, &__string_decoder_config_len_slot)
+    %out_ptr = load __string_decoder_config_ptr_slot+0 as ptr
+    %out_len = load __string_decoder_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_STRING_DECODER_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __string_decoder_feature_ptr_slot = stack_alloc 8
+    __string_decoder_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_string_decoder_feature_support_json(&__string_decoder_feature_ptr_slot, &__string_decoder_feature_len_slot)
+    %out_ptr = load __string_decoder_feature_ptr_slot+0 as ptr
+    %out_len = load __string_decoder_feature_len_slot+0 as u64
 [END_MACRO]

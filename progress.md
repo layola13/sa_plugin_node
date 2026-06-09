@@ -63,12 +63,20 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `readline`
+- Scope: installed main `node.sal` public macro coverage for `buffer/timers/string_decoder`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `readline` top-level metadata, TTY helpers, and `createInterface` available through `node.sal`
+  - `buffer` top-level metadata and common helper macros available through `node.sal`
+  - `timers` top-level metadata and basic timer handle macros available through `node.sal`
+  - `string_decoder` top-level metadata helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` buffer/timers/string_decoder helper macro tranche completed:
+  - `buffer` top-level metadata, constants, base64, encoding-check, transcode, and object-url helper macros available through `node.sal`
+  - `timers` top-level metadata and basic `setTimeout` / `setInterval` / `setImmediate` clear helper macros available through `node.sal`
+  - `string_decoder` top-level metadata helpers available through `node.sal`
+  - `tests/node_test_buffer_top.sa`, `node_test_timers_top.sa`, and `node_test_string_decoder_top.sa` now validate through `node.sal` only
 
 - installed main `node.sal` readline helper macro tranche completed:
   - `readline` top-level metadata helpers available through `node.sal`

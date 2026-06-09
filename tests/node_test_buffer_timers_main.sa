@@ -1,0 +1,169 @@
+// SA compile-surface check for buffer / timers / string_decoder helpers via node.sal
+@import "../node.sal"
+
+@const S_B64 = utf8:"aGVsbG8="
+@const S_URL_OBJ = utf8:"blob:https://example.com/uuid"
+@const S_UTF8 = utf8:"hello"
+@const S_ENCODING = utf8:"utf8"
+
+@test "node.buffer timers string_decoder main facade compile surface"():
+L_ENTRY:
+    buffer_status_ptr = add 0, 0
+    buffer_status_len = add 0, 0
+    s_buffer_status = add 0, 0
+    EXPAND NODE_BUFFER_STATUS_JSON buffer_status_ptr, buffer_status_len, s_buffer_status
+    buffer_exports_ptr = add 0, 0
+    buffer_exports_len = add 0, 0
+    s_buffer_exports = add 0, 0
+    EXPAND NODE_BUFFER_TOP_EXPORTS_JSON buffer_exports_ptr, buffer_exports_len, s_buffer_exports
+    buffer_config_ptr = add 0, 0
+    buffer_config_len = add 0, 0
+    s_buffer_config = add 0, 0
+    EXPAND NODE_BUFFER_TOP_CONFIG_JSON buffer_config_ptr, buffer_config_len, s_buffer_config
+    buffer_feature_ptr = add 0, 0
+    buffer_feature_len = add 0, 0
+    s_buffer_feature = add 0, 0
+    EXPAND NODE_BUFFER_TOP_FEATURE_SUPPORT_JSON buffer_feature_ptr, buffer_feature_len, s_buffer_feature
+    buffer_constants_ptr = add 0, 0
+    buffer_constants_len = add 0, 0
+    s_buffer_constants = add 0, 0
+    EXPAND NODE_BUFFER_CONSTANTS_JSON buffer_constants_ptr, buffer_constants_len, s_buffer_constants
+    atob_ptr = add 0, 0
+    atob_len = add 0, 0
+    s_atob = add 0, 0
+    EXPAND NODE_BUFFER_ATOB S_B64, 8, atob_ptr, atob_len, s_atob
+    utf8_bool = add 0, 0
+    EXPAND NODE_BUFFER_IS_UTF8 S_UTF8, 5, utf8_bool
+    ascii_bool = add 0, 0
+    EXPAND NODE_BUFFER_IS_ASCII S_UTF8, 5, ascii_bool
+    transcode_ptr = add 0, 0
+    transcode_len = add 0, 0
+    s_transcode = add 0, 0
+    EXPAND NODE_BUFFER_TRANSCODE S_UTF8, 5, S_ENCODING, 4, S_ENCODING, 4, transcode_ptr, transcode_len, s_transcode
+    resolve_ptr = add 0, 0
+    resolve_len = add 0, 0
+    s_resolve = add 0, 0
+    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL S_URL_OBJ, 28, resolve_ptr, resolve_len, s_resolve
+
+    timers_status_ptr = add 0, 0
+    timers_status_len = add 0, 0
+    s_timers_status = add 0, 0
+    EXPAND NODE_TIMERS_STATUS_JSON timers_status_ptr, timers_status_len, s_timers_status
+    timers_exports_ptr = add 0, 0
+    timers_exports_len = add 0, 0
+    s_timers_exports = add 0, 0
+    EXPAND NODE_TIMERS_TOP_EXPORTS_JSON timers_exports_ptr, timers_exports_len, s_timers_exports
+    timers_config_ptr = add 0, 0
+    timers_config_len = add 0, 0
+    s_timers_config = add 0, 0
+    EXPAND NODE_TIMERS_TOP_CONFIG_JSON timers_config_ptr, timers_config_len, s_timers_config
+    timers_feature_ptr = add 0, 0
+    timers_feature_len = add 0, 0
+    s_timers_feature = add 0, 0
+    EXPAND NODE_TIMERS_TOP_FEATURE_SUPPORT_JSON timers_feature_ptr, timers_feature_len, s_timers_feature
+    timeout_id = add 0, 0
+    s_timeout = add 0, 0
+    EXPAND NODE_TIMERS_SET_TIMEOUT 10, 0, timeout_id, s_timeout
+    s_clear_timeout = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_TIMEOUT timeout_id, s_clear_timeout
+    interval_id = add 0, 0
+    s_interval = add 0, 0
+    EXPAND NODE_TIMERS_SET_INTERVAL 10, 0, interval_id, s_interval
+    s_clear_interval = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_INTERVAL interval_id, s_clear_interval
+    immediate_id = add 0, 0
+    s_immediate = add 0, 0
+    EXPAND NODE_TIMERS_SET_IMMEDIATE 0, immediate_id, s_immediate
+    s_clear_immediate = add 0, 0
+    EXPAND NODE_TIMERS_CLEAR_IMMEDIATE immediate_id, s_clear_immediate
+
+    decoder_status_ptr = add 0, 0
+    decoder_status_len = add 0, 0
+    s_decoder_status = add 0, 0
+    EXPAND NODE_STRING_DECODER_STATUS_JSON decoder_status_ptr, decoder_status_len, s_decoder_status
+    decoder_exports_ptr = add 0, 0
+    decoder_exports_len = add 0, 0
+    s_decoder_exports = add 0, 0
+    EXPAND NODE_STRING_DECODER_TOP_EXPORTS_JSON decoder_exports_ptr, decoder_exports_len, s_decoder_exports
+    decoder_config_ptr = add 0, 0
+    decoder_config_len = add 0, 0
+    s_decoder_config = add 0, 0
+    EXPAND NODE_STRING_DECODER_TOP_CONFIG_JSON decoder_config_ptr, decoder_config_len, s_decoder_config
+    decoder_feature_ptr = add 0, 0
+    decoder_feature_len = add 0, 0
+    s_decoder_feature = add 0, 0
+    EXPAND NODE_STRING_DECODER_TOP_FEATURE_SUPPORT_JSON decoder_feature_ptr, decoder_feature_len, s_decoder_feature
+    decoder = add 0, 0
+    EXPAND NODE_STRING_DECODER_CREATE decoder
+    decoder_out_ptr = add 0, 0
+    decoder_out_len = add 0, 0
+    s_decoder_write = add 0, 0
+    EXPAND NODE_STRING_DECODER_WRITE s_decoder_write, decoder_out_ptr, decoder_out_len, decoder, S_UTF8, 5
+    s_decoder_free = add 0, 0
+    EXPAND NODE_STRING_DECODER_FREE s_decoder_free, decoder
+
+    !s_decoder_free
+    !s_decoder_write
+    !decoder_out_len
+    !decoder_out_ptr
+    !decoder
+    !s_decoder_feature
+    !decoder_feature_len
+    !decoder_feature_ptr
+    !s_decoder_config
+    !decoder_config_len
+    !decoder_config_ptr
+    !s_decoder_exports
+    !decoder_exports_len
+    !decoder_exports_ptr
+    !s_decoder_status
+    !decoder_status_len
+    !decoder_status_ptr
+    !s_clear_immediate
+    !s_immediate
+    !immediate_id
+    !s_clear_interval
+    !s_interval
+    !interval_id
+    !s_clear_timeout
+    !s_timeout
+    !timeout_id
+    !s_timers_feature
+    !timers_feature_len
+    !timers_feature_ptr
+    !s_timers_config
+    !timers_config_len
+    !timers_config_ptr
+    !s_timers_exports
+    !timers_exports_len
+    !timers_exports_ptr
+    !s_timers_status
+    !timers_status_len
+    !timers_status_ptr
+    !s_resolve
+    !resolve_len
+    !resolve_ptr
+    !s_transcode
+    !transcode_len
+    !transcode_ptr
+    !ascii_bool
+    !utf8_bool
+    !s_atob
+    !atob_len
+    !atob_ptr
+    !s_buffer_constants
+    !buffer_constants_len
+    !buffer_constants_ptr
+    !s_buffer_feature
+    !buffer_feature_len
+    !buffer_feature_ptr
+    !s_buffer_config
+    !buffer_config_len
+    !buffer_config_ptr
+    !s_buffer_exports
+    !buffer_exports_len
+    !buffer_exports_ptr
+    !s_buffer_status
+    !buffer_status_len
+    !buffer_status_ptr
+    return

@@ -7491,3 +7491,107 @@
     %out_status = call @sa_node_plugin_internationalization_has_icu_config(&__m_i18n_has_icu_slot)
     %out_bool = load __m_i18n_has_icu_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_36d13fef_0 = stack_alloc 8
+    __m_slot_36d13fef_1 = stack_alloc 8
+    __m_status_36d13fef = call @sa_node_plugin_iterable_streams_status_json(&__m_slot_36d13fef_0, &__m_slot_36d13fef_1)
+    !%p_2
+    %p_2 = add __m_status_36d13fef, 0
+    !__m_status_36d13fef
+    __m_load_36d13fef_p_0 = load __m_slot_36d13fef_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_36d13fef_p_0, 0
+    !__m_load_36d13fef_p_0
+    __m_load_36d13fef_p_1 = load __m_slot_36d13fef_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_36d13fef_p_1, 0
+    !__m_load_36d13fef_p_1
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_STREAM_TYPES_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_stream_types_ptr_slot = stack_alloc 8
+    __m_iterable_stream_types_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_stream_types_json(&__m_iterable_stream_types_ptr_slot, &__m_iterable_stream_types_len_slot)
+    %out_ptr = load __m_iterable_stream_types_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_stream_types_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_CAPABILITIES_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_stream_caps_ptr_slot = stack_alloc 8
+    __m_iterable_stream_caps_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_capabilities_json(&__m_iterable_stream_caps_ptr_slot, &__m_iterable_stream_caps_len_slot)
+    %out_ptr = load __m_iterable_stream_caps_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_stream_caps_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_BRIDGE_JSON %out_ptr, %out_len, %out_status
+    __m_iterable_stream_bridge_ptr_slot = stack_alloc 8
+    __m_iterable_stream_bridge_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_bridge_json(&__m_iterable_stream_bridge_ptr_slot, &__m_iterable_stream_bridge_len_slot)
+    %out_ptr = load __m_iterable_stream_bridge_ptr_slot+0 as ptr
+    %out_len = load __m_iterable_stream_bridge_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_HAS_STREAM_TYPE %out_bool, %out_status, %name, %name_len
+    __m_iterable_stream_type_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_has_stream_type(%name, %name_len, &__m_iterable_stream_type_slot)
+    %out_bool = load __m_iterable_stream_type_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ITERABLE_STREAMS_HAS_CAPABILITY %out_bool, %out_status, %name, %name_len
+    __m_iterable_stream_cap_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_iterable_streams_has_capability(%name, %name_len, &__m_iterable_stream_cap_slot)
+    %out_bool = load __m_iterable_stream_cap_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_IS_ENABLED %out_bool, %out_status
+    __m_permissions_enabled_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_is_enabled(&__m_permissions_enabled_slot)
+    %out_bool = load __m_permissions_enabled_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_IS_AUDIT_MODE %out_bool, %out_status
+    __m_permissions_audit_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_is_audit_mode(&__m_permissions_audit_slot)
+    %out_bool = load __m_permissions_audit_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_AVAILABLE_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __m_permissions_flags_ptr_slot = stack_alloc 8
+    __m_permissions_flags_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_available_flags_json(&__m_permissions_flags_ptr_slot, &__m_permissions_flags_len_slot)
+    %out_ptr = load __m_permissions_flags_ptr_slot+0 as ptr
+    %out_len = load __m_permissions_flags_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_DECLARED_JSON %out_ptr, %out_len, %out_status
+    __m_permissions_declared_ptr_slot = stack_alloc 8
+    __m_permissions_declared_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_declared_json(&__m_permissions_declared_ptr_slot, &__m_permissions_declared_len_slot)
+    %out_ptr = load __m_permissions_declared_ptr_slot+0 as ptr
+    %out_len = load __m_permissions_declared_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_HAS %out_bool, %out_status, %scope, %scope_len, %reference, %reference_len
+    __m_permissions_has_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_permissions_has(%scope, %scope_len, %reference, %reference_len, &__m_permissions_has_slot)
+    %out_bool = load __m_permissions_has_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PERMISSIONS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_0c33b71d_0 = stack_alloc 8
+    __m_slot_0c33b71d_1 = stack_alloc 8
+    __m_status_0c33b71d = call @sa_node_plugin_permissions_status_json(&__m_slot_0c33b71d_0, &__m_slot_0c33b71d_1)
+    !%p_2
+    %p_2 = add __m_status_0c33b71d, 0
+    !__m_status_0c33b71d
+    __m_load_0c33b71d_p_0 = load __m_slot_0c33b71d_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_0c33b71d_p_0, 0
+    !__m_load_0c33b71d_p_0
+    __m_load_0c33b71d_p_1 = load __m_slot_0c33b71d_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_0c33b71d_p_1, 0
+    !__m_load_0c33b71d_p_1
+[END_MACRO]

@@ -1,6 +1,5 @@
 // SA tests for Node permissions native manifest helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_SCOPE_FS_READ = utf8:"fs.read"
 @const S_SCOPE_ENV = utf8:"env"

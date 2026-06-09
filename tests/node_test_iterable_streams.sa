@@ -1,6 +1,5 @@
 // SA tests for Node iterable_streams native helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_READABLE = utf8:"Readable"
 @const S_PIPELINE = utf8:"stream.pipeline"

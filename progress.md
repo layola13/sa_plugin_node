@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `errors/internationalization`
+- Scope: installed main `node.sal` public macro coverage for `permissions/iterable_streams`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `errors` and `internationalization` status plus runtime helper macros available through `node.sal`
+  - `permissions` and `iterable_streams` status plus runtime helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` permissions/iterable_streams helper macro tranche completed:
+  - `permissions` status, enabled/audit-mode flags, available/declared manifests, and scope-check helpers available through `node.sal`
+  - `iterable_streams` status, stream-types, capabilities, bridge, stream-type check, and capability check helpers available through `node.sal`
+  - `tests/node_test_permissions.sa`, `node_test_iterable_streams.sa`, and `node_test_status_json9.sa` now validate through `node.sal` only
 
 - installed main `node.sal` errors/internationalization helper macro tranche completed:
   - `errors` status, code tables, system error name/message/json, `invalidArgType`, `invalidArgValue`, and `outOfRange` helpers available through `node.sal`

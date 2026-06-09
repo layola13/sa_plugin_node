@@ -1,6 +1,5 @@
 // SA tests for more STATUS_JSON macros
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.iterable_streams status_json"():
 L_ENTRY:

@@ -2543,6 +2543,654 @@
     %out_len = load __dgram_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_HTTP_STATUS_JSON %p_0, %p_1
+    __m_slot_e87a611f_0 = stack_alloc 8
+    __m_slot_e87a611f_1 = stack_alloc 8
+    __m_status_e87a611f = call @sa_node_plugin_http_status_json(&__m_slot_e87a611f_0, &__m_slot_e87a611f_1)
+    !__m_status_e87a611f
+    __m_load_e87a611f_p_0 = load __m_slot_e87a611f_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_e87a611f_p_0, 0
+    !__m_load_e87a611f_p_0
+    __m_load_e87a611f_p_1 = load __m_slot_e87a611f_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_e87a611f_p_1, 0
+    !__m_load_e87a611f_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_METHODS_JSON %out_ptr, %out_len, %out_status
+    __http_methods_ptr_slot = stack_alloc 8
+    __http_methods_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_methods_json(&__http_methods_ptr_slot, &__http_methods_len_slot)
+    %out_ptr = load __http_methods_ptr_slot+0 as ptr
+    %out_len = load __http_methods_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_MAX_HEADER_SIZE %out_size, %out_status
+    __http_max_header_size_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_max_header_size(&__http_max_header_size_slot)
+    %out_size = load __http_max_header_size_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SET_MAX_IDLE_HTTP_PARSERS %max, %out_status
+    %out_status = call @sa_node_plugin_http_set_max_idle_http_parsers(%max)
+[END_MACRO]
+
+[MACRO] NODE_HTTP_STATUS_CODES_JSON %out_ptr, %out_len, %out_status
+    __http_status_codes_ptr_slot = stack_alloc 8
+    __http_status_codes_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_status_codes_json(&__http_status_codes_ptr_slot, &__http_status_codes_len_slot)
+    %out_ptr = load __http_status_codes_ptr_slot+0 as ptr
+    %out_len = load __http_status_codes_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __http_top_exports_ptr_slot = stack_alloc 8
+    __http_top_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_exports_json(&__http_top_exports_ptr_slot, &__http_top_exports_len_slot)
+    %out_ptr = load __http_top_exports_ptr_slot+0 as ptr
+    %out_len = load __http_top_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __http_top_config_ptr_slot = stack_alloc 8
+    __http_top_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_config_json(&__http_top_config_ptr_slot, &__http_top_config_len_slot)
+    %out_ptr = load __http_top_config_ptr_slot+0 as ptr
+    %out_len = load __http_top_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __http_top_feature_ptr_slot = stack_alloc 8
+    __http_top_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http_feature_support_json(&__http_top_feature_ptr_slot, &__http_top_feature_len_slot)
+    %out_ptr = load __http_top_feature_ptr_slot+0 as ptr
+    %out_len = load __http_top_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP_VALIDATE_HEADER_NAME %name, %name_len, %out_status
+    %out_status = call @sa_node_plugin_http_validate_header_name(&%name, %name_len)
+[END_MACRO]
+
+[MACRO] NODE_HTTP_VALIDATE_HEADER_VALUE %name, %name_len, %value, %value_len, %out_status
+    %out_status = call @sa_node_plugin_http_validate_header_value(&%name, %name_len, &%value, %value_len)
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_STATUS_JSON %p_0, %p_1
+    __m_slot_655d0146_0 = stack_alloc 8
+    __m_slot_655d0146_1 = stack_alloc 8
+    __m_status_655d0146 = call @sa_node_plugin_https_status_json(&__m_slot_655d0146_0, &__m_slot_655d0146_1)
+    !__m_status_655d0146
+    __m_load_655d0146_p_0 = load __m_slot_655d0146_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_655d0146_p_0, 0
+    !__m_load_655d0146_p_0
+    __m_load_655d0146_p_1 = load __m_slot_655d0146_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_655d0146_p_1, 0
+    !__m_load_655d0146_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __https_top_exports_ptr_slot = stack_alloc 8
+    __https_top_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_https_exports_json(&__https_top_exports_ptr_slot, &__https_top_exports_len_slot)
+    %out_ptr = load __https_top_exports_ptr_slot+0 as ptr
+    %out_len = load __https_top_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __https_top_config_ptr_slot = stack_alloc 8
+    __https_top_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_https_config_json(&__https_top_config_ptr_slot, &__https_top_config_len_slot)
+    %out_ptr = load __https_top_config_ptr_slot+0 as ptr
+    %out_len = load __https_top_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __https_top_feature_ptr_slot = stack_alloc 8
+    __https_top_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_https_feature_support_json(&__https_top_feature_ptr_slot, &__https_top_feature_len_slot)
+    %out_ptr = load __https_top_feature_ptr_slot+0 as ptr
+    %out_len = load __https_top_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_REQUEST_JSON %out_ptr, %out_len, %out_status, %method, %method_len, %url, %url_len, %body, %body_len
+    __https_request_json_ptr_slot = stack_alloc 8
+    __https_request_json_len_slot = stack_alloc 8
+    __https_request_json_status = call @sa_node_plugin_https_request_json(%method, %method_len, %url, %url_len, %body, %body_len, &__https_request_json_ptr_slot, &__https_request_json_len_slot)
+    !%out_status
+    %out_status = add __https_request_json_status, 0
+    !__https_request_json_status
+    __https_request_json_ptr = load __https_request_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __https_request_json_ptr, 0
+    !__https_request_json_ptr
+    __https_request_json_len = load __https_request_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __https_request_json_len, 0
+    !__https_request_json_len
+[END_MACRO]
+
+[MACRO] NODE_HTTPS_GET_JSON %out_ptr, %out_len, %out_status, %url, %url_len
+    __https_get_json_ptr_slot = stack_alloc 8
+    __https_get_json_len_slot = stack_alloc 8
+    __https_get_json_status = call @sa_node_plugin_https_get_json(%url, %url_len, &__https_get_json_ptr_slot, &__https_get_json_len_slot)
+    !%out_status
+    %out_status = add __https_get_json_status, 0
+    !__https_get_json_status
+    __https_get_json_ptr = load __https_get_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __https_get_json_ptr, 0
+    !__https_get_json_ptr
+    __https_get_json_len = load __https_get_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __https_get_json_len, 0
+    !__https_get_json_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_NEW %p_0, %p_1, %p_2
+    __m_slot_a602087f_0 = stack_alloc 8
+    __m_status_a602087f = call @sa_node_plugin_http_client_new(%p_0, &__m_slot_a602087f_0)
+    !%p_2
+    %p_2 = add __m_status_a602087f, 0
+    !__m_status_a602087f
+    __m_load_a602087f_p_1 = load __m_slot_a602087f_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_a602087f_p_1, 0
+    !__m_load_a602087f_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_NEW %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_77aa0a2f_0 = stack_alloc 8
+    __m_status_77aa0a2f = call @sa_node_plugin_http_client_req_new(%p_0, %p_1, %p_2, %p_3, &__m_slot_77aa0a2f_0)
+    !%p_5
+    %p_5 = add __m_status_77aa0a2f, 0
+    !__m_status_77aa0a2f
+    __m_load_77aa0a2f_p_4 = load __m_slot_77aa0a2f_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_77aa0a2f_p_4, 0
+    !__m_load_77aa0a2f_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_ADD_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_status_b35b1ecd = call @sa_node_plugin_http_client_req_add_header(%p_0, %p_1, %p_2, %p_3, %p_4)
+    !%p_5
+    %p_5 = add __m_status_b35b1ecd, 0
+    !__m_status_b35b1ecd
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_SET_BODY %p_0, %p_1, %p_2, %p_3
+    __m_status_55b771f8 = call @sa_node_plugin_http_client_req_set_body(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_55b771f8, 0
+    !__m_status_55b771f8
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_SEND %p_0, %p_1, %p_2
+    __m_slot_d907459c_0 = stack_alloc 8
+    __m_status_d907459c = call @sa_node_plugin_http_client_req_send(%p_0, &__m_slot_d907459c_0)
+    !%p_2
+    %p_2 = add __m_status_d907459c, 0
+    !__m_status_d907459c
+    __m_load_d907459c_p_1 = load __m_slot_d907459c_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_d907459c_p_1, 0
+    !__m_load_d907459c_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_SEND_ASYNC %p_0, %p_1, %p_2
+    __m_slot_1ac6f4e1_0 = stack_alloc 8
+    __m_status_1ac6f4e1 = call @sa_node_plugin_http_client_req_send_async(%p_0, &__m_slot_1ac6f4e1_0)
+    !%p_2
+    %p_2 = add __m_status_1ac6f4e1, 0
+    !__m_status_1ac6f4e1
+    __m_load_1ac6f4e1_p_1 = load __m_slot_1ac6f4e1_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_1ac6f4e1_p_1, 0
+    !__m_load_1ac6f4e1_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_ASYNC_POLL %p_0, %p_1, %p_2
+    __m_slot_7bb42b71_0 = stack_alloc 8
+    __m_status_7bb42b71 = call @sa_node_plugin_http_client_async_poll(%p_0, &__m_slot_7bb42b71_0)
+    !%p_2
+    %p_2 = add __m_status_7bb42b71, 0
+    !__m_status_7bb42b71
+    __m_load_7bb42b71_p_1 = load __m_slot_7bb42b71_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_7bb42b71_p_1, 0
+    !__m_load_7bb42b71_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_ASYNC_TAKE_RESPONSE %p_0, %p_1, %p_2
+    __m_slot_73d04f12_0 = stack_alloc 8
+    __m_status_73d04f12 = call @sa_node_plugin_http_client_async_take_response(%p_0, &__m_slot_73d04f12_0)
+    !%p_2
+    %p_2 = add __m_status_73d04f12, 0
+    !__m_status_73d04f12
+    __m_load_73d04f12_p_1 = load __m_slot_73d04f12_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_73d04f12_p_1, 0
+    !__m_load_73d04f12_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_ASYNC_FREE %p_0, %p_1
+    __m_status_089f0d5a = call @sa_node_plugin_http_client_async_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_089f0d5a, 0
+    !__m_status_089f0d5a
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_STATUS %p_0, %p_1
+    __m_status_6dd54bbf = call @sa_node_plugin_http_client_resp_status(%p_0)
+    !%p_1
+    %p_1 = add __m_status_6dd54bbf, 0
+    !__m_status_6dd54bbf
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_GET_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_1a80e153_0 = stack_alloc 8
+    __m_slot_1a80e153_1 = stack_alloc 8
+    __m_status_1a80e153 = call @sa_node_plugin_http_client_resp_get_header(%p_0, %p_1, %p_2, &__m_slot_1a80e153_0, &__m_slot_1a80e153_1)
+    !%p_5
+    %p_5 = add __m_status_1a80e153, 0
+    !__m_status_1a80e153
+    __m_load_1a80e153_p_3 = load __m_slot_1a80e153_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_1a80e153_p_3, 0
+    !__m_load_1a80e153_p_3
+    __m_load_1a80e153_p_4 = load __m_slot_1a80e153_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_1a80e153_p_4, 0
+    !__m_load_1a80e153_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_BODY_SLICE %p_0, %p_1, %p_2, %p_3
+    __m_slot_b74bb03f_0 = stack_alloc 8
+    __m_slot_b74bb03f_1 = stack_alloc 8
+    __m_status_b74bb03f = call @sa_node_plugin_http_client_resp_body_slice(%p_0, &__m_slot_b74bb03f_0, &__m_slot_b74bb03f_1)
+    !%p_3
+    %p_3 = add __m_status_b74bb03f, 0
+    !__m_status_b74bb03f
+    __m_load_b74bb03f_p_1 = load __m_slot_b74bb03f_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b74bb03f_p_1, 0
+    !__m_load_b74bb03f_p_1
+    __m_load_b74bb03f_p_2 = load __m_slot_b74bb03f_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_b74bb03f_p_2, 0
+    !__m_load_b74bb03f_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_BODY_READER %p_0, %p_1, %p_2
+    __m_slot_3137b613_0 = stack_alloc 8
+    __m_status_3137b613 = call @sa_node_plugin_http_client_resp_body_reader(%p_0, &__m_slot_3137b613_0)
+    !%p_2
+    %p_2 = add __m_status_3137b613, 0
+    !__m_status_3137b613
+    __m_load_3137b613_p_1 = load __m_slot_3137b613_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3137b613_p_1, 0
+    !__m_load_3137b613_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_READ_CHUNK %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_355c07f7_0 = stack_alloc 8
+    __m_status_355c07f7 = call @sa_node_plugin_http_client_resp_read_chunk(%p_0, %p_1, %p_2, &__m_slot_355c07f7_0)
+    !%p_4
+    %p_4 = add __m_status_355c07f7, 0
+    !__m_status_355c07f7
+    __m_load_355c07f7_p_3 = load __m_slot_355c07f7_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_355c07f7_p_3, 0
+    !__m_load_355c07f7_p_3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_RESP_FREE %p_0, %p_1
+    __m_status_860f1871 = call @sa_node_plugin_http_client_resp_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_860f1871, 0
+    !__m_status_860f1871
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_BODY_READER_FREE %p_0, %p_1
+    __m_status_44e31f0b = call @sa_node_plugin_http_client_body_reader_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_44e31f0b, 0
+    !__m_status_44e31f0b
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_FREE %p_0, %p_1
+    __m_status_5f87f78d = call @sa_node_plugin_http_client_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_5f87f78d, 0
+    !__m_status_5f87f78d
+[END_MACRO]
+
+[MACRO] NODE_HTTP_CLIENT_REQ_FREE %p_0, %p_1
+    __m_status_c6ddb0cb = call @sa_node_plugin_http_client_req_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_c6ddb0cb, 0
+    !__m_status_c6ddb0cb
+[END_MACRO]
+
+[MACRO] NODE_HTTP_REQUEST_JSON %out_ptr, %out_len, %out_status, %method, %method_len, %url, %url_len, %body, %body_len
+    __http_request_json_ptr_slot = stack_alloc 8
+    __http_request_json_len_slot = stack_alloc 8
+    __http_request_json_status = call @sa_node_plugin_http_request_json(%method, %method_len, %url, %url_len, %body, %body_len, &__http_request_json_ptr_slot, &__http_request_json_len_slot)
+    !%out_status
+    %out_status = add __http_request_json_status, 0
+    !__http_request_json_status
+    __http_request_json_ptr = load __http_request_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http_request_json_ptr, 0
+    !__http_request_json_ptr
+    __http_request_json_len = load __http_request_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http_request_json_len, 0
+    !__http_request_json_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP_GET_JSON %out_ptr, %out_len, %out_status, %url, %url_len
+    __http_get_json_ptr_slot = stack_alloc 8
+    __http_get_json_len_slot = stack_alloc 8
+    __http_get_json_status = call @sa_node_plugin_http_get_json(%url, %url_len, &__http_get_json_ptr_slot, &__http_get_json_len_slot)
+    !%out_status
+    %out_status = add __http_get_json_status, 0
+    !__http_get_json_status
+    __http_get_json_ptr = load __http_get_json_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http_get_json_ptr, 0
+    !__http_get_json_ptr
+    __http_get_json_len = load __http_get_json_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http_get_json_len, 0
+    !__http_get_json_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_CONNECT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_650c6f5a_0 = stack_alloc 8
+    __m_status_650c6f5a = call @sa_node_plugin_http_websocket_connect(%p_0, %p_1, %p_2, &__m_slot_650c6f5a_0)
+    !%p_4
+    %p_4 = add __m_status_650c6f5a, 0
+    !__m_status_650c6f5a
+    __m_load_650c6f5a_p_3 = load __m_slot_650c6f5a_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_650c6f5a_p_3, 0
+    !__m_load_650c6f5a_p_3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_READ %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_a7de063d_0 = stack_alloc 8
+    __m_slot_a7de063d_1 = stack_alloc 8
+    __m_slot_a7de063d_2 = stack_alloc 8
+    __m_status_a7de063d = call @sa_node_plugin_http_websocket_read(%p_0, %p_1, &__m_slot_a7de063d_0, &__m_slot_a7de063d_1, &__m_slot_a7de063d_2)
+    !%p_5
+    %p_5 = add __m_status_a7de063d, 0
+    !__m_status_a7de063d
+    __m_load_a7de063d_p_2 = load __m_slot_a7de063d_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_a7de063d_p_2, 0
+    !__m_load_a7de063d_p_2
+    __m_load_a7de063d_p_3 = load __m_slot_a7de063d_1+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_a7de063d_p_3, 0
+    !__m_load_a7de063d_p_3
+    __m_load_a7de063d_p_4 = load __m_slot_a7de063d_2+0 as u64
+    !%p_4
+    %p_4 = add __m_load_a7de063d_p_4, 0
+    !__m_load_a7de063d_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_WRITE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_7911ee3e = call @sa_node_plugin_http_websocket_write(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_7911ee3e, 0
+    !__m_status_7911ee3e
+[END_MACRO]
+
+[MACRO] NODE_HTTP_WEBSOCKET_FREE %p_0, %p_1
+    __m_status_4d16b47d = call @sa_node_plugin_http_websocket_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_4d16b47d, 0
+    !__m_status_4d16b47d
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_NEW %p_0, %p_1
+    __m_slot_f7c3ac10_0 = stack_alloc 8
+    __m_status_f7c3ac10 = call @sa_node_plugin_http_server_new(&__m_slot_f7c3ac10_0)
+    !%p_1
+    %p_1 = add __m_status_f7c3ac10, 0
+    !__m_status_f7c3ac10
+    __m_load_f7c3ac10_p_0 = load __m_slot_f7c3ac10_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f7c3ac10_p_0, 0
+    !__m_load_f7c3ac10_p_0
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_START %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_46378e69 = call @sa_node_plugin_http_server_start(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_46378e69, 0
+    !__m_status_46378e69
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_ACCEPT %p_0, %p_1, %p_2
+    __m_slot_fcdb8a80_0 = stack_alloc 8
+    __m_status_fcdb8a80 = call @sa_node_plugin_http_server_accept(%p_0, &__m_slot_fcdb8a80_0)
+    !%p_2
+    %p_2 = add __m_status_fcdb8a80, 0
+    !__m_status_fcdb8a80
+    __m_load_fcdb8a80_p_1 = load __m_slot_fcdb8a80_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_fcdb8a80_p_1, 0
+    !__m_load_fcdb8a80_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_METHOD %p_0, %p_1, %p_2, %p_3
+    __m_slot_faca02f0_0 = stack_alloc 8
+    __m_slot_faca02f0_1 = stack_alloc 8
+    __m_status_faca02f0 = call @sa_node_plugin_http_server_req_get_method(%p_0, &__m_slot_faca02f0_0, &__m_slot_faca02f0_1)
+    !%p_3
+    %p_3 = add __m_status_faca02f0, 0
+    !__m_status_faca02f0
+    __m_load_faca02f0_p_1 = load __m_slot_faca02f0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_faca02f0_p_1, 0
+    !__m_load_faca02f0_p_1
+    __m_load_faca02f0_p_2 = load __m_slot_faca02f0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_faca02f0_p_2, 0
+    !__m_load_faca02f0_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_PATH %p_0, %p_1, %p_2, %p_3
+    __m_slot_0e79d508_0 = stack_alloc 8
+    __m_slot_0e79d508_1 = stack_alloc 8
+    __m_status_0e79d508 = call @sa_node_plugin_http_server_req_get_path(%p_0, &__m_slot_0e79d508_0, &__m_slot_0e79d508_1)
+    !%p_3
+    %p_3 = add __m_status_0e79d508, 0
+    !__m_status_0e79d508
+    __m_load_0e79d508_p_1 = load __m_slot_0e79d508_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_0e79d508_p_1, 0
+    !__m_load_0e79d508_p_1
+    __m_load_0e79d508_p_2 = load __m_slot_0e79d508_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_0e79d508_p_2, 0
+    !__m_load_0e79d508_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_HEADER %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_1142c9b0_0 = stack_alloc 8
+    __m_slot_1142c9b0_1 = stack_alloc 8
+    __m_status_1142c9b0 = call @sa_node_plugin_http_server_req_get_header(%p_0, %p_1, %p_2, &__m_slot_1142c9b0_0, &__m_slot_1142c9b0_1)
+    !%p_5
+    %p_5 = add __m_status_1142c9b0, 0
+    !__m_status_1142c9b0
+    __m_load_1142c9b0_p_3 = load __m_slot_1142c9b0_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_1142c9b0_p_3, 0
+    !__m_load_1142c9b0_p_3
+    __m_load_1142c9b0_p_4 = load __m_slot_1142c9b0_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_1142c9b0_p_4, 0
+    !__m_load_1142c9b0_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_GET_BODY %p_0, %p_1, %p_2, %p_3
+    __m_slot_3f6448d2_0 = stack_alloc 8
+    __m_slot_3f6448d2_1 = stack_alloc 8
+    __m_status_3f6448d2 = call @sa_node_plugin_http_server_req_get_body(%p_0, &__m_slot_3f6448d2_0, &__m_slot_3f6448d2_1)
+    !%p_3
+    %p_3 = add __m_status_3f6448d2, 0
+    !__m_status_3f6448d2
+    __m_load_3f6448d2_p_1 = load __m_slot_3f6448d2_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_3f6448d2_p_1, 0
+    !__m_load_3f6448d2_p_1
+    __m_load_3f6448d2_p_2 = load __m_slot_3f6448d2_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_3f6448d2_p_2, 0
+    !__m_load_3f6448d2_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_REQ_FREE %p_0, %p_1
+    __m_status_500ac474 = call @sa_node_plugin_http_server_req_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_500ac474, 0
+    !__m_status_500ac474
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_c718b44e_0 = stack_alloc 8
+    __m_status_c718b44e = call @sa_node_plugin_http_server_resp_new(%p_0, %p_1, &__m_slot_c718b44e_0)
+    !%p_3
+    %p_3 = add __m_status_c718b44e, 0
+    !__m_status_c718b44e
+    __m_load_c718b44e_p_2 = load __m_slot_c718b44e_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_c718b44e_p_2, 0
+    !__m_load_c718b44e_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_SEND %p_0, %p_1, %p_2, %p_3
+    __m_status_151aaef3 = call @sa_node_plugin_http_server_resp_send(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_151aaef3, 0
+    !__m_status_151aaef3
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_SET_CONTENT_TYPE %p_0, %p_1, %p_2, %p_3
+    __m_status_e0871e50 = call @sa_node_plugin_http_server_resp_set_content_type(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_e0871e50, 0
+    !__m_status_e0871e50
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_FREE %p_0, %p_1
+    __m_status_47c3e098 = call @sa_node_plugin_http_server_resp_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_47c3e098, 0
+    !__m_status_47c3e098
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_96bc99a5_0 = stack_alloc 8
+    __m_status_96bc99a5 = call @sa_node_plugin_http_server_resp_stream_new(%p_0, %p_1, &__m_slot_96bc99a5_0)
+    !%p_3
+    %p_3 = add __m_status_96bc99a5, 0
+    !__m_status_96bc99a5
+    __m_load_96bc99a5_p_2 = load __m_slot_96bc99a5_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_96bc99a5_p_2, 0
+    !__m_load_96bc99a5_p_2
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_WRITE %p_0, %p_1, %p_2, %p_3
+    __m_status_568b9b57 = call @sa_node_plugin_http_server_resp_stream_write(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_568b9b57, 0
+    !__m_status_568b9b57
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_FLUSH %p_0, %p_1
+    __m_status_7c79f894 = call @sa_node_plugin_http_server_resp_stream_flush(%p_0)
+    !%p_1
+    %p_1 = add __m_status_7c79f894, 0
+    !__m_status_7c79f894
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_END %p_0, %p_1
+    __m_status_172fa687 = call @sa_node_plugin_http_server_resp_stream_end(%p_0)
+    !%p_1
+    %p_1 = add __m_status_172fa687, 0
+    !__m_status_172fa687
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_RESP_STREAM_FREE %p_0, %p_1
+    __m_status_a2471c51 = call @sa_node_plugin_http_server_resp_stream_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_a2471c51, 0
+    !__m_status_a2471c51
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_FREE %p_0, %p_1
+    __m_status_4a3b49fc = call @sa_node_plugin_http_server_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_4a3b49fc, 0
+    !__m_status_4a3b49fc
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_UPGRADE %p_0, %p_1, %p_2
+    __m_slot_b66431a6_0 = stack_alloc 8
+    __m_status_b66431a6 = call @sa_node_plugin_http_server_websocket_upgrade(%p_0, &__m_slot_b66431a6_0)
+    !%p_2
+    %p_2 = add __m_status_b66431a6, 0
+    !__m_status_b66431a6
+    __m_load_b66431a6_p_1 = load __m_slot_b66431a6_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b66431a6_p_1, 0
+    !__m_load_b66431a6_p_1
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_READ %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_6c9a271d_0 = stack_alloc 8
+    __m_slot_6c9a271d_1 = stack_alloc 8
+    __m_slot_6c9a271d_2 = stack_alloc 8
+    __m_status_6c9a271d = call @sa_node_plugin_http_server_websocket_read(%p_0, %p_1, &__m_slot_6c9a271d_0, &__m_slot_6c9a271d_1, &__m_slot_6c9a271d_2)
+    !%p_5
+    %p_5 = add __m_status_6c9a271d, 0
+    !__m_status_6c9a271d
+    __m_load_6c9a271d_p_2 = load __m_slot_6c9a271d_0+0 as u64
+    !%p_2
+    %p_2 = add __m_load_6c9a271d_p_2, 0
+    !__m_load_6c9a271d_p_2
+    __m_load_6c9a271d_p_3 = load __m_slot_6c9a271d_1+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_6c9a271d_p_3, 0
+    !__m_load_6c9a271d_p_3
+    __m_load_6c9a271d_p_4 = load __m_slot_6c9a271d_2+0 as u64
+    !%p_4
+    %p_4 = add __m_load_6c9a271d_p_4, 0
+    !__m_load_6c9a271d_p_4
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_WRITE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_b4a39243 = call @sa_node_plugin_http_server_websocket_write(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_b4a39243, 0
+    !__m_status_b4a39243
+[END_MACRO]
+
+[MACRO] NODE_HTTP_SERVER_WEBSOCKET_FREE %p_0, %p_1
+    __m_status_be3c9812 = call @sa_node_plugin_http_server_websocket_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_be3c9812, 0
+    !__m_status_be3c9812
+[END_MACRO]
+
 [MACRO] NODE_TLS_STATUS_JSON %out_ptr, %out_len
     __tls_status_ptr_slot = stack_alloc 8
     __tls_status_len_slot = stack_alloc 8

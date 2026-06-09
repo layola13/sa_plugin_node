@@ -1,6 +1,5 @@
 // SA tests for Node HTTP extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_HEADER_NAME = utf8:"content-type"
 @const S_HEADER_BAD = utf8:"bad header"

@@ -63,13 +63,19 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `dns.promises`
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `http` / `https`
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `dns.promises` lookup / resolve / resolver macros available through `node.sal`
+  - `http` metadata / request / client / server / websocket macros available through `node.sal`
+  - `https` metadata / request helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` http/https macro tranche completed:
+  - `http` metadata / request / client / server / websocket macros available through `node.sal`
+  - `https` metadata / request helper macros available through `node.sal`
+  - `tests/node_test_http_top.sa`, `node_test_https_top.sa`, and `node_test_http_extra.sa` now validate through `node.sal` only
+  - `tests/node_test_http_main.sa` compile-checks the wider `http` client/server/websocket surface through `node.sal`
 - installed main `node.sal` dns.promises macro tranche completed:
   - `dns.promises` lookup / resolve / resolver macros available through `node.sal`
   - `tests/node_test_dns_extra.sa` now validates the promise helpers through `node.sal` only

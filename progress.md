@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `environment_variables`
+- Scope: installed main `node.sal` public macro coverage for `report`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `environment_variables` status, snapshot, lookup, parse, and env-file helper macros available through `node.sal`
+  - `report` status, `getReport`, `writeReport`, and top-level metadata helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` report helper macro tranche completed:
+  - `report` status, `getReport`, `writeReport`, exports, config, and feature-support helpers available through `node.sal`
+  - `tests/node_test_report.sa`, `node_test_report_top.sa`, and `node_test_report_write.sa` now validate through `node.sal` only
 
 - installed main `node.sal` environment_variables helper macro tranche completed:
   - `environment_variables` status, snapshot, `has`, `get`, `parseEnv`, and `loadEnvFile` helpers available through `node.sal`

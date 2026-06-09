@@ -1,6 +1,5 @@
 // SA tests for Node report: write_file
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_PATH = utf8:"/tmp/sa_report.txt"
 
 @test "node.report write_file"():

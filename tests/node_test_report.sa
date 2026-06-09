@@ -1,6 +1,5 @@
 // SA tests for Node report extras: get_json, status_json
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.report get_json"():
 L_ENTRY:

@@ -1,6 +1,5 @@
 // SA-native unit tests for Node buffer extras + timers + readline + punycode + querystring
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_B64 = utf8:"aGVsbG8="
 @const S_URL_OBJ = utf8:"blob:https://example.com/uuid"
@@ -204,7 +203,9 @@ L_ENTRY:
     br ok -> L_FREE, L_ERR
 L_FREE:
     !ok
-    EXPAND NODE_READLINE_PROMISES_FREE s, rl
+    s_free = add 0, 0
+    EXPAND NODE_READLINE_PROMISES_FREE s_free, rl
+    !s_free
     !s
     !rl
     return

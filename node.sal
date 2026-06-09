@@ -362,6 +362,46 @@
     %out_len = load __qss_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_QUERYSTRING_STATUS_JSON %out_ptr, %out_len, %out_status
+    __querystring_status_ptr_slot = stack_alloc 8
+    __querystring_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_status_json(&__querystring_status_ptr_slot, &__querystring_status_len_slot)
+    %out_ptr = load __querystring_status_ptr_slot+0 as ptr
+    %out_len = load __querystring_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __querystring_exports_ptr_slot = stack_alloc 8
+    __querystring_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_exports_json(&__querystring_exports_ptr_slot, &__querystring_exports_len_slot)
+    %out_ptr = load __querystring_exports_ptr_slot+0 as ptr
+    %out_len = load __querystring_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __querystring_config_ptr_slot = stack_alloc 8
+    __querystring_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_config_json(&__querystring_config_ptr_slot, &__querystring_config_len_slot)
+    %out_ptr = load __querystring_config_ptr_slot+0 as ptr
+    %out_len = load __querystring_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __querystring_feature_ptr_slot = stack_alloc 8
+    __querystring_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_feature_support_json(&__querystring_feature_ptr_slot, &__querystring_feature_len_slot)
+    %out_ptr = load __querystring_feature_ptr_slot+0 as ptr
+    %out_len = load __querystring_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUERYSTRING_UNESCAPE_BUFFER %input, %input_len, %out_ptr, %out_len, %out_status
+    __querystring_unescape_buffer_ptr_slot = stack_alloc 8
+    __querystring_unescape_buffer_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_querystring_unescape_buffer(%input, %input_len, &__querystring_unescape_buffer_ptr_slot, &__querystring_unescape_buffer_len_slot)
+    %out_ptr = load __querystring_unescape_buffer_ptr_slot+0 as ptr
+    %out_len = load __querystring_unescape_buffer_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_URL_PARSE %out_ptr, %out_len, %out_status, %in_data, %in_len
     __urlp_ptr_slot = stack_alloc 8
     __urlp_len_slot = stack_alloc 8
@@ -887,6 +927,55 @@
     %out_len = load __pd_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_PUNYCODE_STATUS_JSON %out_ptr, %out_len, %out_status
+    __punycode_status_ptr_slot = stack_alloc 8
+    __punycode_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_status_json(&__punycode_status_ptr_slot, &__punycode_status_len_slot)
+    %out_ptr = load __punycode_status_ptr_slot+0 as ptr
+    %out_len = load __punycode_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __punycode_exports_ptr_slot = stack_alloc 8
+    __punycode_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_exports_json(&__punycode_exports_ptr_slot, &__punycode_exports_len_slot)
+    %out_ptr = load __punycode_exports_ptr_slot+0 as ptr
+    %out_len = load __punycode_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_VERSION %out_ptr, %out_len, %out_status
+    __punycode_version_ptr_slot = stack_alloc 8
+    __punycode_version_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_version(&__punycode_version_ptr_slot, &__punycode_version_len_slot)
+    %out_ptr = load __punycode_version_ptr_slot+0 as ptr
+    %out_len = load __punycode_version_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __punycode_config_ptr_slot = stack_alloc 8
+    __punycode_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_config_json(&__punycode_config_ptr_slot, &__punycode_config_len_slot)
+    %out_ptr = load __punycode_config_ptr_slot+0 as ptr
+    %out_len = load __punycode_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __punycode_feature_ptr_slot = stack_alloc 8
+    __punycode_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_punycode_feature_support_json(&__punycode_feature_ptr_slot, &__punycode_feature_len_slot)
+    %out_ptr = load __punycode_feature_ptr_slot+0 as ptr
+    %out_len = load __punycode_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PUNYCODE_TO_UNICODE %input, %input_len, %out_ptr, %out_len
+    __punycode_unicode_ptr_slot = stack_alloc 8
+    __punycode_unicode_len_slot = stack_alloc 8
+    __punycode_unicode_status = call @sa_node_plugin_punycode_to_unicode(%input, %input_len, &__punycode_unicode_ptr_slot, &__punycode_unicode_len_slot)
+    !__punycode_unicode_status
+    %out_ptr = load __punycode_unicode_ptr_slot+0 as ptr
+    %out_len = load __punycode_unicode_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_OS_AVAILABLE_PARALLELISM %out_val, %out_status
     __ap_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_os_available_parallelism(&__ap_slot)
@@ -1189,6 +1278,36 @@
     __readline_interface_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_readline_create_interface(%input, %input_len, &__readline_interface_slot)
     %out_interface = load __readline_interface_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_READLINE_PROMISES_CREATE_INTERFACE %out_interface, %out_status, %input, %input_len
+    __readline_promises_interface_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_promises_create_interface(%input, %input_len, &__readline_promises_interface_slot)
+    %out_interface = load __readline_promises_interface_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_READLINE_PROMISES_QUESTION %out_ptr, %out_len, %out_status, %interface, %query, %query_len
+    __readline_promises_question_ptr_slot = stack_alloc 8
+    __readline_promises_question_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_promises_question(%interface, %query, %query_len, &__readline_promises_question_ptr_slot, &__readline_promises_question_len_slot)
+    %out_ptr = load __readline_promises_question_ptr_slot+0 as ptr
+    %out_len = load __readline_promises_question_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_PROMISES_CLOSE %out_status, %interface
+    %out_status = call @sa_node_plugin_readline_promises_close(%interface)
+[END_MACRO]
+
+[MACRO] NODE_READLINE_PROMISES_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %interface
+    __readline_promises_snapshot_ptr_slot = stack_alloc 8
+    __readline_promises_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_promises_snapshot_json(%interface, &__readline_promises_snapshot_ptr_slot, &__readline_promises_snapshot_len_slot)
+    %out_ptr = load __readline_promises_snapshot_ptr_slot+0 as ptr
+    %out_len = load __readline_promises_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_PROMISES_FREE %out_status, %interface
+    %out_status = call @sa_node_plugin_readline_promises_free(%interface)
 [END_MACRO]
 
 [MACRO] NODE_READLINE_STATUS_JSON %out_ptr, %out_len, %out_status

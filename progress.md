@@ -63,14 +63,20 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `buffer/timers/string_decoder`
+- Scope: installed main `node.sal` public macro coverage for `querystring/punycode/readline.promises`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `buffer` top-level metadata and common helper macros available through `node.sal`
-  - `timers` top-level metadata and basic timer handle macros available through `node.sal`
-  - `string_decoder` top-level metadata helpers available through `node.sal`
+  - `querystring` top-level metadata and `unescapeBuffer` available through `node.sal`
+  - `punycode` top-level metadata, `version`, and `toUnicode` available through `node.sal`
+  - `readline.promises` lifecycle helpers used by existing tests available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` querystring/punycode/readline.promises helper macro tranche completed:
+  - `querystring` top-level metadata helpers and `querystring.unescapeBuffer` available through `node.sal`
+  - `punycode` top-level metadata helpers, `punycode.version`, and `punycode.toUnicode` available through `node.sal`
+  - `readline.promises` create/question/close/snapshot/free helpers available through `node.sal`
+  - `tests/node_test_querystring_top.sa`, `node_test_punycode_top.sa`, and `node_test_buffer_timers.sa` now validate through `node.sal` only
 
 - installed main `node.sal` buffer/timers/string_decoder helper macro tranche completed:
   - `buffer` top-level metadata, constants, base64, encoding-check, transcode, and object-url helper macros available through `node.sal`

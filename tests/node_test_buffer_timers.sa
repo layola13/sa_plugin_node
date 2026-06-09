@@ -193,6 +193,27 @@ L_ERR:
     !rl
     panic(103)
 
+@const S_RL_INPUT = utf8:"first\nsecond\n"
+
+@test "node.readline create_interface succeeds"():
+L_ENTRY:
+    rl = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_READLINE_CREATE_INTERFACE rl, s, S_RL_INPUT, 13
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
+    EXPAND NODE_READLINE_PROMISES_FREE s, rl
+    !s
+    !rl
+    return
+L_ERR:
+    !ok
+    !s
+    !rl
+    panic(103)
+
 @test "node.readline clear_line succeeds"():
 L_ENTRY:
     EXPAND NODE_READLINE_CLEAR_LINE 0, 0

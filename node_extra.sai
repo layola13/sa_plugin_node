@@ -352,6 +352,7 @@
 @extern sa_node_plugin_readline_cursor_to(fd: u64, x: u64, y: u64) -> u64
 @extern sa_node_plugin_readline_move_cursor(fd: u64, dx: u64, dy: u64) -> u64
 @extern sa_node_plugin_readline_emit_keypress_events(stream_ptr: ptr, stream_len: u64) -> u64
+@extern sa_node_plugin_readline_create_interface(input_ptr: ptr, input_len: u64, &out_interface: ptr) -> u64
 @extern sa_node_plugin_readline_promises_create_interface(input_ptr: ptr, input_len: u64, &out_interface: ptr) -> u64
 @extern sa_node_plugin_readline_promises_question(interface_ptr: ptr, query_ptr: ptr, query_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_readline_promises_close(interface_ptr: ptr) -> u64

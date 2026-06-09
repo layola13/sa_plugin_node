@@ -4645,6 +4645,18 @@
     !__m_status_3af2415b
 [END_MACRO]
 
+[MACRO] NODE_READLINE_CREATE_INTERFACE %out_interface, %out_status, %input, %input_len
+    __readline_top_interface_slot = stack_alloc 8
+    __readline_top_create_status = call @sa_node_plugin_readline_create_interface(%input, %input_len, &__readline_top_interface_slot)
+    !%out_status
+    %out_status = add __readline_top_create_status, 0
+    !__readline_top_create_status
+    __readline_top_interface = load __readline_top_interface_slot+0 as ptr
+    !%out_interface
+    %out_interface = add __readline_top_interface, 0
+    !__readline_top_interface
+[END_MACRO]
+
 [MACRO] NODE_READLINE_PROMISES_CREATE_INTERFACE %out_interface, %out_status, %input, %input_len
     __readline_promises_interface_slot = stack_alloc 8
     __readline_promises_create_status = call @sa_node_plugin_readline_promises_create_interface(%input, %input_len, &__readline_promises_interface_slot)

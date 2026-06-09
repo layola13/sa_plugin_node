@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `module` source-map lookup parity for `findSourceMap`
+- Scope: public non-VM/V8 `readline` top-level parity for `createInterface`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `module.findSourceMap`
+  - `readline.createInterface`
 
 ## Recent Completed Helper Features
 
+- `readline` interface helper tranche completed:
+  - `readline.createInterface`
 - `module` source-map helper tranche completed:
   - `module.findSourceMap`
 - `process` warning helper tranche completed:

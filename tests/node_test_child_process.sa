@@ -1,6 +1,5 @@
 // SA tests for Node child_process extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.child_process status_json"():
 L_ENTRY:

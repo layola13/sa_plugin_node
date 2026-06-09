@@ -1,6 +1,5 @@
 // SA tests for Node child_process: fork
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_MOD = utf8:"test.js"
 
 @test "node.child_process fork"():

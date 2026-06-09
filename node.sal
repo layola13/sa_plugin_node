@@ -7612,3 +7612,177 @@
     %p_1 = add __m_load_240a3406_p_1, 0
     !__m_load_240a3406_p_1
 [END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7
+    __m_slot_71aa8c1d_0 = stack_alloc 8
+    __m_slot_71aa8c1d_1 = stack_alloc 8
+    __m_slot_71aa8c1d_2 = stack_alloc 8
+    __m_status_71aa8c1d = call @sa_node_plugin_child_process_exec(%p_0, %p_1, %p_2, %p_3, &__m_slot_71aa8c1d_0, &__m_slot_71aa8c1d_1, &__m_slot_71aa8c1d_2)
+    !%p_7
+    %p_7 = add __m_status_71aa8c1d, 0
+    !__m_status_71aa8c1d
+    __m_load_71aa8c1d_p_4 = load __m_slot_71aa8c1d_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_71aa8c1d_p_4, 0
+    !__m_load_71aa8c1d_p_4
+    __m_load_71aa8c1d_p_5 = load __m_slot_71aa8c1d_1+0 as ptr
+    !%p_5
+    %p_5 = add __m_load_71aa8c1d_p_5, 0
+    !__m_load_71aa8c1d_p_5
+    __m_load_71aa8c1d_p_6 = load __m_slot_71aa8c1d_2+0 as u64
+    !%p_6
+    %p_6 = add __m_load_71aa8c1d_p_6, 0
+    !__m_load_71aa8c1d_p_6
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC_FILE %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_2952ef80_0 = stack_alloc 8
+    __m_slot_2952ef80_1 = stack_alloc 8
+    __m_status_2952ef80 = call @sa_node_plugin_child_process_exec_file(%p_0, %p_1, %p_2, %p_3, &__m_slot_2952ef80_0, &__m_slot_2952ef80_1)
+    !%p_6
+    %p_6 = add __m_status_2952ef80, 0
+    !__m_status_2952ef80
+    __m_load_2952ef80_p_4 = load __m_slot_2952ef80_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_2952ef80_p_4, 0
+    !__m_load_2952ef80_p_4
+    __m_load_2952ef80_p_5 = load __m_slot_2952ef80_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_2952ef80_p_5, 0
+    !__m_load_2952ef80_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXECFILE_SYNC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_f40a1125_0 = stack_alloc 8
+    __m_slot_f40a1125_1 = stack_alloc 8
+    __m_status_f40a1125 = call @sa_node_plugin_child_process_execfile_sync(%p_0, %p_1, %p_2, %p_3, &__m_slot_f40a1125_0, &__m_slot_f40a1125_1)
+    !%p_6
+    %p_6 = add __m_status_f40a1125, 0
+    !__m_status_f40a1125
+    __m_load_f40a1125_p_4 = load __m_slot_f40a1125_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_f40a1125_p_4, 0
+    !__m_load_f40a1125_p_4
+    __m_load_f40a1125_p_5 = load __m_slot_f40a1125_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_f40a1125_p_5, 0
+    !__m_load_f40a1125_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_FORK %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_d38eed00_0 = stack_alloc 8
+    __m_status_d38eed00 = call @sa_node_plugin_child_process_fork(%p_0, %p_1, %p_2, %p_3, &__m_slot_d38eed00_0)
+    !%p_5
+    %p_5 = add __m_status_d38eed00, 0
+    !__m_status_d38eed00
+    __m_load_d38eed00_p_4 = load __m_slot_d38eed00_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_d38eed00_p_4, 0
+    !__m_load_d38eed00_p_4
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_SPAWN %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_366c0d64_0 = stack_alloc 8
+    __m_status_366c0d64 = call @sa_node_plugin_child_process_spawn(%p_0, %p_1, %p_2, %p_3, &__m_slot_366c0d64_0)
+    !%p_5
+    %p_5 = add __m_status_366c0d64, 0
+    !__m_status_366c0d64
+    __m_load_366c0d64_p_4 = load __m_slot_366c0d64_0+0 as u64
+    !%p_4
+    %p_4 = add __m_load_366c0d64_p_4, 0
+    !__m_load_366c0d64_p_4
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_SPAWN_SYNC %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_86ddbec0_0 = stack_alloc 8
+    __m_slot_86ddbec0_1 = stack_alloc 8
+    __m_status_86ddbec0 = call @sa_node_plugin_child_process_spawn_sync(%p_0, %p_1, %p_2, %p_3, &__m_slot_86ddbec0_0, &__m_slot_86ddbec0_1)
+    !%p_6
+    %p_6 = add __m_status_86ddbec0, 0
+    !__m_status_86ddbec0
+    __m_load_86ddbec0_p_4 = load __m_slot_86ddbec0_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_86ddbec0_p_4, 0
+    !__m_load_86ddbec0_p_4
+    __m_load_86ddbec0_p_5 = load __m_slot_86ddbec0_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_86ddbec0_p_5, 0
+    !__m_load_86ddbec0_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_EXEC_SYNC_JSON %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_91f7dfbb_0 = stack_alloc 8
+    __m_slot_91f7dfbb_1 = stack_alloc 8
+    __m_status_91f7dfbb = call @sa_node_plugin_child_process_exec_sync_json(%p_0, %p_1, %p_2, %p_3, &__m_slot_91f7dfbb_0, &__m_slot_91f7dfbb_1)
+    !%p_6
+    %p_6 = add __m_status_91f7dfbb, 0
+    !__m_status_91f7dfbb
+    __m_load_91f7dfbb_p_4 = load __m_slot_91f7dfbb_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_91f7dfbb_p_4, 0
+    !__m_load_91f7dfbb_p_4
+    __m_load_91f7dfbb_p_5 = load __m_slot_91f7dfbb_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_91f7dfbb_p_5, 0
+    !__m_load_91f7dfbb_p_5
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_STATUS_JSON %p_0, %p_1
+    __m_slot_9f8c1207_0 = stack_alloc 8
+    __m_slot_9f8c1207_1 = stack_alloc 8
+    __m_status_9f8c1207 = call @sa_node_plugin_child_process_status_json(&__m_slot_9f8c1207_0, &__m_slot_9f8c1207_1)
+    !__m_status_9f8c1207
+    __m_load_9f8c1207_p_0 = load __m_slot_9f8c1207_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_9f8c1207_p_0, 0
+    !__m_load_9f8c1207_p_0
+    __m_load_9f8c1207_p_1 = load __m_slot_9f8c1207_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_9f8c1207_p_1, 0
+    !__m_load_9f8c1207_p_1
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_TOP_EXPORTS_JSON %p_0, %p_1
+    __cp_top_exports_ptr_slot = stack_alloc 8
+    __cp_top_exports_len_slot = stack_alloc 8
+    __cp_top_exports_status = call @sa_node_plugin_child_process_exports_json(&__cp_top_exports_ptr_slot, &__cp_top_exports_len_slot)
+    !__cp_top_exports_status
+    __cp_top_exports_ptr = load __cp_top_exports_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_exports_ptr, 0
+    !__cp_top_exports_ptr
+    __cp_top_exports_len = load __cp_top_exports_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_exports_len, 0
+    !__cp_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_TOP_CONFIG_JSON %p_0, %p_1
+    __cp_top_config_ptr_slot = stack_alloc 8
+    __cp_top_config_len_slot = stack_alloc 8
+    __cp_top_config_status = call @sa_node_plugin_child_process_config_json(&__cp_top_config_ptr_slot, &__cp_top_config_len_slot)
+    !__cp_top_config_status
+    __cp_top_config_ptr = load __cp_top_config_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_config_ptr, 0
+    !__cp_top_config_ptr
+    __cp_top_config_len = load __cp_top_config_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_config_len, 0
+    !__cp_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_CHILD_PROCESS_TOP_FEATURE_SUPPORT_JSON %p_0, %p_1
+    __cp_top_feature_ptr_slot = stack_alloc 8
+    __cp_top_feature_len_slot = stack_alloc 8
+    __cp_top_feature_status = call @sa_node_plugin_child_process_feature_support_json(&__cp_top_feature_ptr_slot, &__cp_top_feature_len_slot)
+    !__cp_top_feature_status
+    __cp_top_feature_ptr = load __cp_top_feature_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __cp_top_feature_ptr, 0
+    !__cp_top_feature_ptr
+    __cp_top_feature_len = load __cp_top_feature_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __cp_top_feature_len, 0
+    !__cp_top_feature_len
+[END_MACRO]

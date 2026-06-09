@@ -1214,7 +1214,7 @@ pub export fn sa_node_plugin_sys_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     defer out.deinit();
     out.appendSlice("{\"module\":\"sys\",\"supported\":true,\"mode\":\"top-level-native-sys-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &sys_export_names) catch return fail();
-    out.appendSlice(",\"aliasTarget\":\"util\",\"deprecationCode\":\"DEP0025\",\"featureSupport\":{\"format\":true,\"inspect\":true,\"debuglog\":true,\"legacyAlias\":true,\"inherits\":false},\"limitations\":[\"only a narrow deprecated util alias subset is exposed\",\"no runtime warning event emission or full util namespace parity\"]}") catch return fail();
+    out.appendSlice(",\"aliasTarget\":\"util\",\"deprecationCode\":\"DEP0025\",\"featureSupport\":{\"format\":true,\"inspect\":true,\"debuglog\":true,\"legacyAlias\":true,\"inherits\":true},\"limitations\":[\"only a narrow deprecated util alias subset is exposed\",\"inherits is exposed as a native compatibility stub and does not mutate JavaScript prototypes\",\"no runtime warning event emission or full util namespace parity\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -1230,7 +1230,7 @@ pub export fn sa_node_plugin_sys_config_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_sys_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"format\":{\"supported\":true,\"mode\":\"native wrapper over util.format\"},\"inspect\":{\"supported\":true,\"mode\":\"native wrapper over util.inspect\"},\"debuglog\":{\"supported\":true,\"mode\":\"native wrapper over util.debuglog\"},\"legacyAlias\":{\"supported\":true,\"mode\":\"explicit deprecated alias metadata targeting util\"},\"inherits\":{\"supported\":false,\"reason\":\"full legacy sys alias surface is not modeled beyond the current wrapper subset\"}} ");
+    return writeOwnedString(out_ptr, out_len, "{\"format\":{\"supported\":true,\"mode\":\"native wrapper over util.format\"},\"inspect\":{\"supported\":true,\"mode\":\"native wrapper over util.inspect\"},\"debuglog\":{\"supported\":true,\"mode\":\"native wrapper over util.debuglog\"},\"legacyAlias\":{\"supported\":true,\"mode\":\"explicit deprecated alias metadata targeting util\"},\"inherits\":{\"supported\":true,\"mode\":\"native wrapper over util.inherits compatibility metadata\",\"limitations\":[\"does not mutate JavaScript prototypes or construct class instances\"]}} ");
 }
 
 pub export fn sa_node_plugin_sys_deprecation_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -1247,6 +1247,10 @@ pub export fn sa_node_plugin_sys_inspect(json_ptr: ?[*]const u8, json_len: u64, 
 
 pub export fn sa_node_plugin_sys_debuglog(section_ptr: ?[*]const u8, section_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return ext.sa_node_plugin_util_debuglog(section_ptr, section_len, out_ptr, out_len);
+}
+
+pub export fn sa_node_plugin_sys_inherits(child_ptr: ?[*]const u8, child_len: u64, super_ptr: ?[*]const u8, super_len: u64) u32 {
+    return ext.sa_node_plugin_util_inherits(child_ptr, child_len, super_ptr, super_len);
 }
 
 pub export fn sa_node_plugin_async_context_tracking_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -6819,6 +6823,7 @@ const url_export_names = [_][]const u8{
 };
 
 const process_export_names = [_][]const u8{
+    "allowedNodeEnvironmentFlags",
     "arch",
     "argv",
     "argv0",

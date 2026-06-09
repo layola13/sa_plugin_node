@@ -5813,6 +5813,10 @@
     %out_len = load __m_sys_debuglog_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_SYS_INHERITS %child_ptr, %child_len, %super_ptr, %super_len, %out_status
+    %out_status = call @sa_node_plugin_sys_inherits(%child_ptr, %child_len, %super_ptr, %super_len)
+[END_MACRO]
+
 [MACRO] NODE_ERRORS_STATUS_JSON %p_0, %p_1, %p_2
     __m_slot_7ac24375_0 = stack_alloc 8
     __m_slot_7ac24375_1 = stack_alloc 8

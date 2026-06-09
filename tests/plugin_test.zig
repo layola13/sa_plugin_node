@@ -4048,6 +4048,7 @@ test "node plugin errors and permissions report native compatibility status" {
     const sys_exports = (sys_exports_ptr orelse return error.NullSysExports)[0..@intCast(sys_exports_len)];
     try std.testing.expect(std.mem.indexOf(u8, sys_exports, "\"format\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, sys_exports, "\"inspect\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys_exports, "\"inherits\"") != null);
 
     var sys_config_ptr: ?[*]const u8 = null;
     var sys_config_len: u64 = 0;
@@ -4062,7 +4063,7 @@ test "node plugin errors and permissions report native compatibility status" {
     defer _ = plugin.sa_node_plugin_free_buffer(sys_feature_ptr, sys_feature_len);
     const sys_feature = (sys_feature_ptr orelse return error.NullSysFeatureSupport)[0..@intCast(sys_feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, sys_feature, "\"format\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, sys_feature, "\"inherits\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sys_feature, "\"inherits\":{\"supported\":true") != null);
 
     var sys_deprecation_ptr: ?[*]const u8 = null;
     var sys_deprecation_len: u64 = 0;
@@ -4091,6 +4092,8 @@ test "node plugin errors and permissions report native compatibility status" {
     defer _ = plugin.sa_node_plugin_free_buffer(sys_debug_ptr, sys_debug_len);
     const sys_debug = (sys_debug_ptr orelse return error.NullSysDebuglog)[0..@intCast(sys_debug_len)];
     try std.testing.expect(std.mem.indexOf(u8, sys_debug, "\"section\":\"http\"") != null);
+
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_sys_inherits("Child".ptr, 5, "Base".ptr, 4));
 
     var perm_ptr: ?[*]const u8 = null;
     var perm_len: u64 = 0;

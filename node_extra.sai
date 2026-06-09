@@ -458,6 +458,7 @@
 @extern sa_node_plugin_sys_format(format_ptr: ptr, format_len: u64, args_json_ptr: ptr, args_json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_inspect(json_ptr: ptr, json_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_sys_debuglog(section_ptr: ptr, section_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_sys_inherits(child_ptr: ptr, child_len: u64, super_ptr: ptr, super_len: u64) -> u64
 @extern sa_node_plugin_errors_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_codes_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_errors_get_system_error_name(errnum: i64, &out_ptr: ptr, &out_len: u64) -> u64

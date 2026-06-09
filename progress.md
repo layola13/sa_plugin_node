@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` command-line flag parity for `allowedNodeEnvironmentFlags`
+- Scope: public non-VM/V8 `sys` deprecated util-alias parity for `inherits`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.allowedNodeEnvironmentFlags`
+  - `sys.inherits`
 
 ## Recent Completed Helper Features
 
+- `sys` helper tranche completed:
+  - `sys.inherits`
 - `process` command-line flag helper tranche completed:
   - `process.allowedNodeEnvironmentFlags`
 - `fs` path-mutation helper tranche completed:

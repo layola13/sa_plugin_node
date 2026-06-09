@@ -10,6 +10,8 @@
 @const S_FORMAT = utf8:"hello %s"
 @const S_ARGS = utf8:"[\"sa\"]"
 @const S_SECTION = utf8:"net"
+@const S_CHILD = utf8:"Child"
+@const S_BASE = utf8:"Base"
 
 @test "node.assert constants sys helpers"():
 L_ENTRY:
@@ -126,9 +128,16 @@ L_SYS_DEBUGLOG:
     s14 = add 0, 0
     EXPAND NODE_SYS_DEBUGLOG sys_debug_ptr, sys_debug_len, s14, S_SECTION, 3
     ok14 = eq s14, 0
-    br ok14 -> L_FREE, L_ERR_SYS_DEBUGLOG
-L_FREE:
+    br ok14 -> L_SYS_INHERITS, L_ERR_SYS_DEBUGLOG
+L_SYS_INHERITS:
     !ok14
+    s15 = add 0, 0
+    EXPAND NODE_SYS_INHERITS S_CHILD, 5, S_BASE, 4, s15
+    ok15 = eq s15, 0
+    br ok15 -> L_FREE, L_ERR_SYS_INHERITS
+L_FREE:
+    !ok15
+    !s15
     free_sys_debug = call @sa_node_plugin_free_buffer(sys_debug_ptr, sys_debug_len)
     free_sys_inspect = call @sa_node_plugin_free_buffer(sys_inspect_ptr, sys_inspect_len)
     free_sys_format = call @sa_node_plugin_free_buffer(sys_format_ptr, sys_format_len)
@@ -245,4 +254,7 @@ L_ERR_SYS_INSPECT:
     panic(103)
 L_ERR_SYS_DEBUGLOG:
     !ok14
+    panic(103)
+L_ERR_SYS_INHERITS:
+    !ok15
     panic(103)

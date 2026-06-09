@@ -1,6 +1,5 @@
 // Tests for crypto stateful APIs
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_SHA256 = utf8:"sha256"
 @const S_SECRET = utf8:"secret123"

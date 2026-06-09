@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `perf_hooks`
+- Scope: installed main `node.sal` public macro coverage for `crypto`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `perf_hooks` top-level metadata, timing, histogram, measurement, entry, and timerify helpers available through `node.sal`
+  - `crypto` incremental hash/HMAC, KDF, random, cipher/decipher, sign/verify, key-generation, hash-list, top-level metadata, and secure-heap helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` crypto helper macro tranche completed:
+  - `crypto` incremental hash/HMAC, HKDF, scrypt, randomInt, randomFill, cipher/decipher lifecycle, sign/verify, key-generation, hash-list, top-level metadata, and secure-heap helpers available through `node.sal`
+  - `tests/node_test_crypto_top.sa`, `node_test_crypto_extra.sa`, `node_test_crypto_cipher.sa`, and `node_test_crypto_verify.sa` now validate through `node.sal` only
 
 - installed main `node.sal` perf_hooks helper macro tranche completed:
   - `perf_hooks` status, exports, supported-entry-types, constants, performance, feature-support, `now`, `timeOrigin`, `mark`, `measure`, entries, clear helpers, histogram helpers, event-loop utilization, and `timerify` helpers available through `node.sal`

@@ -1,6 +1,5 @@
 // SA-native unit tests for Node crypto cipher/sign extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_ALG = utf8:"aes-256-cbc"
 @const S_KEY = utf8:"0123456789abcdef0123456789abcdef"

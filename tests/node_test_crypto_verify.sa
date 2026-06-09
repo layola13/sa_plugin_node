@@ -1,6 +1,5 @@
 // SA tests for Node crypto extras: verify (simple - just test the macro compiles and runs)
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_ED = utf8:"ed25519"
 @const S_DATA = utf8:"test-data-for-verify-which-is-long-enough"
 

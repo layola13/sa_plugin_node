@@ -2999,6 +2999,10 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execPath\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execArgv\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"allowedNodeEnvironmentFlags\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"geteuid\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"getegid\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"groups\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"emitWarning\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"nextTick\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -3012,6 +3016,9 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execArgv\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"versions\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"allowedNodeEnvironmentFlags\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"geteuid\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getegid\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"groups\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
@@ -3022,6 +3029,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"allowedFlagsModel\":\"native JSON snapshot and membership checks over the plugin's known NODE_OPTIONS-compatible flag set\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "real and effective uid/gid, groups") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -3037,9 +3045,26 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"allowedNodeEnvironmentFlags\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"geteuid\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"getegid\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"groups\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"emitWarning\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"chdir\":{\"supported\":true") != null);
+
+    var geteuid_value: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_geteuid(&geteuid_value));
+
+    var getegid_value: u32 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_getegid(&getegid_value));
+
+    var groups_ptr: ?[*]const u8 = null;
+    var groups_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_groups(&groups_ptr, &groups_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(groups_ptr, groups_len);
+    const groups_json = (groups_ptr orelse return error.NullProcessGroups)[0..@intCast(groups_len)];
+    try std.testing.expect(std.mem.startsWith(u8, groups_json, "["));
+    try std.testing.expect(std.mem.endsWith(u8, groups_json, "]"));
 
     var process_arch_ptr: ?[*]const u8 = null;
     var process_arch_len: u64 = 0;

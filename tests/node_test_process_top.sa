@@ -209,3 +209,54 @@ L_ERR_EMIT_WARNING:
 L_ERR_WARNING_LEN:
     !ok16
     panic(116)
+
+@test "node.process credential helpers"():
+L_ENTRY:
+    euid = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_PROCESS_GETEUID euid, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_GETEGID, L_ERR_GETEUID
+L_GETEGID:
+    !ok1
+    egid = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_PROCESS_GETEGID egid, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_GROUPS, L_ERR_GETEGID
+L_GROUPS:
+    !ok2
+    groups_ptr = add 0, 0
+    groups_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_PROCESS_GROUPS groups_ptr, groups_len, s3
+    ok3 = eq s3, 0
+    br ok3 -> L_GROUPS_LEN, L_ERR_GROUPS
+L_GROUPS_LEN:
+    !ok3
+    ok4 = gt groups_len, 1
+    br ok4 -> L_FREE, L_ERR_GROUPS_LEN
+L_FREE:
+    !ok4
+    free_groups = call @sa_node_plugin_free_buffer(groups_ptr, groups_len)
+    !free_groups
+    !s3
+    !groups_len
+    !groups_ptr
+    !s2
+    !egid
+    !s1
+    !euid
+    return
+L_ERR_GETEUID:
+    !ok1
+    panic(117)
+L_ERR_GETEGID:
+    !ok2
+    panic(118)
+L_ERR_GROUPS:
+    !ok3
+    panic(119)
+L_ERR_GROUPS_LEN:
+    !ok4
+    panic(120)

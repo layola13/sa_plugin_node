@@ -63,13 +63,22 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `readline` top-level parity for `createInterface`
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process` credential parity for `geteuid`, `getegid`, `groups`, plus top-level `emitWarning` status alignment
+- Current status: `4 / 4` helper features completed (`100.0%`)
 - Planned helpers:
-  - `readline.createInterface`
+  - `process.geteuid`
+  - `process.getegid`
+  - `process.groups`
+  - `process.emitWarning` top-level status
 
 ## Recent Completed Helper Features
 
+- `process` credential helper tranche completed:
+  - `process.geteuid`
+  - `process.getegid`
+  - `process.groups`
+- `process` warning-surface alignment tranche completed:
+  - `process.emitWarning` top-level status
 - `readline` interface helper tranche completed:
   - `readline.createInterface`
 - `module` source-map helper tranche completed:

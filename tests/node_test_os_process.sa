@@ -1,6 +1,5 @@
 // Tests for OS and Process macros not yet covered.
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.os tmpdir returns bytes"():
 L_ENTRY:

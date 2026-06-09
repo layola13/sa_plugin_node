@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `events`
+- Scope: installed main `node.sal` public macro coverage for `os/process`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `events` top-level metadata plus advanced listener-management and error-emission helpers available through `node.sal`
+  - `os` and `process` top-level metadata plus process/runtime helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` os/process helper macro tranche completed:
+  - `os` top-level status, exports, config, feature-support, constants, priority, `EOL`, and `devNull` helpers available through `node.sal`
+  - `process` top-level status, exports, config, feature-support, exec-path, argv0, exec-argv, allowed-flags, emit-warning, kill, resource-usage, memory/features, arch/platform/release, `umask`, `chdir`, and argv-json helpers available through `node.sal`
+  - dependent `path.sep` and `path.delimiter` helpers used by `tests/node_test_os_process.sa` available through `node.sal`
+  - `tests/node_test_os_top.sa`, `node_test_process_top.sa`, `node_test_process_extra.sa`, `node_test_os_extra.sa`, and `node_test_os_process.sa` now validate through `node.sal` only
 
 - installed main `node.sal` events helper macro tranche completed:
   - `events` top-level status, exports, config, and feature-support helpers available through `node.sal`

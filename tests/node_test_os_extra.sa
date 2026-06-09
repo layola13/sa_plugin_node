@@ -1,6 +1,5 @@
 // SA tests for Node OS extras: constants, get_priority, set_priority
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.os constants"():
 L_ENTRY:

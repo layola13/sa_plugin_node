@@ -1,6 +1,5 @@
 // SA tests for Node process extras: kill and resourceUsage
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.process kill with invalid pid"():
 L_ENTRY:

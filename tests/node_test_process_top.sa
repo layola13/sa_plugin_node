@@ -1,6 +1,5 @@
 // SA tests for Node process top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_INSPECT = utf8:"inspect=127.0.0.1:9229"
 @const S_WARN = utf8:"careful"

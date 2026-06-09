@@ -6541,3 +6541,481 @@
     %out_len = add __events_top_feature_len, 0
     !__events_top_feature_len
 [END_MACRO]
+
+[MACRO] NODE_PROCESS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __process_top_status_ptr_slot = stack_alloc 8
+    __process_top_status_len_slot = stack_alloc 8
+    __process_top_status = call @sa_node_plugin_process_status_json(&__process_top_status_ptr_slot, &__process_top_status_len_slot)
+    !%out_status
+    %out_status = add __process_top_status, 0
+    !__process_top_status
+    __process_top_status_ptr = load __process_top_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_top_status_ptr, 0
+    !__process_top_status_ptr
+    __process_top_status_len = load __process_top_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_top_status_len, 0
+    !__process_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __process_top_exports_ptr_slot = stack_alloc 8
+    __process_top_exports_len_slot = stack_alloc 8
+    __process_top_exports_status = call @sa_node_plugin_process_exports_json(&__process_top_exports_ptr_slot, &__process_top_exports_len_slot)
+    !%out_status
+    %out_status = add __process_top_exports_status, 0
+    !__process_top_exports_status
+    __process_top_exports_ptr = load __process_top_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_top_exports_ptr, 0
+    !__process_top_exports_ptr
+    __process_top_exports_len = load __process_top_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_top_exports_len, 0
+    !__process_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __process_top_config_ptr_slot = stack_alloc 8
+    __process_top_config_len_slot = stack_alloc 8
+    __process_top_config_status = call @sa_node_plugin_process_config_json(&__process_top_config_ptr_slot, &__process_top_config_len_slot)
+    !%out_status
+    %out_status = add __process_top_config_status, 0
+    !__process_top_config_status
+    __process_top_config_ptr = load __process_top_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_top_config_ptr, 0
+    !__process_top_config_ptr
+    __process_top_config_len = load __process_top_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_top_config_len, 0
+    !__process_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __process_top_feature_ptr_slot = stack_alloc 8
+    __process_top_feature_len_slot = stack_alloc 8
+    __process_top_feature_status = call @sa_node_plugin_process_feature_support_json(&__process_top_feature_ptr_slot, &__process_top_feature_len_slot)
+    !%out_status
+    %out_status = add __process_top_feature_status, 0
+    !__process_top_feature_status
+    __process_top_feature_ptr = load __process_top_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_top_feature_ptr, 0
+    !__process_top_feature_ptr
+    __process_top_feature_len = load __process_top_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_top_feature_len, 0
+    !__process_top_feature_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXEC_PATH %out_ptr, %out_len, %out_status
+    __process_exec_path_ptr_slot = stack_alloc 8
+    __process_exec_path_len_slot = stack_alloc 8
+    __process_exec_path_status = call @sa_node_plugin_process_exec_path(&__process_exec_path_ptr_slot, &__process_exec_path_len_slot)
+    !%out_status
+    %out_status = add __process_exec_path_status, 0
+    !__process_exec_path_status
+    __process_exec_path_ptr = load __process_exec_path_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_exec_path_ptr, 0
+    !__process_exec_path_ptr
+    __process_exec_path_len = load __process_exec_path_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_exec_path_len, 0
+    !__process_exec_path_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARGV0 %out_ptr, %out_len, %out_status
+    __process_argv0_ptr_slot = stack_alloc 8
+    __process_argv0_len_slot = stack_alloc 8
+    __process_argv0_status = call @sa_node_plugin_process_argv0(&__process_argv0_ptr_slot, &__process_argv0_len_slot)
+    !%out_status
+    %out_status = add __process_argv0_status, 0
+    !__process_argv0_status
+    __process_argv0_ptr = load __process_argv0_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_argv0_ptr, 0
+    !__process_argv0_ptr
+    __process_argv0_len = load __process_argv0_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_argv0_len, 0
+    !__process_argv0_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXEC_ARGV_JSON %out_ptr, %out_len, %out_status
+    __process_exec_argv_ptr_slot = stack_alloc 8
+    __process_exec_argv_len_slot = stack_alloc 8
+    __process_exec_argv_status = call @sa_node_plugin_process_exec_argv_json(&__process_exec_argv_ptr_slot, &__process_exec_argv_len_slot)
+    !%out_status
+    %out_status = add __process_exec_argv_status, 0
+    !__process_exec_argv_status
+    __process_exec_argv_ptr = load __process_exec_argv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_exec_argv_ptr, 0
+    !__process_exec_argv_ptr
+    __process_exec_argv_len = load __process_exec_argv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_exec_argv_len, 0
+    !__process_exec_argv_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __process_allowed_flags_ptr_slot = stack_alloc 8
+    __process_allowed_flags_len_slot = stack_alloc 8
+    __process_allowed_flags_status = call @sa_node_plugin_process_allowed_node_environment_flags_json(&__process_allowed_flags_ptr_slot, &__process_allowed_flags_len_slot)
+    !%out_status
+    %out_status = add __process_allowed_flags_status, 0
+    !__process_allowed_flags_status
+    __process_allowed_flags_ptr = load __process_allowed_flags_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_allowed_flags_ptr, 0
+    !__process_allowed_flags_ptr
+    __process_allowed_flags_len = load __process_allowed_flags_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_allowed_flags_len, 0
+    !__process_allowed_flags_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_HAS %out_bool, %out_status, %flag_ptr, %flag_len
+    __process_allowed_flags_has_slot = stack_alloc 8
+    __process_allowed_flags_has_status = call @sa_node_plugin_process_allowed_node_environment_flags_has(%flag_ptr, %flag_len, &__process_allowed_flags_has_slot)
+    !%out_status
+    %out_status = add __process_allowed_flags_has_status, 0
+    !__process_allowed_flags_has_status
+    __process_allowed_flags_has_value = load __process_allowed_flags_has_slot+0 as u64
+    !%out_bool
+    %out_bool = add __process_allowed_flags_has_value, 0
+    !__process_allowed_flags_has_value
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EMIT_WARNING_JSON %out_ptr, %out_len, %out_status, %warning_ptr, %warning_len, %type_ptr, %type_len, %code_ptr, %code_len, %detail_ptr, %detail_len
+    __process_emit_warning_ptr_slot = stack_alloc 8
+    __process_emit_warning_len_slot = stack_alloc 8
+    __process_emit_warning_status = call @sa_node_plugin_process_emit_warning_json(%warning_ptr, %warning_len, %type_ptr, %type_len, %code_ptr, %code_len, %detail_ptr, %detail_len, &__process_emit_warning_ptr_slot, &__process_emit_warning_len_slot)
+    !%out_status
+    %out_status = add __process_emit_warning_status, 0
+    !__process_emit_warning_status
+    __process_emit_warning_ptr = load __process_emit_warning_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_emit_warning_ptr, 0
+    !__process_emit_warning_ptr
+    __process_emit_warning_len = load __process_emit_warning_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_emit_warning_len, 0
+    !__process_emit_warning_len
+[END_MACRO]
+
+[MACRO] NODE_OS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __os_top_status_ptr_slot = stack_alloc 8
+    __os_top_status_len_slot = stack_alloc 8
+    __os_top_status = call @sa_node_plugin_os_status_json(&__os_top_status_ptr_slot, &__os_top_status_len_slot)
+    !%out_status
+    %out_status = add __os_top_status, 0
+    !__os_top_status
+    __os_top_status_ptr = load __os_top_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __os_top_status_ptr, 0
+    !__os_top_status_ptr
+    __os_top_status_len = load __os_top_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __os_top_status_len, 0
+    !__os_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_OS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __os_top_exports_ptr_slot = stack_alloc 8
+    __os_top_exports_len_slot = stack_alloc 8
+    __os_top_exports_status = call @sa_node_plugin_os_exports_json(&__os_top_exports_ptr_slot, &__os_top_exports_len_slot)
+    !%out_status
+    %out_status = add __os_top_exports_status, 0
+    !__os_top_exports_status
+    __os_top_exports_ptr = load __os_top_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __os_top_exports_ptr, 0
+    !__os_top_exports_ptr
+    __os_top_exports_len = load __os_top_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __os_top_exports_len, 0
+    !__os_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_OS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __os_top_config_ptr_slot = stack_alloc 8
+    __os_top_config_len_slot = stack_alloc 8
+    __os_top_config_status = call @sa_node_plugin_os_config_json(&__os_top_config_ptr_slot, &__os_top_config_len_slot)
+    !%out_status
+    %out_status = add __os_top_config_status, 0
+    !__os_top_config_status
+    __os_top_config_ptr = load __os_top_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __os_top_config_ptr, 0
+    !__os_top_config_ptr
+    __os_top_config_len = load __os_top_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __os_top_config_len, 0
+    !__os_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_OS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __os_top_feature_ptr_slot = stack_alloc 8
+    __os_top_feature_len_slot = stack_alloc 8
+    __os_top_feature_status = call @sa_node_plugin_os_feature_support_json(&__os_top_feature_ptr_slot, &__os_top_feature_len_slot)
+    !%out_status
+    %out_status = add __os_top_feature_status, 0
+    !__os_top_feature_status
+    __os_top_feature_ptr = load __os_top_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __os_top_feature_ptr, 0
+    !__os_top_feature_ptr
+    __os_top_feature_len = load __os_top_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __os_top_feature_len, 0
+    !__os_top_feature_len
+[END_MACRO]
+
+[MACRO] NODE_OS_EOL %p_0, %p_1
+    __m_slot_7870af9b_0 = stack_alloc 8
+    __m_slot_7870af9b_1 = stack_alloc 8
+    __m_status_7870af9b = call @sa_node_plugin_os_eol(&__m_slot_7870af9b_0, &__m_slot_7870af9b_1)
+    !__m_status_7870af9b
+    __m_load_7870af9b_p_0 = load __m_slot_7870af9b_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_7870af9b_p_0, 0
+    !__m_load_7870af9b_p_0
+    __m_load_7870af9b_p_1 = load __m_slot_7870af9b_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_7870af9b_p_1, 0
+    !__m_load_7870af9b_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_DEV_NULL %p_0, %p_1
+    __m_slot_os_dev_null_0 = stack_alloc 8
+    __m_slot_os_dev_null_1 = stack_alloc 8
+    __m_status_os_dev_null = call @sa_node_plugin_os_dev_null(&__m_slot_os_dev_null_0, &__m_slot_os_dev_null_1)
+    !__m_status_os_dev_null
+    __m_load_os_dev_null_p_0 = load __m_slot_os_dev_null_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_os_dev_null_p_0, 0
+    !__m_load_os_dev_null_p_0
+    __m_load_os_dev_null_p_1 = load __m_slot_os_dev_null_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_os_dev_null_p_1, 0
+    !__m_load_os_dev_null_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_CONSTANTS %p_0, %p_1
+    __m_slot_cd9aaebd_0 = stack_alloc 8
+    __m_slot_cd9aaebd_1 = stack_alloc 8
+    __m_status_cd9aaebd = call @sa_node_plugin_os_constants(&__m_slot_cd9aaebd_0, &__m_slot_cd9aaebd_1)
+    !__m_status_cd9aaebd
+    __m_load_cd9aaebd_p_0 = load __m_slot_cd9aaebd_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_cd9aaebd_p_0, 0
+    !__m_load_cd9aaebd_p_0
+    __m_load_cd9aaebd_p_1 = load __m_slot_cd9aaebd_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_cd9aaebd_p_1, 0
+    !__m_load_cd9aaebd_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_GET_PRIORITY %p_0, %p_1, %p_2
+    __m_slot_114714a8_0 = stack_alloc 8
+    __m_status_114714a8 = call @sa_node_plugin_os_get_priority(%p_0, &__m_slot_114714a8_0)
+    !%p_2
+    %p_2 = add __m_status_114714a8, 0
+    !__m_status_114714a8
+    __m_load_114714a8_p_1 = load __m_slot_114714a8_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_114714a8_p_1, 0
+    !__m_load_114714a8_p_1
+[END_MACRO]
+
+[MACRO] NODE_OS_SET_PRIORITY %p_0, %p_1, %p_2
+    __m_status_93eb6e10 = call @sa_node_plugin_os_set_priority(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_93eb6e10, 0
+    !__m_status_93eb6e10
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARCH %p_0, %p_1
+    __m_slot_process_arch_0 = stack_alloc 8
+    __m_slot_process_arch_1 = stack_alloc 8
+    __m_status_process_arch = call @sa_node_plugin_process_arch(&__m_slot_process_arch_0, &__m_slot_process_arch_1)
+    !__m_status_process_arch
+    __m_load_process_arch_p_0 = load __m_slot_process_arch_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_arch_p_0, 0
+    !__m_load_process_arch_p_0
+    __m_load_process_arch_p_1 = load __m_slot_process_arch_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_arch_p_1, 0
+    !__m_load_process_arch_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_PLATFORM %p_0, %p_1
+    __m_slot_process_platform_0 = stack_alloc 8
+    __m_slot_process_platform_1 = stack_alloc 8
+    __m_status_process_platform = call @sa_node_plugin_process_platform(&__m_slot_process_platform_0, &__m_slot_process_platform_1)
+    !__m_status_process_platform
+    __m_load_process_platform_p_0 = load __m_slot_process_platform_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_platform_p_0, 0
+    !__m_load_process_platform_p_0
+    __m_load_process_platform_p_1 = load __m_slot_process_platform_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_platform_p_1, 0
+    !__m_load_process_platform_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_RELEASE_JSON %p_0, %p_1
+    __m_slot_process_release_0 = stack_alloc 8
+    __m_slot_process_release_1 = stack_alloc 8
+    __m_status_process_release = call @sa_node_plugin_process_release_json(&__m_slot_process_release_0, &__m_slot_process_release_1)
+    !__m_status_process_release
+    __m_load_process_release_p_0 = load __m_slot_process_release_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_release_p_0, 0
+    !__m_load_process_release_p_0
+    __m_load_process_release_p_1 = load __m_slot_process_release_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_release_p_1, 0
+    !__m_load_process_release_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_UMASK %out_old, %out_status, %mask, %set_mask
+    __m_slot_process_umask_old = stack_alloc 8
+    %out_status = call @sa_node_plugin_process_umask(%mask, %set_mask, &__m_slot_process_umask_old)
+    %out_old = load __m_slot_process_umask_old+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_CHDIR %out_status, %path, %path_len
+    %out_status = call @sa_node_plugin_process_chdir(%path, %path_len)
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_EXIT %p_0, %p_1
+    __m_status_71423e0b = call @sa_node_plugin_process_exit(%p_0)
+    !%p_1
+    %p_1 = add __m_status_71423e0b, 0
+    !__m_status_71423e0b
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_KILL %p_0, %p_1, %p_2
+    __m_status_fe45f16f = call @sa_node_plugin_process_kill(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_fe45f16f, 0
+    !__m_status_fe45f16f
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_KILL_SIGNAL %p_0, %p_1, %p_2, %p_3
+    __m_status_process_kill_signal = call @sa_node_plugin_process_kill_signal(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_process_kill_signal, 0
+    !__m_status_process_kill_signal
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_RESOURCE_USAGE_JSON %p_0, %p_1, %p_2
+    __m_slot_process_resource_usage_0 = stack_alloc 8
+    __m_slot_process_resource_usage_1 = stack_alloc 8
+    __m_status_process_resource_usage = call @sa_node_plugin_process_resource_usage_json(&__m_slot_process_resource_usage_0, &__m_slot_process_resource_usage_1)
+    !%p_2
+    %p_2 = add __m_status_process_resource_usage, 0
+    !__m_status_process_resource_usage
+    __m_load_process_resource_usage_p_0 = load __m_slot_process_resource_usage_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_resource_usage_p_0, 0
+    !__m_load_process_resource_usage_p_0
+    __m_load_process_resource_usage_p_1 = load __m_slot_process_resource_usage_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_resource_usage_p_1, 0
+    !__m_load_process_resource_usage_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_AVAILABLE_MEMORY %p_0, %p_1
+    __m_slot_process_available_memory = stack_alloc 8
+    __m_status_process_available_memory = call @sa_node_plugin_process_available_memory(&__m_slot_process_available_memory)
+    !%p_1
+    %p_1 = add __m_status_process_available_memory, 0
+    !__m_status_process_available_memory
+    __m_load_process_available_memory = load __m_slot_process_available_memory+0 as u64
+    !%p_0
+    %p_0 = add __m_load_process_available_memory, 0
+    !__m_load_process_available_memory
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_CONSTRAINED_MEMORY %p_0, %p_1
+    __m_slot_process_constrained_memory = stack_alloc 8
+    __m_status_process_constrained_memory = call @sa_node_plugin_process_constrained_memory(&__m_slot_process_constrained_memory)
+    !%p_1
+    %p_1 = add __m_status_process_constrained_memory, 0
+    !__m_status_process_constrained_memory
+    __m_load_process_constrained_memory = load __m_slot_process_constrained_memory+0 as u64
+    !%p_0
+    %p_0 = add __m_load_process_constrained_memory, 0
+    !__m_load_process_constrained_memory
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_FEATURES_JSON %p_0, %p_1, %p_2
+    __m_slot_process_features_0 = stack_alloc 8
+    __m_slot_process_features_1 = stack_alloc 8
+    __m_status_process_features = call @sa_node_plugin_process_features_json(&__m_slot_process_features_0, &__m_slot_process_features_1)
+    !%p_2
+    %p_2 = add __m_status_process_features, 0
+    !__m_status_process_features
+    __m_load_process_features_p_0 = load __m_slot_process_features_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_process_features_p_0, 0
+    !__m_load_process_features_p_0
+    __m_load_process_features_p_1 = load __m_slot_process_features_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_process_features_p_1, 0
+    !__m_load_process_features_p_1
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ARGV_JSON %p_0, %p_1, %p_2
+    __m_slot_507b29e7_0 = stack_alloc 8
+    __m_slot_507b29e7_1 = stack_alloc 8
+    __m_status_507b29e7 = call @sa_node_plugin_process_argv_json(&__m_slot_507b29e7_0, &__m_slot_507b29e7_1)
+    !%p_2
+    %p_2 = add __m_status_507b29e7, 0
+    !__m_status_507b29e7
+    __m_load_507b29e7_p_0 = load __m_slot_507b29e7_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_507b29e7_p_0, 0
+    !__m_load_507b29e7_p_0
+    __m_load_507b29e7_p_1 = load __m_slot_507b29e7_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_507b29e7_p_1, 0
+    !__m_load_507b29e7_p_1
+[END_MACRO]
+
+[MACRO] NODE_PATH_SEP %p_0, %p_1
+    __m_slot_f7035237_0 = stack_alloc 8
+    __m_slot_f7035237_1 = stack_alloc 8
+    __m_status_f7035237 = call @sa_node_plugin_path_sep(&__m_slot_f7035237_0, &__m_slot_f7035237_1)
+    !__m_status_f7035237
+    __m_load_f7035237_p_0 = load __m_slot_f7035237_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f7035237_p_0, 0
+    !__m_load_f7035237_p_0
+    __m_load_f7035237_p_1 = load __m_slot_f7035237_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_f7035237_p_1, 0
+    !__m_load_f7035237_p_1
+[END_MACRO]
+
+[MACRO] NODE_PATH_DELIMITER %p_0, %p_1
+    __m_slot_1843a441_0 = stack_alloc 8
+    __m_slot_1843a441_1 = stack_alloc 8
+    __m_status_1843a441 = call @sa_node_plugin_path_delimiter(&__m_slot_1843a441_0, &__m_slot_1843a441_1)
+    !__m_status_1843a441
+    __m_load_1843a441_p_0 = load __m_slot_1843a441_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_1843a441_p_0, 0
+    !__m_load_1843a441_p_0
+    __m_load_1843a441_p_1 = load __m_slot_1843a441_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_1843a441_p_1, 0
+    !__m_load_1843a441_p_1
+[END_MACRO]

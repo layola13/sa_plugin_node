@@ -1,6 +1,5 @@
 // SA tests for Node command_line_options native config helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_REQUIRE = utf8:"--require"
 

@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `sea`
+- Scope: installed main `node.sal` public macro coverage for `command_line_options`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `sea` top-level metadata, `isSea`, asset-key, and asset fetch helper macros available through `node.sal`
+  - `command_line_options` status, argv, `NODE_OPTIONS` token, env-file, and flag-check helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` command_line_options helper macro tranche completed:
+  - `command_line_options` status, argv, `NODE_OPTIONS` token parsing, env-file enumeration, and `hasFlag` helpers available through `node.sal`
+  - `tests/node_test_command_line_options.sa` now validates through `node.sal` only
 
 - installed main `node.sal` sea helper macro tranche completed:
   - `sea` status, top-level status/exports/config/feature-support, `isSea`, asset-keys, `getAsset`, `getRawAsset`, and `getAssetAsBlob` helpers available through `node.sal`

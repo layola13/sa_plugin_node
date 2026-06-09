@@ -1880,6 +1880,536 @@
     %out_len = load __dns_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_DNS_PROMISES_LOOKUP %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_lookup_ptr_slot = stack_alloc 8
+    __dns_promises_lookup_len_slot = stack_alloc 8
+    __dns_promises_lookup_status = call @sa_node_plugin_dns_promises_lookup(%hostname, %hostname_len, &__dns_promises_lookup_ptr_slot, &__dns_promises_lookup_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_lookup_status, 0
+    !__dns_promises_lookup_status
+    __dns_promises_lookup_ptr = load __dns_promises_lookup_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_lookup_ptr, 0
+    !__dns_promises_lookup_ptr
+    __dns_promises_lookup_len = load __dns_promises_lookup_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_lookup_len, 0
+    !__dns_promises_lookup_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __dns_promises_constants_ptr_slot = stack_alloc 8
+    __dns_promises_constants_len_slot = stack_alloc 8
+    __dns_promises_constants_status = call @sa_node_plugin_dns_promises_constants_json(&__dns_promises_constants_ptr_slot, &__dns_promises_constants_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_constants_status, 0
+    !__dns_promises_constants_status
+    __dns_promises_constants_ptr = load __dns_promises_constants_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_constants_ptr, 0
+    !__dns_promises_constants_ptr
+    __dns_promises_constants_len = load __dns_promises_constants_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_constants_len, 0
+    !__dns_promises_constants_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_GET_SERVERS %out_ptr, %out_len, %out_status
+    __dns_promises_servers_ptr_slot = stack_alloc 8
+    __dns_promises_servers_len_slot = stack_alloc 8
+    __dns_promises_servers_status = call @sa_node_plugin_dns_promises_get_servers(&__dns_promises_servers_ptr_slot, &__dns_promises_servers_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_servers_status, 0
+    !__dns_promises_servers_status
+    __dns_promises_servers_ptr = load __dns_promises_servers_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_servers_ptr, 0
+    !__dns_promises_servers_ptr
+    __dns_promises_servers_len = load __dns_promises_servers_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_servers_len, 0
+    !__dns_promises_servers_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_SET_SERVERS %out_status, %servers, %servers_len
+    __dns_promises_set_servers_status = call @sa_node_plugin_dns_promises_set_servers(%servers, %servers_len)
+    !%out_status
+    %out_status = add __dns_promises_set_servers_status, 0
+    !__dns_promises_set_servers_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_GET_DEFAULT_RESULT_ORDER %out_ptr, %out_len, %out_status
+    __dns_promises_order_ptr_slot = stack_alloc 8
+    __dns_promises_order_len_slot = stack_alloc 8
+    __dns_promises_order_status = call @sa_node_plugin_dns_promises_get_default_result_order(&__dns_promises_order_ptr_slot, &__dns_promises_order_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_order_status, 0
+    !__dns_promises_order_status
+    __dns_promises_order_ptr = load __dns_promises_order_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_order_ptr, 0
+    !__dns_promises_order_ptr
+    __dns_promises_order_len = load __dns_promises_order_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_order_len, 0
+    !__dns_promises_order_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_SET_DEFAULT_RESULT_ORDER %out_status, %order, %order_len
+    __dns_promises_set_order_status = call @sa_node_plugin_dns_promises_set_default_result_order(%order, %order_len)
+    !%out_status
+    %out_status = add __dns_promises_set_order_status, 0
+    !__dns_promises_set_order_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_LOOKUP_OPTIONS %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %family, %all, %order, %order_len
+    __dns_promises_lookup_options_ptr_slot = stack_alloc 8
+    __dns_promises_lookup_options_len_slot = stack_alloc 8
+    __dns_promises_lookup_options_status = call @sa_node_plugin_dns_promises_lookup_options(%hostname, %hostname_len, %family, %all, %order, %order_len, &__dns_promises_lookup_options_ptr_slot, &__dns_promises_lookup_options_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_lookup_options_status, 0
+    !__dns_promises_lookup_options_status
+    __dns_promises_lookup_options_ptr = load __dns_promises_lookup_options_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_lookup_options_ptr, 0
+    !__dns_promises_lookup_options_ptr
+    __dns_promises_lookup_options_len = load __dns_promises_lookup_options_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_lookup_options_len, 0
+    !__dns_promises_lookup_options_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_LOOKUP_OPTIONS_HINTS %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %family, %all, %hints, %order, %order_len
+    __dns_promises_lookup_options_hints_ptr_slot = stack_alloc 8
+    __dns_promises_lookup_options_hints_len_slot = stack_alloc 8
+    __dns_promises_lookup_options_hints_status = call @sa_node_plugin_dns_promises_lookup_options_hints(%hostname, %hostname_len, %family, %all, %hints, %order, %order_len, &__dns_promises_lookup_options_hints_ptr_slot, &__dns_promises_lookup_options_hints_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_lookup_options_hints_status, 0
+    !__dns_promises_lookup_options_hints_status
+    __dns_promises_lookup_options_hints_ptr = load __dns_promises_lookup_options_hints_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_lookup_options_hints_ptr, 0
+    !__dns_promises_lookup_options_hints_ptr
+    __dns_promises_lookup_options_hints_len = load __dns_promises_lookup_options_hints_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_lookup_options_hints_len, 0
+    !__dns_promises_lookup_options_hints_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_LOOKUP_SERVICE %out_ptr, %out_len, %out_status, %address, %address_len, %port
+    __dns_promises_lookup_service_ptr_slot = stack_alloc 8
+    __dns_promises_lookup_service_len_slot = stack_alloc 8
+    __dns_promises_lookup_service_status = call @sa_node_plugin_dns_promises_lookup_service(%address, %address_len, %port, &__dns_promises_lookup_service_ptr_slot, &__dns_promises_lookup_service_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_lookup_service_status, 0
+    !__dns_promises_lookup_service_status
+    __dns_promises_lookup_service_ptr = load __dns_promises_lookup_service_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_lookup_service_ptr, 0
+    !__dns_promises_lookup_service_ptr
+    __dns_promises_lookup_service_len = load __dns_promises_lookup_service_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_lookup_service_len, 0
+    !__dns_promises_lookup_service_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %rrtype, %rrtype_len
+    __dns_promises_resolve_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_len_slot = stack_alloc 8
+    __dns_promises_resolve_status = call @sa_node_plugin_dns_promises_resolve(%hostname, %hostname_len, %rrtype, %rrtype_len, &__dns_promises_resolve_ptr_slot, &__dns_promises_resolve_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_status, 0
+    !__dns_promises_resolve_status
+    __dns_promises_resolve_ptr = load __dns_promises_resolve_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_ptr, 0
+    !__dns_promises_resolve_ptr
+    __dns_promises_resolve_len = load __dns_promises_resolve_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_len, 0
+    !__dns_promises_resolve_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE4 %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve4_ptr_slot = stack_alloc 8
+    __dns_promises_resolve4_len_slot = stack_alloc 8
+    __dns_promises_resolve4_status = call @sa_node_plugin_dns_promises_resolve4(%hostname, %hostname_len, &__dns_promises_resolve4_ptr_slot, &__dns_promises_resolve4_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve4_status, 0
+    !__dns_promises_resolve4_status
+    __dns_promises_resolve4_ptr = load __dns_promises_resolve4_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve4_ptr, 0
+    !__dns_promises_resolve4_ptr
+    __dns_promises_resolve4_len = load __dns_promises_resolve4_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve4_len, 0
+    !__dns_promises_resolve4_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE6 %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve6_ptr_slot = stack_alloc 8
+    __dns_promises_resolve6_len_slot = stack_alloc 8
+    __dns_promises_resolve6_status = call @sa_node_plugin_dns_promises_resolve6(%hostname, %hostname_len, &__dns_promises_resolve6_ptr_slot, &__dns_promises_resolve6_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve6_status, 0
+    !__dns_promises_resolve6_status
+    __dns_promises_resolve6_ptr = load __dns_promises_resolve6_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve6_ptr, 0
+    !__dns_promises_resolve6_ptr
+    __dns_promises_resolve6_len = load __dns_promises_resolve6_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve6_len, 0
+    !__dns_promises_resolve6_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_CNAME %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_cname_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_cname_len_slot = stack_alloc 8
+    __dns_promises_resolve_cname_status = call @sa_node_plugin_dns_promises_resolve_cname(%hostname, %hostname_len, &__dns_promises_resolve_cname_ptr_slot, &__dns_promises_resolve_cname_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_cname_status, 0
+    !__dns_promises_resolve_cname_status
+    __dns_promises_resolve_cname_ptr = load __dns_promises_resolve_cname_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_cname_ptr, 0
+    !__dns_promises_resolve_cname_ptr
+    __dns_promises_resolve_cname_len = load __dns_promises_resolve_cname_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_cname_len, 0
+    !__dns_promises_resolve_cname_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_MX %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_mx_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_mx_len_slot = stack_alloc 8
+    __dns_promises_resolve_mx_status = call @sa_node_plugin_dns_promises_resolve_mx(%hostname, %hostname_len, &__dns_promises_resolve_mx_ptr_slot, &__dns_promises_resolve_mx_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_mx_status, 0
+    !__dns_promises_resolve_mx_status
+    __dns_promises_resolve_mx_ptr = load __dns_promises_resolve_mx_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_mx_ptr, 0
+    !__dns_promises_resolve_mx_ptr
+    __dns_promises_resolve_mx_len = load __dns_promises_resolve_mx_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_mx_len, 0
+    !__dns_promises_resolve_mx_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_NS %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_ns_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_ns_len_slot = stack_alloc 8
+    __dns_promises_resolve_ns_status = call @sa_node_plugin_dns_promises_resolve_ns(%hostname, %hostname_len, &__dns_promises_resolve_ns_ptr_slot, &__dns_promises_resolve_ns_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_ns_status, 0
+    !__dns_promises_resolve_ns_status
+    __dns_promises_resolve_ns_ptr = load __dns_promises_resolve_ns_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_ns_ptr, 0
+    !__dns_promises_resolve_ns_ptr
+    __dns_promises_resolve_ns_len = load __dns_promises_resolve_ns_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_ns_len, 0
+    !__dns_promises_resolve_ns_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_TXT %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_txt_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_txt_len_slot = stack_alloc 8
+    __dns_promises_resolve_txt_status = call @sa_node_plugin_dns_promises_resolve_txt(%hostname, %hostname_len, &__dns_promises_resolve_txt_ptr_slot, &__dns_promises_resolve_txt_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_txt_status, 0
+    !__dns_promises_resolve_txt_status
+    __dns_promises_resolve_txt_ptr = load __dns_promises_resolve_txt_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_txt_ptr, 0
+    !__dns_promises_resolve_txt_ptr
+    __dns_promises_resolve_txt_len = load __dns_promises_resolve_txt_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_txt_len, 0
+    !__dns_promises_resolve_txt_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_SRV %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_srv_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_srv_len_slot = stack_alloc 8
+    __dns_promises_resolve_srv_status = call @sa_node_plugin_dns_promises_resolve_srv(%hostname, %hostname_len, &__dns_promises_resolve_srv_ptr_slot, &__dns_promises_resolve_srv_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_srv_status, 0
+    !__dns_promises_resolve_srv_status
+    __dns_promises_resolve_srv_ptr = load __dns_promises_resolve_srv_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_srv_ptr, 0
+    !__dns_promises_resolve_srv_ptr
+    __dns_promises_resolve_srv_len = load __dns_promises_resolve_srv_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_srv_len, 0
+    !__dns_promises_resolve_srv_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_PTR %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_ptr_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_ptr_len_slot = stack_alloc 8
+    __dns_promises_resolve_ptr_status = call @sa_node_plugin_dns_promises_resolve_ptr(%hostname, %hostname_len, &__dns_promises_resolve_ptr_ptr_slot, &__dns_promises_resolve_ptr_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_ptr_status, 0
+    !__dns_promises_resolve_ptr_status
+    __dns_promises_resolve_ptr_ptr = load __dns_promises_resolve_ptr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_ptr_ptr, 0
+    !__dns_promises_resolve_ptr_ptr
+    __dns_promises_resolve_ptr_len = load __dns_promises_resolve_ptr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_ptr_len, 0
+    !__dns_promises_resolve_ptr_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_ANY %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_any_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_any_len_slot = stack_alloc 8
+    __dns_promises_resolve_any_status = call @sa_node_plugin_dns_promises_resolve_any(%hostname, %hostname_len, &__dns_promises_resolve_any_ptr_slot, &__dns_promises_resolve_any_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_any_status, 0
+    !__dns_promises_resolve_any_status
+    __dns_promises_resolve_any_ptr = load __dns_promises_resolve_any_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_any_ptr, 0
+    !__dns_promises_resolve_any_ptr
+    __dns_promises_resolve_any_len = load __dns_promises_resolve_any_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_any_len, 0
+    !__dns_promises_resolve_any_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_CAA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_caa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_caa_len_slot = stack_alloc 8
+    __dns_promises_resolve_caa_status = call @sa_node_plugin_dns_promises_resolve_caa(%hostname, %hostname_len, &__dns_promises_resolve_caa_ptr_slot, &__dns_promises_resolve_caa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_caa_status, 0
+    !__dns_promises_resolve_caa_status
+    __dns_promises_resolve_caa_ptr = load __dns_promises_resolve_caa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_caa_ptr, 0
+    !__dns_promises_resolve_caa_ptr
+    __dns_promises_resolve_caa_len = load __dns_promises_resolve_caa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_caa_len, 0
+    !__dns_promises_resolve_caa_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_NAPTR %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_naptr_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_naptr_len_slot = stack_alloc 8
+    __dns_promises_resolve_naptr_status = call @sa_node_plugin_dns_promises_resolve_naptr(%hostname, %hostname_len, &__dns_promises_resolve_naptr_ptr_slot, &__dns_promises_resolve_naptr_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_naptr_status, 0
+    !__dns_promises_resolve_naptr_status
+    __dns_promises_resolve_naptr_ptr = load __dns_promises_resolve_naptr_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_naptr_ptr, 0
+    !__dns_promises_resolve_naptr_ptr
+    __dns_promises_resolve_naptr_len = load __dns_promises_resolve_naptr_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_naptr_len, 0
+    !__dns_promises_resolve_naptr_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_SOA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_soa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_soa_len_slot = stack_alloc 8
+    __dns_promises_resolve_soa_status = call @sa_node_plugin_dns_promises_resolve_soa(%hostname, %hostname_len, &__dns_promises_resolve_soa_ptr_slot, &__dns_promises_resolve_soa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_soa_status, 0
+    !__dns_promises_resolve_soa_status
+    __dns_promises_resolve_soa_ptr = load __dns_promises_resolve_soa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_soa_ptr, 0
+    !__dns_promises_resolve_soa_ptr
+    __dns_promises_resolve_soa_len = load __dns_promises_resolve_soa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_soa_len, 0
+    !__dns_promises_resolve_soa_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVE_TLSA %out_ptr, %out_len, %out_status, %hostname, %hostname_len
+    __dns_promises_resolve_tlsa_ptr_slot = stack_alloc 8
+    __dns_promises_resolve_tlsa_len_slot = stack_alloc 8
+    __dns_promises_resolve_tlsa_status = call @sa_node_plugin_dns_promises_resolve_tlsa(%hostname, %hostname_len, &__dns_promises_resolve_tlsa_ptr_slot, &__dns_promises_resolve_tlsa_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolve_tlsa_status, 0
+    !__dns_promises_resolve_tlsa_status
+    __dns_promises_resolve_tlsa_ptr = load __dns_promises_resolve_tlsa_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolve_tlsa_ptr, 0
+    !__dns_promises_resolve_tlsa_ptr
+    __dns_promises_resolve_tlsa_len = load __dns_promises_resolve_tlsa_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolve_tlsa_len, 0
+    !__dns_promises_resolve_tlsa_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_REVERSE %out_ptr, %out_len, %out_status, %ip, %ip_len
+    __dns_promises_reverse_ptr_slot = stack_alloc 8
+    __dns_promises_reverse_len_slot = stack_alloc 8
+    __dns_promises_reverse_status = call @sa_node_plugin_dns_promises_reverse(%ip, %ip_len, &__dns_promises_reverse_ptr_slot, &__dns_promises_reverse_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_reverse_status, 0
+    !__dns_promises_reverse_status
+    __dns_promises_reverse_ptr = load __dns_promises_reverse_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_reverse_ptr, 0
+    !__dns_promises_reverse_ptr
+    __dns_promises_reverse_len = load __dns_promises_reverse_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_reverse_len, 0
+    !__dns_promises_reverse_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_NEW %out_resolver, %out_status, %timeout_ms, %tries
+    __dns_promises_resolver_new_slot = stack_alloc 8
+    __dns_promises_resolver_new_status = call @sa_node_plugin_dns_promises_resolver_new(%timeout_ms, %tries, &__dns_promises_resolver_new_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_new_status, 0
+    !__dns_promises_resolver_new_status
+    __dns_promises_resolver_new_handle = load __dns_promises_resolver_new_slot+0 as ptr
+    !%out_resolver
+    %out_resolver = add __dns_promises_resolver_new_handle, 0
+    !__dns_promises_resolver_new_handle
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_FREE %out_status, %resolver
+    __dns_promises_resolver_free_status = call @sa_node_plugin_dns_promises_resolver_free(%resolver)
+    !%out_status
+    %out_status = add __dns_promises_resolver_free_status, 0
+    !__dns_promises_resolver_free_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_SET_SERVERS %out_status, %resolver, %servers, %servers_len
+    __dns_promises_resolver_set_servers_status = call @sa_node_plugin_dns_promises_resolver_set_servers(%resolver, %servers, %servers_len)
+    !%out_status
+    %out_status = add __dns_promises_resolver_set_servers_status, 0
+    !__dns_promises_resolver_set_servers_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_GET_SERVERS %out_ptr, %out_len, %out_status, %resolver
+    __dns_promises_resolver_get_servers_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_get_servers_len_slot = stack_alloc 8
+    __dns_promises_resolver_get_servers_status = call @sa_node_plugin_dns_promises_resolver_get_servers(%resolver, &__dns_promises_resolver_get_servers_ptr_slot, &__dns_promises_resolver_get_servers_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_get_servers_status, 0
+    !__dns_promises_resolver_get_servers_status
+    __dns_promises_resolver_get_servers_ptr = load __dns_promises_resolver_get_servers_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_get_servers_ptr, 0
+    !__dns_promises_resolver_get_servers_ptr
+    __dns_promises_resolver_get_servers_len = load __dns_promises_resolver_get_servers_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_get_servers_len, 0
+    !__dns_promises_resolver_get_servers_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_SET_LOCAL_ADDRESS %out_status, %resolver, %ipv4, %ipv4_len, %ipv6, %ipv6_len
+    __dns_promises_resolver_set_local_address_status = call @sa_node_plugin_dns_promises_resolver_set_local_address(%resolver, %ipv4, %ipv4_len, %ipv6, %ipv6_len)
+    !%out_status
+    %out_status = add __dns_promises_resolver_set_local_address_status, 0
+    !__dns_promises_resolver_set_local_address_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_CANCEL %out_status, %resolver
+    __dns_promises_resolver_cancel_status = call @sa_node_plugin_dns_promises_resolver_cancel(%resolver)
+    !%out_status
+    %out_status = add __dns_promises_resolver_cancel_status, 0
+    !__dns_promises_resolver_cancel_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_RESOLVE %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len, %rrtype, %rrtype_len
+    __dns_promises_resolver_resolve_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_resolve_len_slot = stack_alloc 8
+    __dns_promises_resolver_resolve_status = call @sa_node_plugin_dns_promises_resolver_resolve(%resolver, %hostname, %hostname_len, %rrtype, %rrtype_len, &__dns_promises_resolver_resolve_ptr_slot, &__dns_promises_resolver_resolve_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_resolve_status, 0
+    !__dns_promises_resolver_resolve_status
+    __dns_promises_resolver_resolve_ptr = load __dns_promises_resolver_resolve_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_resolve_ptr, 0
+    !__dns_promises_resolver_resolve_ptr
+    __dns_promises_resolver_resolve_len = load __dns_promises_resolver_resolve_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_resolve_len, 0
+    !__dns_promises_resolver_resolve_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_RESOLVE4 %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len
+    __dns_promises_resolver_resolve4_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_resolve4_len_slot = stack_alloc 8
+    __dns_promises_resolver_resolve4_status = call @sa_node_plugin_dns_promises_resolver_resolve4(%resolver, %hostname, %hostname_len, &__dns_promises_resolver_resolve4_ptr_slot, &__dns_promises_resolver_resolve4_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_resolve4_status, 0
+    !__dns_promises_resolver_resolve4_status
+    __dns_promises_resolver_resolve4_ptr = load __dns_promises_resolver_resolve4_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_resolve4_ptr, 0
+    !__dns_promises_resolver_resolve4_ptr
+    __dns_promises_resolver_resolve4_len = load __dns_promises_resolver_resolve4_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_resolve4_len, 0
+    !__dns_promises_resolver_resolve4_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_RESOLVE6 %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len
+    __dns_promises_resolver_resolve6_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_resolve6_len_slot = stack_alloc 8
+    __dns_promises_resolver_resolve6_status = call @sa_node_plugin_dns_promises_resolver_resolve6(%resolver, %hostname, %hostname_len, &__dns_promises_resolver_resolve6_ptr_slot, &__dns_promises_resolver_resolve6_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_resolve6_status, 0
+    !__dns_promises_resolver_resolve6_status
+    __dns_promises_resolver_resolve6_ptr = load __dns_promises_resolver_resolve6_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_resolve6_ptr, 0
+    !__dns_promises_resolver_resolve6_ptr
+    __dns_promises_resolver_resolve6_len = load __dns_promises_resolver_resolve6_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_resolve6_len, 0
+    !__dns_promises_resolver_resolve6_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_REVERSE %out_ptr, %out_len, %out_status, %resolver, %ip, %ip_len
+    __dns_promises_resolver_reverse_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_reverse_len_slot = stack_alloc 8
+    __dns_promises_resolver_reverse_status = call @sa_node_plugin_dns_promises_resolver_reverse(%resolver, %ip, %ip_len, &__dns_promises_resolver_reverse_ptr_slot, &__dns_promises_resolver_reverse_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_reverse_status, 0
+    !__dns_promises_resolver_reverse_status
+    __dns_promises_resolver_reverse_ptr = load __dns_promises_resolver_reverse_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_reverse_ptr, 0
+    !__dns_promises_resolver_reverse_ptr
+    __dns_promises_resolver_reverse_len = load __dns_promises_resolver_reverse_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_reverse_len, 0
+    !__dns_promises_resolver_reverse_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_PROMISES_RESOLVER_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %resolver
+    __dns_promises_resolver_snapshot_ptr_slot = stack_alloc 8
+    __dns_promises_resolver_snapshot_len_slot = stack_alloc 8
+    __dns_promises_resolver_snapshot_status = call @sa_node_plugin_dns_promises_resolver_snapshot_json(%resolver, &__dns_promises_resolver_snapshot_ptr_slot, &__dns_promises_resolver_snapshot_len_slot)
+    !%out_status
+    %out_status = add __dns_promises_resolver_snapshot_status, 0
+    !__dns_promises_resolver_snapshot_status
+    __dns_promises_resolver_snapshot_ptr = load __dns_promises_resolver_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_promises_resolver_snapshot_ptr, 0
+    !__dns_promises_resolver_snapshot_ptr
+    __dns_promises_resolver_snapshot_len = load __dns_promises_resolver_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_promises_resolver_snapshot_len, 0
+    !__dns_promises_resolver_snapshot_len
+[END_MACRO]
+
 [MACRO] NODE_NET_IS_IP %input, %input_len, %out_value
     __net_is_ip_slot = stack_alloc 8
     __net_is_ip_status = call @sa_node_plugin_net_is_ip(%input, %input_len, &__net_is_ip_slot)

@@ -63,15 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `dns` / `net` / `dgram` facades
-- Current status: `3 / 3` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `dns.promises`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `dns` top-level and resolver macros available through `node.sal`
-  - `net` top-level factory/status macros available through `node.sal`
-  - `dgram` top-level macros available through `node.sal`
+  - `dns.promises` lookup / resolve / resolver macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` dns.promises macro tranche completed:
+  - `dns.promises` lookup / resolve / resolver macros available through `node.sal`
+  - `tests/node_test_dns_extra.sa` now validates the promise helpers through `node.sal` only
+  - `tests/node_test_dns_promises_main.sa` compile-checks the full `dns.promises` surface through `node.sal`
 - installed main `node.sal` dns/net/dgram macro tranche completed:
   - `dns` top-level and resolver macros available through `node.sal`
   - `net` top-level factory/status macros available through `node.sal`

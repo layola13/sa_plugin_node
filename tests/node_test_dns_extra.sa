@@ -1,6 +1,5 @@
 // SA-native unit tests for Node DNS extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_HOST = utf8:"example.com"
 @const S_LOCALHOST = utf8:"localhost"

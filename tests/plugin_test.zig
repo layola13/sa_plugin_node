@@ -3002,7 +3002,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"cpuUsage\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"geteuid\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"getegid\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, status, "\"groups\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"getgroups\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"emitWarning\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"nextTick\":false") != null);
 
@@ -3020,7 +3020,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"cpuUsage\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"geteuid\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getegid\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"groups\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"getgroups\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
@@ -3032,7 +3032,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, config, "\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"memoryModel\":\"native cpuUsage, memoryUsage, resourceUsage, availableMemory, constrainedMemory, and features JSON snapshots\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, config, "real and effective uid/gid, groups") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "real and effective uid/gid, supplemental groups") != null);
 
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
@@ -3051,7 +3051,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"cpuUsage\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"geteuid\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"getegid\":{\"supported\":true") != null);
-    try std.testing.expect(std.mem.indexOf(u8, feature, "\"groups\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"getgroups\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"emitWarning\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"chdir\":{\"supported\":true") != null);

@@ -75,7 +75,7 @@
 - `process` credential helper tranche completed:
   - `process.geteuid`
   - `process.getegid`
-  - `process.groups`
+  - `process.getgroups`
 - `process` warning-surface alignment tranche completed:
   - `process.emitWarning` top-level status
 - `readline` interface helper tranche completed:

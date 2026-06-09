@@ -33,12 +33,28 @@ L_ENTRY:
     dtls_server = add 0, 0
     s_dtls_listen = add 0, 0
     EXPAND NODE_DTLS_LISTEN dtls_server, s_dtls_listen, 4, S_LOOP4, 9, 19772
+    dtls_listen_ok = eq s_dtls_listen, 0
+    br dtls_listen_ok -> L_DTLS_SNAPSHOT, L_ERR_DTLS_LISTEN
+L_DTLS_SNAPSHOT:
+    !dtls_listen_ok
     dsnap_ptr = add 0, 0
     dsnap_len = add 0, 0
     s_dsnap = add 0, 0
     EXPAND NODE_DTLS_ENDPOINT_SNAPSHOT_JSON dsnap_ptr, dsnap_len, s_dsnap, dtls_server
+    dsnap_ok = eq s_dsnap, 0
+    br dsnap_ok -> L_DTLS_SNAPSHOT_LEN, L_ERR_DTLS_SNAPSHOT
+L_DTLS_SNAPSHOT_LEN:
+    !dsnap_ok
+    dsnap_has_len = ugt dsnap_len, 0
+    br dsnap_has_len -> L_CLOSE_DTLS, L_ERR_DTLS_SNAPSHOT_LEN
+L_CLOSE_DTLS:
+    !dsnap_has_len
     s_dtls_close = add 0, 0
     EXPAND NODE_DTLS_CLOSE s_dtls_close, dtls_server
+    dtls_close_ok = eq s_dtls_close, 0
+    br dtls_close_ok -> L_CLOSE_HTTP3, L_ERR_DTLS_CLOSE
+L_CLOSE_HTTP3:
+    !dtls_close_ok
     s_session_close = add 0, 0
     EXPAND NODE_HTTP3_SESSION_CLOSE s_session_close, session
     s_quic_close = add 0, 0
@@ -83,3 +99,20 @@ L_ENTRY:
     !session
     !endpoint
     return
+L_ERR_DTLS_LISTEN:
+    !dtls_listen_ok
+    !s_dtls_listen
+    panic(103)
+L_ERR_DTLS_SNAPSHOT:
+    !dsnap_ok
+    !s_dsnap
+    panic(103)
+L_ERR_DTLS_SNAPSHOT_LEN:
+    !dsnap_has_len
+    !dsnap_len
+    !dsnap_ptr
+    panic(103)
+L_ERR_DTLS_CLOSE:
+    !dtls_close_ok
+    !s_dtls_close
+    panic(103)

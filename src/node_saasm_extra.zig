@@ -6066,6 +6066,7 @@ fn quicNormalizeAlpn(alpn: []const u8) ?[]const u8 {
     if (alpn.len == 0) return "h3";
     if (std.mem.eql(u8, alpn, "h3")) return "h3";
     if (std.mem.eql(u8, alpn, "h3-29")) return "h3-29";
+    if (std.mem.eql(u8, alpn, "dtls")) return "dtls";
     return null;
 }
 

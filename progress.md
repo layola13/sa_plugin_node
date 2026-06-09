@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: network DNS RRtype dispatch alignment for direct `node.sai` ABI `sa_node_plugin_dns_resolve`
+- Scope: network DTLS UDP-backed endpoint ALPN compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Direct `sa_node_plugin_dns_resolve` C-ABI calls reuse the existing native resolver surface for A, AAAA, CNAME, MX, NS, TXT, SRV, PTR, CAA, NAPTR, SOA, TLSA, and ANY instead of only the base A-record helper
+  - DTLS connect/listen helpers can allocate the existing UDP-backed native endpoint model using the `dtls` ALPN marker instead of being rejected by QUIC-only ALPN validation
 
 ## Recent Completed Helper Features
+
+- network DTLS UDP-backed endpoint ALPN compatibility completed:
+  - `sa_node_plugin_dtls_connect` and `sa_node_plugin_dtls_listen` now work with the existing native endpoint allocator by accepting the `dtls` ALPN marker
+  - `tests/node_test_quic_dtls.sa` now asserts DTLS listen, endpoint snapshot, and close status instead of only compile/call surface
 
 - network DNS direct ABI RRtype dispatch alignment completed:
   - Direct `node.sai` callers of `sa_node_plugin_dns_resolve` now reuse the same existing native resolver dispatch path as `dns.promises.resolve`

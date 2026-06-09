@@ -2644,6 +2644,9 @@ test "node plugin fs top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-fs-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"promises\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"cp\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"symlink\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"truncate\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"utimes\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"ReadStream\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -2654,6 +2657,9 @@ test "node plugin fs top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"readFile\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"promises\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"constants\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"symlink\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"truncate\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"utimes\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
@@ -2662,6 +2668,7 @@ test "node plugin fs top-level facade helpers" {
     const config = (config_ptr orelse return error.NullFsTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"syncModel\":\"explicit native file and directory helpers") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"cpModel\":") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"pathMutationModel\":\"symlink, truncate, and utimes map directly to native filesystem mutations over host paths\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"constantsModel\":\"native constants aggregate") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2671,7 +2678,11 @@ test "node plugin fs top-level facade helpers" {
     const feature = (feature_ptr orelse return error.NullFsTopFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"readFile\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"cp\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"symlink\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"truncate\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"utimes\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"promises\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "including symlink, truncate, and utimes") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"watch\":{\"supported\":false") != null);
 }
 

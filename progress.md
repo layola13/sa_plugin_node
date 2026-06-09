@@ -63,13 +63,22 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `util` string normalization parity by exposing native USV-style UTF-8 normalization
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `fs` path-mutation facade parity for already-implemented symlink/truncate/utimes helpers
+- Current status: `3 / 3` helper features completed (`100.0%`)
 - Planned helpers:
-  - `util.toUSVString`
+  - `fs.symlink`
+  - `fs.truncate`
+  - `fs.utimes`
 
 ## Recent Completed Helper Features
 
+- `fs` path-mutation helper tranche completed:
+  - `fs.symlink`
+  - `fs.truncate`
+  - `fs.utimes`
+  - `fs.promises.symlink`
+  - `fs.promises.truncate`
+  - `fs.promises.utimes`
 - `util` string normalization helper tranche completed:
   - `util.toUSVString`
 - `util` text codec helper tranche completed:

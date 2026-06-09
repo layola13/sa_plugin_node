@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: network DTLS UDP-backed endpoint ALPN compatibility
+- Scope: network HTTP/2 h2c bracketed IPv6 URL parsing compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - DTLS connect/listen helpers can allocate the existing UDP-backed native endpoint model using the `dtls` ALPN marker instead of being rejected by QUIC-only ALPN validation
+  - HTTP/2 client request URL parsing accepts bracketed IPv6 literals such as `http://[::1]/` and `http://[::1]:8080/` while preserving existing host/IPv4 parsing
 
 ## Recent Completed Helper Features
+
+- network HTTP/2 h2c bracketed IPv6 URL parsing compatibility completed:
+  - `sa_node_plugin_http2_client_request` now parses bracketed IPv6 authorities without treating internal colons as a port separator
+  - `tests/node_test_http2_extra.sa` validates that an IPv6 literal h2c URL reaches the request path and returns a native result buffer instead of failing URL parsing
 
 - network DTLS UDP-backed endpoint ALPN compatibility completed:
   - `sa_node_plugin_dtls_connect` and `sa_node_plugin_dtls_listen` now work with the existing native endpoint allocator by accepting the `dtls` ALPN marker

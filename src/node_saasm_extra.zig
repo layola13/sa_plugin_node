@@ -6539,13 +6539,27 @@ fn http2ParseUrl(url: []const u8) !struct { scheme: []const u8, host: []const u8
     const slash = std.mem.indexOfScalar(u8, rest, '/') orelse rest.len;
     const authority = rest[0..slash];
     const path = if (slash < rest.len) rest[slash..] else "/";
-    var host = authority;
     var port: u16 = 80;
-    if (std.mem.lastIndexOfScalar(u8, authority, ':')) |colon| {
-        host = authority[0..colon];
-        port = try std.fmt.parseInt(u16, authority[colon + 1 ..], 10);
-    }
+    const host = if (authority.len > 0 and authority[0] == '[') blk: {
+        const end = std.mem.indexOfScalar(u8, authority, ']') orelse return error.InvalidUrl;
+        if (end == 1) return error.InvalidUrl;
+        if (end + 1 < authority.len) {
+            if (authority[end + 1] != ':') return error.InvalidUrl;
+            port = try std.fmt.parseInt(u16, authority[end + 2 ..], 10);
+        }
+        break :blk authority[1..end];
+    } else blk: {
+        var host = authority;
+        if (std.mem.lastIndexOfScalar(u8, authority, ':')) |colon| {
+            host = authority[0..colon];
+            port = try std.fmt.parseInt(u16, authority[colon + 1 ..], 10);
+        }
+        break :blk host;
+    };
     if (host.len == 0) return error.InvalidUrl;
+    if (std.mem.indexOfScalar(u8, host, ':') != null) {
+        _ = std.net.Address.parseIp6(host, port) catch return error.InvalidUrl;
+    }
     return .{ .scheme = scheme, .host = host, .port = port, .path = path };
 }
 

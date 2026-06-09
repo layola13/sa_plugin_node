@@ -1,6 +1,5 @@
 // SA tests for Node FS ops part 3b: unlink, rename
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_TESTFILE = utf8:"/tmp/sa_node_fs3.txt"
 @const S_DSTFILE = utf8:"/tmp/sa_node_fs3_dst.txt"
 

@@ -1461,6 +1461,13 @@ fn cStringSliceBounded(ptr: [*]const u8) []const u8 {
     return ptr[0..len];
 }
 
+fn fsPathSlice(path_ptr: ?[*]const u8, path_len: u64) ?[]const u8 {
+    const ptr = path_ptr orelse return null;
+    var len: usize = @intCast(path_len);
+    while (len > 0 and ptr[len - 1] == 0) len -= 1;
+    return ptr[0..len];
+}
+
 fn fdFromU64(fd: u64) ?posix.fd_t {
     return std.math.cast(posix.fd_t, fd);
 }
@@ -1470,7 +1477,7 @@ fn u32FromU64(value: u64) ?u32 {
 }
 
 pub export fn sa_node_plugin_fs_chmod(path_ptr: ?[*]const u8, path_len: u64, mode: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     const file = fs.cwd().openFile(path, .{}) catch return fail();
     defer file.close();
     file.chmod(u32FromU64(mode) orelse return fail()) catch return fail();
@@ -1478,7 +1485,7 @@ pub export fn sa_node_plugin_fs_chmod(path_ptr: ?[*]const u8, path_len: u64, mod
 }
 
 pub export fn sa_node_plugin_fs_chown(path_ptr: ?[*]const u8, path_len: u64, uid: u64, gid: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     if (chown(path_z.ptr, u32FromU64(uid) orelse return fail(), u32FromU64(gid) orelse return fail()) != 0) return fail();
@@ -1563,14 +1570,14 @@ pub export fn sa_node_plugin_fs_glob(pattern_ptr: ?[*]const u8, pattern_len: u64
 }
 
 pub export fn sa_node_plugin_fs_link(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
-    const src = src_ptr.?[0..src_len];
-    const dst = dst_ptr.?[0..dst_len];
+    const src = fsPathSlice(src_ptr, src_len) orelse return fail();
+    const dst = fsPathSlice(dst_ptr, dst_len) orelse return fail();
     posix.linkat(posix.AT.FDCWD, src, posix.AT.FDCWD, dst, 0) catch return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_mkdtemp(template_ptr: ?[*]const u8, template_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const template_name = template_ptr.?[0..template_len];
+    const template_name = fsPathSlice(template_ptr, template_len) orelse return fail();
     var buf: [256]u8 = undefined;
     if (template_name.len > 240) return fail();
     @memcpy(buf[0..template_name.len], template_name);
@@ -1583,7 +1590,7 @@ pub export fn sa_node_plugin_fs_mkdtemp(template_ptr: ?[*]const u8, template_len
 
 pub export fn sa_node_plugin_fs_open(path_ptr: ?[*]const u8, path_len: u64, flags: u64, mode: u64, out_fd: ?*u64) u32 {
     _ = mode;
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     var open_flags: fs.File.OpenFlags = .{};
     if (flags & 2 != 0) open_flags.mode = .read_write else if (flags & 1 != 0) open_flags.mode = .write_only else open_flags.mode = .read_only;
     const file = fs.cwd().openFile(path, open_flags) catch return fail();
@@ -1686,7 +1693,7 @@ const DirIterHandle = struct {
 };
 
 pub export fn sa_node_plugin_fs_opendir(path_ptr: ?[*]const u8, path_len: u64, out_handle: ?*?*anyopaque) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     var dir = if (std.fs.path.isAbsolute(path))
         std.fs.openDirAbsolute(path, .{ .iterate = true }) catch return fail()
     else
@@ -1753,7 +1760,7 @@ pub export fn sa_node_plugin_fs_opendir_free(handle_ptr: ?*anyopaque) u32 {
 }
 
 pub export fn sa_node_plugin_fs_rm(path_ptr: ?[*]const u8, path_len: u64, recursive: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     if (recursive != 0) {
         fs.cwd().deleteTree(path) catch return fail();
     } else {
@@ -1840,8 +1847,8 @@ fn fsCpPath(src_path: []const u8, dst_path: []const u8, recursive: bool, force: 
 }
 
 pub export fn sa_node_plugin_fs_cp(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64, recursive: u64, force: u64, error_on_exist: u64) u32 {
-    const src_path = src_ptr.?[0..src_len];
-    const dst_path = dst_ptr.?[0..dst_len];
+    const src_path = fsPathSlice(src_ptr, src_len) orelse return fail();
+    const dst_path = fsPathSlice(dst_ptr, dst_len) orelse return fail();
     fsCpPath(src_path, dst_path, recursive != 0, force != 0, error_on_exist != 0) catch return fail();
     return 0;
 }
@@ -1868,14 +1875,14 @@ pub export fn sa_node_plugin_fs_statfs(path_ptr: ?[*]const u8, out_json_ptr: ?*?
 }
 
 pub export fn sa_node_plugin_fs_symlink(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
-    const src = src_ptr.?[0..src_len];
-    const dst = dst_ptr.?[0..dst_len];
+    const src = fsPathSlice(src_ptr, src_len) orelse return fail();
+    const dst = fsPathSlice(dst_ptr, dst_len) orelse return fail();
     posix.symlinkat(src, posix.AT.FDCWD, dst) catch return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_truncate(path_ptr: ?[*]const u8, path_len: u64, len: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     const file = fs.cwd().openFile(path, .{ .mode = .write_only }) catch return fail();
     defer file.close();
     file.setEndPos(len) catch return fail();
@@ -1883,7 +1890,7 @@ pub export fn sa_node_plugin_fs_truncate(path_ptr: ?[*]const u8, path_len: u64, 
 }
 
 pub export fn sa_node_plugin_fs_utimes(path_ptr: ?[*]const u8, path_len: u64, atime_ms: u64, mtime_ms: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     var times = [2]std.c.timespec{ msToTimespec(atime_ms), msToTimespec(mtime_ms) };

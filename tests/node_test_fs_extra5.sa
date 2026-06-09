@@ -1,17 +1,24 @@
 // SA tests for Node FS opendir
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_TMPDIR = utf8:"/tmp"
 
 @test "node.fs opendir"():
 L_ENTRY:
     h = add 0, 0
     s = add 0, 0
-    EXPAND NODE_FS_OPENDIR S_TMPDIR, 5, h, s
+    EXPAND NODE_FS_OPENDIR S_TMPDIR, 4, h, s
+    ok = eq s, 0
+    br ok -> L_FREE, L_ERR
+L_FREE:
+    !ok
     EXPAND NODE_FS_OPENDIR_FREE h, s
     !s
     !h
     return
+L_ERR:
+    !ok
+    !h
+    panic(103)
 
 @test "node.fs opendir_next"():
 L_ENTRY:
@@ -21,8 +28,16 @@ L_ENTRY:
     nl = add 0, 0
     ntype = add 0, 0
     s2 = add 0, 0
-    EXPAND NODE_FS_OPENDIR S_TMPDIR, 5, h, s1
+    EXPAND NODE_FS_OPENDIR S_TMPDIR, 4, h, s1
+    ok1 = eq s1, 0
+    br ok1 -> L_NEXT, L_ERR_OPEN
+L_NEXT:
+    !ok1
     EXPAND NODE_FS_OPENDIR_NEXT h, np, nl, ntype, s2
+    ok2 = eq s2, 0
+    br ok2 -> L_FREE, L_ERR_NEXT
+L_FREE:
+    !ok2
     EXPAND NODE_FS_OPENDIR_FREE h, s1
     !s2
     !ntype
@@ -31,3 +46,17 @@ L_ENTRY:
     !s1
     !h
     return
+L_ERR_OPEN:
+    !ok1
+    !h
+    panic(103)
+L_ERR_NEXT:
+    !ok2
+    EXPAND NODE_FS_OPENDIR_FREE h, s1
+    !s2
+    !ntype
+    !nl
+    !np
+    !s1
+    !h
+    panic(103)

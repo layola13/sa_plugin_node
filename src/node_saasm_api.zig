@@ -4011,8 +4011,15 @@ pub export fn sa_node_plugin_dgram_close(socket_ptr: ?*anyopaque) u32 {
 
 // --- Phase 6: fs read-only utilities ---
 
+fn nodeFsPathSlice(path_ptr: ?[*]const u8, path_len: u64) ?[]const u8 {
+    const ptr = path_ptr orelse return null;
+    var len: usize = @intCast(path_len);
+    while (len > 0 and ptr[len - 1] == 0) len -= 1;
+    return ptr[0..len];
+}
+
 pub export fn sa_node_plugin_fs_stat(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4049,7 +4056,7 @@ pub export fn sa_node_plugin_fs_lstat(path_ptr: ?[*]const u8, path_len: u64, out
 }
 
 pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4083,7 +4090,7 @@ pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, o
 }
 
 pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4125,7 +4132,7 @@ pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_
 }
 
 pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4142,7 +4149,7 @@ pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, 
 }
 
 pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4153,7 +4160,7 @@ pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, 
 }
 
 pub export fn sa_node_plugin_fs_exists(path_ptr: ?[*]const u8, path_len: u64, out_bool: ?*u32) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4179,7 +4186,7 @@ pub export fn sa_node_plugin_fs_access(path_ptr: ?[*]const u8, path_len: u64, mo
 }
 
 pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4202,7 +4209,7 @@ pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64,
 }
 
 pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64, data_ptr: ?[*]const u8, data_len: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4219,7 +4226,7 @@ pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64
 }
 
 pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, recursive: u8) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4243,7 +4250,7 @@ pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, rec
 }
 
 pub export fn sa_node_plugin_fs_rmdir(path_ptr: ?[*]const u8, path_len: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4256,7 +4263,7 @@ pub export fn sa_node_plugin_fs_rmdir(path_ptr: ?[*]const u8, path_len: u64) u32
 }
 
 pub export fn sa_node_plugin_fs_unlink(path_ptr: ?[*]const u8, path_len: u64) u32 {
-    const path = path_ptr.?[0..path_len];
+    const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
     const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
@@ -4269,11 +4276,11 @@ pub export fn sa_node_plugin_fs_unlink(path_ptr: ?[*]const u8, path_len: u64) u3
 }
 
 pub export fn sa_node_plugin_fs_rename(old_ptr: ?[*]const u8, old_len: u64, new_ptr: ?[*]const u8, new_len: u64) u32 {
-    const old = old_ptr.?[0..old_len];
+    const old = nodeFsPathSlice(old_ptr, old_len) orelse return 2;
     const old_z = std.heap.page_allocator.dupeZ(u8, old) catch return 2;
     defer std.heap.page_allocator.free(old_z);
 
-    const new = new_ptr.?[0..new_len];
+    const new = nodeFsPathSlice(new_ptr, new_len) orelse return 2;
     const new_z = std.heap.page_allocator.dupeZ(u8, new) catch return 2;
     defer std.heap.page_allocator.free(new_z);
 
@@ -4286,11 +4293,11 @@ pub export fn sa_node_plugin_fs_rename(old_ptr: ?[*]const u8, old_len: u64, new_
 }
 
 pub export fn sa_node_plugin_fs_copy_file(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
-    const src = src_ptr.?[0..src_len];
+    const src = nodeFsPathSlice(src_ptr, src_len) orelse return 2;
     const src_z = std.heap.page_allocator.dupeZ(u8, src) catch return 2;
     defer std.heap.page_allocator.free(src_z);
 
-    const dst = dst_ptr.?[0..dst_len];
+    const dst = nodeFsPathSlice(dst_ptr, dst_len) orelse return 2;
     const dst_z = std.heap.page_allocator.dupeZ(u8, dst) catch return 2;
     defer std.heap.page_allocator.free(dst_z);
 

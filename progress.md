@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `crypto`
+- Scope: installed main `node.sal` public macro coverage for `fs` and `fs.promises`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `crypto` incremental hash/HMAC, KDF, random, cipher/decipher, sign/verify, key-generation, hash-list, top-level metadata, and secure-heap helpers available through `node.sal`
+  - `fs` descriptor, metadata, directory, mutation, copy/link, timestamp, vector-IO, top-level metadata, and `fs.promises` helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` fs/fs.promises helper macro tranche completed:
+  - `fs` descriptor open/close/read/write, fstat/fchmod/fchown/fsync/fdatasync/ftruncate/futimes, chmod/chown, glob, link/symlink/readlink, mkdtemp, opendir, rm, statfs, truncate, utimes, vector-IO, top-level metadata, and `fs.promises` helpers available through `node.sal`
+  - `tests/node_test_fs_top.sa`, `node_test_fs_extra.sa`, `node_test_fs_extra1.sa`, `node_test_fs_extra2.sa`, `node_test_fs_extra3.sa`, `node_test_fs_extra4.sa`, `node_test_fs_extra5.sa`, and `node_test_fs_extra6.sa` validate through `node.sal` only
 
 - installed main `node.sal` crypto helper macro tranche completed:
   - `crypto` incremental hash/HMAC, HKDF, scrypt, randomInt, randomFill, cipher/decipher lifecycle, sign/verify, key-generation, hash-list, top-level metadata, and secure-heap helpers available through `node.sal`

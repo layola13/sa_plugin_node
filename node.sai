@@ -249,13 +249,13 @@
 @extern sa_node_plugin_dgram_get_send_queue_count(socket: ptr, &out_count: ptr) -> u32
 
 // --- Phase 6: fs read-only utilities ---
-@extern sa_node_plugin_fs_stat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_lstat(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_readdir(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_readdir_with_types(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_readlink(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_realpath(&path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
-@extern sa_node_plugin_fs_exists(&path: ptr, len: u64, &out_bool: ptr) -> u32
+@extern sa_node_plugin_fs_stat(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_lstat(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readdir(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readdir_with_types(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_readlink(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_realpath(path: ptr, len: u64, &out_ptr: ptr, &out_len: ptr) -> u32
+@extern sa_node_plugin_fs_exists(path: ptr, len: u64, &out_bool: ptr) -> u32
 @extern sa_node_plugin_fs_access(path: ptr, len: u64, mode: u32, &out_bool: ptr) -> u32
 
 @extern sa_node_plugin_fs_read_file(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: ptr) -> u32

@@ -1,6 +1,5 @@
 // SA tests for Node fs top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.fs top level facade helpers"():
 L_ENTRY:

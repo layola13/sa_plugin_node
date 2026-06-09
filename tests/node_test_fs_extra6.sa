@@ -1,8 +1,9 @@
 // SA tests for Node FS: copy_file, readlink
 @import "../node.sal"
-@import "../node_extra.sal"
-@const S_SRC = utf8:"/tmp/sa_fs6_src.txt"
-@const S_DST = utf8:"/tmp/sa_fs6_dst.txt"
+@const S_SRC_COPY = utf8:"/tmp/sa_fs6_src_copy.txt"
+@const S_DST_COPY = utf8:"/tmp/sa_fs6_dst_copy.txt"
+@const S_SRC_CP = utf8:"/tmp/sa_fs6_src_cp.txt"
+@const S_SRC_P = utf8:"/tmp/sa_fs6_src_p.txt"
 @const S_CP = utf8:"/tmp/sa_fs6_cp.txt"
 @const S_CP_P = utf8:"/tmp/sa_fs6_cp_p.txt"
 @const S_DATA = utf8:"hello"
@@ -10,19 +11,22 @@
 
 @test "node.fs copy_file"():
 L_ENTRY:
-    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    s = add 0, 0
+    EXPAND NODE_FS_RM S_SRC_COPY, 24, 0, s
+    EXPAND NODE_FS_RM S_DST_COPY, 24, 0, s
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC_COPY, 24, S_DATA, 5
     ok = eq s, 0
     br ok -> L_COPY, L_ERR
 L_COPY:
     !ok
     !s
-    EXPAND NODE_FS_COPY_FILE s, S_SRC, 19, S_DST, 19
+    EXPAND NODE_FS_COPY_FILE s, S_SRC_COPY, 24, S_DST_COPY, 24
     ok = eq s, 0
     br ok -> L_CLEAN, L_ERR
 L_CLEAN:
     !ok
-    EXPAND NODE_FS_RM S_SRC, 19, 0, s
-    EXPAND NODE_FS_RM S_DST, 19, 0, s
+    EXPAND NODE_FS_RM S_SRC_COPY, 24, 0, s
+    EXPAND NODE_FS_RM S_DST_COPY, 24, 0, s
     !s
     return
 L_ERR:
@@ -32,18 +36,21 @@ L_ERR:
 
 @test "node.fs cp"():
 L_ENTRY:
-    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    s = add 0, 0
+    EXPAND NODE_FS_RM S_SRC_CP, 22, 0, s
+    EXPAND NODE_FS_RM S_CP, 18, 0, s
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC_CP, 22, S_DATA, 5
     ok = eq s, 0
     br ok -> L_CP, L_ERR
 L_CP:
     !ok
     !s
-    EXPAND NODE_FS_CP s, S_SRC, 19, S_CP, 18, 0, 1, 0
+    EXPAND NODE_FS_CP s, S_SRC_CP, 22, S_CP, 18, 0, 1, 0
     ok = eq s, 0
     br ok -> L_CLEAN, L_ERR
 L_CLEAN:
     !ok
-    EXPAND NODE_FS_RM S_SRC, 19, 0, s
+    EXPAND NODE_FS_RM S_SRC_CP, 22, 0, s
     EXPAND NODE_FS_RM S_CP, 18, 0, s
     !s
     return
@@ -54,19 +61,22 @@ L_ERR:
 
 @test "node.fs promises cp"():
 L_ENTRY:
-    EXPAND NODE_FS_WRITE_FILE s, S_SRC, 19, S_DATA, 5
+    s = add 0, 0
+    EXPAND NODE_FS_RM S_SRC_P, 21, 0, s
+    EXPAND NODE_FS_RM S_CP_P, 20, 0, s
+    EXPAND NODE_FS_WRITE_FILE s, S_SRC_P, 21, S_DATA, 5
     ok = eq s, 0
     br ok -> L_CP, L_ERR
 L_CP:
     !ok
     !s
     s2 = add 0, 0
-    EXPAND NODE_FS_PROMISES_CP s2, S_SRC, 19, S_CP_P, 20, 0, 1, 0
+    EXPAND NODE_FS_PROMISES_CP s2, S_SRC_P, 21, S_CP_P, 20, 0, 1, 0
     ok = eq s2, 0
     br ok -> L_CLEAN, L_ERR2
 L_CLEAN:
     !ok
-    EXPAND NODE_FS_RM S_SRC, 19, 0, s2
+    EXPAND NODE_FS_RM S_SRC_P, 21, 0, s2
     EXPAND NODE_FS_RM S_CP_P, 20, 0, s2
     !s2
     return

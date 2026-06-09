@@ -1,6 +1,5 @@
 // SA-native unit tests for Node FS operations (node_extra)
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_TESTFILE = utf8:"/tmp/sa_node_test.txt"
 @const S_TMPDIR = utf8:"/tmp"

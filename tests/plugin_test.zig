@@ -5331,6 +5331,51 @@ test "node plugin net connect options applies local bind socket options and bloc
     try std.testing.expectEqualStrings("127.0.0.1", (local_address_ptr orelse return error.NullTcpOptionsLocalAddress)[0..@intCast(local_address_len)]);
 }
 
+test "node plugin net createConnection options JSON applies common connect options" {
+    var server: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_listen("127.0.0.1", 9, 0, &server));
+    defer _ = plugin.sa_node_plugin_net_end(server);
+
+    var addr_ptr: ?[*]const u8 = null;
+    var addr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_address(server, &addr_ptr, &addr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(addr_ptr, addr_len);
+    const port = try jsonPort((addr_ptr orelse return error.NullTcpCreateConnectionOptionsServerAddress)[0..@intCast(addr_len)]);
+
+    const options = try std.fmt.allocPrint(
+        std.testing.allocator,
+        "{{\"host\":\"localhost\",\"port\":{d},\"family\":4,\"localAddress\":\"127.0.0.1\",\"noDelay\":true,\"keepAlive\":true,\"keepAliveInitialDelay\":1000,\"timeoutMs\":125}}",
+        .{port},
+    );
+    defer std.testing.allocator.free(options);
+
+    var client: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_create_connection_options("fallback.invalid", 16, 1, options.ptr, options.len, &client));
+    defer _ = plugin.sa_node_plugin_net_end(client);
+
+    var accepted: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_accept(server, &accepted));
+    defer _ = plugin.sa_node_plugin_net_end(accepted);
+
+    var timeout_ms: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_get_timeout(client, &timeout_ms));
+    try std.testing.expectEqual(@as(u64, 125), timeout_ms);
+
+    var local_address_ptr: ?[*]const u8 = null;
+    var local_address_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_local_address(client, &local_address_ptr, &local_address_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(local_address_ptr, local_address_len);
+    try std.testing.expectEqualStrings("127.0.0.1", (local_address_ptr orelse return error.NullTcpCreateConnectionOptionsLocalAddress)[0..@intCast(local_address_len)]);
+
+    var remote_port: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_remote_port(client, &remote_port));
+    try std.testing.expectEqual(port, remote_port);
+
+    var invalid_client: ?*anyopaque = @ptrFromInt(@as(usize, 0x1));
+    try std.testing.expect(plugin.sa_node_plugin_net_create_connection_options("127.0.0.1", 9, port, "{\"family\":\"bad\"}", 16, &invalid_client) != 0);
+    try std.testing.expect(invalid_client == null);
+}
+
 test "node plugin net socket address exposes properties and JSON" {
     var addr: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_new("127.0.0.1", 9, 8080, "ipv4", 4, 0, &addr));

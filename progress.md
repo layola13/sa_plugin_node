@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: QUIC/HTTP3/DTLS UDP-backed endpoint address snapshot compatibility
+- Scope: net.createConnection options JSON compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - QUIC/DTLS endpoint snapshots report the actual local UDP address and ephemeral port assigned by the OS after bind/connect
+  - `net.createConnection` has an explicit options JSON facade that maps common Node connect options onto the existing native `connect_options` path
 
 ## Recent Completed Helper Features
+
+- network net.createConnection options JSON compatibility completed:
+  - Added `sa_node_plugin_net_create_connection_options` and `NODE_NET_CREATE_CONNECTION_OPTIONS` for common Node options: `host`, `hostname`, `port`, `family`, `localAddress`, `localPort`, `noDelay`, `keepAlive`, `keepAliveInitialDelay`, `keepAliveInitialDelaySecs`, `timeoutMs`, and `timeout`
+  - The new helper reuses the existing native `sa_node_plugin_net_connect_options` implementation instead of duplicating TCP bind/socket-option logic
+  - Corrected the existing `NODE_NET_CREATE_CONNECTION` facade parameter names and pointer passing so the legacy shortcut remains `host, host_len, port`
+  - `tests/node_test_net_create.sa` now validates the options JSON facade against a real local TCP listener
 
 - network QUIC/DTLS ephemeral local address snapshot compatibility completed:
   - QUIC and DTLS UDP-backed endpoint handles now refresh `localHost` and `localPort` from the existing native dgram address API after bind/connect and before snapshot serialization

@@ -4424,10 +4424,16 @@
     %out_status = call @sa_node_plugin_net_set_default_auto_select_family_attempt_timeout(%value)
 [END_MACRO]
 
-[MACRO] NODE_NET_CREATE_CONNECTION %host, %port, %options_json, %out_socket, %out_status
+[MACRO] NODE_NET_CREATE_CONNECTION %host, %host_len, %port, %out_socket, %out_status
     __net_create_connection_slot = stack_alloc 8
-    %out_status = call @sa_node_plugin_net_create_connection(%host, %port, %options_json, &__net_create_connection_slot)
+    %out_status = call @sa_node_plugin_net_create_connection(&%host, %host_len, %port, &__net_create_connection_slot)
     %out_socket = load __net_create_connection_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_CONNECTION_OPTIONS %host, %host_len, %port, %options_json, %options_json_len, %out_socket, %out_status
+    __net_create_connection_options_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_create_connection_options(&%host, %host_len, %port, &%options_json, %options_json_len, &__net_create_connection_options_slot)
+    %out_socket = load __net_create_connection_options_slot+0 as ptr
 [END_MACRO]
 
 [MACRO] NODE_NET_CREATE_SERVER %out_server, %out_status

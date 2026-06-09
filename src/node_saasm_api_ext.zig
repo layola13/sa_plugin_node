@@ -3628,6 +3628,108 @@ pub export fn sa_node_plugin_net_create_connection(host_ptr: ?[*]const u8, host_
     return base.sa_node_plugin_net_connect(host_ptr, host_len, port, out_socket);
 }
 
+fn netJsonBool(value: std.json.Value) ?u32 {
+    return switch (value) {
+        .bool => |b| if (b) 1 else 0,
+        .integer => |i| if (i == 0) 0 else 1,
+        else => null,
+    };
+}
+
+fn netJsonU64(value: std.json.Value) ?u64 {
+    return switch (value) {
+        .integer => |i| if (i >= 0) @intCast(i) else null,
+        .string => |s| std.fmt.parseInt(u64, s, 10) catch null,
+        else => null,
+    };
+}
+
+fn netJsonFamily(value: std.json.Value) ?u32 {
+    return switch (value) {
+        .integer => |i| if (i == 4 or i == 6) @intCast(i) else null,
+        .string => |s| blk: {
+            if (std.mem.eql(u8, s, "4") or std.ascii.eqlIgnoreCase(s, "ipv4")) break :blk 4;
+            if (std.mem.eql(u8, s, "6") or std.ascii.eqlIgnoreCase(s, "ipv6")) break :blk 6;
+            break :blk null;
+        },
+        else => null,
+    };
+}
+
+pub export fn sa_node_plugin_net_create_connection_options(host_ptr: ?[*]const u8, host_len: u64, port: u64, options_json_ptr: ?[*]const u8, options_json_len: u64, out_socket: ?*?*anyopaque) u32 {
+    const out = out_socket orelse return fail();
+    out.* = null;
+
+    const fallback_host = (host_ptr orelse return fail())[0..host_len];
+    var host = fallback_host;
+    var remote_port = port;
+    var family: u32 = 0;
+    var local: []const u8 = "";
+    var local_port: u64 = 0;
+    var no_delay: u32 = 0;
+    var keep_alive: u32 = 0;
+    var keep_alive_initial_delay_secs: u32 = 0;
+    var timeout_ms: u64 = 0;
+    var owned_host: ?[]u8 = null;
+    var owned_local: ?[]u8 = null;
+    defer if (owned_host) |bytes| std.heap.page_allocator.free(bytes);
+    defer if (owned_local) |bytes| std.heap.page_allocator.free(bytes);
+
+    if (options_json_ptr) |ptr| {
+        const options_json = ptr[0..options_json_len];
+        if (options_json.len != 0) {
+            var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, options_json, .{}) catch return fail();
+            defer parsed.deinit();
+            if (parsed.value != .object) return fail();
+            const object = parsed.value.object;
+
+            if (object.get("host")) |value| {
+                if (value != .string) return fail();
+                owned_host = std.heap.page_allocator.dupe(u8, value.string) catch return fail();
+                host = owned_host.?;
+            } else if (object.get("hostname")) |value| {
+                if (value != .string) return fail();
+                owned_host = std.heap.page_allocator.dupe(u8, value.string) catch return fail();
+                host = owned_host.?;
+            }
+            if (object.get("port")) |value| {
+                remote_port = netJsonU64(value) orelse return fail();
+            }
+            if (object.get("family")) |value| {
+                family = netJsonFamily(value) orelse return fail();
+            }
+            if (object.get("localAddress")) |value| {
+                if (value != .string) return fail();
+                owned_local = std.heap.page_allocator.dupe(u8, value.string) catch return fail();
+                local = owned_local.?;
+            }
+            if (object.get("localPort")) |value| {
+                local_port = netJsonU64(value) orelse return fail();
+            }
+            if (object.get("noDelay")) |value| {
+                no_delay = netJsonBool(value) orelse return fail();
+            }
+            if (object.get("keepAlive")) |value| {
+                keep_alive = netJsonBool(value) orelse return fail();
+            }
+            if (object.get("keepAliveInitialDelay")) |value| {
+                const delay_ms = netJsonU64(value) orelse return fail();
+                keep_alive_initial_delay_secs = @intCast(@min(std.math.maxInt(u32), (delay_ms + 999) / 1000));
+            } else if (object.get("keepAliveInitialDelaySecs")) |value| {
+                const delay_secs = netJsonU64(value) orelse return fail();
+                keep_alive_initial_delay_secs = @intCast(@min(std.math.maxInt(u32), delay_secs));
+            }
+            if (object.get("timeoutMs")) |value| {
+                timeout_ms = netJsonU64(value) orelse return fail();
+            } else if (object.get("timeout")) |value| {
+                timeout_ms = netJsonU64(value) orelse return fail();
+            }
+        }
+    }
+
+    return base.sa_node_plugin_net_connect_options(host.ptr, host.len, remote_port, family, local.ptr, local.len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms, null, out_socket);
+}
+
 pub export fn sa_node_plugin_net_create_server(out_server: ?*?*anyopaque) u32 {
     const host = "0.0.0.0";
     return base.sa_node_plugin_net_listen(host.ptr, host.len, 0, out_server);

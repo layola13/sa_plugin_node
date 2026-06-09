@@ -1,6 +1,7 @@
 // SA tests for Node net: create_connection
 @import "../node.sal"
 @const S_HOST = utf8:"127.0.0.1"
+@const S_OPTIONS = utf8:"{\"host\":\"127.0.0.1\",\"family\":4,\"localAddress\":\"127.0.0.1\",\"noDelay\":true,\"keepAlive\":true,\"keepAliveInitialDelay\":1000,\"timeoutMs\":125}"
 
 @test "node.net create_connection"():
 L_ENTRY:
@@ -10,3 +11,55 @@ L_ENTRY:
     !s
     !sock
     return
+
+@test "node.net create_connection_options"():
+L_ENTRY:
+    srv = add 0, 0
+    s_listen = add 0, 0
+    EXPAND NODE_NET_LISTEN S_HOST, 9, 18775, srv, s_listen
+    listen_ok = eq s_listen, 0
+    br listen_ok -> L_CONNECT, L_ERR_LISTEN
+L_CONNECT:
+    !listen_ok
+    sock = add 0, 0
+    s_connect = add 0, 0
+    EXPAND NODE_NET_CREATE_CONNECTION_OPTIONS S_HOST, 9, 18775, S_OPTIONS, 135, sock, s_connect
+    connect_ok = eq s_connect, 0
+    br connect_ok -> L_CLOSE, L_ERR_CONNECT
+L_CLOSE:
+    !connect_ok
+    accepted = add 0, 0
+    s_accept = add 0, 0
+    EXPAND NODE_NET_ACCEPT srv, accepted, s_accept
+    accept_ok = eq s_accept, 0
+    br accept_ok -> L_CLOSE_ACCEPTED, L_ERR_ACCEPT
+L_CLOSE_ACCEPTED:
+    !accept_ok
+    s_end_accepted = add 0, 0
+    EXPAND NODE_NET_END accepted, s_end_accepted
+    s_end_sock = add 0, 0
+    EXPAND NODE_NET_END sock, s_end_sock
+    s_end_srv = add 0, 0
+    EXPAND NODE_NET_END srv, s_end_srv
+    !s_end_srv
+    !s_end_sock
+    !s_end_accepted
+    !s_accept
+    !accepted
+    !s_connect
+    !sock
+    !s_listen
+    !srv
+    return
+L_ERR_LISTEN:
+    !listen_ok
+    !s_listen
+    panic(103)
+L_ERR_CONNECT:
+    !connect_ok
+    !s_connect
+    panic(103)
+L_ERR_ACCEPT:
+    !accept_ok
+    !s_accept
+    panic(103)

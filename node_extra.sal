@@ -3714,7 +3714,7 @@
 
 [MACRO] NODE_NET_CREATE_CONNECTION %p_0, %p_1, %p_2, %p_3, %p_4
     __m_slot_b8dbacf7_0 = stack_alloc 8
-    __m_status_b8dbacf7 = call @sa_node_plugin_net_create_connection(%p_0, %p_1, %p_2, &__m_slot_b8dbacf7_0)
+    __m_status_b8dbacf7 = call @sa_node_plugin_net_create_connection(&%p_0, %p_1, %p_2, &__m_slot_b8dbacf7_0)
     !%p_4
     %p_4 = add __m_status_b8dbacf7, 0
     !__m_status_b8dbacf7
@@ -3722,6 +3722,18 @@
     !%p_3
     %p_3 = add __m_load_b8dbacf7_p_3, 0
     !__m_load_b8dbacf7_p_3
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_CONNECTION_OPTIONS %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_net_create_connection_options = stack_alloc 8
+    __m_status_net_create_connection_options = call @sa_node_plugin_net_create_connection_options(&%p_0, %p_1, %p_2, &%p_3, %p_4, &__m_slot_net_create_connection_options)
+    !%p_6
+    %p_6 = add __m_status_net_create_connection_options, 0
+    !__m_status_net_create_connection_options
+    __m_load_net_create_connection_options = load __m_slot_net_create_connection_options+0 as ptr
+    !%p_5
+    %p_5 = add __m_load_net_create_connection_options, 0
+    !__m_load_net_create_connection_options
 [END_MACRO]
 
 [MACRO] NODE_NET_CREATE_SERVER %p_0, %p_1

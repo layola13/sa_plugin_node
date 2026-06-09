@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `command_line_options`
+- Scope: installed main `node.sal` public macro coverage for `deprecated`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `command_line_options` status, argv, `NODE_OPTIONS` token, env-file, and flag-check helpers available through `node.sal`
+  - `deprecated` status, flags, record, snapshot, clear, and membership helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` deprecated helper macro tranche completed:
+  - `deprecated` status, flags, `record`, snapshot, `clear`, and `has` helpers available through `node.sal`
+  - `tests/node_test_deprecated.sa` and `node_test_status_json7.sa` now validate through `node.sal` only
 
 - installed main `node.sal` command_line_options helper macro tranche completed:
   - `command_line_options` status, argv, `NODE_OPTIONS` token parsing, env-file enumeration, and `hasFlag` helpers available through `node.sal`

@@ -7314,3 +7314,54 @@
     %out_status = call @sa_node_plugin_command_line_options_has_flag(%flag, %flag_len, &__m_command_line_options_has_flag_slot)
     %out_bool = load __m_command_line_options_has_flag_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_DEPRECATED_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_515ef619_0 = stack_alloc 8
+    __m_slot_515ef619_1 = stack_alloc 8
+    __m_status_515ef619 = call @sa_node_plugin_deprecated_status_json(&__m_slot_515ef619_0, &__m_slot_515ef619_1)
+    !%p_2
+    %p_2 = add __m_status_515ef619, 0
+    !__m_status_515ef619
+    __m_load_515ef619_p_0 = load __m_slot_515ef619_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_515ef619_p_0, 0
+    !__m_load_515ef619_p_0
+    __m_load_515ef619_p_1 = load __m_slot_515ef619_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_515ef619_p_1, 0
+    !__m_load_515ef619_p_1
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __m_deprecated_flags_ptr_slot = stack_alloc 8
+    __m_deprecated_flags_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_flags_json(&__m_deprecated_flags_ptr_slot, &__m_deprecated_flags_len_slot)
+    %out_ptr = load __m_deprecated_flags_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_flags_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_RECORD_JSON %out_ptr, %out_len, %out_status, %code, %code_len, %message, %message_len
+    __m_deprecated_record_ptr_slot = stack_alloc 8
+    __m_deprecated_record_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_record_json(%code, %code_len, %message, %message_len, &__m_deprecated_record_ptr_slot, &__m_deprecated_record_len_slot)
+    %out_ptr = load __m_deprecated_record_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_record_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_deprecated_snapshot_ptr_slot = stack_alloc 8
+    __m_deprecated_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_snapshot_json(&__m_deprecated_snapshot_ptr_slot, &__m_deprecated_snapshot_len_slot)
+    %out_ptr = load __m_deprecated_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_deprecated_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_CLEAR %out_status
+    %out_status = call @sa_node_plugin_deprecated_clear()
+[END_MACRO]
+
+[MACRO] NODE_DEPRECATED_HAS %out_bool, %out_status, %code, %code_len
+    __m_deprecated_has_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_deprecated_has(%code, %code_len, &__m_deprecated_has_slot)
+    %out_bool = load __m_deprecated_has_slot+0 as u64
+[END_MACRO]

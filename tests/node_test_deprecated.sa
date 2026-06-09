@@ -1,6 +1,5 @@
 // SA tests for Node deprecated native registry helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_CODE = utf8:"DEP9001"
 @const S_MESSAGE = utf8:"sa deprecated test"

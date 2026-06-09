@@ -19,8 +19,10 @@
   "interfaces": {
     "sai": { "path": "node.sai" },
     "sal": { "path": "node.sal" },
-    "extra_sai": { "path": "node_extra.sai" },
-    "extra_sal": { "path": "node_extra.sal" }
+    "sa": [
+      { "path": "node_extra.sai" },
+      { "path": "node_extra.sal" }
+    ]
   },
   "skills": ["node.os", "node.process", "node.crypto", "node.net", "node.dns", "node.http"],
   "permissions": {

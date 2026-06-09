@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: network HTTP/2 h2c bracketed IPv6 URL parsing compatibility
+- Scope: installed facade supplemental interface completeness
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - HTTP/2 client request URL parsing accepts bracketed IPv6 literals such as `http://[::1]/` and `http://[::1]:8080/` while preserving existing host/IPv4 parsing
+  - Installed plugin interface files include the supplemental `node_extra.sai` and `node_extra.sal` files required by the public `node.sal` facade
 
 ## Recent Completed Helper Features
+
+- installed facade supplemental interface completeness completed:
+  - `sap.json` now declares `node_extra.sai` and `node_extra.sal` through the standard `interfaces.sa` supplemental file list so `sa plugin install` copies them into the installed `sa/` directory
+  - Installed `node.sal` no longer has an unresolved `@import "node_extra.sai"` dependency after dev install
 
 - network HTTP/2 h2c bracketed IPv6 URL parsing compatibility completed:
   - `sa_node_plugin_http2_client_request` now parses bracketed IPv6 authorities without treating internal colons as a port separator

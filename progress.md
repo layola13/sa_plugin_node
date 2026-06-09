@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `inspector`
+- Scope: installed main `node.sal` public macro coverage for `test`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `inspector` top-level metadata plus enabled/allowed/url/config helpers available through `node.sal`
+  - `test` top-level metadata plus reporter/assert/property and test_runner helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` test helper macro tranche completed:
+  - `test` top-level status, exports, config, reporters, assert-support, property-support, and feature-support helpers available through `node.sal`
+  - `test_runner` status, builtin-reporters, config, and `hasBuiltinReporter` helpers available through `node.sal`
+  - `tests/node_test_test_top.sa`, `node_test_test_module.sa`, and `node_test_test_runner.sa` now validate through `node.sal` only
 
 - installed main `node.sal` inspector helper macro tranche completed:
   - `inspector` top-level status, exports, enabled, allowed, config, url, and feature-support helpers available through `node.sal`

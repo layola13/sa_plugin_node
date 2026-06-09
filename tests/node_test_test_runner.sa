@@ -1,6 +1,5 @@
 // SA tests for Node test_runner native config helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_REPORTER = utf8:"spec"
 

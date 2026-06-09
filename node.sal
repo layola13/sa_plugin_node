@@ -2044,6 +2044,92 @@
     %out_len = load __inspector_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_TEST_STATUS_JSON %out_ptr, %out_len, %out_status
+    __test_status_ptr_slot = stack_alloc 8
+    __test_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_status_json(&__test_status_ptr_slot, &__test_status_len_slot)
+    %out_ptr = load __test_status_ptr_slot+0 as ptr
+    %out_len = load __test_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __test_exports_ptr_slot = stack_alloc 8
+    __test_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_exports_json(&__test_exports_ptr_slot, &__test_exports_len_slot)
+    %out_ptr = load __test_exports_ptr_slot+0 as ptr
+    %out_len = load __test_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __test_config_ptr_slot = stack_alloc 8
+    __test_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_config_json(&__test_config_ptr_slot, &__test_config_len_slot)
+    %out_ptr = load __test_config_ptr_slot+0 as ptr
+    %out_len = load __test_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_REPORTERS_JSON %out_ptr, %out_len, %out_status
+    __test_reporters_ptr_slot = stack_alloc 8
+    __test_reporters_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_reporters_json(&__test_reporters_ptr_slot, &__test_reporters_len_slot)
+    %out_ptr = load __test_reporters_ptr_slot+0 as ptr
+    %out_len = load __test_reporters_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_ASSERT_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __test_assert_ptr_slot = stack_alloc 8
+    __test_assert_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_assert_support_json(&__test_assert_ptr_slot, &__test_assert_len_slot)
+    %out_ptr = load __test_assert_ptr_slot+0 as ptr
+    %out_len = load __test_assert_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_PROPERTY_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __test_property_ptr_slot = stack_alloc 8
+    __test_property_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_property_support_json(&__test_property_ptr_slot, &__test_property_len_slot)
+    %out_ptr = load __test_property_ptr_slot+0 as ptr
+    %out_len = load __test_property_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __test_feature_ptr_slot = stack_alloc 8
+    __test_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_feature_support_json(&__test_feature_ptr_slot, &__test_feature_len_slot)
+    %out_ptr = load __test_feature_ptr_slot+0 as ptr
+    %out_len = load __test_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_STATUS_JSON %out_ptr, %out_len, %out_status
+    __test_runner_status_ptr_slot = stack_alloc 8
+    __test_runner_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_status_json(&__test_runner_status_ptr_slot, &__test_runner_status_len_slot)
+    %out_ptr = load __test_runner_status_ptr_slot+0 as ptr
+    %out_len = load __test_runner_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_BUILTIN_REPORTERS_JSON %out_ptr, %out_len, %out_status
+    __test_runner_reporters_ptr_slot = stack_alloc 8
+    __test_runner_reporters_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_builtin_reporters_json(&__test_runner_reporters_ptr_slot, &__test_runner_reporters_len_slot)
+    %out_ptr = load __test_runner_reporters_ptr_slot+0 as ptr
+    %out_len = load __test_runner_reporters_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __test_runner_config_ptr_slot = stack_alloc 8
+    __test_runner_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_config_json(&__test_runner_config_ptr_slot, &__test_runner_config_len_slot)
+    %out_ptr = load __test_runner_config_ptr_slot+0 as ptr
+    %out_len = load __test_runner_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TEST_RUNNER_HAS_BUILTIN_REPORTER %out_bool, %out_status, %name, %name_len
+    __test_runner_has_reporter_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_test_runner_has_builtin_reporter(%name, %name_len, &__test_runner_has_reporter_slot)
+    %out_bool = load __test_runner_has_reporter_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

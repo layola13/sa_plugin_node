@@ -1,6 +1,5 @@
 // SA tests for Node top-level test module compatibility helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.test top level helpers"():
 L_ENTRY:

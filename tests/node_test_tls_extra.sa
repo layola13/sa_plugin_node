@@ -1,6 +1,5 @@
 // SA tests for TLS top-level helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_SYSTEM = utf8:"system"
 @const S_TLS_MIN = utf8:"TLSv1.2"

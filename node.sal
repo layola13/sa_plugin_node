@@ -3230,6 +3230,409 @@
     %out_len = load __tls_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_TLS_GET_CIPHERS_JSON %out_ptr, %out_len, %out_status
+    __tls_get_ciphers_ptr_slot = stack_alloc 8
+    __tls_get_ciphers_len_slot = stack_alloc 8
+    __tls_get_ciphers_status = call @sa_node_plugin_tls_get_ciphers_json(&__tls_get_ciphers_ptr_slot, &__tls_get_ciphers_len_slot)
+    !%out_status
+    %out_status = add __tls_get_ciphers_status, 0
+    !__tls_get_ciphers_status
+    __tls_get_ciphers_ptr = load __tls_get_ciphers_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_get_ciphers_ptr, 0
+    !__tls_get_ciphers_ptr
+    __tls_get_ciphers_len = load __tls_get_ciphers_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_get_ciphers_len, 0
+    !__tls_get_ciphers_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_GET_CIPHERS_DETAILED_JSON %out_ptr, %out_len, %out_status
+    __tls_get_ciphers_detailed_ptr_slot = stack_alloc 8
+    __tls_get_ciphers_detailed_len_slot = stack_alloc 8
+    __tls_get_ciphers_detailed_status = call @sa_node_plugin_tls_get_ciphers_detailed_json(&__tls_get_ciphers_detailed_ptr_slot, &__tls_get_ciphers_detailed_len_slot)
+    !%out_status
+    %out_status = add __tls_get_ciphers_detailed_status, 0
+    !__tls_get_ciphers_detailed_status
+    __tls_get_ciphers_detailed_ptr = load __tls_get_ciphers_detailed_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_get_ciphers_detailed_ptr, 0
+    !__tls_get_ciphers_detailed_ptr
+    __tls_get_ciphers_detailed_len = load __tls_get_ciphers_detailed_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_get_ciphers_detailed_len, 0
+    !__tls_get_ciphers_detailed_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_DEFAULT_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __tls_default_constants_ptr_slot = stack_alloc 8
+    __tls_default_constants_len_slot = stack_alloc 8
+    __tls_default_constants_status = call @sa_node_plugin_tls_default_constants_json(&__tls_default_constants_ptr_slot, &__tls_default_constants_len_slot)
+    !%out_status
+    %out_status = add __tls_default_constants_status, 0
+    !__tls_default_constants_status
+    __tls_default_constants_ptr = load __tls_default_constants_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_default_constants_ptr, 0
+    !__tls_default_constants_ptr
+    __tls_default_constants_len = load __tls_default_constants_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_default_constants_len, 0
+    !__tls_default_constants_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_DEFAULT_MIN_VERSION %out_ptr, %out_len, %out_status
+    __tls_default_min_ptr_slot = stack_alloc 8
+    __tls_default_min_len_slot = stack_alloc 8
+    __tls_default_min_status = call @sa_node_plugin_tls_default_min_version(&__tls_default_min_ptr_slot, &__tls_default_min_len_slot)
+    !%out_status
+    %out_status = add __tls_default_min_status, 0
+    !__tls_default_min_status
+    __tls_default_min_ptr = load __tls_default_min_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_default_min_ptr, 0
+    !__tls_default_min_ptr
+    __tls_default_min_len = load __tls_default_min_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_default_min_len, 0
+    !__tls_default_min_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_DEFAULT_MAX_VERSION %out_ptr, %out_len, %out_status
+    __tls_default_max_ptr_slot = stack_alloc 8
+    __tls_default_max_len_slot = stack_alloc 8
+    __tls_default_max_status = call @sa_node_plugin_tls_default_max_version(&__tls_default_max_ptr_slot, &__tls_default_max_len_slot)
+    !%out_status
+    %out_status = add __tls_default_max_status, 0
+    !__tls_default_max_status
+    __tls_default_max_ptr = load __tls_default_max_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_default_max_ptr, 0
+    !__tls_default_max_ptr
+    __tls_default_max_len = load __tls_default_max_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_default_max_len, 0
+    !__tls_default_max_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_CONVERT_ALPN_PROTOCOLS %out_ptr, %out_len, %out_status, %protocols_json, %protocols_json_len
+    __tls_alpn_wire_ptr_slot = stack_alloc 8
+    __tls_alpn_wire_len_slot = stack_alloc 8
+    __tls_alpn_wire_status = call @sa_node_plugin_tls_convert_alpn_protocols(%protocols_json, %protocols_json_len, &__tls_alpn_wire_ptr_slot, &__tls_alpn_wire_len_slot)
+    !%out_status
+    %out_status = add __tls_alpn_wire_status, 0
+    !__tls_alpn_wire_status
+    __tls_alpn_wire_ptr = load __tls_alpn_wire_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_alpn_wire_ptr, 0
+    !__tls_alpn_wire_ptr
+    __tls_alpn_wire_len = load __tls_alpn_wire_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_alpn_wire_len, 0
+    !__tls_alpn_wire_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_CHECK_SERVER_IDENTITY %out_ptr, %out_len, %out_status, %host, %host_len, %cert_json, %cert_json_len
+    __tls_identity_ptr_slot = stack_alloc 8
+    __tls_identity_len_slot = stack_alloc 8
+    __tls_identity_status = call @sa_node_plugin_tls_check_server_identity(%host, %host_len, %cert_json, %cert_json_len, &__tls_identity_ptr_slot, &__tls_identity_len_slot)
+    !%out_status
+    %out_status = add __tls_identity_status, 0
+    !__tls_identity_status
+    __tls_identity_ptr = load __tls_identity_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_identity_ptr, 0
+    !__tls_identity_ptr
+    __tls_identity_len = load __tls_identity_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_identity_len, 0
+    !__tls_identity_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_ROOT_CERTIFICATES_JSON %out_ptr, %out_len, %out_status
+    __tls_root_certs_ptr_slot = stack_alloc 8
+    __tls_root_certs_len_slot = stack_alloc 8
+    __tls_root_certs_status = call @sa_node_plugin_tls_root_certificates_json(&__tls_root_certs_ptr_slot, &__tls_root_certs_len_slot)
+    !%out_status
+    %out_status = add __tls_root_certs_status, 0
+    !__tls_root_certs_status
+    __tls_root_certs_ptr = load __tls_root_certs_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_root_certs_ptr, 0
+    !__tls_root_certs_ptr
+    __tls_root_certs_len = load __tls_root_certs_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_root_certs_len, 0
+    !__tls_root_certs_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_GET_CA_CERTIFICATES_JSON %out_ptr, %out_len, %out_status, %type_ptr, %type_len
+    __tls_ca_certs_ptr_slot = stack_alloc 8
+    __tls_ca_certs_len_slot = stack_alloc 8
+    __tls_ca_certs_status = call @sa_node_plugin_tls_get_ca_certificates_json(%type_ptr, %type_len, &__tls_ca_certs_ptr_slot, &__tls_ca_certs_len_slot)
+    !%out_status
+    %out_status = add __tls_ca_certs_status, 0
+    !__tls_ca_certs_status
+    __tls_ca_certs_ptr = load __tls_ca_certs_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_ca_certs_ptr, 0
+    !__tls_ca_certs_ptr
+    __tls_ca_certs_len = load __tls_ca_certs_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_ca_certs_len, 0
+    !__tls_ca_certs_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_SET_DEFAULT_CA_CERTIFICATES %out_status, %certs_pem, %certs_pem_len
+    %out_status = call @sa_node_plugin_tls_set_default_ca_certificates(%certs_pem, %certs_pem_len)
+[END_MACRO]
+
+[MACRO] NODE_TLS_RESET_DEFAULT_CA_CERTIFICATES %out_status
+    %out_status = call @sa_node_plugin_tls_reset_default_ca_certificates()
+[END_MACRO]
+
+[MACRO] NODE_TLS_CREATE_SECURE_CONTEXT %out_context, %out_status, %ca, %ca_len, %cert, %cert_len, %key, %key_len, %ciphers, %ciphers_len, %min, %min_len, %max, %max_len
+    __tls_secure_context_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_create_secure_context(%ca, %ca_len, %cert, %cert_len, %key, %key_len, %ciphers, %ciphers_len, %min, %min_len, %max, %max_len, &__tls_secure_context_slot)
+    %out_context = load __tls_secure_context_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TLS_SECURE_CONTEXT_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %context
+    __tls_secure_context_snapshot_ptr_slot = stack_alloc 8
+    __tls_secure_context_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_secure_context_snapshot_json(%context, &__tls_secure_context_snapshot_ptr_slot, &__tls_secure_context_snapshot_len_slot)
+    %out_ptr = load __tls_secure_context_snapshot_ptr_slot+0 as ptr
+    %out_len = load __tls_secure_context_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_SECURE_CONTEXT_FREE %out_status, %context
+    %out_status = call @sa_node_plugin_tls_secure_context_free(%context)
+[END_MACRO]
+
+[MACRO] NODE_TLS_CONNECT %out_socket, %out_status, %host, %host_len, %port, %servername, %servername_len, %reject_unauthorized
+    __tls_connect_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_connect(%host, %host_len, %port, %servername, %servername_len, %reject_unauthorized, &__tls_connect_slot)
+    %out_socket = load __tls_connect_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TLS_CONNECT_SECURE_CONTEXT %out_socket, %out_status, %context, %host, %host_len, %port, %servername, %servername_len, %reject_unauthorized
+    __tls_connect_secure_context_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_connect_secure_context(%context, %host, %host_len, %port, %servername, %servername_len, %reject_unauthorized, &__tls_connect_secure_context_slot)
+    %out_socket = load __tls_connect_secure_context_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TLS_CONNECT_OPTIONS %out_socket, %out_status, %host, %host_len, %port, %servername, %servername_len, %reject_unauthorized, %family, %local, %local_len, %local_port, %no_delay, %keep_alive, %keep_alive_initial_delay_secs, %timeout_ms, %blocklist
+    __tls_connect_options_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_connect_options(%host, %host_len, %port, %servername, %servername_len, %reject_unauthorized, %family, %local, %local_len, %local_port, %no_delay, %keep_alive, %keep_alive_initial_delay_secs, %timeout_ms, %blocklist, &__tls_connect_options_slot)
+    %out_socket = load __tls_connect_options_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_TLS_WRITE %out_status, %socket, %data, %data_len
+    %out_status = call @sa_node_plugin_tls_write(%socket, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_TLS_READ %out_ptr, %out_len, %out_status, %socket, %max_len
+    __tls_read_ptr_slot = stack_alloc 8
+    __tls_read_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_read(%socket, %max_len, &__tls_read_ptr_slot, &__tls_read_len_slot)
+    %out_ptr = load __tls_read_ptr_slot+0 as ptr
+    %out_len = load __tls_read_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_AUTHORIZED_JSON %out_ptr, %out_len, %out_status, %socket
+    __tls_auth_ptr_slot = stack_alloc 8
+    __tls_auth_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_authorized_json(%socket, &__tls_auth_ptr_slot, &__tls_auth_len_slot)
+    %out_ptr = load __tls_auth_ptr_slot+0 as ptr
+    %out_len = load __tls_auth_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_SERVERNAME %out_ptr, %out_len, %out_status, %socket
+    __tls_servername_ptr_slot = stack_alloc 8
+    __tls_servername_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_servername(%socket, &__tls_servername_ptr_slot, &__tls_servername_len_slot)
+    %out_ptr = load __tls_servername_ptr_slot+0 as ptr
+    %out_len = load __tls_servername_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_ALPN_PROTOCOL %out_ptr, %out_len, %out_status, %socket
+    __tls_alpn_ptr_slot = stack_alloc 8
+    __tls_alpn_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_alpn_protocol(%socket, &__tls_alpn_ptr_slot, &__tls_alpn_len_slot)
+    %out_ptr = load __tls_alpn_ptr_slot+0 as ptr
+    %out_len = load __tls_alpn_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_GET_PROTOCOL %out_ptr, %out_len, %out_status, %socket
+    __tls_proto_ptr_slot = stack_alloc 8
+    __tls_proto_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_get_protocol(%socket, &__tls_proto_ptr_slot, &__tls_proto_len_slot)
+    %out_ptr = load __tls_proto_ptr_slot+0 as ptr
+    %out_len = load __tls_proto_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_GET_CIPHER_JSON %out_ptr, %out_len, %out_status, %socket
+    __tls_cipher_ptr_slot = stack_alloc 8
+    __tls_cipher_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_get_cipher_json(%socket, &__tls_cipher_ptr_slot, &__tls_cipher_len_slot)
+    %out_ptr = load __tls_cipher_ptr_slot+0 as ptr
+    %out_len = load __tls_cipher_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_ADDRESS %out_ptr, %out_len, %out_status, %socket
+    __tls_addr_ptr_slot = stack_alloc 8
+    __tls_addr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_address(%socket, &__tls_addr_ptr_slot, &__tls_addr_len_slot)
+    %out_ptr = load __tls_addr_ptr_slot+0 as ptr
+    %out_len = load __tls_addr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_REMOTE_ADDRESS %out_ptr, %out_len, %out_status, %socket
+    __tls_raddr_ptr_slot = stack_alloc 8
+    __tls_raddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_remote_address(%socket, &__tls_raddr_ptr_slot, &__tls_raddr_len_slot)
+    %out_ptr = load __tls_raddr_ptr_slot+0 as ptr
+    %out_len = load __tls_raddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_LOCAL_ADDRESS %out_ptr, %out_len, %out_status, %socket
+    __tls_laddr_ptr_slot = stack_alloc 8
+    __tls_laddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_local_address(%socket, &__tls_laddr_ptr_slot, &__tls_laddr_len_slot)
+    %out_ptr = load __tls_laddr_ptr_slot+0 as ptr
+    %out_len = load __tls_laddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_LOCAL_FAMILY %out_ptr, %out_len, %out_status, %socket
+    __tls_lfamily_ptr_slot = stack_alloc 8
+    __tls_lfamily_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_local_family(%socket, &__tls_lfamily_ptr_slot, &__tls_lfamily_len_slot)
+    %out_ptr = load __tls_lfamily_ptr_slot+0 as ptr
+    %out_len = load __tls_lfamily_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_LOCAL_PORT %out_port, %out_status, %socket
+    __tls_lport_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_local_port(%socket, &__tls_lport_slot)
+    %out_port = load __tls_lport_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_REMOTE_ADDRESS_VALUE %out_ptr, %out_len, %out_status, %socket
+    __tls_raval_ptr_slot = stack_alloc 8
+    __tls_raval_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_remote_address_value(%socket, &__tls_raval_ptr_slot, &__tls_raval_len_slot)
+    %out_ptr = load __tls_raval_ptr_slot+0 as ptr
+    %out_len = load __tls_raval_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_REMOTE_FAMILY %out_ptr, %out_len, %out_status, %socket
+    __tls_rfamily_ptr_slot = stack_alloc 8
+    __tls_rfamily_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_remote_family(%socket, &__tls_rfamily_ptr_slot, &__tls_rfamily_len_slot)
+    %out_ptr = load __tls_rfamily_ptr_slot+0 as ptr
+    %out_len = load __tls_rfamily_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_REMOTE_PORT %out_port, %out_status, %socket
+    __tls_rport_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_remote_port(%socket, &__tls_rport_slot)
+    %out_port = load __tls_rport_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_SET_TIMEOUT %out_status, %socket, %timeout_ms
+    %out_status = call @sa_node_plugin_tls_set_timeout(%socket, %timeout_ms)
+[END_MACRO]
+
+[MACRO] NODE_TLS_GET_TIMEOUT %out_timeout_ms, %out_status, %socket
+    __tls_timeout_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_get_timeout(%socket, &__tls_timeout_slot)
+    %out_timeout_ms = load __tls_timeout_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_BYTES_READ %out_bytes, %out_status, %socket
+    __tls_bytes_read_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_bytes_read(%socket, &__tls_bytes_read_slot)
+    %out_bytes = load __tls_bytes_read_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_BYTES_WRITTEN %out_bytes, %out_status, %socket
+    __tls_bytes_written_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_bytes_written(%socket, &__tls_bytes_written_slot)
+    %out_bytes = load __tls_bytes_written_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_BUFFER_SIZE %out_size, %out_status, %socket
+    __tls_buffer_size_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_buffer_size(%socket, &__tls_buffer_size_slot)
+    %out_size = load __tls_buffer_size_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_CONNECTING %out_bool, %out_status, %socket
+    __tls_connecting_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_connecting(%socket, &__tls_connecting_slot)
+    %out_bool = load __tls_connecting_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_PENDING %out_bool, %out_status, %socket
+    __tls_pending_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_pending(%socket, &__tls_pending_slot)
+    %out_bool = load __tls_pending_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_READY_STATE %out_ptr, %out_len, %out_status, %socket
+    __tls_ready_state_ptr_slot = stack_alloc 8
+    __tls_ready_state_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_ready_state(%socket, &__tls_ready_state_ptr_slot, &__tls_ready_state_len_slot)
+    %out_ptr = load __tls_ready_state_ptr_slot+0 as ptr
+    %out_len = load __tls_ready_state_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_READABLE %out_bool, %out_status, %socket
+    __tls_readable_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_readable(%socket, &__tls_readable_slot)
+    %out_bool = load __tls_readable_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_WRITABLE %out_bool, %out_status, %socket
+    __tls_writable_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_writable(%socket, &__tls_writable_slot)
+    %out_bool = load __tls_writable_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_CLOSED %out_bool, %out_status, %socket
+    __tls_closed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_closed(%socket, &__tls_closed_slot)
+    %out_bool = load __tls_closed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_DESTROYED %out_bool, %out_status, %socket
+    __tls_destroyed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_destroyed(%socket, &__tls_destroyed_slot)
+    %out_bool = load __tls_destroyed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_REF %out_status, %socket
+    %out_status = call @sa_node_plugin_tls_ref(%socket)
+[END_MACRO]
+
+[MACRO] NODE_TLS_UNREF %out_status, %socket
+    %out_status = call @sa_node_plugin_tls_unref(%socket)
+[END_MACRO]
+
+[MACRO] NODE_TLS_HAS_REF %out_bool, %out_status, %socket
+    __tls_has_ref_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_has_ref(%socket, &__tls_has_ref_slot)
+    %out_bool = load __tls_has_ref_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_DESTROY %out_status, %socket
+    %out_status = call @sa_node_plugin_tls_destroy(%socket)
+[END_MACRO]
+
+[MACRO] NODE_TLS_CLOSE %out_status, %socket
+    %out_status = call @sa_node_plugin_tls_close(%socket)
+[END_MACRO]
+
 [MACRO] NODE_FS_STAT %out_ptr, %out_len, %out_status, %path, %path_len
     __fss_ptr_slot = stack_alloc 8
     __fss_len_slot = stack_alloc 8

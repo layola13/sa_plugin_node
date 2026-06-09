@@ -1,0 +1,268 @@
+// SA compile-surface tests for Node TLS helpers via the main node.sal facade
+@import "../node.sal"
+
+@const S_HOST = utf8:"127.0.0.1"
+@const S_SERVERNAME = utf8:"localhost"
+@const S_MSG = utf8:"ping"
+@const S_TLS_MIN = utf8:"TLSv1.2"
+@const S_TLS_MAX = utf8:"TLSv1.3"
+
+@test "node.tls main facade entrypoints compile"():
+L_ENTRY:
+    s1 = add 0, 0
+    EXPAND NODE_TLS_SET_DEFAULT_CA_CERTIFICATES s1, 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TLS_RESET_DEFAULT_CA_CERTIFICATES s2
+
+    ctx = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_TLS_CREATE_SECURE_CONTEXT ctx, s3, 0, 0, 0, 0, 0, 0, 0, 0, S_TLS_MIN, 7, S_TLS_MAX, 7
+
+    snap_ptr = add 0, 0
+    snap_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_TLS_SECURE_CONTEXT_SNAPSHOT_JSON snap_ptr, snap_len, s4, ctx
+
+    sock1 = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_TLS_CONNECT sock1, s5, S_HOST, 9, 443, S_SERVERNAME, 9, 1
+
+    sock2 = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_TLS_CONNECT_SECURE_CONTEXT sock2, s6, ctx, S_HOST, 9, 443, S_SERVERNAME, 9, 1
+
+    sock3 = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_TLS_CONNECT_OPTIONS sock3, s7, S_HOST, 9, 443, S_SERVERNAME, 9, 1, 4, S_HOST, 9, 0, 1, 1, 1, 250, 0
+
+    s8 = add 0, 0
+    EXPAND NODE_TLS_SECURE_CONTEXT_FREE s8, ctx
+
+    !s8
+    !s7
+    !sock3
+    !s6
+    !sock2
+    !s5
+    !sock1
+    !s4
+    !snap_len
+    !snap_ptr
+    !s3
+    !ctx
+    !s2
+    !s1
+    return
+
+@test "node.tls main facade socket helpers compile"():
+L_ENTRY:
+    sock = add 0, 0
+
+    s1 = add 0, 0
+    EXPAND NODE_TLS_WRITE s1, sock, S_MSG, 4
+
+    read_ptr = add 0, 0
+    read_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TLS_READ read_ptr, read_len, s2, sock, 128
+
+    auth_ptr = add 0, 0
+    auth_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_TLS_AUTHORIZED_JSON auth_ptr, auth_len, s3, sock
+
+    servername_ptr = add 0, 0
+    servername_len = add 0, 0
+    s4 = add 0, 0
+    EXPAND NODE_TLS_SERVERNAME servername_ptr, servername_len, s4, sock
+
+    alpn_ptr = add 0, 0
+    alpn_len = add 0, 0
+    s5 = add 0, 0
+    EXPAND NODE_TLS_ALPN_PROTOCOL alpn_ptr, alpn_len, s5, sock
+
+    proto_ptr = add 0, 0
+    proto_len = add 0, 0
+    s6 = add 0, 0
+    EXPAND NODE_TLS_GET_PROTOCOL proto_ptr, proto_len, s6, sock
+
+    cipher_ptr = add 0, 0
+    cipher_len = add 0, 0
+    s7 = add 0, 0
+    EXPAND NODE_TLS_GET_CIPHER_JSON cipher_ptr, cipher_len, s7, sock
+
+    addr_ptr = add 0, 0
+    addr_len = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_TLS_ADDRESS addr_ptr, addr_len, s8, sock
+
+    raddr_ptr = add 0, 0
+    raddr_len = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_TLS_REMOTE_ADDRESS raddr_ptr, raddr_len, s9, sock
+
+    laddr_ptr = add 0, 0
+    laddr_len = add 0, 0
+    s10 = add 0, 0
+    EXPAND NODE_TLS_LOCAL_ADDRESS laddr_ptr, laddr_len, s10, sock
+
+    lfamily_ptr = add 0, 0
+    lfamily_len = add 0, 0
+    s11 = add 0, 0
+    EXPAND NODE_TLS_LOCAL_FAMILY lfamily_ptr, lfamily_len, s11, sock
+
+    lport = add 0, 0
+    s12 = add 0, 0
+    EXPAND NODE_TLS_LOCAL_PORT lport, s12, sock
+
+    raval_ptr = add 0, 0
+    raval_len = add 0, 0
+    s13 = add 0, 0
+    EXPAND NODE_TLS_REMOTE_ADDRESS_VALUE raval_ptr, raval_len, s13, sock
+
+    rfamily_ptr = add 0, 0
+    rfamily_len = add 0, 0
+    s14 = add 0, 0
+    EXPAND NODE_TLS_REMOTE_FAMILY rfamily_ptr, rfamily_len, s14, sock
+
+    rport = add 0, 0
+    s15 = add 0, 0
+    EXPAND NODE_TLS_REMOTE_PORT rport, s15, sock
+
+    s16 = add 0, 0
+    EXPAND NODE_TLS_SET_TIMEOUT s16, sock, 250
+
+    timeout_ms = add 0, 0
+    s17 = add 0, 0
+    EXPAND NODE_TLS_GET_TIMEOUT timeout_ms, s17, sock
+
+    bytes_read = add 0, 0
+    s18 = add 0, 0
+    EXPAND NODE_TLS_BYTES_READ bytes_read, s18, sock
+
+    bytes_written = add 0, 0
+    s19 = add 0, 0
+    EXPAND NODE_TLS_BYTES_WRITTEN bytes_written, s19, sock
+
+    buffer_size = add 0, 0
+    s20 = add 0, 0
+    EXPAND NODE_TLS_BUFFER_SIZE buffer_size, s20, sock
+
+    connecting = add 0, 0
+    s21 = add 0, 0
+    EXPAND NODE_TLS_CONNECTING connecting, s21, sock
+
+    pending = add 0, 0
+    s22 = add 0, 0
+    EXPAND NODE_TLS_PENDING pending, s22, sock
+
+    state_ptr = add 0, 0
+    state_len = add 0, 0
+    s23 = add 0, 0
+    EXPAND NODE_TLS_READY_STATE state_ptr, state_len, s23, sock
+
+    readable = add 0, 0
+    s24 = add 0, 0
+    EXPAND NODE_TLS_READABLE readable, s24, sock
+
+    writable = add 0, 0
+    s25 = add 0, 0
+    EXPAND NODE_TLS_WRITABLE writable, s25, sock
+
+    closed = add 0, 0
+    s26 = add 0, 0
+    EXPAND NODE_TLS_CLOSED closed, s26, sock
+
+    destroyed = add 0, 0
+    s27 = add 0, 0
+    EXPAND NODE_TLS_DESTROYED destroyed, s27, sock
+
+    s28 = add 0, 0
+    EXPAND NODE_TLS_REF s28, sock
+
+    s29 = add 0, 0
+    EXPAND NODE_TLS_UNREF s29, sock
+
+    has_ref = add 0, 0
+    s30 = add 0, 0
+    EXPAND NODE_TLS_HAS_REF has_ref, s30, sock
+
+    s31 = add 0, 0
+    EXPAND NODE_TLS_DESTROY s31, sock
+
+    s32 = add 0, 0
+    EXPAND NODE_TLS_CLOSE s32, sock
+
+    !s32
+    !s31
+    !s30
+    !has_ref
+    !s29
+    !s28
+    !s27
+    !destroyed
+    !s26
+    !closed
+    !s25
+    !writable
+    !s24
+    !readable
+    !s23
+    !state_len
+    !state_ptr
+    !s22
+    !pending
+    !s21
+    !connecting
+    !s20
+    !buffer_size
+    !s19
+    !bytes_written
+    !s18
+    !bytes_read
+    !s17
+    !timeout_ms
+    !s16
+    !s15
+    !rport
+    !s14
+    !rfamily_len
+    !rfamily_ptr
+    !s13
+    !raval_len
+    !raval_ptr
+    !s12
+    !lport
+    !s11
+    !lfamily_len
+    !lfamily_ptr
+    !s10
+    !laddr_len
+    !laddr_ptr
+    !s9
+    !raddr_len
+    !raddr_ptr
+    !s8
+    !addr_len
+    !addr_ptr
+    !s7
+    !cipher_len
+    !cipher_ptr
+    !s6
+    !proto_len
+    !proto_ptr
+    !s5
+    !alpn_len
+    !alpn_ptr
+    !s4
+    !servername_len
+    !servername_ptr
+    !s3
+    !auth_len
+    !auth_ptr
+    !s2
+    !read_len
+    !read_ptr
+    !s1
+    !sock
+    return

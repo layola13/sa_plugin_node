@@ -63,14 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `http` / `https`
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `tls`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `http` metadata / request / client / server / websocket macros available through `node.sal`
-  - `https` metadata / request helper macros available through `node.sal`
+  - `tls` cipher / CA / secure-context / socket macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` tls helper macro tranche completed:
+  - `tls` cipher / CA / secure-context / socket macros available through `node.sal`
+  - `tests/node_test_tls_extra.sa` now validates through `node.sal` only
+  - `tests/node_test_tls_main.sa` compile-checks the wider `tls` connect and socket helper surface through `node.sal`
 - installed main `node.sal` http/https macro tranche completed:
   - `http` metadata / request / client / server / websocket macros available through `node.sal`
   - `https` metadata / request helper macros available through `node.sal`

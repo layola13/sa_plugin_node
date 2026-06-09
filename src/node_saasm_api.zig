@@ -1,4 +1,6 @@
 const std = @import("std");
+
+extern fn sa_node_plugin_dns_promises_resolve(hostname_ptr: ?[*]const u8, hostname_len: u64, rrtype_ptr: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32;
 const builtin = @import("builtin");
 
 // --- POSIX/C Signatures ---
@@ -2218,9 +2220,7 @@ pub export fn sa_node_plugin_dns_lookup_service(address_ptr: ?[*]const u8, len: 
 }
 
 pub export fn sa_node_plugin_dns_resolve(hostname: ?[*]const u8, len: u64, rrtype: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const rr = rrtype.?[0..rrtype_len];
-    if (std.ascii.eqlIgnoreCase(rr, "A")) return sa_node_plugin_dns_lookup(hostname, len, out_ptr, out_len);
-    return 2;
+    return sa_node_plugin_dns_promises_resolve(hostname, len, rrtype, rrtype_len, out_ptr, out_len);
 }
 
 const BlockListFamily = enum { ipv4, ipv6 };

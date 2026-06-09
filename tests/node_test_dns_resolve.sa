@@ -45,3 +45,34 @@ L_ERR_LEN:
     !ol
     !op
     panic(103)
+
+@test "node.dns resolve direct ABI dispatches non-A rrtype"():
+L_ENTRY:
+    op_slot = stack_alloc 8
+    ol_slot = stack_alloc 8
+    s = call @sa_node_plugin_dns_resolve(&S_EXAMPLE, 11, &S_CNAME, 5, &op_slot, &ol_slot)
+    ok = eq s, 0
+    br ok -> L_LOAD, L_ERR_STATUS
+L_LOAD:
+    !ok
+    op = load op_slot+0 as ptr
+    ol = load ol_slot+0 as u64
+    has_len = ugt ol, 0
+    br has_len -> L_OK, L_ERR_LEN
+L_OK:
+    !has_len
+    free_status = call @sa_node_plugin_free_buffer(op, ol)
+    !free_status
+    !ol
+    !op
+    !s
+    return
+L_ERR_STATUS:
+    !ok
+    !s
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    !ol
+    !op
+    panic(103)

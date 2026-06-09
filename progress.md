@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: network DNS RRtype dispatch alignment for top-level `dns.resolve`
+- Scope: network DNS RRtype dispatch alignment for direct `node.sai` ABI `sa_node_plugin_dns_resolve`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Top-level `NODE_DNS_RESOLVE` dispatches through the existing native resolver surface for A, AAAA, CNAME, MX, NS, TXT, SRV, PTR, CAA, NAPTR, SOA, TLSA, and ANY instead of only the base A-record helper
+  - Direct `sa_node_plugin_dns_resolve` C-ABI calls reuse the existing native resolver surface for A, AAAA, CNAME, MX, NS, TXT, SRV, PTR, CAA, NAPTR, SOA, TLSA, and ANY instead of only the base A-record helper
 
 ## Recent Completed Helper Features
+
+- network DNS direct ABI RRtype dispatch alignment completed:
+  - Direct `node.sai` callers of `sa_node_plugin_dns_resolve` now reuse the same existing native resolver dispatch path as `dns.promises.resolve`
+  - `tests/node_test_dns_resolve.sa` now validates non-A RRtype dispatch through both the public `node.sal` macro and direct `node.sai` ABI call
 
 - network DNS RRtype dispatch alignment completed:
   - Top-level `NODE_DNS_RESOLVE` now reuses the existing native resolver implementation exposed through `node_extra.sai`, keeping the public `node.sal` facade aligned with the broader resolver and `dns.promises.resolve` behavior

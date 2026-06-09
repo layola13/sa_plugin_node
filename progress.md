@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `fs` and `fs.promises`
+- Scope: installed main `node.sal` public macro coverage for `timers.promises`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `fs` descriptor, metadata, directory, mutation, copy/link, timestamp, vector-IO, top-level metadata, and `fs.promises` helpers available through `node.sal`
+  - `timers.promises` timeout, immediate, scheduler, and explicit interval lifecycle helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` timers.promises helper macro tranche completed:
+  - `timers.promises` setTimeout, setImmediate, scheduler.wait, scheduler.yield, setInterval, interval next/return/snapshot/free helpers available through `node.sal`
+  - `tests/node_test_timers_promises.sa` validates through `node.sal` only
 
 - installed main `node.sal` fs/fs.promises helper macro tranche completed:
   - `fs` descriptor open/close/read/write, fstat/fchmod/fchown/fsync/fdatasync/ftruncate/futimes, chmod/chown, glob, link/symlink/readlink, mkdtemp, opendir, rm, statfs, truncate, utimes, vector-IO, top-level metadata, and `fs.promises` helpers available through `node.sal`

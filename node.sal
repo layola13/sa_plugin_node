@@ -9330,3 +9330,115 @@
     %out_len = add __fs_top_feature_len, 0
     !__fs_top_feature_len
 [END_MACRO]
+[MACRO] NODE_TIMERS_PROMISES_SET_TIMEOUT %out_ptr, %out_len, %out_status, %ms, %value, %value_len
+    __timers_promises_timeout_ptr_slot = stack_alloc 8
+    __timers_promises_timeout_len_slot = stack_alloc 8
+    __timers_promises_timeout_status = call @sa_node_plugin_timers_promises_set_timeout(%ms, %value, %value_len, &__timers_promises_timeout_ptr_slot, &__timers_promises_timeout_len_slot)
+    !%out_status
+    %out_status = add __timers_promises_timeout_status, 0
+    !__timers_promises_timeout_status
+    __timers_promises_timeout_ptr = load __timers_promises_timeout_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __timers_promises_timeout_ptr, 0
+    !__timers_promises_timeout_ptr
+    __timers_promises_timeout_len = load __timers_promises_timeout_len_slot+0 as u64
+    !%out_len
+    %out_len = add __timers_promises_timeout_len, 0
+    !__timers_promises_timeout_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_SET_IMMEDIATE %out_ptr, %out_len, %out_status, %value, %value_len
+    __timers_promises_immediate_ptr_slot = stack_alloc 8
+    __timers_promises_immediate_len_slot = stack_alloc 8
+    __timers_promises_immediate_status = call @sa_node_plugin_timers_promises_set_immediate(%value, %value_len, &__timers_promises_immediate_ptr_slot, &__timers_promises_immediate_len_slot)
+    !%out_status
+    %out_status = add __timers_promises_immediate_status, 0
+    !__timers_promises_immediate_status
+    __timers_promises_immediate_ptr = load __timers_promises_immediate_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __timers_promises_immediate_ptr, 0
+    !__timers_promises_immediate_ptr
+    __timers_promises_immediate_len = load __timers_promises_immediate_len_slot+0 as u64
+    !%out_len
+    %out_len = add __timers_promises_immediate_len, 0
+    !__timers_promises_immediate_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_SCHEDULER_WAIT %out_status, %ms
+    __timers_promises_wait_status = call @sa_node_plugin_timers_promises_scheduler_wait(%ms)
+    !%out_status
+    %out_status = add __timers_promises_wait_status, 0
+    !__timers_promises_wait_status
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_SCHEDULER_YIELD %out_status
+    __timers_promises_yield_status = call @sa_node_plugin_timers_promises_scheduler_yield()
+    !%out_status
+    %out_status = add __timers_promises_yield_status, 0
+    !__timers_promises_yield_status
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_SET_INTERVAL %out_interval, %out_status, %ms, %value, %value_len
+    __timers_promises_interval_slot = stack_alloc 8
+    __timers_promises_interval_status = call @sa_node_plugin_timers_promises_set_interval(%ms, %value, %value_len, &__timers_promises_interval_slot)
+    !%out_status
+    %out_status = add __timers_promises_interval_status, 0
+    !__timers_promises_interval_status
+    __timers_promises_interval_handle = load __timers_promises_interval_slot+0 as ptr
+    !%out_interval
+    %out_interval = add __timers_promises_interval_handle, 0
+    !__timers_promises_interval_handle
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_INTERVAL_NEXT %out_ptr, %out_len, %out_done, %out_status, %interval
+    __timers_promises_next_ptr_slot = stack_alloc 8
+    __timers_promises_next_len_slot = stack_alloc 8
+    __timers_promises_next_done_slot = stack_alloc 8
+    __timers_promises_next_status = call @sa_node_plugin_timers_promises_interval_next(%interval, &__timers_promises_next_ptr_slot, &__timers_promises_next_len_slot, &__timers_promises_next_done_slot)
+    !%out_status
+    %out_status = add __timers_promises_next_status, 0
+    !__timers_promises_next_status
+    __timers_promises_next_ptr = load __timers_promises_next_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __timers_promises_next_ptr, 0
+    !__timers_promises_next_ptr
+    __timers_promises_next_len = load __timers_promises_next_len_slot+0 as u64
+    !%out_len
+    %out_len = add __timers_promises_next_len, 0
+    !__timers_promises_next_len
+    __timers_promises_next_done = load __timers_promises_next_done_slot+0 as u64
+    !%out_done
+    %out_done = add __timers_promises_next_done, 0
+    !__timers_promises_next_done
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_INTERVAL_RETURN %out_status, %interval
+    __timers_promises_return_status = call @sa_node_plugin_timers_promises_interval_return(%interval)
+    !%out_status
+    %out_status = add __timers_promises_return_status, 0
+    !__timers_promises_return_status
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_INTERVAL_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %interval
+    __timers_promises_snapshot_ptr_slot = stack_alloc 8
+    __timers_promises_snapshot_len_slot = stack_alloc 8
+    __timers_promises_snapshot_status = call @sa_node_plugin_timers_promises_interval_snapshot_json(%interval, &__timers_promises_snapshot_ptr_slot, &__timers_promises_snapshot_len_slot)
+    !%out_status
+    %out_status = add __timers_promises_snapshot_status, 0
+    !__timers_promises_snapshot_status
+    __timers_promises_snapshot_ptr = load __timers_promises_snapshot_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __timers_promises_snapshot_ptr, 0
+    !__timers_promises_snapshot_ptr
+    __timers_promises_snapshot_len = load __timers_promises_snapshot_len_slot+0 as u64
+    !%out_len
+    %out_len = add __timers_promises_snapshot_len, 0
+    !__timers_promises_snapshot_len
+[END_MACRO]
+
+[MACRO] NODE_TIMERS_PROMISES_INTERVAL_FREE %out_status, %interval
+    __timers_promises_free_status = call @sa_node_plugin_timers_promises_interval_free(%interval)
+    !%out_status
+    %out_status = add __timers_promises_free_status, 0
+    !__timers_promises_free_status
+[END_MACRO]

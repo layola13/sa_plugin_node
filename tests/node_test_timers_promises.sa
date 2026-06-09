@@ -1,0 +1,125 @@
+// SA tests for Node timers.promises helpers
+@import "../node.sal"
+
+@const S_DONE = utf8:"done"
+@const S_SOON = utf8:"soon"
+@const S_TICK = utf8:"tick"
+
+@test "node.timers promises resolved helpers"():
+L_ENTRY:
+    timeout_ptr = add 0, 0
+    timeout_len = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_SET_TIMEOUT timeout_ptr, timeout_len, s1, 1, S_DONE, 4
+    ok1 = eq s1, 0
+    br ok1 -> L_IMMEDIATE, L_ERR_TIMEOUT
+L_IMMEDIATE:
+    !ok1
+    immediate_ptr = add 0, 0
+    immediate_len = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_SET_IMMEDIATE immediate_ptr, immediate_len, s2, S_SOON, 4
+    ok2 = eq s2, 0
+    br ok2 -> L_SCHED_WAIT, L_ERR_IMMEDIATE
+L_SCHED_WAIT:
+    !ok2
+    s3 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_SCHEDULER_WAIT s3, 1
+    ok3 = eq s3, 0
+    br ok3 -> L_SCHED_YIELD, L_ERR_WAIT
+L_SCHED_YIELD:
+    !ok3
+    s4 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_SCHEDULER_YIELD s4
+    ok4 = eq s4, 0
+    br ok4 -> L_FREE, L_ERR_YIELD
+L_FREE:
+    !ok4
+    free_immediate = call @sa_node_plugin_free_buffer(immediate_ptr, immediate_len)
+    free_timeout = call @sa_node_plugin_free_buffer(timeout_ptr, timeout_len)
+    !free_timeout
+    !free_immediate
+    !s4
+    !s3
+    !s2
+    !immediate_len
+    !immediate_ptr
+    !s1
+    !timeout_len
+    !timeout_ptr
+    return
+L_ERR_TIMEOUT:
+    !ok1
+    panic(103)
+L_ERR_IMMEDIATE:
+    !ok2
+    panic(103)
+L_ERR_WAIT:
+    !ok3
+    panic(103)
+L_ERR_YIELD:
+    !ok4
+    panic(103)
+
+@test "node.timers promises interval lifecycle"():
+L_ENTRY:
+    interval = add 0, 0
+    s1 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_SET_INTERVAL interval, s1, 1, S_TICK, 4
+    ok1 = eq s1, 0
+    br ok1 -> L_NEXT, L_ERR_SET
+L_NEXT:
+    !ok1
+    tick_ptr = add 0, 0
+    tick_len = add 0, 0
+    done = add 0, 0
+    s2 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_INTERVAL_NEXT tick_ptr, tick_len, done, s2, interval
+    ok2 = eq s2, 0
+    br ok2 -> L_SNAPSHOT, L_ERR_NEXT
+L_SNAPSHOT:
+    !ok2
+    snapshot_ptr = add 0, 0
+    snapshot_len = add 0, 0
+    s3 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_INTERVAL_SNAPSHOT_JSON snapshot_ptr, snapshot_len, s3, interval
+    ok3 = eq s3, 0
+    br ok3 -> L_RETURN, L_ERR_SNAPSHOT
+L_RETURN:
+    !ok3
+    s4 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_INTERVAL_RETURN s4, interval
+    ok4 = eq s4, 0
+    br ok4 -> L_FREE, L_ERR_RETURN
+L_FREE:
+    !ok4
+    s5 = add 0, 0
+    EXPAND NODE_TIMERS_PROMISES_INTERVAL_FREE s5, interval
+    free_snapshot = call @sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len)
+    free_tick = call @sa_node_plugin_free_buffer(tick_ptr, tick_len)
+    !free_tick
+    !free_snapshot
+    !s5
+    !s4
+    !s3
+    !snapshot_len
+    !snapshot_ptr
+    !s2
+    !done
+    !tick_len
+    !tick_ptr
+    !s1
+    !interval
+    return
+L_ERR_SET:
+    !ok1
+    panic(103)
+L_ERR_NEXT:
+    !ok2
+    panic(103)
+L_ERR_SNAPSHOT:
+    !ok3
+    panic(103)
+L_ERR_RETURN:
+    !ok4
+    panic(103)

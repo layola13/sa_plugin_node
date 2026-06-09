@@ -1,6 +1,5 @@
 // SA tests for Node DTLS top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.dtls top level helpers"():
 L_ENTRY:

@@ -1252,6 +1252,443 @@
     %out_count = load __dgram_sendq_count_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_HTTP2_STATUS_JSON %out_ptr, %out_len
+    __http2_status_ptr_slot = stack_alloc 8
+    __http2_status_len_slot = stack_alloc 8
+    __http2_status_status = call @sa_node_plugin_http2_status_json(&__http2_status_ptr_slot, &__http2_status_len_slot)
+    !__http2_status_status
+    __http2_status_ptr = load __http2_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http2_status_ptr, 0
+    !__http2_status_ptr
+    __http2_status_len = load __http2_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http2_status_len, 0
+    !__http2_status_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_CLIENT_REQUEST %out_ptr, %out_len, %out_status, %url, %url_len, %method, %method_len, %body, %body_len
+    __http2_request_ptr_slot = stack_alloc 8
+    __http2_request_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_client_request(%url, %url_len, %method, %method_len, %body, %body_len, &__http2_request_ptr_slot, &__http2_request_len_slot)
+    %out_ptr = load __http2_request_ptr_slot+0 as ptr
+    %out_len = load __http2_request_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_NGHTTP2_VERSION_JSON %out_ptr, %out_len, %out_status
+    __http2_version_ptr_slot = stack_alloc 8
+    __http2_version_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_nghttp2_version_json(&__http2_version_ptr_slot, &__http2_version_len_slot)
+    %out_ptr = load __http2_version_ptr_slot+0 as ptr
+    %out_len = load __http2_version_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_GET_DEFAULT_SETTINGS_JSON %out_ptr, %out_len, %out_status
+    __http2_defaults_ptr_slot = stack_alloc 8
+    __http2_defaults_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_get_default_settings_json(&__http2_defaults_ptr_slot, &__http2_defaults_len_slot)
+    %out_ptr = load __http2_defaults_ptr_slot+0 as ptr
+    %out_len = load __http2_defaults_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __http2_constants_ptr_slot = stack_alloc 8
+    __http2_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_constants_json(&__http2_constants_ptr_slot, &__http2_constants_len_slot)
+    %out_ptr = load __http2_constants_ptr_slot+0 as ptr
+    %out_len = load __http2_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_SENSITIVE_HEADERS %out_ptr, %out_len, %out_status
+    __http2_sensitive_ptr_slot = stack_alloc 8
+    __http2_sensitive_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_sensitive_headers(&__http2_sensitive_ptr_slot, &__http2_sensitive_len_slot)
+    %out_ptr = load __http2_sensitive_ptr_slot+0 as ptr
+    %out_len = load __http2_sensitive_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_GET_PACKED_SETTINGS %out_ptr, %out_len, %out_status, %settings_json, %settings_json_len
+    __http2_packed_ptr_slot = stack_alloc 8
+    __http2_packed_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_get_packed_settings(%settings_json, %settings_json_len, &__http2_packed_ptr_slot, &__http2_packed_len_slot)
+    %out_ptr = load __http2_packed_ptr_slot+0 as ptr
+    %out_len = load __http2_packed_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_GET_UNPACKED_SETTINGS_JSON %out_ptr, %out_len, %out_status, %buf, %buf_len
+    __http2_unpacked_ptr_slot = stack_alloc 8
+    __http2_unpacked_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_get_unpacked_settings_json(%buf, %buf_len, &__http2_unpacked_ptr_slot, &__http2_unpacked_len_slot)
+    %out_ptr = load __http2_unpacked_ptr_slot+0 as ptr
+    %out_len = load __http2_unpacked_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_PERFORM_SERVER_HANDSHAKE %out_bytes_ptr, %out_bytes_len, %out_json_ptr, %out_json_len, %out_status, %input, %input_len, %settings_json, %settings_json_len
+    __http2_handshake_bytes_ptr_slot = stack_alloc 8
+    __http2_handshake_bytes_len_slot = stack_alloc 8
+    __http2_handshake_json_ptr_slot = stack_alloc 8
+    __http2_handshake_json_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_perform_server_handshake(%input, %input_len, %settings_json, %settings_json_len, &__http2_handshake_bytes_ptr_slot, &__http2_handshake_bytes_len_slot, &__http2_handshake_json_ptr_slot, &__http2_handshake_json_len_slot)
+    %out_bytes_ptr = load __http2_handshake_bytes_ptr_slot+0 as ptr
+    %out_bytes_len = load __http2_handshake_bytes_len_slot+0 as u64
+    %out_json_ptr = load __http2_handshake_json_ptr_slot+0 as ptr
+    %out_json_len = load __http2_handshake_json_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __http2_exports_ptr_slot = stack_alloc 8
+    __http2_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_exports_json(&__http2_exports_ptr_slot, &__http2_exports_len_slot)
+    %out_ptr = load __http2_exports_ptr_slot+0 as ptr
+    %out_len = load __http2_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __http2_config_ptr_slot = stack_alloc 8
+    __http2_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_config_json(&__http2_config_ptr_slot, &__http2_config_len_slot)
+    %out_ptr = load __http2_config_ptr_slot+0 as ptr
+    %out_len = load __http2_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP2_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __http2_feature_ptr_slot = stack_alloc 8
+    __http2_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http2_feature_support_json(&__http2_feature_ptr_slot, &__http2_feature_len_slot)
+    %out_ptr = load __http2_feature_ptr_slot+0 as ptr
+    %out_len = load __http2_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_STATUS_JSON %out_ptr, %out_len
+    __quic_status_ptr_slot = stack_alloc 8
+    __quic_status_len_slot = stack_alloc 8
+    __quic_status_status = call @sa_node_plugin_quic_status_json(&__quic_status_ptr_slot, &__quic_status_len_slot)
+    !__quic_status_status
+    __quic_status_ptr = load __quic_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __quic_status_ptr, 0
+    !__quic_status_ptr
+    __quic_status_len = load __quic_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __quic_status_len, 0
+    !__quic_status_len
+[END_MACRO]
+
+[MACRO] NODE_QUIC_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __quic_exports_ptr_slot = stack_alloc 8
+    __quic_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_exports_json(&__quic_exports_ptr_slot, &__quic_exports_len_slot)
+    %out_ptr = load __quic_exports_ptr_slot+0 as ptr
+    %out_len = load __quic_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __quic_config_ptr_slot = stack_alloc 8
+    __quic_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_config_json(&__quic_config_ptr_slot, &__quic_config_len_slot)
+    %out_ptr = load __quic_config_ptr_slot+0 as ptr
+    %out_len = load __quic_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __quic_feature_ptr_slot = stack_alloc 8
+    __quic_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_feature_support_json(&__quic_feature_ptr_slot, &__quic_feature_len_slot)
+    %out_ptr = load __quic_feature_ptr_slot+0 as ptr
+    %out_len = load __quic_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __quic_constants_ptr_slot = stack_alloc 8
+    __quic_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_constants_json(&__quic_constants_ptr_slot, &__quic_constants_len_slot)
+    %out_ptr = load __quic_constants_ptr_slot+0 as ptr
+    %out_len = load __quic_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_CAPABILITIES_JSON %out_ptr, %out_len, %out_status
+    __quic_caps_ptr_slot = stack_alloc 8
+    __quic_caps_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_capabilities_json(&__quic_caps_ptr_slot, &__quic_caps_len_slot)
+    %out_ptr = load __quic_caps_ptr_slot+0 as ptr
+    %out_len = load __quic_caps_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_CREATE_ENDPOINT %out_endpoint, %out_status, %family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_endpoint_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_create_endpoint(%family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_endpoint_slot)
+    %out_endpoint = load __quic_endpoint_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_QUIC_CONNECT %out_endpoint, %out_status, %family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_connect_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_connect(%family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_connect_slot)
+    %out_endpoint = load __quic_connect_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_QUIC_LISTEN %out_endpoint, %out_status, %family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms
+    __quic_listen_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_listen(%family, %host, %host_len, %port, %alpn, %alpn_len, %cc, %cc_len, %idle_timeout_ms, &__quic_listen_slot)
+    %out_endpoint = load __quic_listen_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_snapshot_ptr_slot = stack_alloc 8
+    __quic_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_endpoint_snapshot_json(%endpoint, &__quic_snapshot_ptr_slot, &__quic_snapshot_len_slot)
+    %out_ptr = load __quic_snapshot_ptr_slot+0 as ptr
+    %out_len = load __quic_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_ADDRESS_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_addr_ptr_slot = stack_alloc 8
+    __quic_addr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_endpoint_address_json(%endpoint, &__quic_addr_ptr_slot, &__quic_addr_len_slot)
+    %out_ptr = load __quic_addr_ptr_slot+0 as ptr
+    %out_len = load __quic_addr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_REMOTE_ADDRESS_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __quic_raddr_ptr_slot = stack_alloc 8
+    __quic_raddr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_endpoint_remote_address_json(%endpoint, &__quic_raddr_ptr_slot, &__quic_raddr_len_slot)
+    %out_ptr = load __quic_raddr_ptr_slot+0 as ptr
+    %out_len = load __quic_raddr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_REF %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_ref(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_UNREF %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_unref(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_HAS_REF %out_status, %out_bool, %endpoint
+    __quic_has_ref_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_quic_endpoint_has_ref(%endpoint, &__quic_has_ref_slot)
+    %out_bool = load __quic_has_ref_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_CLOSE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_close(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_QUIC_ENDPOINT_FREE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_quic_endpoint_free(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_STATUS_JSON %out_ptr, %out_len
+    __http3_status_ptr_slot = stack_alloc 8
+    __http3_status_len_slot = stack_alloc 8
+    __http3_status_status = call @sa_node_plugin_http3_status_json(&__http3_status_ptr_slot, &__http3_status_len_slot)
+    !__http3_status_status
+    __http3_status_ptr = load __http3_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __http3_status_ptr, 0
+    !__http3_status_ptr
+    __http3_status_len = load __http3_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __http3_status_len, 0
+    !__http3_status_len
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __http3_exports_ptr_slot = stack_alloc 8
+    __http3_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_exports_json(&__http3_exports_ptr_slot, &__http3_exports_len_slot)
+    %out_ptr = load __http3_exports_ptr_slot+0 as ptr
+    %out_len = load __http3_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __http3_config_ptr_slot = stack_alloc 8
+    __http3_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_config_json(&__http3_config_ptr_slot, &__http3_config_len_slot)
+    %out_ptr = load __http3_config_ptr_slot+0 as ptr
+    %out_len = load __http3_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __http3_feature_ptr_slot = stack_alloc 8
+    __http3_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_feature_support_json(&__http3_feature_ptr_slot, &__http3_feature_len_slot)
+    %out_ptr = load __http3_feature_ptr_slot+0 as ptr
+    %out_len = load __http3_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __http3_constants_ptr_slot = stack_alloc 8
+    __http3_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_constants_json(&__http3_constants_ptr_slot, &__http3_constants_len_slot)
+    %out_ptr = load __http3_constants_ptr_slot+0 as ptr
+    %out_len = load __http3_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_CREATE_SESSION %out_session, %out_status, %endpoint, %authority, %authority_len, %path, %path_len, %method, %method_len
+    __http3_session_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_create_session(%endpoint, %authority, %authority_len, %path, %path_len, %method, %method_len, &__http3_session_slot)
+    %out_session = load __http3_session_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %session
+    __http3_snapshot_ptr_slot = stack_alloc 8
+    __http3_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_session_snapshot_json(%session, &__http3_snapshot_ptr_slot, &__http3_snapshot_len_slot)
+    %out_ptr = load __http3_snapshot_ptr_slot+0 as ptr
+    %out_len = load __http3_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_SEND_DATAGRAM %out_status, %session, %data, %data_len
+    %out_status = call @sa_node_plugin_http3_session_send_datagram(%session, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_RECV_DATAGRAM %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %session, %max_len
+    __http3_recv_ptr_slot = stack_alloc 8
+    __http3_recv_len_slot = stack_alloc 8
+    __http3_recv_host_ptr_slot = stack_alloc 8
+    __http3_recv_host_len_slot = stack_alloc 8
+    __http3_recv_port_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_http3_session_recv_datagram(%session, %max_len, &__http3_recv_ptr_slot, &__http3_recv_len_slot, &__http3_recv_host_ptr_slot, &__http3_recv_host_len_slot, &__http3_recv_port_slot)
+    %out_ptr = load __http3_recv_ptr_slot+0 as ptr
+    %out_len = load __http3_recv_len_slot+0 as u64
+    %out_host_ptr = load __http3_recv_host_ptr_slot+0 as ptr
+    %out_host_len = load __http3_recv_host_len_slot+0 as u64
+    %out_port = load __http3_recv_port_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_CLOSE %out_status, %session
+    %out_status = call @sa_node_plugin_http3_session_close(%session)
+[END_MACRO]
+
+[MACRO] NODE_HTTP3_SESSION_FREE %out_status, %session
+    %out_status = call @sa_node_plugin_http3_session_free(%session)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_STATUS_JSON %out_ptr, %out_len
+    __dtls_status_ptr_slot = stack_alloc 8
+    __dtls_status_len_slot = stack_alloc 8
+    __dtls_status_status = call @sa_node_plugin_dtls_status_json(&__dtls_status_ptr_slot, &__dtls_status_len_slot)
+    !__dtls_status_status
+    __dtls_status_ptr = load __dtls_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dtls_status_ptr, 0
+    !__dtls_status_ptr
+    __dtls_status_len = load __dtls_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dtls_status_len, 0
+    !__dtls_status_len
+[END_MACRO]
+
+[MACRO] NODE_DTLS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __dtls_exports_ptr_slot = stack_alloc 8
+    __dtls_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_exports_json(&__dtls_exports_ptr_slot, &__dtls_exports_len_slot)
+    %out_ptr = load __dtls_exports_ptr_slot+0 as ptr
+    %out_len = load __dtls_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DTLS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __dtls_config_ptr_slot = stack_alloc 8
+    __dtls_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_config_json(&__dtls_config_ptr_slot, &__dtls_config_len_slot)
+    %out_ptr = load __dtls_config_ptr_slot+0 as ptr
+    %out_len = load __dtls_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DTLS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __dtls_feature_ptr_slot = stack_alloc 8
+    __dtls_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_feature_support_json(&__dtls_feature_ptr_slot, &__dtls_feature_len_slot)
+    %out_ptr = load __dtls_feature_ptr_slot+0 as ptr
+    %out_len = load __dtls_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DTLS_CONNECT %out_endpoint, %out_status, %family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port
+    __dtls_connect_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_connect(%family, %remote_host, %remote_host_len, %remote_port, %local_host, %local_host_len, %local_port, &__dtls_connect_slot)
+    %out_endpoint = load __dtls_connect_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DTLS_LISTEN %out_endpoint, %out_status, %family, %host, %host_len, %port
+    __dtls_listen_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_listen(%family, %host, %host_len, %port, &__dtls_listen_slot)
+    %out_endpoint = load __dtls_listen_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DTLS_ENDPOINT_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %endpoint
+    __dtls_snapshot_ptr_slot = stack_alloc 8
+    __dtls_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_endpoint_snapshot_json(%endpoint, &__dtls_snapshot_ptr_slot, &__dtls_snapshot_len_slot)
+    %out_ptr = load __dtls_snapshot_ptr_slot+0 as ptr
+    %out_len = load __dtls_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DTLS_SEND %out_status, %endpoint, %data, %data_len
+    %out_status = call @sa_node_plugin_dtls_send(%endpoint, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_RECV %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %endpoint, %max_len
+    __dtls_recv_ptr_slot = stack_alloc 8
+    __dtls_recv_len_slot = stack_alloc 8
+    __dtls_recv_host_ptr_slot = stack_alloc 8
+    __dtls_recv_host_len_slot = stack_alloc 8
+    __dtls_recv_port_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dtls_recv(%endpoint, %max_len, &__dtls_recv_ptr_slot, &__dtls_recv_len_slot, &__dtls_recv_host_ptr_slot, &__dtls_recv_host_len_slot, &__dtls_recv_port_slot)
+    %out_ptr = load __dtls_recv_ptr_slot+0 as ptr
+    %out_len = load __dtls_recv_len_slot+0 as u64
+    %out_host_ptr = load __dtls_recv_host_ptr_slot+0 as ptr
+    %out_host_len = load __dtls_recv_host_len_slot+0 as u64
+    %out_port = load __dtls_recv_port_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DTLS_CLOSE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_dtls_close(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_DTLS_FREE %out_status, %endpoint
+    %out_status = call @sa_node_plugin_dtls_free(%endpoint)
+[END_MACRO]
+
+[MACRO] NODE_TLS_STATUS_JSON %out_ptr, %out_len
+    __tls_status_ptr_slot = stack_alloc 8
+    __tls_status_len_slot = stack_alloc 8
+    __tls_status_status = call @sa_node_plugin_tls_status_json(&__tls_status_ptr_slot, &__tls_status_len_slot)
+    !__tls_status_status
+    __tls_status_ptr = load __tls_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __tls_status_ptr, 0
+    !__tls_status_ptr
+    __tls_status_len = load __tls_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __tls_status_len, 0
+    !__tls_status_len
+[END_MACRO]
+
+[MACRO] NODE_TLS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __tls_exports_ptr_slot = stack_alloc 8
+    __tls_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_exports_json(&__tls_exports_ptr_slot, &__tls_exports_len_slot)
+    %out_ptr = load __tls_exports_ptr_slot+0 as ptr
+    %out_len = load __tls_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __tls_config_ptr_slot = stack_alloc 8
+    __tls_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_config_json(&__tls_config_ptr_slot, &__tls_config_len_slot)
+    %out_ptr = load __tls_config_ptr_slot+0 as ptr
+    %out_len = load __tls_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_TLS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __tls_feature_ptr_slot = stack_alloc 8
+    __tls_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_tls_feature_support_json(&__tls_feature_ptr_slot, &__tls_feature_len_slot)
+    %out_ptr = load __tls_feature_ptr_slot+0 as ptr
+    %out_len = load __tls_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_FS_STAT %out_ptr, %out_len, %out_status, %path, %path_len
     __fss_ptr_slot = stack_alloc 8
     __fss_len_slot = stack_alloc 8

@@ -1,6 +1,5 @@
 // SA tests for Node HTTP/3 top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.http3 top level helpers"():
 L_ENTRY:

@@ -63,14 +63,23 @@
 
 ## Current Helper Tranche
 
-- Scope: installed SA public facade aggregation for `node_extra` externs and macros
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for network top-level facades
+- Current status: `5 / 5` helper features completed (`100.0%`)
 - Planned helpers:
-  - installed `node.sal` imports `node_extra.sai`
-  - published plugin interface metadata includes `node_extra` companions
+  - `http2` top-level macros available through `node.sal`
+  - `quic` top-level macros available through `node.sal`
+  - `http3` top-level macros available through `node.sal`
+  - `dtls` top-level macros available through `node.sal`
+  - `tls` top-level macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` network top-level macro tranche completed:
+  - `http2` top-level macros available through `node.sal`
+  - `quic` top-level macros available through `node.sal`
+  - `http3` top-level macros available through `node.sal`
+  - `dtls` top-level macros available through `node.sal`
+  - `tls` top-level macros available through `node.sal`
 - installed SA public facade aggregation tranche completed:
   - installed `node.sal` imports `node_extra.sai`
   - published plugin interface metadata includes `node_extra` companions

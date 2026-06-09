@@ -1,6 +1,5 @@
 // SA tests for Node QUIC top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.quic top level helpers"():
 L_ENTRY:

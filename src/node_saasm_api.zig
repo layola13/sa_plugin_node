@@ -2346,7 +2346,12 @@ fn socketAddressCreate(address: []const u8, port: u64, family_text: []const u8, 
         try blockListParseAddressForFamily(allocator, address_text, f)
     else
         try blockListParseAddress(allocator, address_text.ptr, address_text.len);
+    return try socketAddressCreateFromParsed(allocator, parsed, port, flowlabel);
+}
+
+fn socketAddressCreateFromParsed(allocator: std.mem.Allocator, parsed: BlockListAddress, port: u64, flowlabel: u64) !*SaNetSocketAddress {
     errdefer allocator.free(parsed.text);
+    if (port > std.math.maxInt(u16) or flowlabel > std.math.maxInt(u32)) return error.InvalidSocketAddress;
     const handle = try allocator.create(SaNetSocketAddress);
     handle.* = .{
         .allocator = allocator,
@@ -2357,6 +2362,78 @@ fn socketAddressCreate(address: []const u8, port: u64, family_text: []const u8, 
         .flowlabel = @intCast(flowlabel),
     };
     return handle;
+}
+
+fn socketAddressParseLegacyIpv4Number(input: []const u8) !u64 {
+    if (input.len == 0) return error.InvalidSocketAddress;
+
+    var radix: u8 = 10;
+    var digits = input;
+    if (input.len >= 2 and input[0] == '0' and (input[1] == 'x' or input[1] == 'X')) {
+        radix = 16;
+        digits = input[2..];
+    } else if (input.len > 1 and input[0] == '0') {
+        radix = 8;
+        digits = input[1..];
+    }
+
+    if (digits.len == 0) return 0;
+
+    var value: u64 = 0;
+    for (digits) |c| {
+        const digit: u8 = if (c >= '0' and c <= '9')
+            c - '0'
+        else if (c >= 'a' and c <= 'f')
+            c - 'a' + 10
+        else if (c >= 'A' and c <= 'F')
+            c - 'A' + 10
+        else
+            return error.InvalidSocketAddress;
+        if (digit >= radix) return error.InvalidSocketAddress;
+        value = try std.math.mul(u64, value, radix);
+        value = try std.math.add(u64, value, digit);
+    }
+    return value;
+}
+
+fn socketAddressParseLegacyIpv4(allocator: std.mem.Allocator, host: []const u8) !BlockListAddress {
+    if (host.len == 0) return error.InvalidSocketAddress;
+
+    var parts: [4]u64 = undefined;
+    var part_count: usize = 0;
+    var start: usize = 0;
+    var i: usize = 0;
+    while (i <= host.len) : (i += 1) {
+        if (i == host.len or host[i] == '.') {
+            if (part_count == parts.len or i == start) return error.InvalidSocketAddress;
+            parts[part_count] = try socketAddressParseLegacyIpv4Number(host[start..i]);
+            part_count += 1;
+            start = i + 1;
+        }
+    }
+
+    const final_limits = [_]u64{ 0, 0xffff_ffff, 0x00ff_ffff, 0x0000_ffff, 0x0000_00ff };
+    var part_index: usize = 0;
+    while (part_index + 1 < part_count) : (part_index += 1) {
+        if (parts[part_index] > 0xff) return error.InvalidSocketAddress;
+    }
+    if (parts[part_count - 1] > final_limits[part_count]) return error.InvalidSocketAddress;
+
+    var ipv4 = parts[part_count - 1];
+    part_index = 0;
+    while (part_index + 1 < part_count) : (part_index += 1) {
+        const shift: u6 = @intCast(8 * (3 - part_index));
+        ipv4 += parts[part_index] << shift;
+    }
+
+    const canonical = try std.fmt.allocPrint(allocator, "{d}.{d}.{d}.{d}", .{
+        (ipv4 >> 24) & 0xff,
+        (ipv4 >> 16) & 0xff,
+        (ipv4 >> 8) & 0xff,
+        ipv4 & 0xff,
+    });
+    defer allocator.free(canonical);
+    return try blockListParseAddressForFamily(allocator, canonical, .ipv4);
 }
 
 fn socketAddressHandle(ptr: ?*anyopaque) ?*SaNetSocketAddress {
@@ -2494,14 +2571,16 @@ pub export fn sa_node_plugin_net_socket_address_parse(input_ptr: ?[*]const u8, i
         return 0;
     }
     const colon = std.mem.lastIndexOfScalar(u8, input, ':') orelse {
-        const handle = socketAddressCreate(input, 0, "ipv4", 0) catch return 2;
+        const parsed = socketAddressParseLegacyIpv4(std.heap.page_allocator, input) catch return 2;
+        const handle = socketAddressCreateFromParsed(std.heap.page_allocator, parsed, 0, 0) catch return 2;
         out.* = @ptrCast(handle);
         return 0;
     };
     if (std.mem.indexOfScalar(u8, input[0..colon], ':') != null) return 2;
     if (colon == 0) return 2;
     const port = std.fmt.parseInt(u16, input[colon + 1 ..], 10) catch return 2;
-    const handle = socketAddressCreate(input[0..colon], port, "ipv4", 0) catch return 2;
+    const parsed = socketAddressParseLegacyIpv4(std.heap.page_allocator, input[0..colon]) catch return 2;
+    const handle = socketAddressCreateFromParsed(std.heap.page_allocator, parsed, port, 0) catch return 2;
     out.* = @ptrCast(handle);
     return 0;
 }

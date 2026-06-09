@@ -113,6 +113,7 @@ L_ENTRY:
 @const S_SOCKET_RANGE_START = utf8:"10.0.0.10:0"
 @const S_SOCKET_RANGE_END = utf8:"10.0.0.20:0"
 @const S_SOCKET_RANGE_HIT = utf8:"10.0.0.15:0"
+@const S_SOCKET_LEGACY_IPV4 = utf8:"192.168.257:1"
 
 @test "node.net socket_address"():
 L_ENTRY:
@@ -140,6 +141,9 @@ L_ENTRY:
     parsed = add 0, 0
     sParse = add 0, 0
     EXPAND NODE_NET_SOCKET_ADDRESS_PARSE parsed, sParse, S_SOCKET_LOOP, 14
+    legacyParsed = add 0, 0
+    sLegacyParse = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_PARSE legacyParsed, sLegacyParse, S_SOCKET_LEGACY_IPV4, 13
     isSocketAddress = add 0, 0
     sIsSocketAddress = add 0, 0
     EXPAND NODE_NET_SOCKET_ADDRESS_IS_SOCKET_ADDRESS parsed, isSocketAddress, sIsSocketAddress
@@ -166,6 +170,8 @@ L_BLOCKLIST_IN_SOCKET_OK:
     EXPAND NODE_NET_BLOCKLIST_FREE bl, sFreeBl
     sFreeParsed = add 0, 0
     EXPAND NODE_NET_SOCKET_ADDRESS_FREE parsed, sFreeParsed
+    sFreeLegacyParsed = add 0, 0
+    EXPAND NODE_NET_SOCKET_ADDRESS_FREE legacyParsed, sFreeLegacyParsed
     sFreeAddr = add 0, 0
     EXPAND NODE_NET_SOCKET_ADDRESS_FREE addr, sFreeAddr
     sFreeJson = call @sa_node_plugin_free_buffer(jsonPtr, jsonLen)
@@ -175,6 +181,7 @@ L_BLOCKLIST_IN_SOCKET_OK:
     !sFreeFamily
     !sFreeJson
     !sFreeAddr
+    !sFreeLegacyParsed
     !sFreeParsed
     !sFreeBl
     !sCheck
@@ -185,6 +192,8 @@ L_BLOCKLIST_IN_SOCKET_OK:
     !isBlocklistInSocketTest
     !sIsSocketAddress
     !isSocketAddress
+    !sLegacyParse
+    !legacyParsed
     !sParse
     !sJson
     !jsonLen

@@ -5457,6 +5457,43 @@ test "node plugin net socket address parse and blocklist handle rules" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_port(parsed_v4, &port));
     try std.testing.expectEqual(@as(u64, 8080), port);
 
+    const LegacyParseCase = struct {
+        input: []const u8,
+        address: []const u8,
+        port: u64,
+        family: []const u8,
+    };
+    const legacy_cases = [_]LegacyParseCase{
+        .{ .input = "1.2.3.4", .address = "1.2.3.4", .port = 0, .family = "ipv4" },
+        .{ .input = "192.168.257:1", .address = "192.168.1.1", .port = 1, .family = "ipv4" },
+        .{ .input = "256", .address = "0.0.1.0", .port = 0, .family = "ipv4" },
+        .{ .input = "999999999:12", .address = "59.154.201.255", .port = 12, .family = "ipv4" },
+        .{ .input = "0xffffffff", .address = "255.255.255.255", .port = 0, .family = "ipv4" },
+        .{ .input = "0x.0x.0", .address = "0.0.0.0", .port = 0, .family = "ipv4" },
+    };
+    for (legacy_cases) |item| {
+        var parsed_legacy: ?*anyopaque = null;
+        try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_parse(item.input.ptr, item.input.len, &parsed_legacy));
+
+        var legacy_address_ptr: ?[*]const u8 = null;
+        var legacy_address_len: u64 = 0;
+        try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_address(parsed_legacy, &legacy_address_ptr, &legacy_address_len));
+        try std.testing.expectEqualStrings(item.address, (legacy_address_ptr orelse return error.NullLegacySocketAddress)[0..@intCast(legacy_address_len)]);
+
+        var legacy_family_ptr: ?[*]const u8 = null;
+        var legacy_family_len: u64 = 0;
+        try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_family(parsed_legacy, &legacy_family_ptr, &legacy_family_len));
+        try std.testing.expectEqualStrings(item.family, (legacy_family_ptr orelse return error.NullLegacySocketFamily)[0..@intCast(legacy_family_len)]);
+
+        var legacy_port: u64 = 99;
+        try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_port(parsed_legacy, &legacy_port));
+        try std.testing.expectEqual(item.port, legacy_port);
+
+        _ = plugin.sa_node_plugin_free_buffer(legacy_family_ptr, legacy_family_len);
+        _ = plugin.sa_node_plugin_free_buffer(legacy_address_ptr, legacy_address_len);
+        _ = plugin.sa_node_plugin_net_socket_address_free(parsed_legacy);
+    }
+
     var parsed_v6: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_parse("[2001:db8::1]:443", 17, &parsed_v6));
     defer _ = plugin.sa_node_plugin_net_socket_address_free(parsed_v6);
@@ -5516,6 +5553,10 @@ test "node plugin net socket address parse and blocklist handle rules" {
 
     try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("127.0.0.1:bad", 13, &parsed_v4) != 0);
     try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("2001:db8::1:443", 15, &parsed_v6) != 0);
+    try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("not an ip", 9, &parsed_v4) != 0);
+    try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("abc.123", 7, &parsed_v4) != 0);
+    try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("259.1.1.1", 9, &parsed_v4) != 0);
+    try std.testing.expect(plugin.sa_node_plugin_net_socket_address_parse("12:12:12", 8, &parsed_v4) != 0);
     try std.testing.expect(plugin.sa_node_plugin_net_socket_address_new("127.0.0.1", 9, 65536, "ipv4", 4, 0, &parsed_v4) != 0);
     try std.testing.expect(plugin.sa_node_plugin_net_socket_address_new("127.0.0.1", 9, 0, "ip4", 3, 0, &parsed_v4) != 0);
     try std.testing.expect(plugin.sa_node_plugin_net_blocklist_check_handle(blocklist, null, &blocked) != 0);

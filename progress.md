@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: net listen options JSON compatibility
+- Scope: net.SocketAddress.parse legacy IPv4 normalization compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net` has an explicit listen options JSON facade that maps common Node `Server.listen(options)` TCP and Unix path options onto the existing native listener helpers
+  - `net.SocketAddress.parse` accepts common Node legacy IPv4 URL normalization forms while keeping `SocketAddress` construction strict
 
 ## Recent Completed Helper Features
+
+- network net.SocketAddress.parse legacy IPv4 normalization compatibility completed:
+  - Added parse-only legacy IPv4 normalization for Node-compatible inputs such as `192.168.257:1`, `256`, `999999999:12`, `0xffffffff`, and `0x.0x.0`
+  - The normalized path reuses the existing native blocklist/socket-address parser after canonicalizing to dotted IPv4 text, so stored address text and bytes stay aligned with the existing std-backed address path
+  - `SocketAddress` construction remains strict and still rejects non-canonical addresses unless they are parsed through `SocketAddress.parse`
+  - `tests/plugin_test.zig` covers Node's good/bad `SocketAddress.parse()` cases, and `tests/node_test_net_extra.sa` validates the public `NODE_NET_SOCKET_ADDRESS_PARSE` facade with a legacy IPv4 input
 
 - network net listen options JSON compatibility completed:
   - Added `sa_node_plugin_net_listen_options` and `NODE_NET_LISTEN_OPTIONS` for common Node listen options: TCP `host`/`port` and Unix `path`

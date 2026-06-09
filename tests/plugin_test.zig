@@ -5376,6 +5376,25 @@ test "node plugin net createConnection options JSON applies common connect optio
     try std.testing.expect(invalid_client == null);
 }
 
+test "node plugin net listen options JSON creates TCP listener" {
+    const options = "{\"host\":\"127.0.0.1\",\"port\":0}";
+    var server: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_listen_options(options.ptr, options.len, &server));
+    defer _ = plugin.sa_node_plugin_net_end(server);
+
+    var addr_ptr: ?[*]const u8 = null;
+    var addr_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_address(server, &addr_ptr, &addr_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(addr_ptr, addr_len);
+    const address_json = (addr_ptr orelse return error.NullNetListenOptionsAddress)[0..@intCast(addr_len)];
+    const listener_port = try jsonU16Field(address_json, "port");
+    try std.testing.expect(listener_port != 0);
+
+    var invalid_server: ?*anyopaque = @ptrFromInt(@as(usize, 0x1));
+    try std.testing.expect(plugin.sa_node_plugin_net_listen_options("{}", 2, &invalid_server) != 0);
+    try std.testing.expect(invalid_server == null);
+}
+
 test "node plugin net socket address exposes properties and JSON" {
     var addr: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_net_socket_address_new("127.0.0.1", 9, 8080, "ipv4", 4, 0, &addr));

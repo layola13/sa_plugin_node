@@ -3730,6 +3730,42 @@ pub export fn sa_node_plugin_net_create_connection_options(host_ptr: ?[*]const u
     return base.sa_node_plugin_net_connect_options(host.ptr, host.len, remote_port, family, local.ptr, local.len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms, null, out_socket);
 }
 
+pub export fn sa_node_plugin_net_listen_options(options_json_ptr: ?[*]const u8, options_json_len: u64, out_server: ?*?*anyopaque) u32 {
+    const out = out_server orelse return fail();
+    out.* = null;
+    const options_json = (options_json_ptr orelse return fail())[0..options_json_len];
+    if (options_json.len == 0) return fail();
+
+    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, options_json, .{}) catch return fail();
+    defer parsed.deinit();
+    if (parsed.value != .object) return fail();
+    const object = parsed.value.object;
+
+    if (object.get("path")) |value| {
+        if (value != .string or value.string.len == 0) return fail();
+        return base.sa_node_plugin_net_listen_unix(value.string.ptr, value.string.len, out_server);
+    }
+
+    var port_present = false;
+    var port: u64 = 0;
+    if (object.get("port")) |value| {
+        port_present = true;
+        port = switch (value) {
+            .null => 0,
+            else => netJsonU64(value) orelse return fail(),
+        };
+    }
+    if (!port_present) return fail();
+
+    var host: []const u8 = "0.0.0.0";
+    if (object.get("host")) |value| {
+        if (value != .string) return fail();
+        if (value.string.len != 0) host = value.string;
+    }
+
+    return base.sa_node_plugin_net_listen(host.ptr, host.len, port, out_server);
+}
+
 pub export fn sa_node_plugin_net_create_server(out_server: ?*?*anyopaque) u32 {
     const host = "0.0.0.0";
     return base.sa_node_plugin_net_listen(host.ptr, host.len, 0, out_server);

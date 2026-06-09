@@ -2656,6 +2656,12 @@
     %out_server = load __netsu_slot+0 as ptr
 [END_MACRO]
 
+[MACRO] NODE_NET_LISTEN_OPTIONS %options_json, %options_json_len, %out_server, %out_status
+    __net_listen_options_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_listen_options(&%options_json, %options_json_len, &__net_listen_options_slot)
+    %out_server = load __net_listen_options_slot+0 as ptr
+[END_MACRO]
+
 [MACRO] NODE_NET_ACCEPT %server, %out_socket, %out_status
     __neta_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_net_accept(%server, &__neta_slot)

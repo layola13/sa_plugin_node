@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: net.createConnection options JSON compatibility
+- Scope: net listen options JSON compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net.createConnection` has an explicit options JSON facade that maps common Node connect options onto the existing native `connect_options` path
+  - `net` has an explicit listen options JSON facade that maps common Node `Server.listen(options)` TCP and Unix path options onto the existing native listener helpers
 
 ## Recent Completed Helper Features
+
+- network net listen options JSON compatibility completed:
+  - Added `sa_node_plugin_net_listen_options` and `NODE_NET_LISTEN_OPTIONS` for common Node listen options: TCP `host`/`port` and Unix `path`
+  - The new helper reuses the existing native `sa_node_plugin_net_listen` and `sa_node_plugin_net_listen_unix` paths instead of duplicating listener setup logic
+  - Net status and feature-support JSON now report `listenOptions` support
+  - `tests/node_test_net_extra.sa` validates the listen options facade against a real local TCP listener using `port:0`
 
 - network net.createConnection options JSON compatibility completed:
   - Added `sa_node_plugin_net_create_connection_options` and `NODE_NET_CREATE_CONNECTION_OPTIONS` for common Node options: `host`, `hostname`, `port`, `family`, `localAddress`, `localPort`, `noDelay`, `keepAlive`, `keepAliveInitialDelay`, `keepAliveInitialDelaySecs`, `timeoutMs`, and `timeout`

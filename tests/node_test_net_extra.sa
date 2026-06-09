@@ -1,6 +1,7 @@
 // SA tests for Node net extras
 @import "../node.sal"
 @const S_HOST = utf8:"127.0.0.1"
+@const S_LISTEN_OPTIONS = utf8:"{\"host\":\"127.0.0.1\",\"port\":0}"
 
 @test "node.net create_server"():
 L_ENTRY:
@@ -10,6 +11,52 @@ L_ENTRY:
     !s
     !srv
     return
+
+@test "node.net listen_options"():
+L_ENTRY:
+    srv = add 0, 0
+    s_listen = add 0, 0
+    EXPAND NODE_NET_LISTEN_OPTIONS S_LISTEN_OPTIONS, 29, srv, s_listen
+    listen_ok = eq s_listen, 0
+    br listen_ok -> L_ADDRESS, L_ERR_LISTEN
+L_ADDRESS:
+    !listen_ok
+    addr_ptr = add 0, 0
+    addr_len = add 0, 0
+    s_addr = add 0, 0
+    EXPAND NODE_NET_SERVER_ADDRESS srv, addr_ptr, addr_len, s_addr
+    addr_ok = eq s_addr, 0
+    br addr_ok -> L_ADDRESS_LEN, L_ERR_ADDRESS
+L_ADDRESS_LEN:
+    !addr_ok
+    has_len = ugt addr_len, 0
+    br has_len -> L_CLOSE, L_ERR_ADDRESS_LEN
+L_CLOSE:
+    !has_len
+    s_close = add 0, 0
+    EXPAND NODE_NET_END srv, s_close
+    free_addr = call @sa_node_plugin_free_buffer(addr_ptr, addr_len)
+    !free_addr
+    !s_close
+    !s_addr
+    !addr_len
+    !addr_ptr
+    !s_listen
+    !srv
+    return
+L_ERR_LISTEN:
+    !listen_ok
+    !s_listen
+    panic(103)
+L_ERR_ADDRESS:
+    !addr_ok
+    !s_addr
+    panic(103)
+L_ERR_ADDRESS_LEN:
+    !has_len
+    !addr_len
+    !addr_ptr
+    panic(103)
 
 @test "node.net is_ipv4"():
 L_ENTRY:

@@ -3736,6 +3736,18 @@
     !__m_load_net_create_connection_options
 [END_MACRO]
 
+[MACRO] NODE_NET_LISTEN_OPTIONS %p_0, %p_1, %p_2, %p_3
+    __m_slot_net_listen_options = stack_alloc 8
+    __m_status_net_listen_options = call @sa_node_plugin_net_listen_options(&%p_0, %p_1, &__m_slot_net_listen_options)
+    !%p_3
+    %p_3 = add __m_status_net_listen_options, 0
+    !__m_status_net_listen_options
+    __m_load_net_listen_options = load __m_slot_net_listen_options+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_net_listen_options, 0
+    !__m_load_net_listen_options
+[END_MACRO]
+
 [MACRO] NODE_NET_CREATE_SERVER %p_0, %p_1
     __m_slot_b31b1cd1_0 = stack_alloc 8
     __m_status_b31b1cd1 = call @sa_node_plugin_net_create_server(&__m_slot_b31b1cd1_0)

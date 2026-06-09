@@ -1,6 +1,5 @@
 // SA tests for Node SEA: get_asset_as_blob
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test-key"
 
 @test "node.sea get_asset_as_blob"():

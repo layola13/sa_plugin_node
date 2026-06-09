@@ -1,6 +1,5 @@
 // SA tests for SEA extras: status_json, get_raw_asset, get_asset_as_blob
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test-key"
 
 @test "node.sea status_json"():

@@ -1,6 +1,5 @@
 // SA tests for Node SEA extras: is_sea, asset_keys_json, status_json
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.sea is_sea"():
 L_ENTRY:

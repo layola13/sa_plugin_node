@@ -7147,3 +7147,123 @@
     %out_ptr = load __m_report_feature_ptr_slot+0 as ptr
     %out_len = load __m_report_feature_len_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_SEA_IS_SEA %p_0
+    __m_slot_dee6fc6b_0 = stack_alloc 8
+    __m_status_dee6fc6b = call @sa_node_plugin_sea_is_sea(&__m_slot_dee6fc6b_0)
+    !__m_status_dee6fc6b
+    __m_load_dee6fc6b_p_0 = load __m_slot_dee6fc6b_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_dee6fc6b_p_0, 0
+    !__m_load_dee6fc6b_p_0
+[END_MACRO]
+
+[MACRO] NODE_SEA_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_795bed81_0 = stack_alloc 8
+    __m_slot_795bed81_1 = stack_alloc 8
+    __m_status_795bed81 = call @sa_node_plugin_sea_status_json(&__m_slot_795bed81_0, &__m_slot_795bed81_1)
+    !%p_2
+    %p_2 = add __m_status_795bed81, 0
+    !__m_status_795bed81
+    __m_load_795bed81_p_0 = load __m_slot_795bed81_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_795bed81_p_0, 0
+    !__m_load_795bed81_p_0
+    __m_load_795bed81_p_1 = load __m_slot_795bed81_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_795bed81_p_1, 0
+    !__m_load_795bed81_p_1
+[END_MACRO]
+
+[MACRO] NODE_SEA_TOP_STATUS_JSON %out_ptr, %out_len, %out_status
+    __m_sea_top_status_ptr_slot = stack_alloc 8
+    __m_sea_top_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sea_status_json(&__m_sea_top_status_ptr_slot, &__m_sea_top_status_len_slot)
+    %out_ptr = load __m_sea_top_status_ptr_slot+0 as ptr
+    %out_len = load __m_sea_top_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SEA_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_sea_top_exports_ptr_slot = stack_alloc 8
+    __m_sea_top_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sea_exports_json(&__m_sea_top_exports_ptr_slot, &__m_sea_top_exports_len_slot)
+    %out_ptr = load __m_sea_top_exports_ptr_slot+0 as ptr
+    %out_len = load __m_sea_top_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SEA_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_sea_top_config_ptr_slot = stack_alloc 8
+    __m_sea_top_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sea_config_json(&__m_sea_top_config_ptr_slot, &__m_sea_top_config_len_slot)
+    %out_ptr = load __m_sea_top_config_ptr_slot+0 as ptr
+    %out_len = load __m_sea_top_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SEA_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_sea_top_feature_ptr_slot = stack_alloc 8
+    __m_sea_top_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_sea_feature_support_json(&__m_sea_top_feature_ptr_slot, &__m_sea_top_feature_len_slot)
+    %out_ptr = load __m_sea_top_feature_ptr_slot+0 as ptr
+    %out_len = load __m_sea_top_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_SEA_ASSET_KEYS_JSON %p_0, %p_1
+    __m_slot_25753416_0 = stack_alloc 8
+    __m_slot_25753416_1 = stack_alloc 8
+    __m_status_25753416 = call @sa_node_plugin_sea_asset_keys_json(&__m_slot_25753416_0, &__m_slot_25753416_1)
+    !__m_status_25753416
+    __m_load_25753416_p_0 = load __m_slot_25753416_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_25753416_p_0, 0
+    !__m_load_25753416_p_0
+    __m_load_25753416_p_1 = load __m_slot_25753416_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_25753416_p_1, 0
+    !__m_load_25753416_p_1
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_ASSET %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_46ba710a_0 = stack_alloc 8
+    __m_slot_46ba710a_1 = stack_alloc 8
+    __m_status_46ba710a = call @sa_node_plugin_sea_get_asset(%p_0, %p_1, %p_2, %p_3, &__m_slot_46ba710a_0, &__m_slot_46ba710a_1)
+    !%p_6
+    %p_6 = add __m_status_46ba710a, 0
+    !__m_status_46ba710a
+    __m_load_46ba710a_p_4 = load __m_slot_46ba710a_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_46ba710a_p_4, 0
+    !__m_load_46ba710a_p_4
+    __m_load_46ba710a_p_5 = load __m_slot_46ba710a_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_46ba710a_p_5, 0
+    !__m_load_46ba710a_p_5
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_RAW_ASSET %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_30dd7754_0 = stack_alloc 8
+    __m_slot_30dd7754_1 = stack_alloc 8
+    __m_status_30dd7754 = call @sa_node_plugin_sea_get_raw_asset(%p_0, %p_1, &__m_slot_30dd7754_0, &__m_slot_30dd7754_1)
+    !%p_4
+    %p_4 = add __m_status_30dd7754, 0
+    !__m_status_30dd7754
+    __m_load_30dd7754_p_2 = load __m_slot_30dd7754_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_30dd7754_p_2, 0
+    !__m_load_30dd7754_p_2
+    __m_load_30dd7754_p_3 = load __m_slot_30dd7754_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_30dd7754_p_3, 0
+    !__m_load_30dd7754_p_3
+[END_MACRO]
+
+[MACRO] NODE_SEA_GET_ASSET_AS_BLOB %p_0, %p_1, %p_2, %p_3
+    __m_slot_1c5d5bd7_0 = stack_alloc 8
+    __m_status_1c5d5bd7 = call @sa_node_plugin_sea_get_asset_as_blob(%p_0, %p_1, &__m_slot_1c5d5bd7_0)
+    !%p_3
+    %p_3 = add __m_status_1c5d5bd7, 0
+    !__m_status_1c5d5bd7
+    __m_load_1c5d5bd7_p_2 = load __m_slot_1c5d5bd7_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_1c5d5bd7_p_2, 0
+    !__m_load_1c5d5bd7_p_2
+[END_MACRO]

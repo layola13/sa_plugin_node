@@ -1,6 +1,5 @@
 // SA tests for Node SEA: get_asset
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test-key"
 @const S_ENC = utf8:"utf8"
 

@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `report`
+- Scope: installed main `node.sal` public macro coverage for `sea`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `report` status, `getReport`, `writeReport`, and top-level metadata helpers available through `node.sal`
+  - `sea` top-level metadata, `isSea`, asset-key, and asset fetch helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` sea helper macro tranche completed:
+  - `sea` status, top-level status/exports/config/feature-support, `isSea`, asset-keys, `getAsset`, `getRawAsset`, and `getAssetAsBlob` helpers available through `node.sal`
+  - `tests/node_test_sea.sa`, `node_test_sea_top.sa`, `node_test_sea_extra.sa`, `node_test_sea_get_asset.sa`, `node_test_sea_raw.sa`, and `node_test_sea_blob.sa` now validate through `node.sal` only
 
 - installed main `node.sal` report helper macro tranche completed:
   - `report` status, `getReport`, `writeReport`, exports, config, and feature-support helpers available through `node.sal`

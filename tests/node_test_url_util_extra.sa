@@ -16,6 +16,7 @@
 @const S_FMT = utf8:"hello %s"
 @const S_ARGS = utf8:"[\"world\"]"
 @const S_FMT_OPTIONS = utf8:"{\"colors\":false}"
+@const S_UTF8 = utf8:"utf-8"
 
 @test "node.url new and free succeeds"():
 L_ENTRY:
@@ -323,6 +324,72 @@ L_ERR:
     !l
     !s
     panic(103)
+
+@test "node.util text_encoder encode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_TEXT_ENCODER_ENCODE S_MSG, 8, p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN, L_ERR
+L_LEN:
+    !ok
+    ok_len = eq l, 8
+    br ok_len -> L_OK, L_LEN_ERR
+L_OK:
+    !ok_len
+    free_enc = call @sa_node_plugin_free_buffer(p, l)
+    !free_enc
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !ok_len
+    !p
+    !l
+    !s
+    panic(104)
+
+@test "node.util text_decoder decode succeeds"():
+L_ENTRY:
+    p = add 0, 0
+    l = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_UTIL_TEXT_DECODER_DECODE S_MSG, 8, S_UTF8, 5, p, l, s
+    ok = eq s, 0
+    br ok -> L_LEN, L_ERR
+L_LEN:
+    !ok
+    ok_len = eq l, 8
+    br ok_len -> L_OK, L_LEN_ERR
+L_OK:
+    !ok_len
+    free_dec = call @sa_node_plugin_free_buffer(p, l)
+    !free_dec
+    !s
+    !p
+    !l
+    return
+L_ERR:
+    !ok
+    !p
+    !l
+    !s
+    panic(103)
+L_LEN_ERR:
+    !ok_len
+    !p
+    !l
+    !s
+    panic(104)
 
 @test "node.util debuglog succeeds"():
 L_ENTRY:

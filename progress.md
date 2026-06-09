@@ -63,15 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` command-line helper parity by exposing native launch snapshots
-- Current status: `3 / 3` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `util` text codec helper parity by exposing native UTF-8 encode/decode helpers
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.execPath`
-  - `process.argv0`
-  - `process.execArgv`
+  - `util.TextEncoder`
+  - `util.TextDecoder`
 
 ## Recent Completed Helper Features
 
+- `util` text codec helper tranche completed:
+  - `util.TextEncoder`
+  - `util.TextDecoder`
 - `process` command-line helper tranche completed:
   - `process.execPath`
   - `process.argv0`

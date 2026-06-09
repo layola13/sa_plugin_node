@@ -4519,6 +4519,40 @@
     !__m_load_8684af3d_p_5
 [END_MACRO]
 
+[MACRO] NODE_UTIL_TEXT_ENCODER_ENCODE %text_ptr, %text_len, %out_ptr, %out_len, %out_status
+    __util_text_encoder_ptr_slot = stack_alloc 8
+    __util_text_encoder_len_slot = stack_alloc 8
+    __util_text_encoder_status = call @sa_node_plugin_util_text_encoder_encode(%text_ptr, %text_len, &__util_text_encoder_ptr_slot, &__util_text_encoder_len_slot)
+    !%out_status
+    %out_status = add __util_text_encoder_status, 0
+    !__util_text_encoder_status
+    __util_text_encoder_ptr = load __util_text_encoder_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_text_encoder_ptr, 0
+    !__util_text_encoder_ptr
+    __util_text_encoder_len = load __util_text_encoder_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_text_encoder_len, 0
+    !__util_text_encoder_len
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TEXT_DECODER_DECODE %data_ptr, %data_len, %encoding_ptr, %encoding_len, %out_ptr, %out_len, %out_status
+    __util_text_decoder_ptr_slot = stack_alloc 8
+    __util_text_decoder_len_slot = stack_alloc 8
+    __util_text_decoder_status = call @sa_node_plugin_util_text_decoder_decode(%data_ptr, %data_len, %encoding_ptr, %encoding_len, &__util_text_decoder_ptr_slot, &__util_text_decoder_len_slot)
+    !%out_status
+    %out_status = add __util_text_decoder_status, 0
+    !__util_text_decoder_status
+    __util_text_decoder_ptr = load __util_text_decoder_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_text_decoder_ptr, 0
+    !__util_text_decoder_ptr
+    __util_text_decoder_len = load __util_text_decoder_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_text_decoder_len, 0
+    !__util_text_decoder_len
+[END_MACRO]
+
 [MACRO] NODE_READLINE_CLEAR_LINE %p_0, %p_1
     __m_status_e82318fb = call @sa_node_plugin_readline_clear_line(%p_0, %p_1)
     !__m_status_e82318fb

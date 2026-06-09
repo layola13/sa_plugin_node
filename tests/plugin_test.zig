@@ -2744,6 +2744,8 @@ test "node plugin util top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-util-facade\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"parseArgs\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"formatWithOptions\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"TextEncoder\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"TextDecoder\":true") != null);
 
     var exports_ptr: ?[*]const u8 = null;
     var exports_len: u64 = 0;
@@ -2752,6 +2754,8 @@ test "node plugin util top-level facade helpers" {
     const exports_json = (exports_ptr orelse return error.NullUtilTopExports)[0..@intCast(exports_len)];
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"format\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"MIMEType\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"TextEncoder\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"TextDecoder\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"parseArgs\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
@@ -2760,6 +2764,7 @@ test "node plugin util top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullUtilTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"wrapModel\":\"callbackify and promisify return native wrapper metadata rather than JavaScript callable wrappers\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"textCodecModel\":\"explicit native UTF-8 TextEncoder/TextDecoder-compatible helpers") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"mimeModel\":\"MIMEType compatibility is modeled as filename/path media-type lookup JSON rather than WHATWG MIME classes\"") != null);
 
     var feature_ptr: ?[*]const u8 = null;
@@ -2770,8 +2775,22 @@ test "node plugin util top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"format\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"formatWithOptions\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"MIMEType\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"TextEncoder\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"TextDecoder\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"parseEnv\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"getSystemErrorMap\":{\"supported\":true") != null);
+
+    var encoded_ptr: ?[*]const u8 = null;
+    var encoded_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_text_encoder_encode("test msg".ptr, 8, &encoded_ptr, &encoded_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(encoded_ptr, encoded_len);
+    try std.testing.expectEqualStrings("test msg", (encoded_ptr orelse return error.NullUtilTextEncoderEncode)[0..@intCast(encoded_len)]);
+
+    var decoded_ptr: ?[*]const u8 = null;
+    var decoded_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_util_text_decoder_decode("test msg".ptr, 8, "utf-8".ptr, 5, &decoded_ptr, &decoded_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(decoded_ptr, decoded_len);
+    try std.testing.expectEqualStrings("test msg", (decoded_ptr orelse return error.NullUtilTextDecoderDecode)[0..@intCast(decoded_len)]);
 
     var parse_env_ptr: ?[*]const u8 = null;
     var parse_env_len: u64 = 0;

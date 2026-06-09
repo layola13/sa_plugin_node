@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `vfs`
+- Scope: network DNS RRtype dispatch alignment for top-level `dns.resolve`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - VFS lifecycle, file, directory, metadata, mutation, symlink, watcher, cwd, and snapshot helpers available through `node.sal`
+  - Top-level `NODE_DNS_RESOLVE` dispatches through the existing native resolver surface for A, AAAA, CNAME, MX, NS, TXT, SRV, PTR, CAA, NAPTR, SOA, TLSA, and ANY instead of only the base A-record helper
 
 ## Recent Completed Helper Features
+
+- network DNS RRtype dispatch alignment completed:
+  - Top-level `NODE_DNS_RESOLVE` now reuses the existing native resolver implementation exposed through `node_extra.sai`, keeping the public `node.sal` facade aligned with the broader resolver and `dns.promises.resolve` behavior
+  - `tests/node_test_dns_resolve.sa` now validates non-A RRtype dispatch through `node.sal`
 
 - installed main `node.sal` vfs helper macro tranche completed:
   - VFS status, lifecycle, file read/write/open handle, directory iteration, metadata, mutation, symlink, watcher, cwd, realpath, and snapshot helpers available through `node.sal`

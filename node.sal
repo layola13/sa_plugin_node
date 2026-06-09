@@ -2575,7 +2575,7 @@
 [MACRO] NODE_DNS_RESOLVE %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %rrtype, %rrtype_len
     __dnsr_ptr_slot = stack_alloc 8
     __dnsr_len_slot = stack_alloc 8
-    %out_status = call @sa_node_plugin_dns_resolve(&%hostname, %hostname_len, &%rrtype, %rrtype_len, &__dnsr_ptr_slot, &__dnsr_len_slot)
+    %out_status = call @sa_node_plugin_dns_promises_resolve(%hostname, %hostname_len, %rrtype, %rrtype_len, &__dnsr_ptr_slot, &__dnsr_len_slot)
     %out_ptr = load __dnsr_ptr_slot+0 as ptr
     %out_len = load __dnsr_len_slot+0 as u64
 [END_MACRO]

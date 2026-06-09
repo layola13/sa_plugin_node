@@ -1,7 +1,9 @@
 // SA tests for Node DNS resolve (from node.sal)
 @import "../node.sal"
 @const S_HOST = utf8:"localhost"
+@const S_EXAMPLE = utf8:"example.com"
 @const S_A = utf8:"A"
+@const S_CNAME = utf8:"CNAME"
 
 @test "node.dns resolve"():
 L_ENTRY:
@@ -13,3 +15,33 @@ L_ENTRY:
     !ol
     !op
     return
+
+@test "node.dns resolve dispatches non-A rrtype"():
+L_ENTRY:
+    op = add 0, 0
+    ol = add 0, 0
+    s = add 0, 0
+    EXPAND NODE_DNS_RESOLVE op, ol, s, S_EXAMPLE, 11, S_CNAME, 5
+    ok = eq s, 0
+    br ok -> L_LEN, L_ERR_STATUS
+L_LEN:
+    !ok
+    has_len = ugt ol, 0
+    br has_len -> L_OK, L_ERR_LEN
+L_OK:
+    !has_len
+    free_status = call @sa_node_plugin_free_buffer(op, ol)
+    !free_status
+    !s
+    !ol
+    !op
+    return
+L_ERR_STATUS:
+    !ok
+    !s
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    !ol
+    !op
+    panic(103)

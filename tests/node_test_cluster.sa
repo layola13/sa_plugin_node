@@ -1,6 +1,5 @@
 // SA tests for Node cluster native compatibility subset
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_CAT = utf8:"/bin/cat"
 @const S_SIGTERM = utf8:"SIGTERM"
 @const S_CLUSTER_JSON = utf8:"{\"exec\":\"/bin/cat\",\"cwd\":\".\",\"env\":{\"CLUSTER_TEST\":\"1\"}}"

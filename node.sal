@@ -7801,3 +7801,154 @@
     %p_1 = add __m_load_d6b6fbf1_p_1, 0
     !__m_load_d6b6fbf1_p_1
 [END_MACRO]
+
+[MACRO] NODE_CLUSTER_IS_PRIMARY %out_bool, %out_status
+    __m_cluster_primary_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_is_primary(&__m_cluster_primary_slot)
+    %out_bool = load __m_cluster_primary_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_IS_WORKER %out_bool, %out_status
+    __m_cluster_worker_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_is_worker(&__m_cluster_worker_slot)
+    %out_bool = load __m_cluster_worker_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_GET_SCHEDULING_POLICY %out_policy, %out_status
+    __m_cluster_sched_get_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_get_scheduling_policy(&__m_cluster_sched_get_slot)
+    %out_policy = load __m_cluster_sched_get_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_SET_SCHEDULING_POLICY %policy, %out_status
+    %out_status = call @sa_node_plugin_cluster_set_scheduling_policy(%policy)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_SETUP_PRIMARY %exec, %exec_len, %args, %args_len, %out_status
+    %out_status = call @sa_node_plugin_cluster_setup_primary(%exec, %exec_len, %args, %args_len)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_SETUP_PRIMARY_JSON %config, %config_len, %out_status
+    %out_status = call @sa_node_plugin_cluster_setup_primary_json(%config, %config_len)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_PRIMARY_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_cluster_primary_snapshot_ptr_slot = stack_alloc 8
+    __m_cluster_primary_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_primary_snapshot_json(&__m_cluster_primary_snapshot_ptr_slot, &__m_cluster_primary_snapshot_len_slot)
+    %out_ptr = load __m_cluster_primary_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_primary_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_FORK %out_worker, %out_status, %exec, %exec_len, %args, %args_len
+    __m_cluster_fork_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_fork(%exec, %exec_len, %args, %args_len, &__m_cluster_fork_slot)
+    %out_worker = load __m_cluster_fork_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_PID %out_pid, %out_status, %worker
+    __m_cluster_pid_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_pid(%worker, &__m_cluster_pid_slot)
+    %out_pid = load __m_cluster_pid_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_SEND_MESSAGE %out_status, %worker, %data, %data_len
+    %out_status = call @sa_node_plugin_cluster_worker_send_message(%worker, %data, %data_len)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_RECEIVE_MESSAGE %out_ptr, %out_len, %out_status, %worker
+    __m_cluster_recv_ptr_slot = stack_alloc 8
+    __m_cluster_recv_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_receive_message(%worker, &__m_cluster_recv_ptr_slot, &__m_cluster_recv_len_slot)
+    %out_ptr = load __m_cluster_recv_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_recv_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_DISCONNECT %out_status, %worker
+    %out_status = call @sa_node_plugin_cluster_worker_disconnect(%worker)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_KILL %out_status, %worker, %signal
+    %out_status = call @sa_node_plugin_cluster_worker_kill(%worker, %signal)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_KILL_SIGNAL %out_status, %worker, %signal_ptr, %signal_len
+    %out_status = call @sa_node_plugin_cluster_worker_kill_signal(%worker, %signal_ptr, %signal_len)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_IS_CONNECTED %out_bool, %out_status, %worker
+    __m_cluster_connected_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_is_connected(%worker, &__m_cluster_connected_slot)
+    %out_bool = load __m_cluster_connected_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_IS_ALIVE %out_bool, %out_status, %worker
+    __m_cluster_alive_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_is_alive(%worker, &__m_cluster_alive_slot)
+    %out_bool = load __m_cluster_alive_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_EXITED_AFTER_DISCONNECT %out_bool, %out_status, %worker
+    __m_cluster_exited_after_disconnect_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_exited_after_disconnect(%worker, &__m_cluster_exited_after_disconnect_slot)
+    %out_bool = load __m_cluster_exited_after_disconnect_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_WAIT_JSON %out_ptr, %out_len, %out_status, %worker
+    __m_cluster_wait_ptr_slot = stack_alloc 8
+    __m_cluster_wait_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_wait_json(%worker, &__m_cluster_wait_ptr_slot, &__m_cluster_wait_len_slot)
+    %out_ptr = load __m_cluster_wait_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_wait_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %worker
+    __m_cluster_snapshot_ptr_slot = stack_alloc 8
+    __m_cluster_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_worker_snapshot_json(%worker, &__m_cluster_snapshot_ptr_slot, &__m_cluster_snapshot_len_slot)
+    %out_ptr = load __m_cluster_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_WORKER_FREE %out_status, %worker
+    %out_status = call @sa_node_plugin_cluster_worker_free(%worker)
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_STATUS_JSON %p_0, %p_1
+    __m_slot_6dfdb1cc_0 = stack_alloc 8
+    __m_slot_6dfdb1cc_1 = stack_alloc 8
+    __m_status_6dfdb1cc = call @sa_node_plugin_cluster_status_json(&__m_slot_6dfdb1cc_0, &__m_slot_6dfdb1cc_1)
+    !__m_status_6dfdb1cc
+    __m_load_6dfdb1cc_p_0 = load __m_slot_6dfdb1cc_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_6dfdb1cc_p_0, 0
+    !__m_load_6dfdb1cc_p_0
+    __m_load_6dfdb1cc_p_1 = load __m_slot_6dfdb1cc_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_6dfdb1cc_p_1, 0
+    !__m_load_6dfdb1cc_p_1
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_cluster_exports_ptr_slot = stack_alloc 8
+    __m_cluster_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_exports_json(&__m_cluster_exports_ptr_slot, &__m_cluster_exports_len_slot)
+    %out_ptr = load __m_cluster_exports_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_TOP_PRIMARY_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __m_cluster_primary_config_ptr_slot = stack_alloc 8
+    __m_cluster_primary_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_primary_config_json(&__m_cluster_primary_config_ptr_slot, &__m_cluster_primary_config_len_slot)
+    %out_ptr = load __m_cluster_primary_config_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_primary_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CLUSTER_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_cluster_feature_ptr_slot = stack_alloc 8
+    __m_cluster_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_cluster_feature_support_json(&__m_cluster_feature_ptr_slot, &__m_cluster_feature_len_slot)
+    %out_ptr = load __m_cluster_feature_ptr_slot+0 as ptr
+    %out_len = load __m_cluster_feature_len_slot+0 as u64
+[END_MACRO]

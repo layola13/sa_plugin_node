@@ -1,6 +1,5 @@
 // SA tests for Node cluster top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_CLUSTER_TOP_JSON = utf8:"{\"exec\":\"/bin/cat\",\"cwd\":\".\",\"env\":{\"SA_CLUSTER_TOP\":\"1\"}}"
 
 @test "node.cluster top level helpers"():

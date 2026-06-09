@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `diagnostics_channel` status helper
+- Scope: installed main `node.sal` public macro coverage for `cluster`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `diagnostics_channel` status helper available through `node.sal`
+  - `cluster` status, top-level metadata, primary setup, and worker lifecycle helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` cluster helper macro tranche completed:
+  - `cluster` status, exports, primary-config, feature-support, primary setup, scheduling-policy, primary snapshot, fork, and worker lifecycle/message helpers available through `node.sal`
+  - `tests/node_test_cluster.sa`, `node_test_cluster_top.sa`, and `node_test_status_json2.sa` now validate through `node.sal` only
 
 - installed main `node.sal` diagnostics_channel status helper tranche completed:
   - `diagnostics_channel` status helper available through `node.sal`

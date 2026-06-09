@@ -63,17 +63,19 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for network top-level facades
-- Current status: `5 / 5` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `dns` / `net` / `dgram` facades
+- Current status: `3 / 3` helper features completed (`100.0%`)
 - Planned helpers:
-  - `http2` top-level macros available through `node.sal`
-  - `quic` top-level macros available through `node.sal`
-  - `http3` top-level macros available through `node.sal`
-  - `dtls` top-level macros available through `node.sal`
-  - `tls` top-level macros available through `node.sal`
+  - `dns` top-level and resolver macros available through `node.sal`
+  - `net` top-level factory/status macros available through `node.sal`
+  - `dgram` top-level macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` dns/net/dgram macro tranche completed:
+  - `dns` top-level and resolver macros available through `node.sal`
+  - `net` top-level factory/status macros available through `node.sal`
+  - `dgram` top-level macros available through `node.sal`
 - installed main `node.sal` network top-level macro tranche completed:
   - `http2` top-level macros available through `node.sal`
   - `quic` top-level macros available through `node.sal`

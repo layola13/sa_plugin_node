@@ -1650,6 +1650,369 @@
     %out_status = call @sa_node_plugin_dtls_free(%endpoint)
 [END_MACRO]
 
+[MACRO] NODE_DNS_RESOLVE4 %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve4_ptr_slot = stack_alloc 8
+    __dns_resolve4_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve4(%hostname, %hostname_len, &__dns_resolve4_ptr_slot, &__dns_resolve4_len_slot)
+    %out_ptr = load __dns_resolve4_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve4_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE6 %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve6_ptr_slot = stack_alloc 8
+    __dns_resolve6_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve6(%hostname, %hostname_len, &__dns_resolve6_ptr_slot, &__dns_resolve6_len_slot)
+    %out_ptr = load __dns_resolve6_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve6_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_CNAME %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_cname_ptr_slot = stack_alloc 8
+    __dns_resolve_cname_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_cname(%hostname, %hostname_len, &__dns_resolve_cname_ptr_slot, &__dns_resolve_cname_len_slot)
+    %out_ptr = load __dns_resolve_cname_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_cname_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_MX %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_mx_ptr_slot = stack_alloc 8
+    __dns_resolve_mx_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_mx(%hostname, %hostname_len, &__dns_resolve_mx_ptr_slot, &__dns_resolve_mx_len_slot)
+    %out_ptr = load __dns_resolve_mx_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_mx_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_NS %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_ns_ptr_slot = stack_alloc 8
+    __dns_resolve_ns_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_ns(%hostname, %hostname_len, &__dns_resolve_ns_ptr_slot, &__dns_resolve_ns_len_slot)
+    %out_ptr = load __dns_resolve_ns_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_ns_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_TXT %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_txt_ptr_slot = stack_alloc 8
+    __dns_resolve_txt_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_txt(%hostname, %hostname_len, &__dns_resolve_txt_ptr_slot, &__dns_resolve_txt_len_slot)
+    %out_ptr = load __dns_resolve_txt_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_txt_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_SRV %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_srv_ptr_slot = stack_alloc 8
+    __dns_resolve_srv_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_srv(%hostname, %hostname_len, &__dns_resolve_srv_ptr_slot, &__dns_resolve_srv_len_slot)
+    %out_ptr = load __dns_resolve_srv_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_srv_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVE_PTR %hostname, %hostname_len, %out_ptr, %out_len, %out_status
+    __dns_resolve_ptr_ptr_slot = stack_alloc 8
+    __dns_resolve_ptr_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolve_ptr(%hostname, %hostname_len, &__dns_resolve_ptr_ptr_slot, &__dns_resolve_ptr_len_slot)
+    %out_ptr = load __dns_resolve_ptr_ptr_slot+0 as ptr
+    %out_len = load __dns_resolve_ptr_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_REVERSE %ip, %ip_len, %out_ptr, %out_len, %out_status
+    __dns_reverse_ptr_slot = stack_alloc 8
+    __dns_reverse_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_reverse(%ip, %ip_len, &__dns_reverse_ptr_slot, &__dns_reverse_len_slot)
+    %out_ptr = load __dns_reverse_ptr_slot+0 as ptr
+    %out_len = load __dns_reverse_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_GET_SERVERS %out_ptr, %out_len
+    __dns_servers_ptr_slot = stack_alloc 8
+    __dns_servers_len_slot = stack_alloc 8
+    __dns_servers_status = call @sa_node_plugin_dns_get_servers(&__dns_servers_ptr_slot, &__dns_servers_len_slot)
+    !__dns_servers_status
+    __dns_servers_ptr = load __dns_servers_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dns_servers_ptr, 0
+    !__dns_servers_ptr
+    __dns_servers_len = load __dns_servers_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dns_servers_len, 0
+    !__dns_servers_len
+[END_MACRO]
+
+[MACRO] NODE_DNS_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __dns_constants_ptr_slot = stack_alloc 8
+    __dns_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_constants_json(&__dns_constants_ptr_slot, &__dns_constants_len_slot)
+    %out_ptr = load __dns_constants_ptr_slot+0 as ptr
+    %out_len = load __dns_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_SET_SERVERS %servers, %servers_len, %out_status
+    %out_status = call @sa_node_plugin_dns_set_servers(%servers, %servers_len)
+[END_MACRO]
+
+[MACRO] NODE_DNS_GET_DEFAULT_RESULT_ORDER %out_ptr, %out_len, %out_status
+    __dns_order_ptr_slot = stack_alloc 8
+    __dns_order_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_get_default_result_order(&__dns_order_ptr_slot, &__dns_order_len_slot)
+    %out_ptr = load __dns_order_ptr_slot+0 as ptr
+    %out_len = load __dns_order_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_SET_DEFAULT_RESULT_ORDER %order, %order_len
+    __dns_set_order_status = call @sa_node_plugin_dns_set_default_result_order(%order, %order_len)
+    !__dns_set_order_status
+[END_MACRO]
+
+[MACRO] NODE_DNS_LOOKUP_OPTIONS %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %family, %all, %order, %order_len
+    __dns_lookup_options_ptr_slot = stack_alloc 8
+    __dns_lookup_options_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_lookup_options(%hostname, %hostname_len, %family, %all, %order, %order_len, &__dns_lookup_options_ptr_slot, &__dns_lookup_options_len_slot)
+    %out_ptr = load __dns_lookup_options_ptr_slot+0 as ptr
+    %out_len = load __dns_lookup_options_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_LOOKUP_OPTIONS_HINTS %out_ptr, %out_len, %out_status, %hostname, %hostname_len, %family, %all, %hints, %order, %order_len
+    __dns_lookup_options_hints_ptr_slot = stack_alloc 8
+    __dns_lookup_options_hints_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_lookup_options_hints(%hostname, %hostname_len, %family, %all, %hints, %order, %order_len, &__dns_lookup_options_hints_ptr_slot, &__dns_lookup_options_hints_len_slot)
+    %out_ptr = load __dns_lookup_options_hints_ptr_slot+0 as ptr
+    %out_len = load __dns_lookup_options_hints_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_NEW %out_resolver, %out_status, %timeout_ms, %tries
+    __dns_resolver_new_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_new(%timeout_ms, %tries, &__dns_resolver_new_slot)
+    %out_resolver = load __dns_resolver_new_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_FREE %out_status, %resolver
+    %out_status = call @sa_node_plugin_dns_resolver_free(%resolver)
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_SET_SERVERS %out_status, %resolver, %servers, %servers_len
+    %out_status = call @sa_node_plugin_dns_resolver_set_servers(%resolver, %servers, %servers_len)
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_GET_SERVERS %out_ptr, %out_len, %out_status, %resolver
+    __dns_resolver_servers_ptr_slot = stack_alloc 8
+    __dns_resolver_servers_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_get_servers(%resolver, &__dns_resolver_servers_ptr_slot, &__dns_resolver_servers_len_slot)
+    %out_ptr = load __dns_resolver_servers_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_servers_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_SET_LOCAL_ADDRESS %out_status, %resolver, %ipv4, %ipv4_len, %ipv6, %ipv6_len
+    %out_status = call @sa_node_plugin_dns_resolver_set_local_address(%resolver, %ipv4, %ipv4_len, %ipv6, %ipv6_len)
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_CANCEL %out_status, %resolver
+    %out_status = call @sa_node_plugin_dns_resolver_cancel(%resolver)
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_RESOLVE4 %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len
+    __dns_resolver_resolve4_ptr_slot = stack_alloc 8
+    __dns_resolver_resolve4_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_resolve4(%resolver, %hostname, %hostname_len, &__dns_resolver_resolve4_ptr_slot, &__dns_resolver_resolve4_len_slot)
+    %out_ptr = load __dns_resolver_resolve4_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_resolve4_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_RESOLVE6 %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len
+    __dns_resolver_resolve6_ptr_slot = stack_alloc 8
+    __dns_resolver_resolve6_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_resolve6(%resolver, %hostname, %hostname_len, &__dns_resolver_resolve6_ptr_slot, &__dns_resolver_resolve6_len_slot)
+    %out_ptr = load __dns_resolver_resolve6_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_resolve6_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_RESOLVE %out_ptr, %out_len, %out_status, %resolver, %hostname, %hostname_len, %rrtype, %rrtype_len
+    __dns_resolver_resolve_ptr_slot = stack_alloc 8
+    __dns_resolver_resolve_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_resolve(%resolver, %hostname, %hostname_len, %rrtype, %rrtype_len, &__dns_resolver_resolve_ptr_slot, &__dns_resolver_resolve_len_slot)
+    %out_ptr = load __dns_resolver_resolve_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_resolve_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_REVERSE %out_ptr, %out_len, %out_status, %resolver, %ip, %ip_len
+    __dns_resolver_reverse_ptr_slot = stack_alloc 8
+    __dns_resolver_reverse_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_reverse(%resolver, %ip, %ip_len, &__dns_resolver_reverse_ptr_slot, &__dns_resolver_reverse_len_slot)
+    %out_ptr = load __dns_resolver_reverse_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_reverse_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_RESOLVER_SNAPSHOT_JSON %out_ptr, %out_len, %out_status, %resolver
+    __dns_resolver_snapshot_ptr_slot = stack_alloc 8
+    __dns_resolver_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_resolver_snapshot_json(%resolver, &__dns_resolver_snapshot_ptr_slot, &__dns_resolver_snapshot_len_slot)
+    %out_ptr = load __dns_resolver_snapshot_ptr_slot+0 as ptr
+    %out_len = load __dns_resolver_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __dns_status_ptr_slot = stack_alloc 8
+    __dns_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_status_json(&__dns_status_ptr_slot, &__dns_status_len_slot)
+    %out_ptr = load __dns_status_ptr_slot+0 as ptr
+    %out_len = load __dns_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __dns_exports_ptr_slot = stack_alloc 8
+    __dns_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_exports_json(&__dns_exports_ptr_slot, &__dns_exports_len_slot)
+    %out_ptr = load __dns_exports_ptr_slot+0 as ptr
+    %out_len = load __dns_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __dns_config_ptr_slot = stack_alloc 8
+    __dns_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_config_json(&__dns_config_ptr_slot, &__dns_config_len_slot)
+    %out_ptr = load __dns_config_ptr_slot+0 as ptr
+    %out_len = load __dns_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DNS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __dns_feature_ptr_slot = stack_alloc 8
+    __dns_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dns_feature_support_json(&__dns_feature_ptr_slot, &__dns_feature_len_slot)
+    %out_ptr = load __dns_feature_ptr_slot+0 as ptr
+    %out_len = load __dns_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IP %input, %input_len, %out_value
+    __net_is_ip_slot = stack_alloc 8
+    __net_is_ip_status = call @sa_node_plugin_net_is_ip(%input, %input_len, &__net_is_ip_slot)
+    !__net_is_ip_status
+    __net_is_ip_value = load __net_is_ip_slot+0 as u64
+    !%out_value
+    %out_value = add __net_is_ip_value, 0
+    !__net_is_ip_value
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IPV4 %input, %input_len, %out_bool
+    __net_is_ipv4_slot = stack_alloc 8
+    __net_is_ipv4_status = call @sa_node_plugin_net_is_ipv4(%input, %input_len, &__net_is_ipv4_slot)
+    !__net_is_ipv4_status
+    __net_is_ipv4_value = load __net_is_ipv4_slot+0 as u64
+    !%out_bool
+    %out_bool = add __net_is_ipv4_value, 0
+    !__net_is_ipv4_value
+[END_MACRO]
+
+[MACRO] NODE_NET_IS_IPV6 %input, %input_len, %out_bool
+    __net_is_ipv6_slot = stack_alloc 8
+    __net_is_ipv6_status = call @sa_node_plugin_net_is_ipv6(%input, %input_len, &__net_is_ipv6_slot)
+    !__net_is_ipv6_status
+    __net_is_ipv6_value = load __net_is_ipv6_slot+0 as u64
+    !%out_bool
+    %out_bool = add __net_is_ipv6_value, 0
+    !__net_is_ipv6_value
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY %out_bool, %out_status
+    __net_auto_family_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_default_auto_select_family(&__net_auto_family_slot)
+    %out_bool = load __net_auto_family_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY %value, %out_status
+    %out_status = call @sa_node_plugin_net_set_default_auto_select_family(%value)
+[END_MACRO]
+
+[MACRO] NODE_NET_GET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT %out_timeout, %out_status
+    __net_auto_timeout_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&__net_auto_timeout_slot)
+    %out_timeout = load __net_auto_timeout_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_SET_DEFAULT_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT %value, %out_status
+    %out_status = call @sa_node_plugin_net_set_default_auto_select_family_attempt_timeout(%value)
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_CONNECTION %host, %port, %options_json, %out_socket, %out_status
+    __net_create_connection_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_create_connection(%host, %port, %options_json, &__net_create_connection_slot)
+    %out_socket = load __net_create_connection_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_CREATE_SERVER %out_server, %out_status
+    __net_create_server_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_create_server(&__net_create_server_slot)
+    %out_server = load __net_create_server_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_NET_STATUS_JSON %out_ptr, %out_len, %out_status
+    __net_status_ptr_slot = stack_alloc 8
+    __net_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_status_json(&__net_status_ptr_slot, &__net_status_len_slot)
+    %out_ptr = load __net_status_ptr_slot+0 as ptr
+    %out_len = load __net_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __net_exports_ptr_slot = stack_alloc 8
+    __net_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_exports_json(&__net_exports_ptr_slot, &__net_exports_len_slot)
+    %out_ptr = load __net_exports_ptr_slot+0 as ptr
+    %out_len = load __net_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __net_config_ptr_slot = stack_alloc 8
+    __net_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_config_json(&__net_config_ptr_slot, &__net_config_len_slot)
+    %out_ptr = load __net_config_ptr_slot+0 as ptr
+    %out_len = load __net_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_NET_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __net_feature_ptr_slot = stack_alloc 8
+    __net_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_net_feature_support_json(&__net_feature_ptr_slot, &__net_feature_len_slot)
+    %out_ptr = load __net_feature_ptr_slot+0 as ptr
+    %out_len = load __net_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_STATUS_JSON %out_ptr, %out_len
+    __dgram_status_ptr_slot = stack_alloc 8
+    __dgram_status_len_slot = stack_alloc 8
+    __dgram_status_status = call @sa_node_plugin_dgram_status_json(&__dgram_status_ptr_slot, &__dgram_status_len_slot)
+    !__dgram_status_status
+    __dgram_status_ptr = load __dgram_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __dgram_status_ptr, 0
+    !__dgram_status_ptr
+    __dgram_status_len = load __dgram_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __dgram_status_len, 0
+    !__dgram_status_len
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __dgram_exports_ptr_slot = stack_alloc 8
+    __dgram_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_exports_json(&__dgram_exports_ptr_slot, &__dgram_exports_len_slot)
+    %out_ptr = load __dgram_exports_ptr_slot+0 as ptr
+    %out_len = load __dgram_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __dgram_config_ptr_slot = stack_alloc 8
+    __dgram_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_config_json(&__dgram_config_ptr_slot, &__dgram_config_len_slot)
+    %out_ptr = load __dgram_config_ptr_slot+0 as ptr
+    %out_len = load __dgram_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DGRAM_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __dgram_feature_ptr_slot = stack_alloc 8
+    __dgram_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_dgram_feature_support_json(&__dgram_feature_ptr_slot, &__dgram_feature_len_slot)
+    %out_ptr = load __dgram_feature_ptr_slot+0 as ptr
+    %out_len = load __dgram_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_TLS_STATUS_JSON %out_ptr, %out_len
     __tls_status_ptr_slot = stack_alloc 8
     __tls_status_len_slot = stack_alloc 8

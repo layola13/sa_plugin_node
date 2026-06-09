@@ -343,6 +343,7 @@
 @extern sa_node_plugin_util_style_text(style_ptr: ptr, style_len: u64, text_ptr: ptr, text_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_text_encoder_encode(text_ptr: ptr, text_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_util_text_decoder_decode(data_ptr: ptr, data_len: u64, encoding_ptr: ptr, encoding_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
+@extern sa_node_plugin_util_to_usv_string(input_ptr: ptr, input_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_readline_clear_line(fd: u64, dir: u64) -> u64
 @extern sa_node_plugin_readline_clear_screen_down(fd: u64) -> u64
 @extern sa_node_plugin_readline_cursor_to(fd: u64, x: u64, y: u64) -> u64

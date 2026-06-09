@@ -63,14 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `util` text codec helper parity by exposing native UTF-8 encode/decode helpers
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `util` string normalization parity by exposing native USV-style UTF-8 normalization
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `util.TextEncoder`
-  - `util.TextDecoder`
+  - `util.toUSVString`
 
 ## Recent Completed Helper Features
 
+- `util` string normalization helper tranche completed:
+  - `util.toUSVString`
 - `util` text codec helper tranche completed:
   - `util.TextEncoder`
   - `util.TextDecoder`

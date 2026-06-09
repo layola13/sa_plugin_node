@@ -4553,6 +4553,23 @@
     !__util_text_decoder_len
 [END_MACRO]
 
+[MACRO] NODE_UTIL_TO_USV_STRING %input_ptr, %input_len, %out_ptr, %out_len, %out_status
+    __util_to_usv_string_ptr_slot = stack_alloc 8
+    __util_to_usv_string_len_slot = stack_alloc 8
+    __util_to_usv_string_status = call @sa_node_plugin_util_to_usv_string(%input_ptr, %input_len, &__util_to_usv_string_ptr_slot, &__util_to_usv_string_len_slot)
+    !%out_status
+    %out_status = add __util_to_usv_string_status, 0
+    !__util_to_usv_string_status
+    __util_to_usv_string_ptr = load __util_to_usv_string_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_to_usv_string_ptr, 0
+    !__util_to_usv_string_ptr
+    __util_to_usv_string_len = load __util_to_usv_string_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_to_usv_string_len, 0
+    !__util_to_usv_string_len
+[END_MACRO]
+
 [MACRO] NODE_READLINE_CLEAR_LINE %p_0, %p_1
     __m_status_e82318fb = call @sa_node_plugin_readline_clear_line(%p_0, %p_1)
     !__m_status_e82318fb

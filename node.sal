@@ -6390,3 +6390,154 @@
 [MACRO] NODE_ASYNC_CONTEXT_TRACKING_RESET %out_status
     %out_status = call @sa_node_plugin_async_context_tracking_reset()
 [END_MACRO]
+
+[MACRO] NODE_EVENTS_ONCE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_e7ae6005 = call @sa_node_plugin_events_once(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_e7ae6005, 0
+    !__m_status_e7ae6005
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_OFF %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_6c06c887 = call @sa_node_plugin_events_off(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_6c06c887, 0
+    !__m_status_6c06c887
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_REMOVE_ALL_LISTENERS %p_0, %p_1, %p_2, %p_3
+    __m_status_98713f24 = call @sa_node_plugin_events_remove_all_listeners(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_98713f24, 0
+    !__m_status_98713f24
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_PREPEND_LISTENER %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_b43a3f4c = call @sa_node_plugin_events_prepend_listener(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_b43a3f4c, 0
+    !__m_status_b43a3f4c
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_SET_MAX_LISTENERS %p_0, %p_1, %p_2
+    __m_status_f978a924 = call @sa_node_plugin_events_set_max_listeners(%p_0, %p_1)
+    !%p_2
+    %p_2 = add __m_status_f978a924, 0
+    !__m_status_f978a924
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_GET_MAX_LISTENERS %p_0, %p_1, %p_2
+    __m_slot_6a980edf_0 = stack_alloc 8
+    __m_status_6a980edf = call @sa_node_plugin_events_get_max_listeners(%p_0, &__m_slot_6a980edf_0)
+    !%p_2
+    %p_2 = add __m_status_6a980edf, 0
+    !__m_status_6a980edf
+    __m_load_6a980edf_p_1 = load __m_slot_6a980edf_0+0 as u64
+    !%p_1
+    %p_1 = add __m_load_6a980edf_p_1, 0
+    !__m_load_6a980edf_p_1
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_GET_EVENT_LISTENERS %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_slot_8d3f2f8d_0 = stack_alloc 8
+    __m_slot_8d3f2f8d_1 = stack_alloc 8
+    __m_status_8d3f2f8d = call @sa_node_plugin_events_get_event_listeners(%p_0, %p_1, %p_2, &__m_slot_8d3f2f8d_0, &__m_slot_8d3f2f8d_1)
+    !%p_5
+    %p_5 = add __m_status_8d3f2f8d, 0
+    !__m_status_8d3f2f8d
+    __m_load_8d3f2f8d_p_3 = load __m_slot_8d3f2f8d_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_8d3f2f8d_p_3, 0
+    !__m_load_8d3f2f8d_p_3
+    __m_load_8d3f2f8d_p_4 = load __m_slot_8d3f2f8d_1+0 as u64
+    !%p_4
+    %p_4 = add __m_load_8d3f2f8d_p_4, 0
+    !__m_load_8d3f2f8d_p_4
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_LISTENER_COUNT_BY_EVENT %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_6af2447d_0 = stack_alloc 8
+    __m_status_6af2447d = call @sa_node_plugin_events_listener_count_by_event(%p_0, %p_1, %p_2, &__m_slot_6af2447d_0)
+    !%p_4
+    %p_4 = add __m_status_6af2447d, 0
+    !__m_status_6af2447d
+    __m_load_6af2447d_p_3 = load __m_slot_6af2447d_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_6af2447d_p_3, 0
+    !__m_load_6af2447d_p_3
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_EMIT_WITH_ERROR %p_0, %p_1, %p_2, %p_3, %p_4, %p_5
+    __m_status_194b3e44 = call @sa_node_plugin_events_emit_with_error(%p_0, %p_1, %p_2, %p_3, %p_4)
+    !%p_5
+    %p_5 = add __m_status_194b3e44, 0
+    !__m_status_194b3e44
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __events_top_status_ptr_slot = stack_alloc 8
+    __events_top_status_len_slot = stack_alloc 8
+    __events_top_status = call @sa_node_plugin_events_status_json(&__events_top_status_ptr_slot, &__events_top_status_len_slot)
+    !%out_status
+    %out_status = add __events_top_status, 0
+    !__events_top_status
+    __events_top_status_ptr = load __events_top_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __events_top_status_ptr, 0
+    !__events_top_status_ptr
+    __events_top_status_len = load __events_top_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __events_top_status_len, 0
+    !__events_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __events_top_exports_ptr_slot = stack_alloc 8
+    __events_top_exports_len_slot = stack_alloc 8
+    __events_top_exports_status = call @sa_node_plugin_events_exports_json(&__events_top_exports_ptr_slot, &__events_top_exports_len_slot)
+    !%out_status
+    %out_status = add __events_top_exports_status, 0
+    !__events_top_exports_status
+    __events_top_exports_ptr = load __events_top_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __events_top_exports_ptr, 0
+    !__events_top_exports_ptr
+    __events_top_exports_len = load __events_top_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __events_top_exports_len, 0
+    !__events_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __events_top_config_ptr_slot = stack_alloc 8
+    __events_top_config_len_slot = stack_alloc 8
+    __events_top_config_status = call @sa_node_plugin_events_config_json(&__events_top_config_ptr_slot, &__events_top_config_len_slot)
+    !%out_status
+    %out_status = add __events_top_config_status, 0
+    !__events_top_config_status
+    __events_top_config_ptr = load __events_top_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __events_top_config_ptr, 0
+    !__events_top_config_ptr
+    __events_top_config_len = load __events_top_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __events_top_config_len, 0
+    !__events_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_EVENTS_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __events_top_feature_ptr_slot = stack_alloc 8
+    __events_top_feature_len_slot = stack_alloc 8
+    __events_top_feature_status = call @sa_node_plugin_events_feature_support_json(&__events_top_feature_ptr_slot, &__events_top_feature_len_slot)
+    !%out_status
+    %out_status = add __events_top_feature_status, 0
+    !__events_top_feature_status
+    __events_top_feature_ptr = load __events_top_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __events_top_feature_ptr, 0
+    !__events_top_feature_ptr
+    __events_top_feature_len = load __events_top_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __events_top_feature_len, 0
+    !__events_top_feature_len
+[END_MACRO]

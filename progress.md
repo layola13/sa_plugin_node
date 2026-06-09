@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `async_hooks`
+- Scope: installed main `node.sal` public macro coverage for `events`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `async_hooks` top-level metadata, snapshot, async-resource, and related async-context-tracking helpers available through `node.sal`
+  - `events` top-level metadata plus advanced listener-management and error-emission helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` events helper macro tranche completed:
+  - `events` top-level status, exports, config, and feature-support helpers available through `node.sal`
+  - `events.once`, `off`, `removeAllListeners`, `prependListener`, `setMaxListeners`, `getMaxListeners`, `getEventListeners`, `listenerCount` by event, and `emitWithError` helpers available through `node.sal`
+  - `tests/node_test_events_top.sa` and `node_test_events_extra.sa` now validate through `node.sal` only
 
 - installed main `node.sal` async_hooks helper macro tranche completed:
   - `async_hooks` top-level status, exports, config, feature-support, snapshot, execution/trigger async-id, and async-resource create/free/snapshot helpers available through `node.sal`

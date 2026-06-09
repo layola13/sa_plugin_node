@@ -1,6 +1,5 @@
 // SA-native unit tests for Node events extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_EVT = utf8:"test_event"
 @const S_DATA = utf8:"data"
@@ -189,18 +188,32 @@ L_ERR:
 L_ENTRY:
     ee = add 0, 0
     EXPAND NODE_EVENTS_CREATE ee
+    s0 = add 0, 0
+    EXPAND NODE_EVENTS_ON ee, S_EVT, 4, 0, s0
+    ok0 = eq s0, 0
+    br ok0 -> L_EMIT, L_ERR_ON
+L_EMIT:
+    !ok0
     s = add 0, 0
     EXPAND NODE_EVENTS_EMIT_WITH_ERROR ee, S_EVT, 4, 0, 0, s
     ok = eq s, 0
     br ok -> L_FREE, L_ERR
 L_FREE:
     !ok
+    !s0
     !s
     EXPAND NODE_EVENTS_FREE ee, fs
     !fs
     return
+L_ERR_ON:
+    !ok0
+    !s0
+    EXPAND NODE_EVENTS_FREE ee, fs0
+    !fs0
+    panic(103)
 L_ERR:
     !ok
+    !s0
     !s
     EXPAND NODE_EVENTS_FREE ee, fs2
     !fs2

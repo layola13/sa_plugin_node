@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `child_process`
+- Scope: installed main `node.sal` public macro coverage for `diagnostics_channel` status helper
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `child_process` status, top-level metadata, and process execution helper macros available through `node.sal`
+  - `diagnostics_channel` status helper available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` diagnostics_channel status helper tranche completed:
+  - `diagnostics_channel` status helper available through `node.sal`
+  - `tests/node_test_status_json5.sa` now validates through `node.sal` only, reusing existing `wasi` status support already present in `node.sal`
 
 - installed main `node.sal` child_process helper macro tranche completed:
   - `child_process` status, exports, config, feature-support, `exec`, `execFile`, `execFileSync`, `execSync`, `spawn`, `spawnSync`, and `fork` helpers available through `node.sal`

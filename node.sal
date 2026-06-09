@@ -7786,3 +7786,18 @@
     %p_1 = add __cp_top_feature_len, 0
     !__cp_top_feature_len
 [END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_STATUS_JSON %p_0, %p_1
+    __m_slot_d6b6fbf1_0 = stack_alloc 8
+    __m_slot_d6b6fbf1_1 = stack_alloc 8
+    __m_status_d6b6fbf1 = call @sa_node_plugin_diagnostics_channel_status_json(&__m_slot_d6b6fbf1_0, &__m_slot_d6b6fbf1_1)
+    !__m_status_d6b6fbf1
+    __m_load_d6b6fbf1_p_0 = load __m_slot_d6b6fbf1_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_d6b6fbf1_p_0, 0
+    !__m_load_d6b6fbf1_p_0
+    __m_load_d6b6fbf1_p_1 = load __m_slot_d6b6fbf1_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_d6b6fbf1_p_1, 0
+    !__m_load_d6b6fbf1_p_1
+[END_MACRO]

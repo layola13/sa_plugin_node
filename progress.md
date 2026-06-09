@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `path`
+- Scope: installed main `node.sal` public macro coverage for `readline`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `path` top-level metadata helpers and `matches_glob` available through `node.sal`
+  - `readline` top-level metadata, TTY helpers, and `createInterface` available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` readline helper macro tranche completed:
+  - `readline` top-level metadata helpers available through `node.sal`
+  - `readline.clearLine`, `readline.clearScreenDown`, `readline.cursorTo`, `readline.moveCursor`, `readline.emitKeypressEvents`, and `readline.createInterface` available through `node.sal`
+  - `tests/node_test_readline_top.sa` and `node_test_readline_q.sa` now validate through `node.sal` only
 
 - installed main `node.sal` path helper macro tranche completed:
   - `path` top-level metadata helpers available through `node.sal`

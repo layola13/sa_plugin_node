@@ -1075,6 +1075,67 @@
     %out_status = call @sa_node_plugin_readline_free(%rl)
 [END_MACRO]
 
+[MACRO] NODE_READLINE_CLEAR_LINE %fd, %dir
+    __readline_clear_line_status = call @sa_node_plugin_readline_clear_line(%fd, %dir)
+    !__readline_clear_line_status
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CLEAR_SCREEN_DOWN %fd
+    __readline_clear_screen_status = call @sa_node_plugin_readline_clear_screen_down(%fd)
+    !__readline_clear_screen_status
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CURSOR_TO %fd, %x, %y
+    __readline_cursor_to_status = call @sa_node_plugin_readline_cursor_to(%fd, %x, %y)
+    !__readline_cursor_to_status
+[END_MACRO]
+
+[MACRO] NODE_READLINE_MOVE_CURSOR %fd, %dx, %dy, %out_status
+    %out_status = call @sa_node_plugin_readline_move_cursor(%fd, %dx, %dy)
+[END_MACRO]
+
+[MACRO] NODE_READLINE_EMIT_KEYPRESS_EVENTS %stream, %stream_len, %out_status
+    %out_status = call @sa_node_plugin_readline_emit_keypress_events(%stream, %stream_len)
+[END_MACRO]
+
+[MACRO] NODE_READLINE_CREATE_INTERFACE %out_interface, %out_status, %input, %input_len
+    __readline_interface_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_create_interface(%input, %input_len, &__readline_interface_slot)
+    %out_interface = load __readline_interface_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_READLINE_STATUS_JSON %out_ptr, %out_len, %out_status
+    __readline_status_ptr_slot = stack_alloc 8
+    __readline_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_status_json(&__readline_status_ptr_slot, &__readline_status_len_slot)
+    %out_ptr = load __readline_status_ptr_slot+0 as ptr
+    %out_len = load __readline_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __readline_exports_ptr_slot = stack_alloc 8
+    __readline_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_exports_json(&__readline_exports_ptr_slot, &__readline_exports_len_slot)
+    %out_ptr = load __readline_exports_ptr_slot+0 as ptr
+    %out_len = load __readline_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __readline_config_ptr_slot = stack_alloc 8
+    __readline_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_config_json(&__readline_config_ptr_slot, &__readline_config_len_slot)
+    %out_ptr = load __readline_config_ptr_slot+0 as ptr
+    %out_len = load __readline_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_READLINE_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __readline_feature_ptr_slot = stack_alloc 8
+    __readline_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_readline_feature_support_json(&__readline_feature_ptr_slot, &__readline_feature_len_slot)
+    %out_ptr = load __readline_feature_ptr_slot+0 as ptr
+    %out_len = load __readline_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_STREAM_READABLE_NEW %out_readable
     %out_readable = call @sa_node_plugin_stream_readable_new()
 [END_MACRO]

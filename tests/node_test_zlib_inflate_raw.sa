@@ -1,6 +1,5 @@
 // SA tests for Node zlib extras: unzip (gzip roundtrip), inflate_raw roundtrip
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_DATA = utf8:"inflate raw test data here"
 
 @test "node.zlib gzip then unzip"():

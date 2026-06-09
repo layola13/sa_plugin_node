@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `util`
+- Scope: installed main `node.sal` public macro coverage for `zlib`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `util` top-level metadata helpers available through `node.sal`
+  - `zlib` top-level metadata, raw/brotli/zstd helpers, and codes/constants macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` zlib helper macro tranche completed:
+  - `zlib` top-level metadata, constants, and codes helpers available through `node.sal`
+  - `zlib.deflateRaw`, `zlib.inflateRaw`, `zlib.unzip`, `zlib.brotliCompress`, `zlib.brotliDecompress`, `zlib.zstdCompress`, `zlib.zstdDecompress`, and `zlib.crc32` available through `node.sal`
+  - `tests/node_test_zlib_top.sa`, `node_test_zlib_extra.sa`, `node_test_zlib_inflate_raw.sa`, and `node_test_zlib_buffer_url.sa` now validate through `node.sal` only
 
 - installed main `node.sal` util helper macro tranche completed:
   - `util` top-level metadata helpers available through `node.sal`

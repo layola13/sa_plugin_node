@@ -1,6 +1,5 @@
 // Tests for zlib, buffer, url, util, path, punycode, querystring extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_DATA = utf8:"hello world"
 @const S_JSON_A = utf8:"{\"a\":1}"
@@ -11,6 +10,8 @@
 @const S_TO = utf8:"/usr/local/share"
 @const S_QS = utf8:"a=1&b=two"
 @const S_DOMAIN = utf8:"münchen.de"
+@const S_PUNY = utf8:"mnchen-3ya"
+@const S_B64 = utf8:"aGVsbG8="
 @const S_ENCODED = utf8:"hello%20world"
 @const S_SLASH_A = utf8:"/a"
 @const S_SLASH_B = utf8:"/b"
@@ -180,25 +181,42 @@ L_ERR2:
     !il
     panic(103)
 
-@test "node.zlib unzip empty succeeds"():
+@test "node.zlib unzip gzip succeeds"():
 L_ENTRY:
+    gp = add 0, 0
+    gl = add 0, 0
+    s1 = add 0, 0
     up = add 0, 0
     ul = add 0, 0
-    s = add 0, 0
-    EXPAND NODE_ZLIB_UNZIP up, ul, s, S_DATA, 11
-    ok = eq s, 0
+    s2 = add 0, 0
+    EXPAND NODE_ZLIB_GZIP gp, gl, s1, S_DATA, 11
+    ok1 = eq s1, 0
+    br ok1 -> L_UNZIP, L_ERR1
+L_UNZIP:
+    !ok1
+    !s1
+    EXPAND NODE_ZLIB_UNZIP up, ul, s2, gp, gl
+    ok = eq s2, 0
     br ok -> L_OK, L_ERR
 L_OK:
     !ok
-    !s
+    !s2
+    !gp
+    !gl
     !up
     !ul
     return
+L_ERR1:
+    !ok1
+    !s1
+    panic(103)
 L_ERR:
     !ok
+    !gp
+    !gl
     !up
     !ul
-    !s
+    !s2
     panic(103)
 
 @test "node.buffer atob succeeds"():
@@ -206,7 +224,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_BUFFER_ATOB p, l, s, S_ENCODED, 11
+    EXPAND NODE_BUFFER_ATOB S_B64, 8, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -236,7 +254,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL p, l, s, S_URL, 28
+    EXPAND NODE_BUFFER_RESOLVE_OBJECT_URL S_URL, 28, p, l, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:
@@ -498,7 +516,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_UTIL_STYLE_TEXT p, l, s, S_VT, 11, S_DATA, 5
+    EXPAND NODE_UTIL_STYLE_TEXT S_VT, 11, S_DATA, 5, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -528,7 +546,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_UTIL_MIME_TYPE p, l, s, S_DATA, 5
+    EXPAND NODE_UTIL_MIME_TYPE S_DATA, 5, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -558,7 +576,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_UTIL_PARSE_ARGS p, l, s, S_JSON_A, 7, S_JSON_A, 7
+    EXPAND NODE_UTIL_PARSE_ARGS S_JSON_A, 7, S_JSON_A, 7, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -588,7 +606,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_UTIL_DIFF p, l, s, S_DATA, 5, S_DATA, 5, S_DATA, 5
+    EXPAND NODE_UTIL_DIFF S_DATA, 5, S_DATA, 5, S_DATA, 5, p, l, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:
@@ -607,7 +625,7 @@ L_ERR:
 @test "node.util inherits returns"():
 L_ENTRY:
     s = add 0, 0
-    EXPAND NODE_UTIL_INHERITS s, S_JSON_A, 7, S_JSON_A, 7
+    EXPAND NODE_UTIL_INHERITS S_JSON_A, 7, S_JSON_A, 7, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:
@@ -623,13 +641,7 @@ L_ERR:
 L_ENTRY:
     p = add 0, 0
     l = add 0, 0
-    s = add 0, 0
-    EXPAND NODE_PUNYCODE_TO_UNICODE p, l, s, S_DOMAIN, 10
-    ok = eq s, 0
-    br ok -> L_CHK, L_ERR
-L_CHK:
-    !ok
-    !s
+    EXPAND NODE_PUNYCODE_TO_UNICODE S_DOMAIN, 10, p, l
     has = ugt l, 0
     br has -> L_OK, L_LEN_ERR
 L_OK:
@@ -637,12 +649,6 @@ L_OK:
     !p
     !l
     return
-L_ERR:
-    !ok
-    !p
-    !l
-    !s
-    panic(103)
 L_LEN_ERR:
     !has
     !p
@@ -654,7 +660,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_PUNYCODE_DECODE p, l, s, S_DOMAIN, 10
+    EXPAND NODE_PUNYCODE_DECODE p, l, s, S_PUNY, 10
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -684,7 +690,7 @@ L_ENTRY:
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_QUERYSTRING_UNESCAPE_BUFFER p, l, s, S_ENCODED, 11
+    EXPAND NODE_QUERYSTRING_UNESCAPE_BUFFER S_ENCODED, 11, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -713,7 +719,7 @@ L_LEN_ERR:
 L_ENTRY:
     v = add 0, 0
     s = add 0, 0
-    EXPAND NODE_PATH_MATCHES_GLOB v, s, S_GLOB, 6, S_SLASH_A, 2
+    EXPAND NODE_PATH_MATCHES_GLOB S_GLOB, 6, S_SLASH_A, 2, v, s
     ok = eq s, 0
     br ok -> L_OK, L_ERR
 L_OK:
@@ -729,10 +735,15 @@ L_ERR:
 
 @test "node.path join returns bytes"():
 L_ENTRY:
+    paths = stack_alloc 32
+    store paths+0, S_SLASH_A as ptr
+    store paths+8, 2 as u64
+    store paths+16, S_SLASH_B as ptr
+    store paths+24, 2 as u64
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_PATH_JOIN S_SLASH_A, 2, S_SLASH_B, 2, p, l, s
+    EXPAND NODE_PATH_JOIN paths, 2, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:
@@ -759,10 +770,15 @@ L_LEN_ERR:
 
 @test "node.path resolve returns bytes"():
 L_ENTRY:
+    paths = stack_alloc 32
+    store paths+0, S_SLASH_A as ptr
+    store paths+8, 2 as u64
+    store paths+16, S_SLASH_B as ptr
+    store paths+24, 2 as u64
     p = add 0, 0
     l = add 0, 0
     s = add 0, 0
-    EXPAND NODE_PATH_RESOLVE S_SLASH_A, 2, S_SLASH_B, 2, p, l, s
+    EXPAND NODE_PATH_RESOLVE paths, 2, p, l, s
     ok = eq s, 0
     br ok -> L_CHK, L_ERR
 L_CHK:

@@ -1,6 +1,5 @@
 // SA tests for Node zlib top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.zlib top level facade helpers"():
 L_ENTRY:

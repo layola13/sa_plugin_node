@@ -2998,6 +2998,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"memoryUsage\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execPath\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"execArgv\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"allowedNodeEnvironmentFlags\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"nextTick\":false") != null);
 
     var exports_ptr: ?[*]const u8 = null;
@@ -3010,6 +3011,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execPath\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"execArgv\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"versions\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"allowedNodeEnvironmentFlags\"") != null);
 
     var config_ptr: ?[*]const u8 = null;
     var config_len: u64 = 0;
@@ -3017,6 +3019,7 @@ test "node plugin process top-level facade helpers" {
     defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
     const config = (config_ptr orelse return error.NullProcessTopConfig)[0..@intCast(config_len)];
     try std.testing.expect(std.mem.indexOf(u8, config, "\"commandLineModel\":\"native host argv0 plus resolved executable path") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"allowedFlagsModel\":\"native JSON snapshot and membership checks over the plugin's known NODE_OPTIONS-compatible flag set\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"signalModel\":\"real POSIX kill helpers by numeric or named signal plus explicit exit\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, config, "\"envModel\":\"explicit process env get, set, delete, and snapshot helpers rather than a live JavaScript proxy object\"") != null);
 
@@ -3033,6 +3036,7 @@ test "node plugin process top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"execPath\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"version\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"release\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"allowedNodeEnvironmentFlags\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"umask\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"chdir\":{\"supported\":true") != null);
 
@@ -3067,6 +3071,22 @@ test "node plugin process top-level facade helpers" {
     const exec_argv_json = (exec_argv_ptr orelse return error.NullProcessExecArgv)[0..@intCast(exec_argv_len)];
     try std.testing.expect(std.mem.startsWith(u8, exec_argv_json, "["));
     try std.testing.expect(std.mem.endsWith(u8, exec_argv_json, "]"));
+
+    var allowed_flags_ptr: ?[*]const u8 = null;
+    var allowed_flags_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_allowed_node_environment_flags_json(&allowed_flags_ptr, &allowed_flags_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(allowed_flags_ptr, allowed_flags_len);
+    const allowed_flags_json = (allowed_flags_ptr orelse return error.NullProcessAllowedNodeEnvironmentFlags)[0..@intCast(allowed_flags_len)];
+    try std.testing.expect(std.mem.indexOf(u8, allowed_flags_json, "\"--inspect\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, allowed_flags_json, "\"--require\"") != null);
+
+    var has_inspect: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_allowed_node_environment_flags_has("inspect=127.0.0.1:9229".ptr, 22, &has_inspect));
+    try std.testing.expectEqual(@as(u64, 1), has_inspect);
+
+    var has_fake_flag: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_process_allowed_node_environment_flags_has("--definitely-not-a-node-flag".ptr, 28, &has_fake_flag));
+    try std.testing.expectEqual(@as(u64, 0), has_fake_flag);
 
     var release_ptr: ?[*]const u8 = null;
     var release_len: u64 = 0;

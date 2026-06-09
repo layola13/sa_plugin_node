@@ -63,15 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `fs` path-mutation facade parity for already-implemented symlink/truncate/utimes helpers
-- Current status: `3 / 3` helper features completed (`100.0%`)
+- Scope: public non-VM/V8 `process` command-line flag parity for `allowedNodeEnvironmentFlags`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `fs.symlink`
-  - `fs.truncate`
-  - `fs.utimes`
+  - `process.allowedNodeEnvironmentFlags`
 
 ## Recent Completed Helper Features
 
+- `process` command-line flag helper tranche completed:
+  - `process.allowedNodeEnvironmentFlags`
 - `fs` path-mutation helper tranche completed:
   - `fs.symlink`
   - `fs.truncate`

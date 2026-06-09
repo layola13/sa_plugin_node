@@ -2350,6 +2350,35 @@
     !__process_exec_argv_len
 [END_MACRO]
 
+[MACRO] NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_JSON %out_ptr, %out_len, %out_status
+    __process_allowed_flags_ptr_slot = stack_alloc 8
+    __process_allowed_flags_len_slot = stack_alloc 8
+    __process_allowed_flags_status = call @sa_node_plugin_process_allowed_node_environment_flags_json(&__process_allowed_flags_ptr_slot, &__process_allowed_flags_len_slot)
+    !%out_status
+    %out_status = add __process_allowed_flags_status, 0
+    !__process_allowed_flags_status
+    __process_allowed_flags_ptr = load __process_allowed_flags_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __process_allowed_flags_ptr, 0
+    !__process_allowed_flags_ptr
+    __process_allowed_flags_len = load __process_allowed_flags_len_slot+0 as u64
+    !%out_len
+    %out_len = add __process_allowed_flags_len, 0
+    !__process_allowed_flags_len
+[END_MACRO]
+
+[MACRO] NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_HAS %out_bool, %out_status, %flag_ptr, %flag_len
+    __process_allowed_flags_has_slot = stack_alloc 8
+    __process_allowed_flags_has_status = call @sa_node_plugin_process_allowed_node_environment_flags_has(%flag_ptr, %flag_len, &__process_allowed_flags_has_slot)
+    !%out_status
+    %out_status = add __process_allowed_flags_has_status, 0
+    !__process_allowed_flags_has_status
+    __process_allowed_flags_has_value = load __process_allowed_flags_has_slot+0 as u64
+    !%out_bool
+    %out_bool = add __process_allowed_flags_has_value, 0
+    !__process_allowed_flags_has_value
+[END_MACRO]
+
 [MACRO] NODE_OS_STATUS_JSON %out_ptr, %out_len, %out_status
     __os_top_status_ptr_slot = stack_alloc 8
     __os_top_status_len_slot = stack_alloc 8

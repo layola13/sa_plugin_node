@@ -2,6 +2,8 @@
 @import "../node.sal"
 @import "../node_extra.sal"
 
+@const S_INSPECT = utf8:"inspect=127.0.0.1:9229"
+
 @test "node.process top level facade helpers"():
 L_ENTRY:
     status_ptr = add 0, 0
@@ -69,9 +71,35 @@ L_EXEC_ARGV:
 L_EXEC_ARGV_LEN:
     !ok9
     ok10 = gt exec_argv_len, 0
-    br ok10 -> L_FREE, L_ERR_EXEC_ARGV_LEN
-L_FREE:
+    br ok10 -> L_ALLOWED_FLAGS, L_ERR_EXEC_ARGV_LEN
+L_ALLOWED_FLAGS:
     !ok10
+    allowed_ptr = add 0, 0
+    allowed_len = add 0, 0
+    s8 = add 0, 0
+    EXPAND NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_JSON allowed_ptr, allowed_len, s8
+    ok11 = eq s8, 0
+    br ok11 -> L_ALLOWED_FLAGS_LEN, L_ERR_ALLOWED_FLAGS
+L_ALLOWED_FLAGS_LEN:
+    !ok11
+    ok12 = gt allowed_len, 0
+    br ok12 -> L_ALLOWED_HAS, L_ERR_ALLOWED_FLAGS_LEN
+L_ALLOWED_HAS:
+    !ok12
+    allowed_has = add 0, 0
+    s9 = add 0, 0
+    EXPAND NODE_PROCESS_ALLOWED_NODE_ENVIRONMENT_FLAGS_HAS allowed_has, s9, S_INSPECT, 22
+    ok13 = eq s9, 0
+    br ok13 -> L_ALLOWED_VALUE, L_ERR_ALLOWED_HAS
+L_ALLOWED_VALUE:
+    !ok13
+    ok14 = eq allowed_has, 1
+    br ok14 -> L_FREE, L_ERR_ALLOWED_VALUE
+L_FREE:
+    !ok14
+    !s9
+    !allowed_has
+    free_allowed = call @sa_node_plugin_free_buffer(allowed_ptr, allowed_len)
     free_exec_argv = call @sa_node_plugin_free_buffer(exec_argv_ptr, exec_argv_len)
     free_argv0 = call @sa_node_plugin_free_buffer(argv0_ptr, argv0_len)
     free_exec_path = call @sa_node_plugin_free_buffer(exec_path_ptr, exec_path_len)
@@ -86,6 +114,10 @@ L_FREE:
     !free_exec_path
     !free_argv0
     !free_exec_argv
+    !free_allowed
+    !s8
+    !allowed_len
+    !allowed_ptr
     !s7
     !exec_argv_len
     !exec_argv_ptr
@@ -138,3 +170,15 @@ L_ERR_EXEC_ARGV:
 L_ERR_EXEC_ARGV_LEN:
     !ok10
     panic(110)
+L_ERR_ALLOWED_FLAGS:
+    !ok11
+    panic(111)
+L_ERR_ALLOWED_FLAGS_LEN:
+    !ok12
+    panic(112)
+L_ERR_ALLOWED_HAS:
+    !ok13
+    panic(113)
+L_ERR_ALLOWED_VALUE:
+    !ok14
+    panic(114)

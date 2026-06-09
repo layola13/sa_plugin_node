@@ -1,6 +1,5 @@
 // SA tests for Node repl native session subset helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_PROMPT = utf8:"node> "
 @const S_PROMPT2 = utf8:"sa> "

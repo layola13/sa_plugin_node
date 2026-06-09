@@ -1912,6 +1912,85 @@
     %out_len = load __module_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_REPL_STATUS_JSON %out_ptr, %out_len, %out_status
+    __repl_status_ptr_slot = stack_alloc 8
+    __repl_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_status_json(&__repl_status_ptr_slot, &__repl_status_len_slot)
+    %out_ptr = load __repl_status_ptr_slot+0 as ptr
+    %out_len = load __repl_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_CREATE_SESSION %prompt_ptr, %prompt_len, %out_session, %out_status
+    __repl_session_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_create_session(%prompt_ptr, %prompt_len, &__repl_session_slot)
+    %out_session = load __repl_session_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_REPL_SET_PROMPT %session_ptr, %prompt_ptr, %prompt_len, %out_status
+    %out_status = call @sa_node_plugin_repl_set_prompt(%session_ptr, %prompt_ptr, %prompt_len)
+[END_MACRO]
+
+[MACRO] NODE_REPL_DEFINE_COMMAND %session_ptr, %name_ptr, %name_len, %help_ptr, %help_len, %out_status
+    %out_status = call @sa_node_plugin_repl_define_command(%session_ptr, %name_ptr, %name_len, %help_ptr, %help_len)
+[END_MACRO]
+
+[MACRO] NODE_REPL_EVAL_LINE %session_ptr, %line_ptr, %line_len, %out_ptr, %out_len, %out_status
+    __repl_eval_ptr_slot = stack_alloc 8
+    __repl_eval_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_eval_line(%session_ptr, %line_ptr, %line_len, &__repl_eval_ptr_slot, &__repl_eval_len_slot)
+    %out_ptr = load __repl_eval_ptr_slot+0 as ptr
+    %out_len = load __repl_eval_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_HISTORY_JSON %session_ptr, %out_ptr, %out_len, %out_status
+    __repl_history_ptr_slot = stack_alloc 8
+    __repl_history_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_history_json(%session_ptr, &__repl_history_ptr_slot, &__repl_history_len_slot)
+    %out_ptr = load __repl_history_ptr_slot+0 as ptr
+    %out_len = load __repl_history_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_SNAPSHOT_JSON %session_ptr, %out_ptr, %out_len, %out_status
+    __repl_snapshot_ptr_slot = stack_alloc 8
+    __repl_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_snapshot_json(%session_ptr, &__repl_snapshot_ptr_slot, &__repl_snapshot_len_slot)
+    %out_ptr = load __repl_snapshot_ptr_slot+0 as ptr
+    %out_len = load __repl_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_CLOSE %session_ptr, %out_status
+    %out_status = call @sa_node_plugin_repl_close(%session_ptr)
+[END_MACRO]
+
+[MACRO] NODE_REPL_FREE %session_ptr
+    __repl_free_status = call @sa_node_plugin_repl_free(%session_ptr)
+    !__repl_free_status
+[END_MACRO]
+
+[MACRO] NODE_REPL_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __repl_exports_ptr_slot = stack_alloc 8
+    __repl_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_exports_json(&__repl_exports_ptr_slot, &__repl_exports_len_slot)
+    %out_ptr = load __repl_exports_ptr_slot+0 as ptr
+    %out_len = load __repl_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_TOP_DEFAULT_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __repl_config_ptr_slot = stack_alloc 8
+    __repl_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_default_config_json(&__repl_config_ptr_slot, &__repl_config_len_slot)
+    %out_ptr = load __repl_config_ptr_slot+0 as ptr
+    %out_len = load __repl_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_REPL_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __repl_feature_ptr_slot = stack_alloc 8
+    __repl_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_repl_feature_support_json(&__repl_feature_ptr_slot, &__repl_feature_len_slot)
+    %out_ptr = load __repl_feature_ptr_slot+0 as ptr
+    %out_len = load __repl_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

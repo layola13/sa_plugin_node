@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `module`
+- Scope: installed main `node.sal` public macro coverage for `repl`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `module` top-level metadata plus builtin/cache/source-map helpers available through `node.sal`
+  - `repl` top-level metadata plus native session/history/eval helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` repl helper macro tranche completed:
+  - `repl` top-level status, exports, default-config, and feature-support helpers available through `node.sal`
+  - `repl` createSession, setPrompt, defineCommand, evalLine, history, snapshot, close, and free helpers available through `node.sal`
+  - `tests/node_test_repl_top.sa` and `node_test_repl.sa` now validate through `node.sal` only
 
 - installed main `node.sal` module helper macro tranche completed:
   - `module` top-level status, exports, config, builtin-modules, constants, global-paths, and feature-support helpers available through `node.sal`

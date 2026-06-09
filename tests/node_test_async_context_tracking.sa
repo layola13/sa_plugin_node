@@ -1,6 +1,5 @@
 // SA tests for Node async_context_tracking native helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_TEST_RESOURCE = utf8:"TestResource"
 

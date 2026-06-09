@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `worker_threads`
+- Scope: installed main `node.sal` public macro coverage for `async_hooks`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `worker_threads` top-level metadata, thread state, environment data, and message port/channel helpers available through `node.sal`
+  - `async_hooks` top-level metadata, snapshot, async-resource, and related async-context-tracking helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` async_hooks helper macro tranche completed:
+  - `async_hooks` top-level status, exports, config, feature-support, snapshot, execution/trigger async-id, and async-resource create/free/snapshot helpers available through `node.sal`
+  - `async_context_tracking` status, snapshot, enter, exit, depth, reset, and execution/trigger async-id helpers available through `node.sal`
+  - `tests/node_test_async_hooks_top.sa`, `node_test_async_hooks.sa`, `node_test_async_extra.sa`, and `node_test_async_context_tracking.sa` now validate through `node.sal` only
 
 - installed main `node.sal` worker_threads helper macro tranche completed:
   - `worker_threads` top-level status, exports, `SHARE_ENV`, parent-port, and feature-support helpers available through `node.sal`

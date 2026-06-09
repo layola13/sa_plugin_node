@@ -1,6 +1,5 @@
 // SA tests for Node async_hooks extras
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_TYPE = utf8:"test-resource"
 
 @test "node.async_hooks execution_async_id"():

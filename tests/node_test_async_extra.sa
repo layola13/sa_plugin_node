@@ -1,6 +1,5 @@
 // SA tests for Node async_hooks: async_resource_snapshot_json
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_TYPE = utf8:"test-res"
 
 @test "node.async_hooks async_resource_snapshot_json"():

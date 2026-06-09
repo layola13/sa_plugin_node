@@ -6194,3 +6194,199 @@
     %p_1 = add __m_status_e3504cae, 0
     !__m_status_e3504cae
 [END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_SNAPSHOT_JSON %p_0, %p_1, %p_2
+    __m_slot_814aa657_0 = stack_alloc 8
+    __m_slot_814aa657_1 = stack_alloc 8
+    __m_status_814aa657 = call @sa_node_plugin_async_hooks_snapshot_json(&__m_slot_814aa657_0, &__m_slot_814aa657_1)
+    !%p_2
+    %p_2 = add __m_status_814aa657, 0
+    !__m_status_814aa657
+    __m_load_814aa657_p_0 = load __m_slot_814aa657_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_814aa657_p_0, 0
+    !__m_load_814aa657_p_0
+    __m_load_814aa657_p_1 = load __m_slot_814aa657_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_814aa657_p_1, 0
+    !__m_load_814aa657_p_1
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_63212c43_0 = stack_alloc 8
+    __m_slot_63212c43_1 = stack_alloc 8
+    __m_status_63212c43 = call @sa_node_plugin_async_hooks_status_json(&__m_slot_63212c43_0, &__m_slot_63212c43_1)
+    !%p_2
+    %p_2 = add __m_status_63212c43, 0
+    !__m_status_63212c43
+    __m_load_63212c43_p_0 = load __m_slot_63212c43_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_63212c43_p_0, 0
+    !__m_load_63212c43_p_0
+    __m_load_63212c43_p_1 = load __m_slot_63212c43_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_63212c43_p_1, 0
+    !__m_load_63212c43_p_1
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TOP_EXPORTS_JSON %p_0, %p_1, %p_2
+    __ah_top_exports_ptr_slot = stack_alloc 8
+    __ah_top_exports_len_slot = stack_alloc 8
+    __ah_top_exports_status = call @sa_node_plugin_async_hooks_exports_json(&__ah_top_exports_ptr_slot, &__ah_top_exports_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_exports_status, 0
+    !__ah_top_exports_status
+    __ah_top_exports_ptr = load __ah_top_exports_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_exports_ptr, 0
+    !__ah_top_exports_ptr
+    __ah_top_exports_len = load __ah_top_exports_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_exports_len, 0
+    !__ah_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TOP_CONFIG_JSON %p_0, %p_1, %p_2
+    __ah_top_config_ptr_slot = stack_alloc 8
+    __ah_top_config_len_slot = stack_alloc 8
+    __ah_top_config_status = call @sa_node_plugin_async_hooks_config_json(&__ah_top_config_ptr_slot, &__ah_top_config_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_config_status, 0
+    !__ah_top_config_status
+    __ah_top_config_ptr = load __ah_top_config_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_config_ptr, 0
+    !__ah_top_config_ptr
+    __ah_top_config_len = load __ah_top_config_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_config_len, 0
+    !__ah_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TOP_FEATURE_SUPPORT_JSON %p_0, %p_1, %p_2
+    __ah_top_feature_ptr_slot = stack_alloc 8
+    __ah_top_feature_len_slot = stack_alloc 8
+    __ah_top_feature_status = call @sa_node_plugin_async_hooks_feature_support_json(&__ah_top_feature_ptr_slot, &__ah_top_feature_len_slot)
+    !%p_2
+    %p_2 = add __ah_top_feature_status, 0
+    !__ah_top_feature_status
+    __ah_top_feature_ptr = load __ah_top_feature_ptr_slot+0 as ptr
+    !%p_0
+    %p_0 = add __ah_top_feature_ptr, 0
+    !__ah_top_feature_ptr
+    __ah_top_feature_len = load __ah_top_feature_len_slot+0 as u64
+    !%p_1
+    %p_1 = add __ah_top_feature_len, 0
+    !__ah_top_feature_len
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_EXECUTION_ASYNC_ID %p_0
+    __m_slot_8ddc8ec0_0 = stack_alloc 8
+    __m_status_8ddc8ec0 = call @sa_node_plugin_async_hooks_execution_async_id(&__m_slot_8ddc8ec0_0)
+    !__m_status_8ddc8ec0
+    __m_load_8ddc8ec0_p_0 = load __m_slot_8ddc8ec0_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_8ddc8ec0_p_0, 0
+    !__m_load_8ddc8ec0_p_0
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_TRIGGER_ASYNC_ID %p_0
+    __m_slot_df78a949_0 = stack_alloc 8
+    __m_status_df78a949 = call @sa_node_plugin_async_hooks_trigger_async_id(&__m_slot_df78a949_0)
+    !__m_status_df78a949
+    __m_load_df78a949_p_0 = load __m_slot_df78a949_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_df78a949_p_0, 0
+    !__m_load_df78a949_p_0
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_CREATE %p_0, %p_1, %p_2, %p_3
+    __m_slot_cafef336_0 = stack_alloc 8
+    __m_status_cafef336 = call @sa_node_plugin_async_hooks_async_resource_create(%p_0, %p_1, %p_2, &__m_slot_cafef336_0)
+    !__m_status_cafef336
+    __m_load_cafef336_p_3 = load __m_slot_cafef336_0+0 as ptr
+    !%p_3
+    %p_3 = add __m_load_cafef336_p_3, 0
+    !__m_load_cafef336_p_3
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_FREE %p_0
+    __m_status_90ff5583 = call @sa_node_plugin_async_hooks_async_resource_free(%p_0)
+    !__m_status_90ff5583
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_HOOKS_ASYNC_RESOURCE_SNAPSHOT_JSON %p_0, %p_1, %p_2
+    __m_slot_b5d588d5_0 = stack_alloc 8
+    __m_slot_b5d588d5_1 = stack_alloc 8
+    __m_status_b5d588d5 = call @sa_node_plugin_async_hooks_async_resource_snapshot_json(%p_0, &__m_slot_b5d588d5_0, &__m_slot_b5d588d5_1)
+    !__m_status_b5d588d5
+    __m_load_b5d588d5_p_1 = load __m_slot_b5d588d5_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_b5d588d5_p_1, 0
+    !__m_load_b5d588d5_p_1
+    __m_load_b5d588d5_p_2 = load __m_slot_b5d588d5_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_b5d588d5_p_2, 0
+    !__m_load_b5d588d5_p_2
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_15917300_0 = stack_alloc 8
+    __m_slot_15917300_1 = stack_alloc 8
+    __m_status_15917300 = call @sa_node_plugin_async_context_tracking_status_json(&__m_slot_15917300_0, &__m_slot_15917300_1)
+    !%p_2
+    %p_2 = add __m_status_15917300, 0
+    !__m_status_15917300
+    __m_load_15917300_p_0 = load __m_slot_15917300_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_15917300_p_0, 0
+    !__m_load_15917300_p_0
+    __m_load_15917300_p_1 = load __m_slot_15917300_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_15917300_p_1, 0
+    !__m_load_15917300_p_1
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_async_context_tracking_snapshot_ptr_slot = stack_alloc 8
+    __m_async_context_tracking_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_snapshot_json(&__m_async_context_tracking_snapshot_ptr_slot, &__m_async_context_tracking_snapshot_len_slot)
+    %out_ptr = load __m_async_context_tracking_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_async_context_tracking_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_ENTER %out_depth, %out_status, %handle
+    __m_async_context_tracking_enter_depth_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_enter(%handle, &__m_async_context_tracking_enter_depth_slot)
+    %out_depth = load __m_async_context_tracking_enter_depth_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_EXIT %out_async_id, %out_popped, %out_status
+    __m_async_context_tracking_exit_async_id_slot = stack_alloc 8
+    __m_async_context_tracking_exit_popped_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_exit(&__m_async_context_tracking_exit_async_id_slot, &__m_async_context_tracking_exit_popped_slot)
+    %out_async_id = load __m_async_context_tracking_exit_async_id_slot+0 as u64
+    %out_popped = load __m_async_context_tracking_exit_popped_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_EXECUTION_ASYNC_ID %out_id, %out_status
+    __m_async_context_tracking_exec_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_execution_async_id(&__m_async_context_tracking_exec_id_slot)
+    %out_id = load __m_async_context_tracking_exec_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_TRIGGER_ASYNC_ID %out_id, %out_status
+    __m_async_context_tracking_trigger_id_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_trigger_async_id(&__m_async_context_tracking_trigger_id_slot)
+    %out_id = load __m_async_context_tracking_trigger_id_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_DEPTH %out_depth, %out_status
+    __m_async_context_tracking_depth_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_async_context_tracking_depth(&__m_async_context_tracking_depth_slot)
+    %out_depth = load __m_async_context_tracking_depth_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASYNC_CONTEXT_TRACKING_RESET %out_status
+    %out_status = call @sa_node_plugin_async_context_tracking_reset()
+[END_MACRO]

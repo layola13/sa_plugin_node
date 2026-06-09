@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `trace_events`
+- Scope: installed main `node.sal` public macro coverage for `sys`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `trace_events` top-level metadata plus tracing lifecycle/category helpers available through `node.sal`
+  - `sys` top-level metadata plus `format`, `inspect`, `debuglog`, `inherits`, and deprecation helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` sys helper macro tranche completed:
+  - `sys` top-level status, exports, config, feature-support, and deprecation helpers available through `node.sal`
+  - `sys.format`, `sys.inspect`, `sys.debuglog`, and `sys.inherits` available through `node.sal`
+  - `tests/node_test_sys_top.sa` now validates through `node.sal` only
 
 - installed main `node.sal` trace_events helper macro tranche completed:
   - `trace_events` top-level status, exports, config, and feature-support helpers available through `node.sal`

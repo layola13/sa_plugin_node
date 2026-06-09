@@ -63,14 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `url` plus dependent `util` helpers
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `stream`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `url` metadata / handle / helper macros available through `node.sal`
-  - `url` mixed helper tests no longer require `node_extra.sal` for their dependent `util` helper macros
+  - `stream` top-level / constructor / pipeline / destroy macros available through `node.sal`
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` stream helper macro tranche completed:
+  - `stream` top-level / constructor / pipeline / destroy macros available through `node.sal`
+  - `tests/node_test_stream_top.sa`, `node_test_streams_extra.sa`, `node_test_stream_pipeline.sa`, `node_test_stream_finished.sa`, `node_test_stream_destroy.sa`, and `node_test_stream_compose.sa` now validate through `node.sal` only
 - installed main `node.sal` url/util helper macro tranche completed:
   - `url` metadata / handle / helper macros available through `node.sal`
   - dependent `util` helper macros used by `tests/node_test_url_util_extra.sa` available through `node.sal`

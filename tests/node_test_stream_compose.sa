@@ -1,6 +1,5 @@
 // SA tests for Node stream: compose
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.stream compose"():
 L_ENTRY:

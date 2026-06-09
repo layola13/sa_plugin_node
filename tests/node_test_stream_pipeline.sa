@@ -1,6 +1,5 @@
 // SA tests for Node stream extras: pipeline, finished
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.stream pipeline with duplex pair"():
 L_ENTRY:

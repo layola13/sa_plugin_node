@@ -1,6 +1,5 @@
 // SA tests for Node stream top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.stream top level facade helpers"():
 L_ENTRY:

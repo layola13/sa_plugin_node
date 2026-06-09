@@ -6601,6 +6601,47 @@ test "node plugin http2 top-level facade helpers" {
     try std.testing.expect(std.mem.indexOf(u8, feature, "\"pushStreams\":{\"supported\":false") != null);
 }
 
+test "node plugin http3 top-level facade helpers" {
+    var status_ptr: ?[*]const u8 = null;
+    var status_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_status_json(&status_ptr, &status_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(status_ptr, status_len);
+    const status = (status_ptr orelse return error.NullHttp3TopStatus)[0..@intCast(status_len)];
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"module\":\"http3\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"mode\":\"top-level-native-http3-facade\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"createSession\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"sessionRecvDatagram\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"streams\":false") != null);
+
+    var exports_ptr: ?[*]const u8 = null;
+    var exports_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_exports_json(&exports_ptr, &exports_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(exports_ptr, exports_len);
+    const exports_json = (exports_ptr orelse return error.NullHttp3TopExports)[0..@intCast(exports_len)];
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"constants\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"createSession\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exports_json, "\"sessionFree\"") != null);
+
+    var config_ptr: ?[*]const u8 = null;
+    var config_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_config_json(&config_ptr, &config_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(config_ptr, config_len);
+    const config = (config_ptr orelse return error.NullHttp3TopConfig)[0..@intCast(config_len)];
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"transport\":\"explicit UDP-backed QUIC endpoint handle reused by native HTTP/3 session handles\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"sessionModel\":\"explicit authority/path/method snapshot handle with datagram send and receive helpers\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, config, "\"alpn\":\"h3\"") != null);
+
+    var feature_ptr: ?[*]const u8 = null;
+    var feature_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_http3_feature_support_json(&feature_ptr, &feature_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
+    const feature = (feature_ptr orelse return error.NullHttp3TopFeatureSupport)[0..@intCast(feature_len)];
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createSession\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"sessionSendDatagram\":{\"supported\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"createServer\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature, "\"request\":{\"supported\":false") != null);
+}
+
 test "node plugin http top-level facade helpers" {
     var status_ptr: ?[*]const u8 = null;
     var status_len: u64 = 0;

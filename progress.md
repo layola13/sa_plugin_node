@@ -63,13 +63,21 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` top-level parity for `cpuUsage`
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: explicit `http3` top-level facade metadata over the existing native session/datagram subset
+- Current status: `4 / 4` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.cpuUsage`
+  - `http3.exports`
+  - `http3.config`
+  - `http3.featureSupport`
+  - `http3` top-level status alignment
 
 ## Recent Completed Helper Features
 
+- `http3` top-level metadata tranche completed:
+  - `http3.exports`
+  - `http3.config`
+  - `http3.featureSupport`
+  - `http3` top-level status alignment
 - `process` cpu usage helper tranche completed:
   - `process.cpuUsage`
 - `process` credential helper tranche completed:

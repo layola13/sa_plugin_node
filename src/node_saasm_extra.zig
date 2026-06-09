@@ -6618,6 +6618,16 @@ const http2_export_names = [_][]const u8{
     "Http2ServerResponse",
 };
 
+const http3_export_names = [_][]const u8{
+    "constants",
+    "createSession",
+    "sessionSnapshot",
+    "sessionSendDatagram",
+    "sessionRecvDatagram",
+    "sessionClose",
+    "sessionFree",
+};
+
 const http_export_names = [_][]const u8{
     "_connectionListener",
     "METHODS",
@@ -8084,14 +8094,68 @@ pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_http3_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const supported = quicNgTcp2Available() and quicNgHttp3Available() and quicOpenSslAvailable();
-    return writeStatusJson(
-        out_ptr,
-        out_len,
-        "http3",
-        supported,
-        if (supported) "HTTP/3 constants and native library capability detection are exposed; request/session APIs require ngtcp2/nghttp3 integration" else "HTTP/3 constants are exposed but ngtcp2/nghttp3/OpenSSL stack is not fully available for transport",
-    );
+    const allocator = std.heap.page_allocator;
+    const ngtcp2 = quicNgTcp2Available();
+    const nghttp3 = quicNgHttp3Available();
+    const openssl = quicOpenSslAvailable();
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_http3_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"module\":\"http3\",\"supported\":") catch return fail();
+    out.appendSlice(if (ngtcp2 and nghttp3 and openssl) "true" else "false") catch return fail();
+    out.appendSlice(",\"mode\":\"top-level-native-http3-facade\",\"exports\":") catch return fail();
+    appendStringArray(&out, &http3_export_names) catch return fail();
+    out.appendSlice(",\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"ngtcp2Available\":") catch return fail();
+    out.appendSlice(if (ngtcp2) "true" else "false") catch return fail();
+    out.appendSlice(",\"nghttp3Available\":") catch return fail();
+    out.appendSlice(if (nghttp3) "true" else "false") catch return fail();
+    out.appendSlice(",\"opensslAvailable\":") catch return fail();
+    out.appendSlice(if (openssl) "true" else "false") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"constants\":true,\"createSession\":true,\"sessionSnapshot\":true,\"sessionSendDatagram\":true,\"sessionRecvDatagram\":true,\"sessionClose\":true,\"sessionFree\":true,\"connect\":false,\"createServer\":false,\"streams\":false,\"request\":false},\"capabilities\":[\"HTTP/3 ALPN and RFC constant metadata\",\"explicit HTTP/3 session handles over the existing UDP-backed QUIC endpoint helpers\",\"authority/path/method snapshot metadata plus datagram send and receive over the underlying native socket\",\"runtime capability detection for ngtcp2, nghttp3, and OpenSSL availability\"],\"limitations\":[\"no JavaScript ClientHttp3Session, request, response, or stream object model\",\"no QPACK header compression, request/response framing, or server push semantics\",\"createSession requires an explicit live QUIC endpoint handle and does not perform an HTTP/3 handshake by itself\",\"datagram helpers operate on the underlying UDP transport rather than full HTTP/3 stream semantics\"]}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http3_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    defer out.deinit();
+    appendStringArray(&out, &http3_export_names) catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http3_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const allocator = std.heap.page_allocator;
+    const ngtcp2 = quicNgTcp2Available();
+    const nghttp3 = quicNgHttp3Available();
+    const openssl = quicOpenSslAvailable();
+
+    var constants_ptr: ?[*]const u8 = null;
+    var constants_len: u64 = 0;
+    if (sa_node_plugin_http3_constants_json(&constants_ptr, &constants_len) != 0) return fail();
+    defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"constants\":") catch return fail();
+    out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
+    out.appendSlice(",\"transport\":\"explicit UDP-backed QUIC endpoint handle reused by native HTTP/3 session handles\",\"capabilityDetection\":{\"ngtcp2\":") catch return fail();
+    out.appendSlice(if (ngtcp2) "true" else "false") catch return fail();
+    out.appendSlice(",\"nghttp3\":") catch return fail();
+    out.appendSlice(if (nghttp3) "true" else "false") catch return fail();
+    out.appendSlice(",\"openssl\":") catch return fail();
+    out.appendSlice(if (openssl) "true" else "false") catch return fail();
+    out.appendSlice("},\"sessionModel\":\"explicit authority/path/method snapshot handle with datagram send and receive helpers\",\"streamModel\":\"not-modeled\",\"serverModel\":\"not-modeled\",\"alpn\":\"h3\"}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
+pub export fn sa_node_plugin_http3_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    return writeOwnedString(out_ptr, out_len, "{\"constants\":{\"supported\":true,\"mode\":\"static ALPN and RFC constant catalog JSON\"},\"createSession\":{\"supported\":true,\"mode\":\"allocate explicit native HTTP/3 session handle over an existing QUIC endpoint handle\",\"limitations\":[\"requires a live endpoint handle\",\"does not perform HTTP/3 handshake or stream creation\"]},\"sessionSnapshot\":{\"supported\":true,\"mode\":\"native authority/path/method session metadata snapshot\"},\"sessionSendDatagram\":{\"supported\":true,\"mode\":\"send datagrams through the connected underlying UDP transport\",\"limitations\":[\"requires a connected endpoint handle\",\"does not map to HTTP/3 request or stream bodies\"]},\"sessionRecvDatagram\":{\"supported\":true,\"mode\":\"receive datagrams with host and port metadata from the underlying UDP transport\",\"limitations\":[\"does not parse HTTP/3 frames or QPACK headers\"]},\"sessionClose\":{\"supported\":true,\"mode\":\"mark the explicit session handle closed\"},\"sessionFree\":{\"supported\":true,\"mode\":\"release the explicit native session handle\"},\"connect\":{\"supported\":false,\"reason\":\"Node-style ClientHttp3Session connection objects are not modeled\"},\"createServer\":{\"supported\":false,\"reason\":\"HTTP/3 server listener and request stream object model are not modeled\"},\"streams\":{\"supported\":false,\"reason\":\"HTTP/3 bidirectional or unidirectional stream lifecycle is not modeled\"},\"request\":{\"supported\":false,\"reason\":\"HTTP/3 request and response framing semantics are not modeled\"}}");
 }
 
 pub export fn sa_node_plugin_tls_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `permissions/iterable_streams`
+- Scope: installed main `node.sal` public macro coverage for `debugger`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `permissions` and `iterable_streams` status plus runtime helper macros available through `node.sal`
+  - `debugger` status helper available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` debugger helper macro tranche completed:
+  - `debugger` status helper available through `node.sal`
+  - `tests/node_test_status_json6.sa` now validates through `node.sal` only
 
 - installed main `node.sal` permissions/iterable_streams helper macro tranche completed:
   - `permissions` status, enabled/audit-mode flags, available/declared manifests, and scope-check helpers available through `node.sal`

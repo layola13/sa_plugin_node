@@ -3518,6 +3518,7 @@ test "node plugin module top level native facade" {
     try std.testing.expect(std.mem.indexOf(u8, status, "\"builtinModules\":") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"compileCacheStatus\":") != null);
     try std.testing.expect(std.mem.indexOf(u8, status, "\"createRequire\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status, "\"findSourceMap\":true") != null);
 
     var exports_ptr: ?[*]const u8 = null;
     var exports_len: u64 = 0;
@@ -3570,8 +3571,11 @@ test "node plugin module top level native facade" {
     try tmp.dir.makePath("pkg/src");
     try tmp.dir.writeFile(.{ .sub_path = "pkg/package.json", .data = "{\"name\":\"demo\"}" });
     try tmp.dir.writeFile(.{ .sub_path = "pkg/src/index.js", .data = "module.exports = 1;" });
+    try tmp.dir.writeFile(.{ .sub_path = "pkg/src/mapped.js", .data = "console.log('mapped');\n//# sourceMappingURL=mapped.js.map\n" });
     const entry_path = try tmp.dir.realpathAlloc(std.testing.allocator, "pkg/src/index.js");
     defer std.testing.allocator.free(entry_path);
+    const mapped_path = try tmp.dir.realpathAlloc(std.testing.allocator, "pkg/src/mapped.js");
+    defer std.testing.allocator.free(mapped_path);
 
     var package_ptr: ?[*]const u8 = null;
     var package_len: u64 = 0;
@@ -3617,12 +3621,22 @@ test "node plugin module top level native facade" {
     try std.testing.expect(std.mem.indexOf(u8, source_maps2, "\"enabled\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, source_maps2, "\"nodeModules\":true") != null);
 
+    var find_map_ptr: ?[*]const u8 = null;
+    var find_map_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_find_source_map_json(mapped_path.ptr, mapped_path.len, &find_map_ptr, &find_map_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(find_map_ptr, find_map_len);
+    const find_map_json = (find_map_ptr orelse return error.NullModuleFindSourceMap)[0..@intCast(find_map_len)];
+    try std.testing.expect(std.mem.indexOf(u8, find_map_json, "\"found\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, find_map_json, "mapped.js.map") != null);
+    try std.testing.expect(std.mem.indexOf(u8, find_map_json, "\"nodeModules\":true") != null);
+
     var feature_ptr: ?[*]const u8 = null;
     var feature_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_module_feature_support_json(&feature_ptr, &feature_len));
     defer _ = plugin.sa_node_plugin_free_buffer(feature_ptr, feature_len);
     const feature_json = (feature_ptr orelse return error.NullModuleFeatureSupport)[0..@intCast(feature_len)];
     try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"createRequire\":{\"supported\":false") != null);
+    try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"findSourceMap\":{\"supported\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, feature_json, "\"stripTypeScriptTypes\":{\"supported\":false") != null);
 }
 

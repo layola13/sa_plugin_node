@@ -649,6 +649,7 @@
 @extern sa_node_plugin_module_get_compile_cache_dir_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_get_source_maps_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_set_source_maps_support(enabled: u64, node_modules: u64, generated_code: u64) -> u64
+@extern sa_node_plugin_module_find_source_map_json(path_ptr: ptr, path_len: u64, &out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_module_feature_support_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_status_json(&out_ptr: ptr, &out_len: u64) -> u64
 @extern sa_node_plugin_inspector_exports_json(&out_ptr: ptr, &out_len: u64) -> u64

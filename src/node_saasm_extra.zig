@@ -7356,6 +7356,17 @@ fn moduleWriteSourceMapsSupportJson(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
+fn moduleFindSourceMappingUrl(text: []const u8) ?[]const u8 {
+    const marker = "sourceMappingURL=";
+    const idx = std.mem.lastIndexOf(u8, text, marker) orelse return null;
+    var value = text[idx + marker.len ..];
+    if (std.mem.indexOfScalar(u8, value, '\n')) |end| value = value[0..end];
+    if (std.mem.indexOfScalar(u8, value, '\r')) |end| value = value[0..end];
+    value = std.mem.trim(u8, value, " \t");
+    if (value.len == 0) return null;
+    return value;
+}
+
 fn moduleAppendGlobalPaths(out: *std.ArrayList(u8), allocator: std.mem.Allocator) !void {
     try out.append('[');
     var first = true;
@@ -7450,7 +7461,7 @@ pub export fn sa_node_plugin_module_status_json(out_ptr: ?*?[*]const u8, out_len
     }
     out.appendSlice("},\"sourceMapsSupport\":") catch return fail();
     out.appendSlice((source_maps_ptr orelse return fail())[0..@intCast(source_maps_len)]) catch return fail();
-    out.appendSlice(",\"featureSupport\":{\"findPackageJSON\":true,\"builtinModules\":true,\"globalPaths\":true,\"isBuiltin\":true,\"enableCompileCache\":true,\"flushCompileCache\":true,\"getCompileCacheDir\":true,\"getSourceMapsSupport\":true,\"setSourceMapsSupport\":true,\"createRequire\":false,\"register\":false,\"registerHooks\":false,\"runMain\":false,\"syncBuiltinESMExports\":false,\"findSourceMap\":false,\"SourceMap\":false,\"stripTypeScriptTypes\":false},\"limitations\":[\"no CommonJS or ESM loader execution semantics\",\"no createRequire/register/registerHooks/runMain integration\",\"no SourceMap object model or findSourceMap cache\",\"stripTypeScriptTypes is not yet modeled; use external tooling before feeding TypeScript to this plugin\"]}") catch return fail();
+    out.appendSlice(",\"featureSupport\":{\"findPackageJSON\":true,\"builtinModules\":true,\"globalPaths\":true,\"isBuiltin\":true,\"enableCompileCache\":true,\"flushCompileCache\":true,\"getCompileCacheDir\":true,\"getSourceMapsSupport\":true,\"setSourceMapsSupport\":true,\"createRequire\":false,\"register\":false,\"registerHooks\":false,\"runMain\":false,\"syncBuiltinESMExports\":false,\"findSourceMap\":true,\"SourceMap\":false,\"stripTypeScriptTypes\":false},\"limitations\":[\"no CommonJS or ESM loader execution semantics\",\"no createRequire/register/registerHooks/runMain integration\",\"findSourceMap only reports sourceMappingURL metadata and source-map support flags\",\"no SourceMap object model, mappings parsing, or Node internal source map cache\",\"stripTypeScriptTypes is not yet modeled; use external tooling before feeding TypeScript to this plugin\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -7540,8 +7551,39 @@ pub export fn sa_node_plugin_module_set_source_maps_support(enabled: u64, node_m
     return 0;
 }
 
+pub export fn sa_node_plugin_module_find_source_map_json(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const input = if (path_len == 0) return fail() else (path_ptr orelse return fail())[0..path_len];
+    const allocator = std.heap.page_allocator;
+    const absolute = moduleAbsolutePath(allocator, input) catch return fail();
+    defer allocator.free(absolute);
+
+    const file = std.fs.openFileAbsolute(absolute, .{}) catch return writeOwnedString(out_ptr, out_len, "null");
+    defer file.close();
+    const data = file.readToEndAlloc(allocator, 1024 * 1024) catch return fail();
+    defer allocator.free(data);
+
+    const source_map_url = moduleFindSourceMappingUrl(data) orelse return writeOwnedString(out_ptr, out_len, "null");
+    moduleInitSourceMapsSupport();
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    out.appendSlice("{\"found\":true,\"path\":") catch return fail();
+    appendJsonString(&out, absolute) catch return fail();
+    out.appendSlice(",\"sourceMapUrl\":") catch return fail();
+    appendJsonString(&out, source_map_url) catch return fail();
+    out.appendSlice(",\"support\":{") catch return fail();
+    out.appendSlice("\"enabled\":") catch return fail();
+    out.appendSlice(if (module_source_maps_enabled) "true" else "false") catch return fail();
+    out.appendSlice(",\"nodeModules\":") catch return fail();
+    out.appendSlice(if (module_source_maps_node_modules) "true" else "false") catch return fail();
+    out.appendSlice(",\"generatedCode\":") catch return fail();
+    out.appendSlice(if (module_source_maps_generated_code) "true" else "false") catch return fail();
+    out.appendSlice("}}") catch return fail();
+    return writeOwnedBytes(out_ptr, out_len, out.items);
+}
+
 pub export fn sa_node_plugin_module_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"createRequire\":{\"supported\":false,\"reason\":\"CommonJS loader instances are not modeled\"},\"register\":{\"supported\":false,\"reason\":\"ESM loader registration hooks are not modeled\"},\"registerHooks\":{\"supported\":false,\"reason\":\"ESM hook chaining is not modeled\"},\"runMain\":{\"supported\":false,\"reason\":\"Node main-module bootstrap is not modeled\"},\"syncBuiltinESMExports\":{\"supported\":false,\"reason\":\"builtin ESM/CJS export synchronization is not modeled\"},\"findSourceMap\":{\"supported\":false,\"reason\":\"source map cache lookup is not modeled\"},\"SourceMap\":{\"supported\":false,\"reason\":\"SourceMap object construction is not modeled\"},\"stripTypeScriptTypes\":{\"supported\":false,\"reason\":\"TypeScript syntax stripping is not yet modeled in this native facade\"}}");
+    return writeOwnedString(out_ptr, out_len, "{\"createRequire\":{\"supported\":false,\"reason\":\"CommonJS loader instances are not modeled\"},\"register\":{\"supported\":false,\"reason\":\"ESM loader registration hooks are not modeled\"},\"registerHooks\":{\"supported\":false,\"reason\":\"ESM hook chaining is not modeled\"},\"runMain\":{\"supported\":false,\"reason\":\"Node main-module bootstrap is not modeled\"},\"syncBuiltinESMExports\":{\"supported\":false,\"reason\":\"builtin ESM/CJS export synchronization is not modeled\"},\"findSourceMap\":{\"supported\":true,\"mode\":\"native sourceMappingURL lookup helper returning JSON metadata\",\"limitations\":[\"does not construct a JavaScript SourceMap instance\",\"does not parse mappings or use Node's internal source map cache\"]},\"SourceMap\":{\"supported\":false,\"reason\":\"SourceMap object construction is not modeled\"},\"stripTypeScriptTypes\":{\"supported\":false,\"reason\":\"TypeScript syntax stripping is not yet modeled in this native facade\"}}");
 }
 
 pub export fn sa_node_plugin_module_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

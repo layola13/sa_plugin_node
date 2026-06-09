@@ -63,13 +63,15 @@
 
 ## Current Helper Tranche
 
-- Scope: public non-VM/V8 `process` warning parity for `emitWarning`
+- Scope: public non-VM/V8 `module` source-map lookup parity for `findSourceMap`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `process.emitWarning`
+  - `module.findSourceMap`
 
 ## Recent Completed Helper Features
 
+- `module` source-map helper tranche completed:
+  - `module.findSourceMap`
 - `process` warning helper tranche completed:
   - `process.emitWarning`
 - `sys` helper tranche completed:

@@ -1797,6 +1797,121 @@
     %out_len = load __domain_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_MODULE_STATUS_JSON %out_ptr, %out_len
+    __module_status_ptr_slot = stack_alloc 8
+    __module_status_len_slot = stack_alloc 8
+    __module_status = call @sa_node_plugin_module_status_json(&__module_status_ptr_slot, &__module_status_len_slot)
+    !__module_status
+    %out_ptr = load __module_status_ptr_slot+0 as ptr
+    %out_len = load __module_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __module_exports_ptr_slot = stack_alloc 8
+    __module_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_exports_json(&__module_exports_ptr_slot, &__module_exports_len_slot)
+    %out_ptr = load __module_exports_ptr_slot+0 as ptr
+    %out_len = load __module_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __module_config_ptr_slot = stack_alloc 8
+    __module_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_config_json(&__module_config_ptr_slot, &__module_config_len_slot)
+    %out_ptr = load __module_config_ptr_slot+0 as ptr
+    %out_len = load __module_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_BUILTIN_MODULES_JSON %out_ptr, %out_len, %out_status
+    __module_builtin_ptr_slot = stack_alloc 8
+    __module_builtin_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_builtin_modules_json(&__module_builtin_ptr_slot, &__module_builtin_len_slot)
+    %out_ptr = load __module_builtin_ptr_slot+0 as ptr
+    %out_len = load __module_builtin_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __module_constants_ptr_slot = stack_alloc 8
+    __module_constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_constants_json(&__module_constants_ptr_slot, &__module_constants_len_slot)
+    %out_ptr = load __module_constants_ptr_slot+0 as ptr
+    %out_len = load __module_constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_GLOBAL_PATHS_JSON %out_ptr, %out_len, %out_status
+    __module_global_paths_ptr_slot = stack_alloc 8
+    __module_global_paths_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_global_paths_json(&__module_global_paths_ptr_slot, &__module_global_paths_len_slot)
+    %out_ptr = load __module_global_paths_ptr_slot+0 as ptr
+    %out_len = load __module_global_paths_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_IS_BUILTIN %out_bool, %out_status, %name, %name_len
+    __module_builtin_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_is_builtin(%name, %name_len, &__module_builtin_bool_slot)
+    %out_bool = load __module_builtin_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_FIND_PACKAGE_JSON %out_ptr, %out_len, %out_status, %path, %path_len
+    __module_find_pkg_ptr_slot = stack_alloc 8
+    __module_find_pkg_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_find_package_json(%path, %path_len, &__module_find_pkg_ptr_slot, &__module_find_pkg_len_slot)
+    %out_ptr = load __module_find_pkg_ptr_slot+0 as ptr
+    %out_len = load __module_find_pkg_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_ENABLE_COMPILE_CACHE_JSON %out_ptr, %out_len, %out_status
+    __module_enable_cache_ptr_slot = stack_alloc 8
+    __module_enable_cache_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_enable_compile_cache_json(&__module_enable_cache_ptr_slot, &__module_enable_cache_len_slot)
+    %out_ptr = load __module_enable_cache_ptr_slot+0 as ptr
+    %out_len = load __module_enable_cache_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_FLUSH_COMPILE_CACHE_JSON %out_ptr, %out_len, %out_status
+    __module_flush_cache_ptr_slot = stack_alloc 8
+    __module_flush_cache_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_flush_compile_cache_json(&__module_flush_cache_ptr_slot, &__module_flush_cache_len_slot)
+    %out_ptr = load __module_flush_cache_ptr_slot+0 as ptr
+    %out_len = load __module_flush_cache_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_GET_COMPILE_CACHE_DIR_JSON %out_ptr, %out_len, %out_status
+    __module_cache_dir_ptr_slot = stack_alloc 8
+    __module_cache_dir_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_get_compile_cache_dir_json(&__module_cache_dir_ptr_slot, &__module_cache_dir_len_slot)
+    %out_ptr = load __module_cache_dir_ptr_slot+0 as ptr
+    %out_len = load __module_cache_dir_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_GET_SOURCE_MAPS_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __module_source_maps_ptr_slot = stack_alloc 8
+    __module_source_maps_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_get_source_maps_support_json(&__module_source_maps_ptr_slot, &__module_source_maps_len_slot)
+    %out_ptr = load __module_source_maps_ptr_slot+0 as ptr
+    %out_len = load __module_source_maps_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_SET_SOURCE_MAPS_SUPPORT %out_status, %enabled, %node_modules, %generated_code
+    %out_status = call @sa_node_plugin_module_set_source_maps_support(%enabled, %node_modules, %generated_code)
+[END_MACRO]
+
+[MACRO] NODE_MODULE_FIND_SOURCE_MAP_JSON %out_ptr, %out_len, %out_status, %path_ptr, %path_len
+    __module_find_source_map_ptr_slot = stack_alloc 8
+    __module_find_source_map_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_find_source_map_json(%path_ptr, %path_len, &__module_find_source_map_ptr_slot, &__module_find_source_map_len_slot)
+    %out_ptr = load __module_find_source_map_ptr_slot+0 as ptr
+    %out_len = load __module_find_source_map_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_MODULE_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __module_feature_ptr_slot = stack_alloc 8
+    __module_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_module_feature_support_json(&__module_feature_ptr_slot, &__module_feature_len_slot)
+    %out_ptr = load __module_feature_ptr_slot+0 as ptr
+    %out_len = load __module_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

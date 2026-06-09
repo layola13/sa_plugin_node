@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `domain`
+- Scope: installed main `node.sal` public macro coverage for `module`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `domain` top-level metadata plus native handle/member/snapshot helpers available through `node.sal`
+  - `module` top-level metadata plus builtin/cache/source-map helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` module helper macro tranche completed:
+  - `module` top-level status, exports, config, builtin-modules, constants, global-paths, and feature-support helpers available through `node.sal`
+  - `module.isBuiltin`, `findPackageJSON`, compile-cache helpers, source-map support helpers, and `findSourceMap` available through `node.sal`
+  - `tests/node_test_module_top.sa` and `node_test_module.sa` now validate through `node.sal` only
 
 - installed main `node.sal` domain helper macro tranche completed:
   - `domain` top-level status, exports, active, and feature-support helpers available through `node.sal`

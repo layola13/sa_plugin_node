@@ -1,6 +1,5 @@
 // SA tests for Node module top-level native facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_FS = utf8:"fs"
 @const S_FAKE = utf8:"fake"

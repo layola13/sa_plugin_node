@@ -1,6 +1,5 @@
 // SA tests for Node assert/constants/sys compatibility helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_MSG = utf8:"boom"
 @const S_ACTUAL = utf8:"1"

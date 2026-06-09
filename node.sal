@@ -1518,6 +1518,124 @@
     %out_status = call @sa_node_plugin_sys_inherits(%child_ptr, %child_len, %super_ptr, %super_len)
 [END_MACRO]
 
+[MACRO] NODE_ASSERT_STATUS_JSON %out_ptr, %out_len, %out_status
+    __assert_status_ptr_slot = stack_alloc 8
+    __assert_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_status_json(&__assert_status_ptr_slot, &__assert_status_len_slot)
+    %out_ptr = load __assert_status_ptr_slot+0 as ptr
+    %out_len = load __assert_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __assert_exports_ptr_slot = stack_alloc 8
+    __assert_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_exports_json(&__assert_exports_ptr_slot, &__assert_exports_len_slot)
+    %out_ptr = load __assert_exports_ptr_slot+0 as ptr
+    %out_len = load __assert_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __assert_config_ptr_slot = stack_alloc 8
+    __assert_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_config_json(&__assert_config_ptr_slot, &__assert_config_len_slot)
+    %out_ptr = load __assert_config_ptr_slot+0 as ptr
+    %out_len = load __assert_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __assert_feature_ptr_slot = stack_alloc 8
+    __assert_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_feature_support_json(&__assert_feature_ptr_slot, &__assert_feature_len_slot)
+    %out_ptr = load __assert_feature_ptr_slot+0 as ptr
+    %out_len = load __assert_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_OK %out_ptr, %out_len, %out_status, %out_ok, %value, %message, %message_len
+    __assert_ok_ptr_slot = stack_alloc 8
+    __assert_ok_len_slot = stack_alloc 8
+    __assert_ok_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_ok(%value, %message, %message_len, &__assert_ok_ptr_slot, &__assert_ok_len_slot, &__assert_ok_bool_slot)
+    %out_ptr = load __assert_ok_ptr_slot+0 as ptr
+    %out_len = load __assert_ok_len_slot+0 as u64
+    %out_ok = load __assert_ok_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_EQUAL %out_ptr, %out_len, %out_status, %out_ok, %actual, %actual_len, %expected, %expected_len, %strict, %message, %message_len
+    __assert_equal_ptr_slot = stack_alloc 8
+    __assert_equal_len_slot = stack_alloc 8
+    __assert_equal_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_equal(%actual, %actual_len, %expected, %expected_len, %strict, %message, %message_len, &__assert_equal_ptr_slot, &__assert_equal_len_slot, &__assert_equal_bool_slot)
+    %out_ptr = load __assert_equal_ptr_slot+0 as ptr
+    %out_len = load __assert_equal_len_slot+0 as u64
+    %out_ok = load __assert_equal_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_DEEP_STRICT_EQUAL %out_ptr, %out_len, %out_status, %out_ok, %actual, %actual_len, %expected, %expected_len, %message, %message_len
+    __assert_deep_ptr_slot = stack_alloc 8
+    __assert_deep_len_slot = stack_alloc 8
+    __assert_deep_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_deep_strict_equal(%actual, %actual_len, %expected, %expected_len, %message, %message_len, &__assert_deep_ptr_slot, &__assert_deep_len_slot, &__assert_deep_bool_slot)
+    %out_ptr = load __assert_deep_ptr_slot+0 as ptr
+    %out_len = load __assert_deep_len_slot+0 as u64
+    %out_ok = load __assert_deep_bool_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_FAIL_JSON %out_ptr, %out_len, %out_status, %message, %message_len, %actual, %actual_len, %expected, %expected_len, %operator, %operator_len
+    __assert_fail_ptr_slot = stack_alloc 8
+    __assert_fail_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_fail_json(%message, %message_len, %actual, %actual_len, %expected, %expected_len, %operator, %operator_len, &__assert_fail_ptr_slot, &__assert_fail_len_slot)
+    %out_ptr = load __assert_fail_ptr_slot+0 as ptr
+    %out_len = load __assert_fail_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ASSERT_STRICT_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __assert_strict_config_ptr_slot = stack_alloc 8
+    __assert_strict_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_assert_strict_config_json(&__assert_strict_config_ptr_slot, &__assert_strict_config_len_slot)
+    %out_ptr = load __assert_strict_config_ptr_slot+0 as ptr
+    %out_len = load __assert_strict_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_JSON %out_ptr, %out_len, %out_status
+    __constants_ptr_slot = stack_alloc 8
+    __constants_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_json(&__constants_ptr_slot, &__constants_len_slot)
+    %out_ptr = load __constants_ptr_slot+0 as ptr
+    %out_len = load __constants_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_STATUS_JSON %out_ptr, %out_len, %out_status
+    __constants_status_ptr_slot = stack_alloc 8
+    __constants_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_status_json(&__constants_status_ptr_slot, &__constants_status_len_slot)
+    %out_ptr = load __constants_status_ptr_slot+0 as ptr
+    %out_len = load __constants_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __constants_exports_ptr_slot = stack_alloc 8
+    __constants_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_exports_json(&__constants_exports_ptr_slot, &__constants_exports_len_slot)
+    %out_ptr = load __constants_exports_ptr_slot+0 as ptr
+    %out_len = load __constants_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __constants_config_ptr_slot = stack_alloc 8
+    __constants_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_config_json(&__constants_config_ptr_slot, &__constants_config_len_slot)
+    %out_ptr = load __constants_config_ptr_slot+0 as ptr
+    %out_len = load __constants_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_CONSTANTS_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __constants_feature_ptr_slot = stack_alloc 8
+    __constants_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_constants_feature_support_json(&__constants_feature_ptr_slot, &__constants_feature_len_slot)
+    %out_ptr = load __constants_feature_ptr_slot+0 as ptr
+    %out_len = load __constants_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

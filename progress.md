@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `sys`
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `assert` and `constants`
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `sys` top-level metadata plus `format`, `inspect`, `debuglog`, `inherits`, and deprecation helpers available through `node.sal`
+  - `assert` top-level metadata plus assertion result/config helpers available through `node.sal`
+  - `constants` top-level metadata helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` assert/constants helper macro tranche completed:
+  - `assert` top-level status, exports, config, feature-support, `ok`, `equal`, `deepStrictEqual`, `fail`, and strict-config helpers available through `node.sal`
+  - `constants` top-level status, exports, config, feature-support, and constants JSON helpers available through `node.sal`
+  - `tests/node_test_assert_top.sa`, `node_test_constants_top.sa`, and `node_test_assert_constants_sys.sa` now validate through `node.sal` only
 
 - installed main `node.sal` sys helper macro tranche completed:
   - `sys` top-level status, exports, config, feature-support, and deprecation helpers available through `node.sal`

@@ -1,6 +1,5 @@
 // SA tests for Node url helper tranche extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_DOMAIN_UNICODE = utf8:"münich.example"
 @const S_PATH_REL = utf8:"./tmp url file.txt"

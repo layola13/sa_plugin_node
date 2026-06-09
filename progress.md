@@ -63,13 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `tls`
-- Current status: `1 / 1` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `url` plus dependent `util` helpers
+- Current status: `2 / 2` helper features completed (`100.0%`)
 - Planned helpers:
-  - `tls` cipher / CA / secure-context / socket macros available through `node.sal`
+  - `url` metadata / handle / helper macros available through `node.sal`
+  - `url` mixed helper tests no longer require `node_extra.sal` for their dependent `util` helper macros
 
 ## Recent Completed Helper Features
 
+- installed main `node.sal` url/util helper macro tranche completed:
+  - `url` metadata / handle / helper macros available through `node.sal`
+  - dependent `util` helper macros used by `tests/node_test_url_util_extra.sa` available through `node.sal`
+  - `tests/node_test_url_top.sa`, `node_test_url_helper_tranche.sa`, and `node_test_url_util_extra.sa` now validate through `node.sal` only
 - installed main `node.sal` tls helper macro tranche completed:
   - `tls` cipher / CA / secure-context / socket macros available through `node.sal`
   - `tests/node_test_tls_extra.sa` now validates through `node.sal` only

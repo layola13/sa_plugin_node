@@ -386,6 +386,215 @@
     %out_len = load __urlr_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_URL_STATUS_JSON %out_ptr, %out_len, %out_status
+    __url_top_status_ptr_slot = stack_alloc 8
+    __url_top_status_len_slot = stack_alloc 8
+    __url_top_status = call @sa_node_plugin_url_status_json(&__url_top_status_ptr_slot, &__url_top_status_len_slot)
+    !%out_status
+    %out_status = add __url_top_status, 0
+    !__url_top_status
+    __url_top_status_ptr = load __url_top_status_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __url_top_status_ptr, 0
+    !__url_top_status_ptr
+    __url_top_status_len = load __url_top_status_len_slot+0 as u64
+    !%out_len
+    %out_len = add __url_top_status_len, 0
+    !__url_top_status_len
+[END_MACRO]
+
+[MACRO] NODE_URL_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __url_top_exports_ptr_slot = stack_alloc 8
+    __url_top_exports_len_slot = stack_alloc 8
+    __url_top_exports_status = call @sa_node_plugin_url_exports_json(&__url_top_exports_ptr_slot, &__url_top_exports_len_slot)
+    !%out_status
+    %out_status = add __url_top_exports_status, 0
+    !__url_top_exports_status
+    __url_top_exports_ptr = load __url_top_exports_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __url_top_exports_ptr, 0
+    !__url_top_exports_ptr
+    __url_top_exports_len = load __url_top_exports_len_slot+0 as u64
+    !%out_len
+    %out_len = add __url_top_exports_len, 0
+    !__url_top_exports_len
+[END_MACRO]
+
+[MACRO] NODE_URL_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __url_top_config_ptr_slot = stack_alloc 8
+    __url_top_config_len_slot = stack_alloc 8
+    __url_top_config_status = call @sa_node_plugin_url_config_json(&__url_top_config_ptr_slot, &__url_top_config_len_slot)
+    !%out_status
+    %out_status = add __url_top_config_status, 0
+    !__url_top_config_status
+    __url_top_config_ptr = load __url_top_config_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __url_top_config_ptr, 0
+    !__url_top_config_ptr
+    __url_top_config_len = load __url_top_config_len_slot+0 as u64
+    !%out_len
+    %out_len = add __url_top_config_len, 0
+    !__url_top_config_len
+[END_MACRO]
+
+[MACRO] NODE_URL_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __url_top_feature_ptr_slot = stack_alloc 8
+    __url_top_feature_len_slot = stack_alloc 8
+    __url_top_feature_status = call @sa_node_plugin_url_feature_support_json(&__url_top_feature_ptr_slot, &__url_top_feature_len_slot)
+    !%out_status
+    %out_status = add __url_top_feature_status, 0
+    !__url_top_feature_status
+    __url_top_feature_ptr = load __url_top_feature_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __url_top_feature_ptr, 0
+    !__url_top_feature_ptr
+    __url_top_feature_len = load __url_top_feature_len_slot+0 as u64
+    !%out_len
+    %out_len = add __url_top_feature_len, 0
+    !__url_top_feature_len
+[END_MACRO]
+
+[MACRO] NODE_URL_NEW %p_0, %p_1, %p_2, %p_3
+    __m_slot_98bc6032_0 = stack_alloc 8
+    __m_status_98bc6032 = call @sa_node_plugin_url_new(%p_0, %p_1, &__m_slot_98bc6032_0)
+    !%p_3
+    %p_3 = add __m_status_98bc6032, 0
+    !__m_status_98bc6032
+    __m_load_98bc6032_p_2 = load __m_slot_98bc6032_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_98bc6032_p_2, 0
+    !__m_load_98bc6032_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_HREF %p_0, %p_1, %p_2, %p_3
+    __m_slot_63061582_0 = stack_alloc 8
+    __m_slot_63061582_1 = stack_alloc 8
+    __m_status_63061582 = call @sa_node_plugin_url_get_href(%p_0, &__m_slot_63061582_0, &__m_slot_63061582_1)
+    !%p_3
+    %p_3 = add __m_status_63061582, 0
+    !__m_status_63061582
+    __m_load_63061582_p_1 = load __m_slot_63061582_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_63061582_p_1, 0
+    !__m_load_63061582_p_1
+    __m_load_63061582_p_2 = load __m_slot_63061582_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_63061582_p_2, 0
+    !__m_load_63061582_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_PROTOCOL %p_0, %p_1, %p_2, %p_3
+    __m_slot_782e39a0_0 = stack_alloc 8
+    __m_slot_782e39a0_1 = stack_alloc 8
+    __m_status_782e39a0 = call @sa_node_plugin_url_get_protocol(%p_0, &__m_slot_782e39a0_0, &__m_slot_782e39a0_1)
+    !%p_3
+    %p_3 = add __m_status_782e39a0, 0
+    !__m_status_782e39a0
+    __m_load_782e39a0_p_1 = load __m_slot_782e39a0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_782e39a0_p_1, 0
+    !__m_load_782e39a0_p_1
+    __m_load_782e39a0_p_2 = load __m_slot_782e39a0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_782e39a0_p_2, 0
+    !__m_load_782e39a0_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_HOST %p_0, %p_1, %p_2, %p_3
+    __m_slot_2c8e3fe0_0 = stack_alloc 8
+    __m_slot_2c8e3fe0_1 = stack_alloc 8
+    __m_status_2c8e3fe0 = call @sa_node_plugin_url_get_host(%p_0, &__m_slot_2c8e3fe0_0, &__m_slot_2c8e3fe0_1)
+    !%p_3
+    %p_3 = add __m_status_2c8e3fe0, 0
+    !__m_status_2c8e3fe0
+    __m_load_2c8e3fe0_p_1 = load __m_slot_2c8e3fe0_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_2c8e3fe0_p_1, 0
+    !__m_load_2c8e3fe0_p_1
+    __m_load_2c8e3fe0_p_2 = load __m_slot_2c8e3fe0_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_2c8e3fe0_p_2, 0
+    !__m_load_2c8e3fe0_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_GET_PATHNAME %p_0, %p_1, %p_2, %p_3
+    __m_slot_2a2cb46a_0 = stack_alloc 8
+    __m_slot_2a2cb46a_1 = stack_alloc 8
+    __m_status_2a2cb46a = call @sa_node_plugin_url_get_pathname(%p_0, &__m_slot_2a2cb46a_0, &__m_slot_2a2cb46a_1)
+    !%p_3
+    %p_3 = add __m_status_2a2cb46a, 0
+    !__m_status_2a2cb46a
+    __m_load_2a2cb46a_p_1 = load __m_slot_2a2cb46a_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_2a2cb46a_p_1, 0
+    !__m_load_2a2cb46a_p_1
+    __m_load_2a2cb46a_p_2 = load __m_slot_2a2cb46a_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_2a2cb46a_p_2, 0
+    !__m_load_2a2cb46a_p_2
+[END_MACRO]
+
+[MACRO] NODE_URL_FREE %p_0, %p_1
+    __m_status_d76202f7 = call @sa_node_plugin_url_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_d76202f7, 0
+    !__m_status_d76202f7
+[END_MACRO]
+
+[MACRO] NODE_URL_DOMAIN_TO_ASCII %out_ptr, %out_len, %out_status, %domain, %domain_len
+    __m_url_domain_ascii_ptr_slot = stack_alloc 8
+    __m_url_domain_ascii_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_domain_to_ascii(%domain, %domain_len, &__m_url_domain_ascii_ptr_slot, &__m_url_domain_ascii_len_slot)
+    %out_ptr = load __m_url_domain_ascii_ptr_slot+0 as ptr
+    %out_len = load __m_url_domain_ascii_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_DOMAIN_TO_UNICODE %out_ptr, %out_len, %out_status, %domain, %domain_len
+    __m_url_domain_unicode_ptr_slot = stack_alloc 8
+    __m_url_domain_unicode_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_domain_to_unicode(%domain, %domain_len, &__m_url_domain_unicode_ptr_slot, &__m_url_domain_unicode_len_slot)
+    %out_ptr = load __m_url_domain_unicode_ptr_slot+0 as ptr
+    %out_len = load __m_url_domain_unicode_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_PATH_TO_FILE_URL %out_ptr, %out_len, %out_status, %path, %path_len
+    __m_url_path_to_file_ptr_slot = stack_alloc 8
+    __m_url_path_to_file_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_path_to_file_url(%path, %path_len, &__m_url_path_to_file_ptr_slot, &__m_url_path_to_file_len_slot)
+    %out_ptr = load __m_url_path_to_file_ptr_slot+0 as ptr
+    %out_len = load __m_url_path_to_file_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_FILE_URL_TO_PATH %out_ptr, %out_len, %out_status, %url, %url_len
+    __m_url_file_to_path_ptr_slot = stack_alloc 8
+    __m_url_file_to_path_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_file_url_to_path(%url, %url_len, &__m_url_file_to_path_ptr_slot, &__m_url_file_to_path_len_slot)
+    %out_ptr = load __m_url_file_to_path_ptr_slot+0 as ptr
+    %out_len = load __m_url_file_to_path_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_FILE_URL_TO_PATH_BUFFER %out_ptr, %out_len, %out_status, %url, %url_len
+    __m_url_file_to_path_buf_ptr_slot = stack_alloc 8
+    __m_url_file_to_path_buf_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_file_url_to_path_buffer(%url, %url_len, &__m_url_file_to_path_buf_ptr_slot, &__m_url_file_to_path_buf_len_slot)
+    %out_ptr = load __m_url_file_to_path_buf_ptr_slot+0 as ptr
+    %out_len = load __m_url_file_to_path_buf_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_TO_HTTP_OPTIONS %out_ptr, %out_len, %out_status, %handle
+    __m_url_to_http_options_ptr_slot = stack_alloc 8
+    __m_url_to_http_options_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_to_http_options(%handle, &__m_url_to_http_options_ptr_slot, &__m_url_to_http_options_len_slot)
+    %out_ptr = load __m_url_to_http_options_ptr_slot+0 as ptr
+    %out_len = load __m_url_to_http_options_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_URL_CAN_PARSE %out_bool, %out_status, %url, %url_len, %base, %base_len
+    __m_url_can_parse_bool_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_url_can_parse(%url, %url_len, %base, %base_len, &__m_url_can_parse_bool_slot)
+    %out_bool = load __m_url_can_parse_bool_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_UTIL_FORMAT %out_ptr, %out_len, %out_status, %format, %format_len, %args_json, %args_len
     __ut_ptr_slot = stack_alloc 8
     __ut_len_slot = stack_alloc 8
@@ -408,6 +617,258 @@
     %out_status = call @sa_node_plugin_util_inspect(&%in_json, %in_len, &__ui_ptr_slot, &__ui_len_slot)
     %out_ptr = load __ui_ptr_slot+0 as ptr
     %out_len = load __ui_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_CALLBACKIFY %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_870439c7_0 = stack_alloc 8
+    __m_slot_870439c7_1 = stack_alloc 8
+    __m_status_870439c7 = call @sa_node_plugin_util_callbackify(%p_0, %p_1, &__m_slot_870439c7_0, &__m_slot_870439c7_1)
+    !%p_4
+    %p_4 = add __m_status_870439c7, 0
+    !__m_status_870439c7
+    __m_load_870439c7_p_2 = load __m_slot_870439c7_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_870439c7_p_2, 0
+    !__m_load_870439c7_p_2
+    __m_load_870439c7_p_3 = load __m_slot_870439c7_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_870439c7_p_3, 0
+    !__m_load_870439c7_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_PROMISIFY %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_780285d2_0 = stack_alloc 8
+    __m_slot_780285d2_1 = stack_alloc 8
+    __m_status_780285d2 = call @sa_node_plugin_util_promisify(%p_0, %p_1, &__m_slot_780285d2_0, &__m_slot_780285d2_1)
+    !%p_4
+    %p_4 = add __m_status_780285d2, 0
+    !__m_status_780285d2
+    __m_load_780285d2_p_2 = load __m_slot_780285d2_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_780285d2_p_2, 0
+    !__m_load_780285d2_p_2
+    __m_load_780285d2_p_3 = load __m_slot_780285d2_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_780285d2_p_3, 0
+    !__m_load_780285d2_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_INHERITS %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_e1e17fc9 = call @sa_node_plugin_util_inherits(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_e1e17fc9, 0
+    !__m_status_e1e17fc9
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DEBUGLOG %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_3832ca9b_0 = stack_alloc 8
+    __m_slot_3832ca9b_1 = stack_alloc 8
+    __m_status_3832ca9b = call @sa_node_plugin_util_debuglog(%p_0, %p_1, &__m_slot_3832ca9b_0, &__m_slot_3832ca9b_1)
+    !%p_4
+    %p_4 = add __m_status_3832ca9b, 0
+    !__m_status_3832ca9b
+    __m_load_3832ca9b_p_2 = load __m_slot_3832ca9b_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_3832ca9b_p_2, 0
+    !__m_load_3832ca9b_p_2
+    __m_load_3832ca9b_p_3 = load __m_slot_3832ca9b_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_3832ca9b_p_3, 0
+    !__m_load_3832ca9b_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DEPRECATE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_87b4d45a = call @sa_node_plugin_util_deprecate(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_87b4d45a, 0
+    !__m_status_87b4d45a
+[END_MACRO]
+
+[MACRO] NODE_UTIL_DIFF %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6, %p_7, %p_8
+    __m_slot_0b185bdc_0 = stack_alloc 8
+    __m_slot_0b185bdc_1 = stack_alloc 8
+    __m_status_0b185bdc = call @sa_node_plugin_util_diff(%p_0, %p_1, %p_2, %p_3, %p_4, %p_5, &__m_slot_0b185bdc_0, &__m_slot_0b185bdc_1)
+    !%p_8
+    %p_8 = add __m_status_0b185bdc, 0
+    !__m_status_0b185bdc
+    __m_load_0b185bdc_p_6 = load __m_slot_0b185bdc_0+0 as ptr
+    !%p_6
+    %p_6 = add __m_load_0b185bdc_p_6, 0
+    !__m_load_0b185bdc_p_6
+    __m_load_0b185bdc_p_7 = load __m_slot_0b185bdc_1+0 as u64
+    !%p_7
+    %p_7 = add __m_load_0b185bdc_p_7, 0
+    !__m_load_0b185bdc_p_7
+[END_MACRO]
+
+[MACRO] NODE_UTIL_PARSE_ARGS %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_869951e5_0 = stack_alloc 8
+    __m_slot_869951e5_1 = stack_alloc 8
+    __m_status_869951e5 = call @sa_node_plugin_util_parse_args(%p_0, %p_1, %p_2, %p_3, &__m_slot_869951e5_0, &__m_slot_869951e5_1)
+    !%p_6
+    %p_6 = add __m_status_869951e5, 0
+    !__m_status_869951e5
+    __m_load_869951e5_p_4 = load __m_slot_869951e5_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_869951e5_p_4, 0
+    !__m_load_869951e5_p_4
+    __m_load_869951e5_p_5 = load __m_slot_869951e5_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_869951e5_p_5, 0
+    !__m_load_869951e5_p_5
+[END_MACRO]
+
+[MACRO] NODE_UTIL_PARSE_ENV %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_util_parse_env_0 = stack_alloc 8
+    __m_slot_util_parse_env_1 = stack_alloc 8
+    __m_status_util_parse_env = call @sa_node_plugin_util_parse_env(%p_0, %p_1, &__m_slot_util_parse_env_0, &__m_slot_util_parse_env_1)
+    !%p_4
+    %p_4 = add __m_status_util_parse_env, 0
+    !__m_status_util_parse_env
+    __m_load_util_parse_env_p_2 = load __m_slot_util_parse_env_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_util_parse_env_p_2, 0
+    !__m_load_util_parse_env_p_2
+    __m_load_util_parse_env_p_3 = load __m_slot_util_parse_env_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_util_parse_env_p_3, 0
+    !__m_load_util_parse_env_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_NAME %p_0, %p_1, %p_2, %p_3
+    __m_slot_util_error_name_0 = stack_alloc 8
+    __m_slot_util_error_name_1 = stack_alloc 8
+    __m_status_util_error_name = call @sa_node_plugin_util_get_system_error_name(%p_0, &__m_slot_util_error_name_0, &__m_slot_util_error_name_1)
+    !%p_3
+    %p_3 = add __m_status_util_error_name, 0
+    !__m_status_util_error_name
+    __m_load_util_error_name_p_1 = load __m_slot_util_error_name_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_util_error_name_p_1, 0
+    !__m_load_util_error_name_p_1
+    __m_load_util_error_name_p_2 = load __m_slot_util_error_name_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_util_error_name_p_2, 0
+    !__m_load_util_error_name_p_2
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_slot_util_error_message_0 = stack_alloc 8
+    __m_slot_util_error_message_1 = stack_alloc 8
+    __m_status_util_error_message = call @sa_node_plugin_util_get_system_error_message(%p_0, &__m_slot_util_error_message_0, &__m_slot_util_error_message_1)
+    !%p_3
+    %p_3 = add __m_status_util_error_message, 0
+    !__m_status_util_error_message
+    __m_load_util_error_message_p_1 = load __m_slot_util_error_message_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_util_error_message_p_1, 0
+    !__m_load_util_error_message_p_1
+    __m_load_util_error_message_p_2 = load __m_slot_util_error_message_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_util_error_message_p_2, 0
+    !__m_load_util_error_message_p_2
+[END_MACRO]
+
+[MACRO] NODE_UTIL_GET_SYSTEM_ERROR_MAP %p_0, %p_1, %p_2
+    __m_slot_util_error_map_0 = stack_alloc 8
+    __m_slot_util_error_map_1 = stack_alloc 8
+    __m_status_util_error_map = call @sa_node_plugin_util_get_system_error_map(&__m_slot_util_error_map_0, &__m_slot_util_error_map_1)
+    !%p_2
+    %p_2 = add __m_status_util_error_map, 0
+    !__m_status_util_error_map
+    __m_load_util_error_map_p_0 = load __m_slot_util_error_map_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_util_error_map_p_0, 0
+    !__m_load_util_error_map_p_0
+    __m_load_util_error_map_p_1 = load __m_slot_util_error_map_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_util_error_map_p_1, 0
+    !__m_load_util_error_map_p_1
+[END_MACRO]
+
+[MACRO] NODE_UTIL_MIME_TYPE %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_554f8baa_0 = stack_alloc 8
+    __m_slot_554f8baa_1 = stack_alloc 8
+    __m_status_554f8baa = call @sa_node_plugin_util_mime_type(%p_0, %p_1, &__m_slot_554f8baa_0, &__m_slot_554f8baa_1)
+    !%p_4
+    %p_4 = add __m_status_554f8baa, 0
+    !__m_status_554f8baa
+    __m_load_554f8baa_p_2 = load __m_slot_554f8baa_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_554f8baa_p_2, 0
+    !__m_load_554f8baa_p_2
+    __m_load_554f8baa_p_3 = load __m_slot_554f8baa_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_554f8baa_p_3, 0
+    !__m_load_554f8baa_p_3
+[END_MACRO]
+
+[MACRO] NODE_UTIL_STYLE_TEXT %p_0, %p_1, %p_2, %p_3, %p_4, %p_5, %p_6
+    __m_slot_8684af3d_0 = stack_alloc 8
+    __m_slot_8684af3d_1 = stack_alloc 8
+    __m_status_8684af3d = call @sa_node_plugin_util_style_text(%p_0, %p_1, %p_2, %p_3, &__m_slot_8684af3d_0, &__m_slot_8684af3d_1)
+    !%p_6
+    %p_6 = add __m_status_8684af3d, 0
+    !__m_status_8684af3d
+    __m_load_8684af3d_p_4 = load __m_slot_8684af3d_0+0 as ptr
+    !%p_4
+    %p_4 = add __m_load_8684af3d_p_4, 0
+    !__m_load_8684af3d_p_4
+    __m_load_8684af3d_p_5 = load __m_slot_8684af3d_1+0 as u64
+    !%p_5
+    %p_5 = add __m_load_8684af3d_p_5, 0
+    !__m_load_8684af3d_p_5
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TEXT_ENCODER_ENCODE %text_ptr, %text_len, %out_ptr, %out_len, %out_status
+    __util_text_encoder_ptr_slot = stack_alloc 8
+    __util_text_encoder_len_slot = stack_alloc 8
+    __util_text_encoder_status = call @sa_node_plugin_util_text_encoder_encode(%text_ptr, %text_len, &__util_text_encoder_ptr_slot, &__util_text_encoder_len_slot)
+    !%out_status
+    %out_status = add __util_text_encoder_status, 0
+    !__util_text_encoder_status
+    __util_text_encoder_ptr = load __util_text_encoder_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_text_encoder_ptr, 0
+    !__util_text_encoder_ptr
+    __util_text_encoder_len = load __util_text_encoder_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_text_encoder_len, 0
+    !__util_text_encoder_len
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TEXT_DECODER_DECODE %data_ptr, %data_len, %encoding_ptr, %encoding_len, %out_ptr, %out_len, %out_status
+    __util_text_decoder_ptr_slot = stack_alloc 8
+    __util_text_decoder_len_slot = stack_alloc 8
+    __util_text_decoder_status = call @sa_node_plugin_util_text_decoder_decode(%data_ptr, %data_len, %encoding_ptr, %encoding_len, &__util_text_decoder_ptr_slot, &__util_text_decoder_len_slot)
+    !%out_status
+    %out_status = add __util_text_decoder_status, 0
+    !__util_text_decoder_status
+    __util_text_decoder_ptr = load __util_text_decoder_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_text_decoder_ptr, 0
+    !__util_text_decoder_ptr
+    __util_text_decoder_len = load __util_text_decoder_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_text_decoder_len, 0
+    !__util_text_decoder_len
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TO_USV_STRING %input_ptr, %input_len, %out_ptr, %out_len, %out_status
+    __util_to_usv_string_ptr_slot = stack_alloc 8
+    __util_to_usv_string_len_slot = stack_alloc 8
+    __util_to_usv_string_status = call @sa_node_plugin_util_to_usv_string(%input_ptr, %input_len, &__util_to_usv_string_ptr_slot, &__util_to_usv_string_len_slot)
+    !%out_status
+    %out_status = add __util_to_usv_string_status, 0
+    !__util_to_usv_string_status
+    __util_to_usv_string_ptr = load __util_to_usv_string_ptr_slot+0 as ptr
+    !%out_ptr
+    %out_ptr = add __util_to_usv_string_ptr, 0
+    !__util_to_usv_string_ptr
+    __util_to_usv_string_len = load __util_to_usv_string_len_slot+0 as u64
+    !%out_len
+    %out_len = add __util_to_usv_string_len, 0
+    !__util_to_usv_string_len
 [END_MACRO]
 
 [MACRO] NODE_PUNYCODE_ENCODE %out_ptr, %out_len, %out_status, %in_data, %in_len

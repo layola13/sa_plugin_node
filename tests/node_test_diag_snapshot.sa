@@ -1,6 +1,5 @@
 // SA tests for Node diagnostics_channel: snapshot_json
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_CH = utf8:"snap-ch"
 
 @test "node.diagnostics_channel snapshot_json"():

@@ -1636,6 +1636,84 @@
     %out_len = load __constants_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TRACING_CHANNEL %name_ptr, %name_len, %out_handle
+    __diag_tracing_slot = stack_alloc 8
+    __diag_tracing_status = call @sa_node_plugin_diagnostics_channel_tracing_channel(%name_ptr, %name_len, &__diag_tracing_slot)
+    !__diag_tracing_status
+    %out_handle = load __diag_tracing_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_CREATE %name_ptr, %name_len, %out_channel, %out_status
+    __diag_channel_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_create(%name_ptr, %name_len, &__diag_channel_slot)
+    %out_channel = load __diag_channel_slot+0 as ptr
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_SUBSCRIBE %channel_ptr, %callback, %out_status
+    %out_status = call @sa_node_plugin_diagnostics_channel_subscribe(%channel_ptr, %callback)
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_UNSUBSCRIBE %channel_ptr, %callback, %out_status
+    %out_status = call @sa_node_plugin_diagnostics_channel_unsubscribe(%channel_ptr, %callback)
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_PUBLISH %channel_ptr, %data_ptr, %data_len, %out_count, %out_status
+    __diag_publish_count_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_publish(%channel_ptr, %data_ptr, %data_len, &__diag_publish_count_slot)
+    %out_count = load __diag_publish_count_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_HAS_SUBSCRIBERS %channel_ptr, %out_bool, %out_status
+    __diag_has_subscribers_slot = stack_alloc 4
+    %out_status = call @sa_node_plugin_diagnostics_channel_has_subscribers(%channel_ptr, &__diag_has_subscribers_slot)
+    %out_bool = load __diag_has_subscribers_slot+0 as u32
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_FREE %channel_ptr
+    __diag_free_status = call @sa_node_plugin_diagnostics_channel_free(%channel_ptr)
+    !__diag_free_status
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_SNAPSHOT_JSON %channel_ptr, %out_ptr, %out_len, %out_status
+    __diag_snapshot_ptr_slot = stack_alloc 8
+    __diag_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_snapshot_json(%channel_ptr, &__diag_snapshot_ptr_slot, &__diag_snapshot_len_slot)
+    %out_ptr = load __diag_snapshot_ptr_slot+0 as ptr
+    %out_len = load __diag_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_STATUS_JSON %out_ptr, %out_len, %out_status
+    __diag_status_ptr_slot = stack_alloc 8
+    __diag_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_status_json(&__diag_status_ptr_slot, &__diag_status_len_slot)
+    %out_ptr = load __diag_status_ptr_slot+0 as ptr
+    %out_len = load __diag_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __diag_exports_ptr_slot = stack_alloc 8
+    __diag_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_exports_json(&__diag_exports_ptr_slot, &__diag_exports_len_slot)
+    %out_ptr = load __diag_exports_ptr_slot+0 as ptr
+    %out_len = load __diag_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_FACTORIES_JSON %out_ptr, %out_len, %out_status
+    __diag_factories_ptr_slot = stack_alloc 8
+    __diag_factories_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_factories_json(&__diag_factories_ptr_slot, &__diag_factories_len_slot)
+    %out_ptr = load __diag_factories_ptr_slot+0 as ptr
+    %out_len = load __diag_factories_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_DIAGNOSTICS_CHANNEL_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __diag_feature_ptr_slot = stack_alloc 8
+    __diag_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_diagnostics_channel_feature_support_json(&__diag_feature_ptr_slot, &__diag_feature_len_slot)
+    %out_ptr = load __diag_feature_ptr_slot+0 as ptr
+    %out_len = load __diag_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

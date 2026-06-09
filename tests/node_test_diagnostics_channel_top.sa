@@ -1,6 +1,5 @@
 // SA tests for Node diagnostics_channel top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.diagnostics_channel top level helpers"():
 L_ENTRY:

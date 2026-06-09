@@ -1,6 +1,5 @@
 // SA tests for Node diagnostics_channel extras
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_CHNAME = utf8:"test-channel"
 
 @test "node.diagnostics_channel create and free"():

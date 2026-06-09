@@ -63,13 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `assert` and `constants`
-- Current status: `2 / 2` helper features completed (`100.0%`)
+- Scope: installed main `node.sal` public macro coverage for `diagnostics_channel`
+- Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `assert` top-level metadata plus assertion result/config helpers available through `node.sal`
-  - `constants` top-level metadata helpers available through `node.sal`
+  - `diagnostics_channel` top-level metadata plus create/publish/subscriber/snapshot helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` diagnostics_channel helper macro tranche completed:
+  - `diagnostics_channel` top-level status, exports, factories, and feature-support helpers available through `node.sal`
+  - `diagnostics_channel` create, subscribe, unsubscribe, publish, hasSubscribers, free, snapshot, and tracingChannel helpers available through `node.sal`
+  - `tests/node_test_diagnostics_channel_top.sa`, `node_test_diag_channel.sa`, and `node_test_diag_snapshot.sa` now validate through `node.sal` only
 
 - installed main `node.sal` assert/constants helper macro tranche completed:
   - `assert` top-level status, exports, config, feature-support, `ok`, `equal`, `deepStrictEqual`, `fail`, and strict-config helpers available through `node.sal`

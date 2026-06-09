@@ -63,14 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `querystring/punycode/readline.promises`
+- Scope: installed main `node.sal` public macro coverage for `util`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `querystring` top-level metadata and `unescapeBuffer` available through `node.sal`
-  - `punycode` top-level metadata, `version`, and `toUnicode` available through `node.sal`
-  - `readline.promises` lifecycle helpers used by existing tests available through `node.sal`
+  - `util` top-level metadata helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` util helper macro tranche completed:
+  - `util` top-level metadata helpers available through `node.sal`
+  - `tests/node_test_util_top.sa` now validates through `node.sal` only
 
 - installed main `node.sal` querystring/punycode/readline.promises helper macro tranche completed:
   - `querystring` top-level metadata helpers and `querystring.unescapeBuffer` available through `node.sal`

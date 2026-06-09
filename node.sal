@@ -1074,6 +1074,38 @@
     %out_len = load __vt_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_UTIL_STATUS_JSON %out_ptr, %out_len, %out_status
+    __util_status_ptr_slot = stack_alloc 8
+    __util_status_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_status_json(&__util_status_ptr_slot, &__util_status_len_slot)
+    %out_ptr = load __util_status_ptr_slot+0 as ptr
+    %out_len = load __util_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __util_exports_ptr_slot = stack_alloc 8
+    __util_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_exports_json(&__util_exports_ptr_slot, &__util_exports_len_slot)
+    %out_ptr = load __util_exports_ptr_slot+0 as ptr
+    %out_len = load __util_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TOP_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __util_config_ptr_slot = stack_alloc 8
+    __util_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_config_json(&__util_config_ptr_slot, &__util_config_len_slot)
+    %out_ptr = load __util_config_ptr_slot+0 as ptr
+    %out_len = load __util_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_UTIL_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __util_feature_ptr_slot = stack_alloc 8
+    __util_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_util_feature_support_json(&__util_feature_ptr_slot, &__util_feature_len_slot)
+    %out_ptr = load __util_feature_ptr_slot+0 as ptr
+    %out_len = load __util_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_CRYPTO_RANDOM_UUID %out_ptr, %out_len, %out_status
     __uuid_ptr_slot = stack_alloc 8
     __uuid_len_slot = stack_alloc 8

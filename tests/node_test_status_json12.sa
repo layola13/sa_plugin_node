@@ -1,6 +1,5 @@
 // SA tests for HTTPS STATUS_JSON
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.https status_json"():
 L_ENTRY:

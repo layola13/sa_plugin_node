@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `cluster`
+- Scope: installed main `node.sal` public macro coverage for `web_crypto/web_streams` status helpers
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `cluster` status, top-level metadata, primary setup, and worker lifecycle helper macros available through `node.sal`
+  - `web_crypto` and `web_streams` status helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` web_crypto/web_streams status helper tranche completed:
+  - `web_crypto` and `web_streams` status helpers available through `node.sal`
+  - `tests/node_test_status_json10.sa`, `node_test_status_json11.sa`, and `node_test_status_json12.sa` now validate through `node.sal` only, reusing existing `repl`, `test_runner`, and `https` status support already present in `node.sal`
 
 - installed main `node.sal` cluster helper macro tranche completed:
   - `cluster` status, exports, primary-config, feature-support, primary setup, scheduling-policy, primary snapshot, fork, and worker lifecycle/message helpers available through `node.sal`

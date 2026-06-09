@@ -7952,3 +7952,37 @@
     %out_ptr = load __m_cluster_feature_ptr_slot+0 as ptr
     %out_len = load __m_cluster_feature_len_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_WEB_CRYPTO_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_931d5555_0 = stack_alloc 8
+    __m_slot_931d5555_1 = stack_alloc 8
+    __m_status_931d5555 = call @sa_node_plugin_web_crypto_status_json(&__m_slot_931d5555_0, &__m_slot_931d5555_1)
+    !%p_2
+    %p_2 = add __m_status_931d5555, 0
+    !__m_status_931d5555
+    __m_load_931d5555_p_0 = load __m_slot_931d5555_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_931d5555_p_0, 0
+    !__m_load_931d5555_p_0
+    __m_load_931d5555_p_1 = load __m_slot_931d5555_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_931d5555_p_1, 0
+    !__m_load_931d5555_p_1
+[END_MACRO]
+
+[MACRO] NODE_WEB_STREAMS_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_3b6291eb_0 = stack_alloc 8
+    __m_slot_3b6291eb_1 = stack_alloc 8
+    __m_status_3b6291eb = call @sa_node_plugin_web_streams_status_json(&__m_slot_3b6291eb_0, &__m_slot_3b6291eb_1)
+    !%p_2
+    %p_2 = add __m_status_3b6291eb, 0
+    !__m_status_3b6291eb
+    __m_load_3b6291eb_p_0 = load __m_slot_3b6291eb_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_3b6291eb_p_0, 0
+    !__m_load_3b6291eb_p_0
+    __m_load_3b6291eb_p_1 = load __m_slot_3b6291eb_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_3b6291eb_p_1, 0
+    !__m_load_3b6291eb_p_1
+[END_MACRO]

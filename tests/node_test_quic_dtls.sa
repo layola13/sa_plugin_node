@@ -12,11 +12,23 @@
 L_ENTRY:
     endpoint = add 0, 0
     s_listen = add 0, 0
-    EXPAND NODE_QUIC_LISTEN endpoint, s_listen, 4, S_LOOP4, 9, 19771, S_H3, 2, S_CUBIC, 5, 1500
+    EXPAND NODE_QUIC_LISTEN endpoint, s_listen, 4, S_LOOP4, 9, 0, S_H3, 2, S_CUBIC, 5, 1500
     snap_ptr = add 0, 0
     snap_len = add 0, 0
     s_snap = add 0, 0
     EXPAND NODE_QUIC_ENDPOINT_SNAPSHOT_JSON snap_ptr, snap_len, s_snap, endpoint
+    qaddr_ptr = add 0, 0
+    qaddr_len = add 0, 0
+    s_qaddr = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_ADDRESS_JSON qaddr_ptr, qaddr_len, s_qaddr, endpoint
+    qaddr_ok = eq s_qaddr, 0
+    br qaddr_ok -> L_QUIC_ADDR_LEN, L_ERR_QUIC_ADDR
+L_QUIC_ADDR_LEN:
+    !qaddr_ok
+    qaddr_has_len = ugt qaddr_len, 0
+    br qaddr_has_len -> L_HAS_REF, L_ERR_QUIC_ADDR_LEN
+L_HAS_REF:
+    !qaddr_has_len
     has_ref = add 0, 0
     s_has_ref = add 0, 0
     EXPAND NODE_QUIC_ENDPOINT_HAS_REF s_has_ref, has_ref, endpoint
@@ -32,7 +44,7 @@ L_ENTRY:
     EXPAND NODE_DTLS_STATUS_JSON dtls_status_ptr, dtls_status_len
     dtls_server = add 0, 0
     s_dtls_listen = add 0, 0
-    EXPAND NODE_DTLS_LISTEN dtls_server, s_dtls_listen, 4, S_LOOP4, 9, 19772
+    EXPAND NODE_DTLS_LISTEN dtls_server, s_dtls_listen, 4, S_LOOP4, 9, 0
     dtls_listen_ok = eq s_dtls_listen, 0
     br dtls_listen_ok -> L_DTLS_SNAPSHOT, L_ERR_DTLS_LISTEN
 L_DTLS_SNAPSHOT:
@@ -41,10 +53,22 @@ L_DTLS_SNAPSHOT:
     dsnap_len = add 0, 0
     s_dsnap = add 0, 0
     EXPAND NODE_DTLS_ENDPOINT_SNAPSHOT_JSON dsnap_ptr, dsnap_len, s_dsnap, dtls_server
+    daddr_ptr = add 0, 0
+    daddr_len = add 0, 0
+    s_daddr = add 0, 0
+    EXPAND NODE_QUIC_ENDPOINT_ADDRESS_JSON daddr_ptr, daddr_len, s_daddr, dtls_server
     dsnap_ok = eq s_dsnap, 0
-    br dsnap_ok -> L_DTLS_SNAPSHOT_LEN, L_ERR_DTLS_SNAPSHOT
-L_DTLS_SNAPSHOT_LEN:
+    br dsnap_ok -> L_DTLS_ADDR, L_ERR_DTLS_SNAPSHOT
+L_DTLS_ADDR:
     !dsnap_ok
+    daddr_ok = eq s_daddr, 0
+    br daddr_ok -> L_DTLS_ADDR_LEN, L_ERR_DTLS_ADDR
+L_DTLS_ADDR_LEN:
+    !daddr_ok
+    daddr_has_len = ugt daddr_len, 0
+    br daddr_has_len -> L_DTLS_SNAPSHOT_LEN, L_ERR_DTLS_ADDR_LEN
+L_DTLS_SNAPSHOT_LEN:
+    !daddr_has_len
     dsnap_has_len = ugt dsnap_len, 0
     br dsnap_has_len -> L_CLOSE_DTLS, L_ERR_DTLS_SNAPSHOT_LEN
 L_CLOSE_DTLS:
@@ -61,7 +85,9 @@ L_CLOSE_HTTP3:
     EXPAND NODE_QUIC_ENDPOINT_CLOSE s_quic_close, endpoint
     free_dsnap = call @sa_node_plugin_free_buffer(dsnap_ptr, dsnap_len)
     free_dtls_status = call @sa_node_plugin_free_buffer(dtls_status_ptr, dtls_status_len)
+    free_daddr = call @sa_node_plugin_free_buffer(daddr_ptr, daddr_len)
     free_h3 = call @sa_node_plugin_free_buffer(h3_ptr, h3_len)
+    free_qaddr = call @sa_node_plugin_free_buffer(qaddr_ptr, qaddr_len)
     free_snap = call @sa_node_plugin_free_buffer(snap_ptr, snap_len)
     s_dtls_free = add 0, 0
     EXPAND NODE_DTLS_FREE s_dtls_free, dtls_server
@@ -73,7 +99,9 @@ L_CLOSE_HTTP3:
     !s_session_free
     !s_dtls_free
     !free_snap
+    !free_qaddr
     !free_h3
+    !free_daddr
     !free_dtls_status
     !free_dsnap
     !snap_len
@@ -82,11 +110,14 @@ L_CLOSE_HTTP3:
     !h3_ptr
     !dsnap_len
     !dsnap_ptr
+    !daddr_len
+    !daddr_ptr
     !s_quic_close
     !s_session_close
     !s_dtls_close
     !s_dsnap
     !s_dtls_listen
+    !s_daddr
     !dtls_status_len
     !dtls_status_ptr
     !s_h3
@@ -94,6 +125,7 @@ L_CLOSE_HTTP3:
     !has_ref
     !s_has_ref
     !s_snap
+    !s_qaddr
     !s_listen
     !dtls_server
     !session
@@ -111,6 +143,24 @@ L_ERR_DTLS_SNAPSHOT_LEN:
     !dsnap_has_len
     !dsnap_len
     !dsnap_ptr
+    panic(103)
+L_ERR_QUIC_ADDR:
+    !qaddr_ok
+    !s_qaddr
+    panic(103)
+L_ERR_QUIC_ADDR_LEN:
+    !qaddr_has_len
+    !qaddr_len
+    !qaddr_ptr
+    panic(103)
+L_ERR_DTLS_ADDR:
+    !daddr_ok
+    !s_daddr
+    panic(103)
+L_ERR_DTLS_ADDR_LEN:
+    !daddr_has_len
+    !daddr_len
+    !daddr_ptr
     panic(103)
 L_ERR_DTLS_CLOSE:
     !dtls_close_ok

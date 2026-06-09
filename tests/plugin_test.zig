@@ -6,10 +6,15 @@ extern fn setenv(name: [*:0]const u8, value: [*:0]const u8, overwrite: c_int) c_
 extern fn unsetenv(name: [*:0]const u8) c_int;
 
 fn jsonPort(bytes: []const u8) !u16 {
+    return jsonU16Field(bytes, "port");
+}
+
+fn jsonU16Field(bytes: []const u8, field: []const u8) !u16 {
     var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, bytes, .{});
     defer parsed.deinit();
-    const port_value = parsed.value.object.get("port") orelse return error.MissingPort;
-    return @intCast(port_value.integer);
+    const value = parsed.value.object.get(field) orelse return error.MissingJsonField;
+    if (value != .integer) return error.InvalidJsonField;
+    return @intCast(value.integer);
 }
 
 fn writeH2Frame(stream: std.net.Stream, frame_type: u8, flags: u8, stream_id: u32, payload: []const u8) !void {
@@ -6346,6 +6351,7 @@ test "node plugin quic http3 and dtls native endpoint subsets" {
     try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"server\":true") != null);
     try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"alpn\":\"h3\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, qsnap, "\"cc\":\"cubic\"") != null);
+    try std.testing.expect(try jsonU16Field(qsnap, "localPort") != 0);
 
     var qaddr_ptr: ?[*]const u8 = null;
     var qaddr_len: u64 = 0;
@@ -6433,7 +6439,9 @@ test "node plugin quic http3 and dtls native endpoint subsets" {
     var dtls_snap_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_endpoint_snapshot_json(dtls_client, &dtls_snap_ptr, &dtls_snap_len));
     defer _ = plugin.sa_node_plugin_free_buffer(dtls_snap_ptr, dtls_snap_len);
-    try std.testing.expect(std.mem.indexOf(u8, (dtls_snap_ptr orelse return error.NullDtlsSnapshot)[0..@intCast(dtls_snap_len)], "\"alpn\":\"dtls\"") != null);
+    const dtls_snap = (dtls_snap_ptr orelse return error.NullDtlsSnapshot)[0..@intCast(dtls_snap_len)];
+    try std.testing.expect(std.mem.indexOf(u8, dtls_snap, "\"alpn\":\"dtls\"") != null);
+    try std.testing.expect(try jsonU16Field(dtls_snap, "localPort") != 0);
 
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_close(dtls_client));
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dtls_close(dtls_server));

@@ -6070,6 +6070,31 @@ fn quicNormalizeAlpn(alpn: []const u8) ?[]const u8 {
     return null;
 }
 
+fn quicRefreshLocalAddress(handle: *QuicEndpointHandle) void {
+    if (handle.closed or handle.socket == null) return;
+
+    var address_ptr: ?[*]const u8 = null;
+    var address_len: u64 = 0;
+    if (base.sa_node_plugin_dgram_address(handle.socket, &address_ptr, &address_len) != 0) return;
+    defer _ = base.sa_node_plugin_free_buffer(address_ptr, address_len);
+
+    const address_json = (address_ptr orelse return)[0..@intCast(address_len)];
+    var parsed = std.json.parseFromSlice(std.json.Value, handle.allocator, address_json, .{}) catch return;
+    defer parsed.deinit();
+    if (parsed.value != .object) return;
+
+    const address_value = parsed.value.object.get("address") orelse return;
+    if (address_value != .string) return;
+    const port_value = parsed.value.object.get("port") orelse return;
+    if (port_value != .integer) return;
+    if (port_value.integer < 0 or port_value.integer > @as(i64, std.math.maxInt(u16))) return;
+
+    const updated_host = handle.allocator.dupe(u8, address_value.string) catch return;
+    handle.allocator.free(handle.local_host);
+    handle.local_host = updated_host;
+    handle.local_port = @intCast(port_value.integer);
+}
+
 fn quicCreateEndpoint(family: u32, server: bool, local_host: []const u8, local_port: u64, remote_host: []const u8, remote_port: u64, alpn: []const u8, cc: []const u8, idle_timeout_ms: u64, out_endpoint: ?*?*anyopaque) u32 {
     if (family != 4 and family != 6) return fail();
     if (local_port > std.math.maxInt(u16) or remote_port > std.math.maxInt(u16)) return fail();
@@ -6105,11 +6130,14 @@ fn quicCreateEndpoint(family: u32, server: bool, local_host: []const u8, local_p
         .cc = allocator.dupe(u8, norm_cc) catch return fail(),
         .idle_timeout_ms = idle_timeout_ms,
     };
+    if (handle.bound or handle.connected) quicRefreshLocalAddress(handle);
     out_endpoint.?.* = @ptrCast(handle);
     return 0;
 }
 
 fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    quicRefreshLocalAddress(handle);
+
     var out = std.ArrayList(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"family\":") catch return fail();

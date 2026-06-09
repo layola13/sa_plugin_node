@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed facade supplemental interface completeness
+- Scope: QUIC/HTTP3/DTLS UDP-backed endpoint address snapshot compatibility
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Installed plugin interface files include the supplemental `node_extra.sai` and `node_extra.sal` files required by the public `node.sal` facade
+  - QUIC/DTLS endpoint snapshots report the actual local UDP address and ephemeral port assigned by the OS after bind/connect
 
 ## Recent Completed Helper Features
+
+- network QUIC/DTLS ephemeral local address snapshot compatibility completed:
+  - QUIC and DTLS UDP-backed endpoint handles now refresh `localHost` and `localPort` from the existing native dgram address API after bind/connect and before snapshot serialization
+  - `tests/node_test_quic_dtls.sa` now uses port `0` for QUIC/DTLS listen smoke coverage and validates address JSON buffers through the public facade
+  - `tests/plugin_test.zig` now asserts QUIC and DTLS endpoint snapshots expose a non-zero `localPort` when the OS assigns an ephemeral port
 
 - installed facade supplemental interface completeness completed:
   - `sap.json` now declares `node_extra.sai` and `node_extra.sal` through the standard `interfaces.sa` supplemental file list so `sa plugin install` copies them into the installed `sa/` directory

@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads: environment_data, resource_limits_json
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test"
 
 @test "node.worker_threads resource_limits_json"():

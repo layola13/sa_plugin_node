@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads: post_message_to_thread, receive_message_on_port
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.worker_threads post_message_to_thread"():
 L_ENTRY:

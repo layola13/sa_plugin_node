@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads: receive_message_on_port
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_MSG = utf8:"hi"
 
 @test "node.worker_threads receive_message_on_port"():

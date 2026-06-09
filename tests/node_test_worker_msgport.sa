@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads: message_port ops, environment_data
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test"
 
 @test "node.worker_threads message_port_close"():

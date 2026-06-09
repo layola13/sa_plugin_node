@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `test`
+- Scope: installed main `node.sal` public macro coverage for `worker_threads`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `test` top-level metadata plus reporter/assert/property and test_runner helpers available through `node.sal`
+  - `worker_threads` top-level metadata, thread state, environment data, and message port/channel helpers available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` worker_threads helper macro tranche completed:
+  - `worker_threads` top-level status, exports, `SHARE_ENV`, parent-port, and feature-support helpers available through `node.sal`
+  - `worker_threads` thread-id, main/internal-thread flags, thread-name, worker-data, resource-limits, environment-data, message-channel, message-port, `receiveMessageOnPort`, and `postMessageToThread` helpers available through `node.sal`
+  - `tests/node_test_worker_threads_top.sa`, `node_test_worker_threads.sa`, `node_test_worker_extra.sa`, `node_test_worker_extra2.sa`, `node_test_worker_env.sa`, `node_test_worker_edata.sa`, `node_test_worker_recvport.sa`, `node_test_worker_msgport.sa`, `node_test_worker_msgport2.sa`, and `node_test_worker_ptt.sa` now validate through `node.sal` only
 
 - installed main `node.sal` test helper macro tranche completed:
   - `test` top-level status, exports, config, reporters, assert-support, property-support, and feature-support helpers available through `node.sal`

@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.worker_threads top level helpers"():
 L_ENTRY:

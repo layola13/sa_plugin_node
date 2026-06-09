@@ -1,6 +1,5 @@
 // SA tests for worker_threads: message_channel, status_json
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.worker_threads message_channel_new"():
 L_ENTRY:

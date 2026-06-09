@@ -5958,3 +5958,239 @@
     %out_ptr = load __string_decoder_feature_ptr_slot+0 as ptr
     %out_len = load __string_decoder_feature_len_slot+0 as u64
 [END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_WORKER_DATA %p_0, %p_1
+    __m_slot_335015a4_0 = stack_alloc 8
+    __m_slot_335015a4_1 = stack_alloc 8
+    __m_status_335015a4 = call @sa_node_plugin_worker_threads_worker_data(&__m_slot_335015a4_0, &__m_slot_335015a4_1)
+    !__m_status_335015a4
+    __m_load_335015a4_p_0 = load __m_slot_335015a4_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_335015a4_p_0, 0
+    !__m_load_335015a4_p_0
+    __m_load_335015a4_p_1 = load __m_slot_335015a4_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_335015a4_p_1, 0
+    !__m_load_335015a4_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_RECEIVE_MESSAGE_ON_PORT %p_0, %p_1, %p_2, %p_3
+    __m_slot_0f72d559_0 = stack_alloc 8
+    __m_slot_0f72d559_1 = stack_alloc 8
+    __m_status_0f72d559 = call @sa_node_plugin_worker_threads_receive_message_on_port(%p_0, &__m_slot_0f72d559_0, &__m_slot_0f72d559_1)
+    !%p_3
+    %p_3 = add __m_status_0f72d559, 0
+    !__m_status_0f72d559
+    __m_load_0f72d559_p_1 = load __m_slot_0f72d559_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_0f72d559_p_1, 0
+    !__m_load_0f72d559_p_1
+    __m_load_0f72d559_p_2 = load __m_slot_0f72d559_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_0f72d559_p_2, 0
+    !__m_load_0f72d559_p_2
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_POST_MESSAGE_TO_THREAD %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_03d5877e_0 = stack_alloc 8
+    __m_status_03d5877e = call @sa_node_plugin_worker_threads_post_message_to_thread(%p_0, %p_1, %p_2, &__m_slot_03d5877e_0)
+    !%p_4
+    %p_4 = add __m_status_03d5877e, 0
+    !__m_status_03d5877e
+    __m_load_03d5877e_p_3 = load __m_slot_03d5877e_0+0 as u64
+    !%p_3
+    %p_3 = add __m_load_03d5877e_p_3, 0
+    !__m_load_03d5877e_p_3
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_STATUS_JSON %p_0, %p_1
+    __m_slot_19355655_0 = stack_alloc 8
+    __m_slot_19355655_1 = stack_alloc 8
+    __m_status_19355655 = call @sa_node_plugin_worker_threads_status_json(&__m_slot_19355655_0, &__m_slot_19355655_1)
+    !__m_status_19355655
+    __m_load_19355655_p_0 = load __m_slot_19355655_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_19355655_p_0, 0
+    !__m_load_19355655_p_0
+    __m_load_19355655_p_1 = load __m_slot_19355655_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_19355655_p_1, 0
+    !__m_load_19355655_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __m_worker_threads_exports_ptr_slot = stack_alloc 8
+    __m_worker_threads_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_worker_threads_exports_json(&__m_worker_threads_exports_ptr_slot, &__m_worker_threads_exports_len_slot)
+    %out_ptr = load __m_worker_threads_exports_ptr_slot+0 as ptr
+    %out_len = load __m_worker_threads_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_SHARE_ENV_JSON %out_ptr, %out_len, %out_status
+    __m_worker_threads_share_env_ptr_slot = stack_alloc 8
+    __m_worker_threads_share_env_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_worker_threads_share_env_json(&__m_worker_threads_share_env_ptr_slot, &__m_worker_threads_share_env_len_slot)
+    %out_ptr = load __m_worker_threads_share_env_ptr_slot+0 as ptr
+    %out_len = load __m_worker_threads_share_env_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_PARENT_PORT_JSON %out_ptr, %out_len, %out_status
+    __m_worker_threads_parent_port_ptr_slot = stack_alloc 8
+    __m_worker_threads_parent_port_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_worker_threads_parent_port_json(&__m_worker_threads_parent_port_ptr_slot, &__m_worker_threads_parent_port_len_slot)
+    %out_ptr = load __m_worker_threads_parent_port_ptr_slot+0 as ptr
+    %out_len = load __m_worker_threads_parent_port_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __m_worker_threads_feature_ptr_slot = stack_alloc 8
+    __m_worker_threads_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_worker_threads_feature_support_json(&__m_worker_threads_feature_ptr_slot, &__m_worker_threads_feature_len_slot)
+    %out_ptr = load __m_worker_threads_feature_ptr_slot+0 as ptr
+    %out_len = load __m_worker_threads_feature_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_IS_MAIN_THREAD %p_0
+    __m_slot_1d3931d9_0 = stack_alloc 8
+    __m_status_1d3931d9 = call @sa_node_plugin_worker_threads_is_main_thread(&__m_slot_1d3931d9_0)
+    !__m_status_1d3931d9
+    __m_load_1d3931d9_p_0 = load __m_slot_1d3931d9_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_1d3931d9_p_0, 0
+    !__m_load_1d3931d9_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_IS_INTERNAL_THREAD %p_0, %p_1
+    __m_slot_a8cc05ef_0 = stack_alloc 8
+    __m_status_a8cc05ef = call @sa_node_plugin_worker_threads_is_internal_thread(&__m_slot_a8cc05ef_0)
+    !%p_1
+    %p_1 = add __m_status_a8cc05ef, 0
+    !__m_status_a8cc05ef
+    __m_load_a8cc05ef_p_0 = load __m_slot_a8cc05ef_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_a8cc05ef_p_0, 0
+    !__m_load_a8cc05ef_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_THREAD_ID %p_0
+    __m_slot_d7510226_0 = stack_alloc 8
+    __m_status_d7510226 = call @sa_node_plugin_worker_threads_thread_id(&__m_slot_d7510226_0)
+    !__m_status_d7510226
+    __m_load_d7510226_p_0 = load __m_slot_d7510226_0+0 as u64
+    !%p_0
+    %p_0 = add __m_load_d7510226_p_0, 0
+    !__m_load_d7510226_p_0
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_THREAD_NAME %p_0, %p_1, %p_2
+    __m_slot_c3bd95dd_0 = stack_alloc 8
+    __m_slot_c3bd95dd_1 = stack_alloc 8
+    __m_status_c3bd95dd = call @sa_node_plugin_worker_threads_thread_name(&__m_slot_c3bd95dd_0, &__m_slot_c3bd95dd_1)
+    !%p_2
+    %p_2 = add __m_status_c3bd95dd, 0
+    !__m_status_c3bd95dd
+    __m_load_c3bd95dd_p_0 = load __m_slot_c3bd95dd_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_c3bd95dd_p_0, 0
+    !__m_load_c3bd95dd_p_0
+    __m_load_c3bd95dd_p_1 = load __m_slot_c3bd95dd_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_c3bd95dd_p_1, 0
+    !__m_load_c3bd95dd_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_RESOURCE_LIMITS_JSON %p_0, %p_1, %p_2
+    __m_slot_f83d2e6a_0 = stack_alloc 8
+    __m_slot_f83d2e6a_1 = stack_alloc 8
+    __m_status_f83d2e6a = call @sa_node_plugin_worker_threads_resource_limits_json(&__m_slot_f83d2e6a_0, &__m_slot_f83d2e6a_1)
+    !%p_2
+    %p_2 = add __m_status_f83d2e6a, 0
+    !__m_status_f83d2e6a
+    __m_load_f83d2e6a_p_0 = load __m_slot_f83d2e6a_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_f83d2e6a_p_0, 0
+    !__m_load_f83d2e6a_p_0
+    __m_load_f83d2e6a_p_1 = load __m_slot_f83d2e6a_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_f83d2e6a_p_1, 0
+    !__m_load_f83d2e6a_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_SET_ENVIRONMENT_DATA %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_status_f0eb1754 = call @sa_node_plugin_worker_threads_set_environment_data(%p_0, %p_1, %p_2, %p_3)
+    !%p_4
+    %p_4 = add __m_status_f0eb1754, 0
+    !__m_status_f0eb1754
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_GET_ENVIRONMENT_DATA %p_0, %p_1, %p_2, %p_3, %p_4
+    __m_slot_b1e02675_0 = stack_alloc 8
+    __m_slot_b1e02675_1 = stack_alloc 8
+    __m_status_b1e02675 = call @sa_node_plugin_worker_threads_get_environment_data(%p_0, %p_1, &__m_slot_b1e02675_0, &__m_slot_b1e02675_1)
+    !%p_4
+    %p_4 = add __m_status_b1e02675, 0
+    !__m_status_b1e02675
+    __m_load_b1e02675_p_2 = load __m_slot_b1e02675_0+0 as ptr
+    !%p_2
+    %p_2 = add __m_load_b1e02675_p_2, 0
+    !__m_load_b1e02675_p_2
+    __m_load_b1e02675_p_3 = load __m_slot_b1e02675_1+0 as u64
+    !%p_3
+    %p_3 = add __m_load_b1e02675_p_3, 0
+    !__m_load_b1e02675_p_3
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_CHANNEL_NEW %p_0, %p_1, %p_2
+    __m_slot_d9d8dac1_0 = stack_alloc 8
+    __m_slot_d9d8dac1_1 = stack_alloc 8
+    __m_status_d9d8dac1 = call @sa_node_plugin_worker_threads_message_channel_new(&__m_slot_d9d8dac1_0, &__m_slot_d9d8dac1_1)
+    !%p_2
+    %p_2 = add __m_status_d9d8dac1, 0
+    !__m_status_d9d8dac1
+    __m_load_d9d8dac1_p_0 = load __m_slot_d9d8dac1_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_d9d8dac1_p_0, 0
+    !__m_load_d9d8dac1_p_0
+    __m_load_d9d8dac1_p_1 = load __m_slot_d9d8dac1_1+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_d9d8dac1_p_1, 0
+    !__m_load_d9d8dac1_p_1
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_POST_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_status_b4dc3fae = call @sa_node_plugin_worker_threads_message_port_post_message(%p_0, %p_1, %p_2)
+    !%p_3
+    %p_3 = add __m_status_b4dc3fae, 0
+    !__m_status_b4dc3fae
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_RECEIVE_MESSAGE %p_0, %p_1, %p_2, %p_3
+    __m_slot_a54ade15_0 = stack_alloc 8
+    __m_slot_a54ade15_1 = stack_alloc 8
+    __m_status_a54ade15 = call @sa_node_plugin_worker_threads_message_port_receive_message(%p_0, &__m_slot_a54ade15_0, &__m_slot_a54ade15_1)
+    !%p_3
+    %p_3 = add __m_status_a54ade15, 0
+    !__m_status_a54ade15
+    __m_load_a54ade15_p_1 = load __m_slot_a54ade15_0+0 as ptr
+    !%p_1
+    %p_1 = add __m_load_a54ade15_p_1, 0
+    !__m_load_a54ade15_p_1
+    __m_load_a54ade15_p_2 = load __m_slot_a54ade15_1+0 as u64
+    !%p_2
+    %p_2 = add __m_load_a54ade15_p_2, 0
+    !__m_load_a54ade15_p_2
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_CLOSE %p_0, %p_1
+    __m_status_bf436d88 = call @sa_node_plugin_worker_threads_message_port_close(%p_0)
+    !%p_1
+    %p_1 = add __m_status_bf436d88, 0
+    !__m_status_bf436d88
+[END_MACRO]
+
+[MACRO] NODE_WORKER_THREADS_MESSAGE_PORT_FREE %p_0, %p_1
+    __m_status_e3504cae = call @sa_node_plugin_worker_threads_message_port_free(%p_0)
+    !%p_1
+    %p_1 = add __m_status_e3504cae, 0
+    !__m_status_e3504cae
+[END_MACRO]

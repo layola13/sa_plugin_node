@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads: environment_data, get/set
 @import "../node.sal"
-@import "../node_extra.sal"
 @const S_KEY = utf8:"test"
 
 @test "node.worker_threads set_environment_data"():

@@ -1,6 +1,5 @@
 // SA tests for Node worker_threads extras
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.worker_threads thread_id"():
 L_ENTRY:

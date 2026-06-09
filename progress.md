@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `tty`
+- Scope: installed main `node.sal` public macro coverage for `wasi`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `tty` top-level metadata plus `isatty` and stream helper macros available through `node.sal`
+  - `wasi` top-level status, exports, config, supported-versions, import-modules, and feature-support macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` wasi helper macro tranche completed:
+  - `wasi` top-level status, exports, config, supported-versions, import-modules, allow-state, and feature-support helpers available through `node.sal`
+  - `tests/node_test_wasi_top.sa` now validates through `node.sal` only
 
 - installed main `node.sal` tty helper macro tranche completed:
   - `tty` top-level metadata helpers available through `node.sal`

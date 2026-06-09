@@ -1,6 +1,5 @@
 // SA tests for Node wasi top-level facade helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @test "node.wasi top level helpers"():
 L_ENTRY:

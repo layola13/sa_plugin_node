@@ -1332,6 +1332,61 @@
     %out_len = load __tty_feature_len_slot+0 as u64
 [END_MACRO]
 
+[MACRO] NODE_WASI_STATUS_JSON %out_ptr, %out_len
+    __wasi_status_ptr_slot = stack_alloc 8
+    __wasi_status_len_slot = stack_alloc 8
+    __wasi_status = call @sa_node_plugin_wasi_status_json(&__wasi_status_ptr_slot, &__wasi_status_len_slot)
+    !__wasi_status
+    %out_ptr = load __wasi_status_ptr_slot+0 as ptr
+    %out_len = load __wasi_status_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_SUPPORTED_VERSIONS_JSON %out_ptr, %out_len, %out_status
+    __wasi_versions_ptr_slot = stack_alloc 8
+    __wasi_versions_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_supported_versions_json(&__wasi_versions_ptr_slot, &__wasi_versions_len_slot)
+    %out_ptr = load __wasi_versions_ptr_slot+0 as ptr
+    %out_len = load __wasi_versions_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_IMPORT_MODULES_JSON %out_ptr, %out_len, %out_status
+    __wasi_imports_ptr_slot = stack_alloc 8
+    __wasi_imports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_import_modules_json(&__wasi_imports_ptr_slot, &__wasi_imports_len_slot)
+    %out_ptr = load __wasi_imports_ptr_slot+0 as ptr
+    %out_len = load __wasi_imports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_IS_ALLOWED %out_bool, %out_status
+    __wasi_allowed_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_is_allowed(&__wasi_allowed_slot)
+    %out_bool = load __wasi_allowed_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_CONFIG_JSON %out_ptr, %out_len, %out_status
+    __wasi_config_ptr_slot = stack_alloc 8
+    __wasi_config_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_config_json(&__wasi_config_ptr_slot, &__wasi_config_len_slot)
+    %out_ptr = load __wasi_config_ptr_slot+0 as ptr
+    %out_len = load __wasi_config_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_TOP_EXPORTS_JSON %out_ptr, %out_len, %out_status
+    __wasi_exports_ptr_slot = stack_alloc 8
+    __wasi_exports_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_exports_json(&__wasi_exports_ptr_slot, &__wasi_exports_len_slot)
+    %out_ptr = load __wasi_exports_ptr_slot+0 as ptr
+    %out_len = load __wasi_exports_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_WASI_TOP_FEATURE_SUPPORT_JSON %out_ptr, %out_len, %out_status
+    __wasi_feature_ptr_slot = stack_alloc 8
+    __wasi_feature_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_wasi_feature_support_json(&__wasi_feature_ptr_slot, &__wasi_feature_len_slot)
+    %out_ptr = load __wasi_feature_ptr_slot+0 as ptr
+    %out_len = load __wasi_feature_len_slot+0 as u64
+[END_MACRO]
+
 [MACRO] NODE_BUFFER_BYTE_LENGTH %out_len, %out_status, %in_data, %in_len
     __bl_slot = stack_alloc 8
     %out_status = call @sa_node_plugin_buffer_byte_length(&%in_data, %in_len, &__bl_slot)

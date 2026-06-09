@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main `node.sal` public macro coverage for `os/process`
+- Scope: installed main `node.sal` public macro coverage for `environment_variables`
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `os` and `process` top-level metadata plus process/runtime helper macros available through `node.sal`
+  - `environment_variables` status, snapshot, lookup, parse, and env-file helper macros available through `node.sal`
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` environment_variables helper macro tranche completed:
+  - `environment_variables` status, snapshot, `has`, `get`, `parseEnv`, and `loadEnvFile` helpers available through `node.sal`
+  - `tests/node_test_environment_variables.sa` now validates through `node.sal` only
 
 - installed main `node.sal` os/process helper macro tranche completed:
   - `os` top-level status, exports, config, feature-support, constants, priority, `EOL`, and `devNull` helpers available through `node.sal`

@@ -7019,3 +7019,58 @@
     %p_1 = add __m_load_1843a441_p_1, 0
     !__m_load_1843a441_p_1
 [END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_STATUS_JSON %p_0, %p_1, %p_2
+    __m_slot_8995f291_0 = stack_alloc 8
+    __m_slot_8995f291_1 = stack_alloc 8
+    __m_status_8995f291 = call @sa_node_plugin_environment_variables_status_json(&__m_slot_8995f291_0, &__m_slot_8995f291_1)
+    !%p_2
+    %p_2 = add __m_status_8995f291, 0
+    !__m_status_8995f291
+    __m_load_8995f291_p_0 = load __m_slot_8995f291_0+0 as ptr
+    !%p_0
+    %p_0 = add __m_load_8995f291_p_0, 0
+    !__m_load_8995f291_p_0
+    __m_load_8995f291_p_1 = load __m_slot_8995f291_1+0 as u64
+    !%p_1
+    %p_1 = add __m_load_8995f291_p_1, 0
+    !__m_load_8995f291_p_1
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_SNAPSHOT_JSON %out_ptr, %out_len, %out_status
+    __m_environment_variables_snapshot_ptr_slot = stack_alloc 8
+    __m_environment_variables_snapshot_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_environment_variables_snapshot_json(&__m_environment_variables_snapshot_ptr_slot, &__m_environment_variables_snapshot_len_slot)
+    %out_ptr = load __m_environment_variables_snapshot_ptr_slot+0 as ptr
+    %out_len = load __m_environment_variables_snapshot_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_HAS %out_bool, %out_status, %name, %name_len
+    __m_environment_variables_has_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_environment_variables_has(%name, %name_len, &__m_environment_variables_has_slot)
+    %out_bool = load __m_environment_variables_has_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_GET_JSON %out_ptr, %out_len, %out_status, %name, %name_len
+    __m_environment_variables_get_ptr_slot = stack_alloc 8
+    __m_environment_variables_get_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_environment_variables_get_json(%name, %name_len, &__m_environment_variables_get_ptr_slot, &__m_environment_variables_get_len_slot)
+    %out_ptr = load __m_environment_variables_get_ptr_slot+0 as ptr
+    %out_len = load __m_environment_variables_get_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_PARSE_ENV_JSON %out_ptr, %out_len, %out_status, %content, %content_len
+    __m_environment_variables_parse_ptr_slot = stack_alloc 8
+    __m_environment_variables_parse_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_environment_variables_parse_env_json(%content, %content_len, &__m_environment_variables_parse_ptr_slot, &__m_environment_variables_parse_len_slot)
+    %out_ptr = load __m_environment_variables_parse_ptr_slot+0 as ptr
+    %out_len = load __m_environment_variables_parse_len_slot+0 as u64
+[END_MACRO]
+
+[MACRO] NODE_ENVIRONMENT_VARIABLES_LOAD_ENV_FILE_JSON %out_ptr, %out_len, %out_status, %path, %path_len
+    __m_environment_variables_load_ptr_slot = stack_alloc 8
+    __m_environment_variables_load_len_slot = stack_alloc 8
+    %out_status = call @sa_node_plugin_environment_variables_load_env_file_json(%path, %path_len, &__m_environment_variables_load_ptr_slot, &__m_environment_variables_load_len_slot)
+    %out_ptr = load __m_environment_variables_load_ptr_slot+0 as ptr
+    %out_len = load __m_environment_variables_load_len_slot+0 as u64
+[END_MACRO]

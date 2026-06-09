@@ -1,6 +1,5 @@
 // SA tests for Node environment_variables native helpers
 @import "../node.sal"
-@import "../node_extra.sal"
 
 @const S_ENV_NAME = utf8:"PATH"
 @const S_ENV_CONTENT = utf8:"FOO=bar\nBAR=baz\n"

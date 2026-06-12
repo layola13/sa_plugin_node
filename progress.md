@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal TLS write buffer facade alignment
+- Scope: installed main node.sal HTTP request body facade coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` TLS write helper passes SA byte buffers to the native TLS write ABI consistently with other send/write helpers
+  - Main `node.sal` HTTP, HTTPS, and HTTP/2 one-shot request helpers exercise non-empty request body arguments through the facade
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` HTTP request body facade coverage completed:
+  - `tests/node_test_http_extra.sa` now calls `NODE_HTTP_REQUEST_JSON` and `NODE_HTTPS_REQUEST_JSON` with non-empty body buffers through the main facade path
+  - `tests/node_test_http2_extra.sa` now calls `NODE_HTTP2_CLIENT_REQUEST` with a non-empty body buffer, covering the h2c client body argument path
+  - The coverage reuses the existing native HTTP/HTTPS/HTTP2 request helpers and keeps network behavior local/failing-fast where no server is expected
 
 - installed main `node.sal` TLS write buffer facade alignment completed:
   - `NODE_TLS_WRITE` now passes its data argument by pointer in both `node.sal` and `node_extra.sal`, matching the native TLS write ABI and existing dgram/HTTP3/DTLS send macro style

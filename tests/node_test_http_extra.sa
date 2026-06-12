@@ -7,6 +7,7 @@
 @const S_PATCH = utf8:"PATCH"
 @const S_URL = utf8:"http://127.0.0.1:1/"
 @const S_HTTPS_URL = utf8:"https://127.0.0.1:1/"
+@const S_BODY = utf8:"node-body"
 
 @test "node.http static metadata and validators"():
 L_ENTRY:
@@ -62,9 +63,17 @@ L_INVALID_REQUEST:
     req_status = add 0, 0
     EXPAND NODE_HTTP_REQUEST_JSON req_ptr, req_len, req_status, S_PATCH, 5, S_URL, 19, 0, 0
     request_fails = ne req_status, 0
-    br request_fails -> L_INVALID_HTTPS, L_ERR_INVALID_REQUEST
-L_INVALID_HTTPS:
+    br request_fails -> L_INVALID_REQUEST_BODY, L_ERR_INVALID_REQUEST
+L_INVALID_REQUEST_BODY:
     !request_fails
+    req_body_ptr = add 0, 0
+    req_body_len = add 0, 0
+    req_body_status = add 0, 0
+    EXPAND NODE_HTTP_REQUEST_JSON req_body_ptr, req_body_len, req_body_status, S_PATCH, 5, S_URL, 19, S_BODY, 9
+    request_body_fails = ne req_body_status, 0
+    br request_body_fails -> L_INVALID_HTTPS, L_ERR_INVALID_REQUEST_BODY
+L_INVALID_HTTPS:
+    !request_body_fails
     https_ptr = add 0, 0
     https_len = add 0, 0
     https_status = add 0, 0
@@ -78,19 +87,33 @@ L_INVALID_HTTPS_METHOD:
     https_req_status = add 0, 0
     EXPAND NODE_HTTPS_REQUEST_JSON https_req_ptr, https_req_len, https_req_status, S_PATCH, 5, S_HTTPS_URL, 20, 0, 0
     https_request_fails = ne https_req_status, 0
-    br https_request_fails -> L_OK, L_ERR_INVALID_HTTPS_METHOD
-L_OK:
+    br https_request_fails -> L_INVALID_HTTPS_BODY, L_ERR_INVALID_HTTPS_METHOD
+L_INVALID_HTTPS_BODY:
     !https_request_fails
+    https_body_ptr = add 0, 0
+    https_body_len = add 0, 0
+    https_body_status = add 0, 0
+    EXPAND NODE_HTTPS_REQUEST_JSON https_body_ptr, https_body_len, https_body_status, S_PATCH, 5, S_HTTPS_URL, 20, S_BODY, 9
+    https_body_fails = ne https_body_status, 0
+    br https_body_fails -> L_OK, L_ERR_INVALID_HTTPS_BODY
+L_OK:
+    !https_body_fails
     free_methods = call @sa_node_plugin_free_buffer(methods_ptr, methods_len)
     free_status = call @sa_node_plugin_free_buffer(status_ptr, status_len)
     !free_status
     !free_methods
+    !https_body_status
+    !https_body_len
+    !https_body_ptr
     !https_req_status
     !https_req_len
     !https_req_ptr
     !https_status
     !https_len
     !https_ptr
+    !req_body_status
+    !req_body_len
+    !req_body_ptr
     !req_status
     !req_len
     !req_ptr
@@ -131,9 +154,15 @@ L_ERR_INVALID_NAME:
 L_ERR_INVALID_REQUEST:
     !request_fails
     panic(103)
+L_ERR_INVALID_REQUEST_BODY:
+    !request_body_fails
+    panic(103)
 L_ERR_INVALID_HTTPS:
     !https_fails
     panic(103)
 L_ERR_INVALID_HTTPS_METHOD:
     !https_request_fails
+    panic(103)
+L_ERR_INVALID_HTTPS_BODY:
+    !https_body_fails
     panic(103)

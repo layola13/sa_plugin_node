@@ -5,6 +5,8 @@
 @const S_H2_CLIENT_PREFACE_SETTINGS = utf8:"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n\x00\x00\x06\x04\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00"
 @const S_IPV6_URL = utf8:"http://[::1]/"
 @const S_GET = utf8:"GET"
+@const S_POST = utf8:"POST"
+@const S_BODY = utf8:"node-body"
 
 @test "node.http2 settings helpers"():
 L_ENTRY:
@@ -182,6 +184,36 @@ L_ENTRY:
     out_len = add 0, 0
     status = add 0, 0
     EXPAND NODE_HTTP2_CLIENT_REQUEST out_ptr, out_len, status, S_IPV6_URL, 13, S_GET, 3, 0, 0
+    ok = eq status, 0
+    br ok -> L_LEN, L_ERR_STATUS
+L_LEN:
+    !ok
+    has_len = ugt out_len, 0
+    br has_len -> L_OK, L_ERR_LEN
+L_OK:
+    !has_len
+    free_out = call @sa_node_plugin_free_buffer(out_ptr, out_len)
+    !free_out
+    !status
+    !out_len
+    !out_ptr
+    return
+L_ERR_STATUS:
+    !ok
+    !status
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    !out_len
+    !out_ptr
+    panic(103)
+
+@test "node.http2 client request accepts body argument"():
+L_ENTRY:
+    out_ptr = add 0, 0
+    out_len = add 0, 0
+    status = add 0, 0
+    EXPAND NODE_HTTP2_CLIENT_REQUEST out_ptr, out_len, status, S_IPV6_URL, 13, S_POST, 4, S_BODY, 9
     ok = eq status, 0
     br ok -> L_LEN, L_ERR_STATUS
 L_LEN:

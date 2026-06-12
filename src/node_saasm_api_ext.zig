@@ -2826,10 +2826,20 @@ fn appendDnsRecords(hostname: []const u8, rrtype: u16, out: *std.ArrayList(u8)) 
     try appendDnsRecordsFromPacket(packet, rrtype, out);
 }
 
-fn appendDnsRecordsFromServer(hostname: []const u8, rrtype: u16, server: std.net.Address, timeout_ms: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, out: *std.ArrayList(u8)) !void {
+fn appendDnsRecordsFromServer(hostname: []const u8, rrtype: u16, server: std.net.Address, timeout_ms: u64, tries: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, out: *std.ArrayList(u8)) !void {
     var packet_buf: [8192]u8 = undefined;
-    const packet = try dnsQueryServer(hostname, rrtype, server, timeout_ms, local_ipv4, local_ipv6, &packet_buf);
-    try appendDnsRecordsFromPacket(packet, rrtype, out);
+    const attempts = @max(tries, @as(u64, 1));
+    var attempt: u64 = 0;
+    var last_error: anyerror = error.QueryFailed;
+    while (attempt < attempts) : (attempt += 1) {
+        const packet = dnsQueryServer(hostname, rrtype, server, timeout_ms, local_ipv4, local_ipv6, &packet_buf) catch |err| {
+            last_error = err;
+            continue;
+        };
+        try appendDnsRecordsFromPacket(packet, rrtype, out);
+        return;
+    }
+    return last_error;
 }
 
 fn writeDnsRecords(hostname: []const u8, rrtype: u16, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3091,7 +3101,7 @@ pub export fn sa_node_plugin_dns_resolver_resolve(resolver_ptr: ?*anyopaque, hos
         var results = std.ArrayList(u8).init(std.heap.page_allocator);
         defer results.deinit();
         results.appendSlice("[") catch return fail();
-        appendDnsRecordsFromServer(hostname, rrtype_code, server, resolver.timeout_ms, resolver.local_ipv4, resolver.local_ipv6, &results) catch return fail();
+        appendDnsRecordsFromServer(hostname, rrtype_code, server, resolver.timeout_ms, resolver.tries, resolver.local_ipv4, resolver.local_ipv6, &results) catch return fail();
         results.appendSlice("]") catch return fail();
         return writeOwned(out_ptr, out_len, results.items);
     }

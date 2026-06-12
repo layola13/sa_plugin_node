@@ -498,6 +498,65 @@ test "node plugin dns resolver instances keep independent settings" {
     try std.testing.expect(std.mem.indexOf(u8, promise_snapshot, "\"cancelCount\":1") != null);
 }
 
+test "node plugin dns resolver retries custom server queries" {
+    const dns_sock = try std.posix.socket(std.posix.AF.INET, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
+    defer std.posix.close(dns_sock);
+    const bind_addr = try std.net.Address.parseIp4("127.0.0.1", 0);
+    try std.posix.bind(dns_sock, &bind_addr.any, bind_addr.getOsSockLen());
+    var sock_addr: std.net.Address = undefined;
+    var sock_len: std.posix.socklen_t = @sizeOf(std.net.Address);
+    try std.posix.getsockname(dns_sock, &sock_addr.any, &sock_len);
+
+    const dns_thread = try std.Thread.spawn(.{}, struct {
+        fn run(fd: std.posix.socket_t) void {
+            var query_buf: [512]u8 = undefined;
+            var peer: std.net.Address = undefined;
+            var peer_len: std.posix.socklen_t = @sizeOf(std.net.Address);
+            _ = std.posix.recvfrom(fd, &query_buf, 0, &peer.any, &peer_len) catch return;
+
+            peer_len = @sizeOf(std.net.Address);
+            const n = std.posix.recvfrom(fd, &query_buf, 0, &peer.any, &peer_len) catch return;
+            if (n < 12) return;
+            var q_end: usize = 12;
+            while (q_end < n and query_buf[q_end] != 0) : (q_end += 1) {}
+            if (q_end + 5 > n) return;
+            const question = query_buf[12 .. q_end + 5];
+
+            var response = std.ArrayList(u8).init(std.heap.page_allocator);
+            defer response.deinit();
+            response.appendSlice(query_buf[0..2]) catch return;
+            response.writer().writeInt(u16, 0x8180, .big) catch return;
+            response.writer().writeInt(u16, 1, .big) catch return;
+            response.writer().writeInt(u16, 1, .big) catch return;
+            response.writer().writeInt(u16, 0, .big) catch return;
+            response.writer().writeInt(u16, 0, .big) catch return;
+            response.appendSlice(question) catch return;
+            writeDnsNameForTest(&response, "retry.local") catch return;
+            response.writer().writeInt(u16, 1, .big) catch return;
+            response.writer().writeInt(u16, 1, .big) catch return;
+            response.writer().writeInt(u32, 30, .big) catch return;
+            response.writer().writeInt(u16, 4, .big) catch return;
+            response.appendSlice(&.{ 198, 51, 100, 9 }) catch return;
+            _ = std.posix.sendto(fd, response.items, 0, &peer.any, peer_len) catch return;
+        }
+    }.run, .{dns_sock});
+    defer dns_thread.join();
+
+    var resolver: ?*anyopaque = null;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_resolver_new(100, 2, &resolver));
+    defer _ = plugin.sa_node_plugin_dns_resolver_free(resolver);
+    const servers_json = try std.fmt.allocPrint(std.testing.allocator, "[\"127.0.0.1:{d}\"]", .{sock_addr.getPort()});
+    defer std.testing.allocator.free(servers_json);
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_resolver_set_servers(resolver, servers_json.ptr, servers_json.len));
+
+    var result_ptr: ?[*]const u8 = null;
+    var result_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_resolver_resolve4(resolver, "retry.local", 11, &result_ptr, &result_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(result_ptr, result_len);
+    const result = (result_ptr orelse return error.NullDnsRetryResult)[0..@intCast(result_len)];
+    try std.testing.expect(std.mem.indexOf(u8, result, "198.51.100.9") != null);
+}
+
 test "node plugin dns promises helpers" {
     var servers_ptr: ?[*]const u8 = null;
     var servers_len: u64 = 0;

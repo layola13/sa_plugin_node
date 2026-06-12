@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: dns.setServers Node-style server address normalization
+- Scope: DNS Resolver custom-server retry attempts
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `dns.setServers`, `dns.promises.setServers`, and Resolver setServers store Node-style canonical server strings after validation
+  - Resolver queries against custom DNS servers honor the configured `tries` count instead of sending only one UDP query
 
 ## Recent Completed Helper Features
+
+- network DNS Resolver custom-server retry attempts completed:
+  - Resolver custom-server queries now retry up to the configured `tries` count, defaulting to one attempt when `tries` is zero
+  - The retry path reuses the existing native UDP DNS query, timeout, local bind, and DNS packet parsing helpers rather than duplicating resolver logic
+  - Native coverage uses a local UDP DNS server that drops the first query and answers the second, verifying `tries=2` succeeds where a single attempt would time out
+  - Existing `node.sal` DNS Resolver and `dns.promises.Resolver` macros automatically use the corrected native path
 
 - network dns.setServers Node-style server address normalization completed:
   - Global DNS and Resolver `setServers` now parse, validate, and store canonical server JSON instead of preserving caller formatting

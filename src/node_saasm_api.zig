@@ -2533,6 +2533,44 @@ fn blockListMatchesRules(rules: []const BlockListRule, address: BlockListAddress
     return false;
 }
 
+fn blockListMatchesRulesIncludingMappedIpv4(rules: []const BlockListRule, address: BlockListAddress) bool {
+    if (blockListMatchesRules(rules, address)) return true;
+    if (address.family != .ipv6 or !blockListIsIpv4MappedIpv6(address.bytes)) return false;
+
+    var mapped = address;
+    mapped.family = .ipv4;
+    @memset(mapped.bytes[0..], 0);
+    @memcpy(mapped.bytes[0..4], address.bytes[12..16]);
+    return blockListMatchesRules(rules, mapped);
+}
+
+test "node plugin blocklist matches copied rules against ipv4-mapped ipv6 runtime addresses" {
+    const text = "::ffff:1.1.1.2";
+    const runtime_address = try blockListParseAddressForFamily(std.testing.allocator, text, .ipv6);
+    defer std.testing.allocator.free(runtime_address.text);
+
+    const exact = try blockListParseAddressForFamily(std.testing.allocator, "1.1.1.2", .ipv4);
+    defer std.testing.allocator.free(exact.text);
+    const range_start = try blockListParseAddressForFamily(std.testing.allocator, "1.1.1.1", .ipv4);
+    defer std.testing.allocator.free(range_start.text);
+    const range_end = try blockListParseAddressForFamily(std.testing.allocator, "1.1.1.9", .ipv4);
+    defer std.testing.allocator.free(range_end.text);
+    const subnet = try blockListParseAddressForFamily(std.testing.allocator, "1.1.1.0", .ipv4);
+    defer std.testing.allocator.free(subnet.text);
+
+    const rules = [_]BlockListRule{
+        .{ .kind = .address, .family = .ipv4, .start = exact.bytes, .end = exact.bytes, .prefix = 0, .text = exact.text },
+        .{ .kind = .range, .family = .ipv4, .start = range_start.bytes, .end = range_end.bytes, .prefix = 0, .text = range_start.text },
+        .{ .kind = .subnet, .family = .ipv4, .start = subnet.bytes, .end = subnet.bytes, .prefix = 24, .text = subnet.text },
+    };
+    const rule_slice = rules[0..];
+
+    try std.testing.expect(!blockListMatchesRules(&rules, runtime_address));
+    try std.testing.expect(blockListMatchesRulesIncludingMappedIpv4(rule_slice[0..1], runtime_address));
+    try std.testing.expect(blockListMatchesRulesIncludingMappedIpv4(rule_slice[1..2], runtime_address));
+    try std.testing.expect(blockListMatchesRulesIncludingMappedIpv4(rule_slice[2..3], runtime_address));
+}
+
 fn blockListFreeRuleList(allocator: std.mem.Allocator, rules: *std.ArrayList(BlockListRule)) void {
     for (rules.items) |rule| allocator.free(rule.text);
     rules.clearRetainingCapacity();
@@ -2996,7 +3034,7 @@ fn netAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule,
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
-    return blockListMatchesRules(rules, block_address);
+    return blockListMatchesRulesIncludingMappedIpv4(rules, block_address);
 }
 
 fn netSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {
@@ -3850,7 +3888,7 @@ fn dgramAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRul
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
-    return blockListMatchesRules(rules, block_address);
+    return blockListMatchesRulesIncludingMappedIpv4(rules, block_address);
 }
 
 fn dgramSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {

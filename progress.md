@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: net.BlockList family argument compatibility
+- Scope: net/dgram copied BlockList IPv4-mapped IPv6 runtime matching
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - `net.BlockList` string add/check helpers support Node-style `ipv4`/`ipv6` family arguments and IPv4-mapped IPv6 normalization
+  - copied `net` and `dgram` BlockList rule sets match IPv4 rules against IPv4-mapped IPv6 runtime socket addresses
 
 ## Recent Completed Helper Features
+
+- network net/dgram copied BlockList IPv4-mapped IPv6 runtime matching completed:
+  - Added shared native matching helper that preserves strict direct family matching, then falls back from IPv4-mapped IPv6 runtime addresses to copied IPv4 bytes for socket filtering
+  - `net` TCP connect/accept blocklist filtering and `dgram` send/receive blocklist filtering now share the same mapped-address behavior after BlockList rules are copied onto sockets
+  - Native Zig coverage verifies copied IPv4 address, range, and subnet rules match `::ffff:a.b.c.d` runtime addresses only through the new mapped fallback
 
 - network net.BlockList family argument compatibility completed:
   - Added family-aware native helpers and `node.sal` macros for `BlockList.addAddress`, `addRange`, `addSubnet`, and `check`

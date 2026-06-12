@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: DNS Resolver custom-server retry attempts
+- Scope: installed main node.sal TCP socket buffer option helper coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Resolver queries against custom DNS servers honor the configured `tries` count instead of sending only one UDP query
+  - Main `node.sal` net lifecycle coverage exercises TCP receive/send buffer size setter and getter helpers on a real socket
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` TCP socket buffer option helper coverage completed:
+  - `tests/node_test_net_full.sa` now calls `NODE_NET_SET_RECV_BUFFER_SIZE`, `NODE_NET_GET_RECV_BUFFER_SIZE`, `NODE_NET_SET_SEND_BUFFER_SIZE`, and `NODE_NET_GET_SEND_BUFFER_SIZE` through the installed main facade path
+  - The coverage reuses the existing real TCP client/server lifecycle and existing native socket-option helpers, avoiding a duplicate implementation path
+  - Platform-specific kernel buffer rounding is allowed by checking successful calls and returned values rather than assuming an exact socket buffer size
 
 - network DNS Resolver custom-server retry attempts completed:
   - Resolver custom-server queries now retry up to the configured `tries` count, defaulting to one attempt when `tries` is zero

@@ -110,6 +110,16 @@ L_ENTRY:
     timeoutMs = add 0, 0
     sGetTimeout = add 0, 0
     EXPAND NODE_NET_GET_TIMEOUT cli, timeoutMs, sGetTimeout
+    sSetRecvBufferSize = add 0, 0
+    EXPAND NODE_NET_SET_RECV_BUFFER_SIZE cli, 4096, sSetRecvBufferSize
+    recvBufferSize = add 0, 0
+    sGetRecvBufferSize = add 0, 0
+    EXPAND NODE_NET_GET_RECV_BUFFER_SIZE cli, recvBufferSize, sGetRecvBufferSize
+    sSetSendBufferSize = add 0, 0
+    EXPAND NODE_NET_SET_SEND_BUFFER_SIZE cli, 4096, sSetSendBufferSize
+    sendBufferSize = add 0, 0
+    sGetSendBufferSize = add 0, 0
+    EXPAND NODE_NET_GET_SEND_BUFFER_SIZE cli, sendBufferSize, sGetSendBufferSize
     sSetTos = add 0, 0
     EXPAND NODE_NET_SET_TYPE_OF_SERVICE cli, 0, sSetTos
     tos = add 0, 0
@@ -198,6 +208,12 @@ L_ENTRY:
     !readable
     !sRemotePort
     !remotePort
+    !sGetSendBufferSize
+    !sendBufferSize
+    !sSetSendBufferSize
+    !sGetRecvBufferSize
+    !recvBufferSize
+    !sSetRecvBufferSize
     !sGetTos
     !tos
     !sSetTos

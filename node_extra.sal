@@ -8457,7 +8457,7 @@
 [END_MACRO]
 
 [MACRO] NODE_HTTP3_SESSION_SEND_DATAGRAM %out_status, %session, %data, %data_len
-    %out_status = call @sa_node_plugin_http3_session_send_datagram(%session, %data, %data_len)
+    %out_status = call @sa_node_plugin_http3_session_send_datagram(%session, &%data, %data_len)
 [END_MACRO]
 
 [MACRO] NODE_HTTP3_SESSION_RECV_DATAGRAM %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %session, %max_len
@@ -8608,7 +8608,7 @@
 [END_MACRO]
 
 [MACRO] NODE_DTLS_SEND %out_status, %endpoint, %data, %data_len
-    %out_status = call @sa_node_plugin_dtls_send(%endpoint, %data, %data_len)
+    %out_status = call @sa_node_plugin_dtls_send(%endpoint, &%data, %data_len)
 [END_MACRO]
 
 [MACRO] NODE_DTLS_RECV %out_ptr, %out_len, %out_host_ptr, %out_host_len, %out_port, %out_status, %endpoint, %max_len

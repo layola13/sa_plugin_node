@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal dgram zero-length datagram coverage
+- Scope: installed main node.sal QUIC/HTTP3/DTLS datagram facade coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` dgram coverage exercises sending and receiving an empty UDP datagram on a real socket
+  - Main `node.sal` QUIC/HTTP3/DTLS coverage exercises connected endpoint send/receive data paths on real UDP-backed sockets
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` QUIC/HTTP3/DTLS datagram facade coverage completed:
+  - `NODE_HTTP3_SESSION_SEND_DATAGRAM` and `NODE_DTLS_SEND` now pass data buffers by pointer consistently with the existing dgram send macros in both `node.sal` and `node_extra.sal`
+  - `tests/node_test_quic_dtls.sa` now validates QUIC client connect plus remote address metadata, HTTP/3 session datagram send/receive, and DTLS client send/server receive through the main facade path
+  - The coverage reuses the existing UDP-backed QUIC/DTLS endpoint and HTTP/3 session native APIs instead of adding another transport implementation
 
 - installed main `node.sal` dgram zero-length datagram coverage completed:
   - `tests/node_test_dgram_recv.sa` now sends and receives a zero-length UDP datagram through `NODE_DGRAM_SEND` and `NODE_DGRAM_RECV`

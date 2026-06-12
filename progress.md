@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal dgram connected UDP lifecycle coverage
+- Scope: installed main node.sal dgram zero-length datagram coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` dgram coverage exercises connect, remoteAddress, connected send, receive, disconnect, and disconnected send failure on real UDP sockets
+  - Main `node.sal` dgram coverage exercises sending and receiving an empty UDP datagram on a real socket
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` dgram zero-length datagram coverage completed:
+  - `tests/node_test_dgram_recv.sa` now sends and receives a zero-length UDP datagram through `NODE_DGRAM_SEND` and `NODE_DGRAM_RECV`
+  - The test reuses the existing real loopback UDP socket path and existing native send/recv implementation, matching Node's common empty-message datagram behavior
+  - The recv test now frees both regular and empty datagram payload/peer buffers through the existing plugin free-buffer helper
 
 - installed main `node.sal` dgram connected UDP lifecycle coverage completed:
   - `tests/node_test_dgram_extra.sa` now validates `NODE_DGRAM_CONNECT`, `NODE_DGRAM_REMOTE_ADDRESS`, `NODE_DGRAM_SEND_CONNECTED`, `NODE_DGRAM_RECV`, and `NODE_DGRAM_DISCONNECT` through the main installed facade path

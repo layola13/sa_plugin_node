@@ -5422,7 +5422,7 @@
 [END_MACRO]
 
 [MACRO] NODE_TLS_WRITE %out_status, %socket, %data, %data_len
-    %out_status = call @sa_node_plugin_tls_write(%socket, %data, %data_len)
+    %out_status = call @sa_node_plugin_tls_write(%socket, &%data, %data_len)
 [END_MACRO]
 
 [MACRO] NODE_TLS_READ %out_ptr, %out_len, %out_status, %socket, %max_len

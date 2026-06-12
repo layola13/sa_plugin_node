@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal QUIC/HTTP3/DTLS datagram facade coverage
+- Scope: installed main node.sal TLS write buffer facade alignment
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` QUIC/HTTP3/DTLS coverage exercises connected endpoint send/receive data paths on real UDP-backed sockets
+  - Main `node.sal` TLS write helper passes SA byte buffers to the native TLS write ABI consistently with other send/write helpers
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` TLS write buffer facade alignment completed:
+  - `NODE_TLS_WRITE` now passes its data argument by pointer in both `node.sal` and `node_extra.sal`, matching the native TLS write ABI and existing dgram/HTTP3/DTLS send macro style
+  - `tests/node_test_tls_main.sa` exercises the main facade macro expansion path for the write helper, while the existing native TLS tests cover real socket write/read behavior
 
 - installed main `node.sal` QUIC/HTTP3/DTLS datagram facade coverage completed:
   - `NODE_HTTP3_SESSION_SEND_DATAGRAM` and `NODE_DTLS_SEND` now pass data buffers by pointer consistently with the existing dgram send macros in both `node.sal` and `node_extra.sal`

@@ -2,6 +2,7 @@
 @import "../node.sal"
 @const S_HOST = utf8:"127.0.0.1"
 @const S_HOST6 = utf8:"::1"
+@const S_MSG = utf8:"pong"
 
 @test "node.dgram create options"():
 L_ENTRY:
@@ -45,6 +46,70 @@ L_ENTRY:
     !s_create
     !sock
     return
+
+@test "node.dgram connected socket lifecycle"():
+L_ENTRY:
+    receiver = add 0, 0
+    EXPAND NODE_DGRAM_CREATE receiver
+    s_bind = add 0, 0
+    EXPAND NODE_DGRAM_BIND s_bind, receiver, S_HOST, 9, 18772
+    sender = add 0, 0
+    EXPAND NODE_DGRAM_CREATE sender
+    s_connect = add 0, 0
+    EXPAND NODE_DGRAM_CONNECT s_connect, sender, S_HOST, 9, 18772
+    remote_ptr = add 0, 0
+    remote_len = add 0, 0
+    s_remote = add 0, 0
+    EXPAND NODE_DGRAM_REMOTE_ADDRESS s_remote, remote_ptr, remote_len, sender
+    s_send = add 0, 0
+    EXPAND NODE_DGRAM_SEND_CONNECTED s_send, sender, S_MSG, 4
+    msg_ptr = add 0, 0
+    msg_len = add 0, 0
+    peer_ptr = add 0, 0
+    peer_len = add 0, 0
+    peer_port = add 0, 0
+    s_recv = add 0, 0
+    EXPAND NODE_DGRAM_RECV s_recv, msg_ptr, msg_len, peer_ptr, peer_len, peer_port, receiver, 32
+    s_disconnect = add 0, 0
+    EXPAND NODE_DGRAM_DISCONNECT s_disconnect, sender
+    s_send_after_disconnect = add 0, 0
+    EXPAND NODE_DGRAM_SEND_CONNECTED s_send_after_disconnect, sender, S_MSG, 4
+    after_disconnect_ok = eq s_send_after_disconnect, 0
+    br after_disconnect_ok -> L_ERR_CONNECTED_SEND_AFTER_DISCONNECT, L_CLOSE
+L_CLOSE:
+    !after_disconnect_ok
+    s_close_sender = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s_close_sender, sender
+    s_close_receiver = add 0, 0
+    EXPAND NODE_DGRAM_CLOSE s_close_receiver, receiver
+    free_peer = call @sa_node_plugin_free_buffer(peer_ptr, peer_len)
+    free_msg = call @sa_node_plugin_free_buffer(msg_ptr, msg_len)
+    free_remote = call @sa_node_plugin_free_buffer(remote_ptr, remote_len)
+    !free_remote
+    !free_msg
+    !free_peer
+    !s_close_receiver
+    !s_close_sender
+    !s_send_after_disconnect
+    !s_disconnect
+    !s_recv
+    !peer_port
+    !peer_len
+    !peer_ptr
+    !msg_len
+    !msg_ptr
+    !s_send
+    !s_remote
+    !remote_len
+    !remote_ptr
+    !s_connect
+    !sender
+    !s_bind
+    !receiver
+    return
+L_ERR_CONNECTED_SEND_AFTER_DISCONNECT:
+    !after_disconnect_ok
+    panic(103)
 
 @test "node.dgram blocklists"():
 L_ENTRY:

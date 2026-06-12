@@ -63,12 +63,17 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal TCP socket buffer option helper coverage
+- Scope: installed main node.sal dgram connected UDP lifecycle coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` net lifecycle coverage exercises TCP receive/send buffer size setter and getter helpers on a real socket
+  - Main `node.sal` dgram coverage exercises connect, remoteAddress, connected send, receive, disconnect, and disconnected send failure on real UDP sockets
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` dgram connected UDP lifecycle coverage completed:
+  - `tests/node_test_dgram_extra.sa` now validates `NODE_DGRAM_CONNECT`, `NODE_DGRAM_REMOTE_ADDRESS`, `NODE_DGRAM_SEND_CONNECTED`, `NODE_DGRAM_RECV`, and `NODE_DGRAM_DISCONNECT` through the main installed facade path
+  - The test uses real loopback UDP sockets and the existing native dgram socket APIs, including the existing connected-send failure behavior after disconnect
+  - Remote and received message buffers are released through the existing plugin free-buffer helper
 
 - installed main `node.sal` TCP socket buffer option helper coverage completed:
   - `tests/node_test_net_full.sa` now calls `NODE_NET_SET_RECV_BUFFER_SIZE`, `NODE_NET_GET_RECV_BUFFER_SIZE`, `NODE_NET_SET_SEND_BUFFER_SIZE`, and `NODE_NET_GET_SEND_BUFFER_SIZE` through the installed main facade path

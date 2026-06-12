@@ -63,12 +63,18 @@
 
 ## Current Helper Tranche
 
-- Scope: net/dgram copied BlockList IPv4-mapped IPv6 runtime matching
+- Scope: dns.setServers Node-style server address normalization
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - copied `net` and `dgram` BlockList rule sets match IPv4 rules against IPv4-mapped IPv6 runtime socket addresses
+  - `dns.setServers`, `dns.promises.setServers`, and Resolver setServers store Node-style canonical server strings after validation
 
 ## Recent Completed Helper Features
+
+- network dns.setServers Node-style server address normalization completed:
+  - Global DNS and Resolver `setServers` now parse, validate, and store canonical server JSON instead of preserving caller formatting
+  - Default port 53 is omitted from `getServers()` output, IPv6 default-port entries are returned without brackets, and IPv6 non-default ports keep `[addr]:port`, matching Node's `test-dns.js` expectations
+  - Invalid server arrays and entries still fail before replacing the current server configuration, while promises aliases reuse the same native normalization path
+  - `tests/plugin_test.zig` covers Node's mixed IPv4/IPv6/port normalization cases, and `tests/node_test_dns_extra.sa` exercises the installed `node.sal` facade path
 
 - network net/dgram copied BlockList IPv4-mapped IPv6 runtime matching completed:
   - Added shared native matching helper that preserves strict direct family matching, then falls back from IPv4-mapped IPv6 runtime addresses to copied IPv4 bytes for socket filtering

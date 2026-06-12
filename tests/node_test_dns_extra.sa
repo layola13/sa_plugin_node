@@ -6,6 +6,7 @@
 @const S_IP = utf8:"127.0.0.1"
 @const S_IPV4FIRST = utf8:"ipv4first"
 @const S_VERBATIM = utf8:"verbatim"
+@const S_SERVERS_PORTS = utf8:"[\"4.4.4.4:53\",\"[2001:4860:4860::8888]:53\",\"103.238.225.181:666\",\"[fe80::483a:5aff:fee6:1f04]:666\",\"[fe80::483a:5aff:fee6:1f04]\"]"
 
 @test "node.dns resolve4 succeeds"():
 L_ENTRY:
@@ -245,9 +246,30 @@ L_ERR_SET:
 @test "node.dns set_servers succeeds"():
 L_ENTRY:
     s = add 0, 0
-    EXPAND NODE_DNS_SET_SERVERS 0, 0, s
+    EXPAND NODE_DNS_SET_SERVERS S_SERVERS_PORTS, 128, s
+    ok = eq s, 0
+    br ok -> L_READ, L_ERR_SET
+L_READ:
+    !ok
+    p = add 0, 0
+    l = add 0, 0
+    EXPAND NODE_DNS_GET_SERVERS p, l
+    has_len = ugt l, 0
+    br has_len -> L_FREE, L_ERR_LEN
+L_FREE:
+    !has_len
+    free_p = call @sa_node_plugin_free_buffer(p, l)
+    !free_p
+    !p
+    !l
     !s
     return
+L_ERR_SET:
+    !ok
+    panic(103)
+L_ERR_LEN:
+    !has_len
+    panic(103)
 
 @test "node.dns set_default_result_order succeeds"():
 L_ENTRY:

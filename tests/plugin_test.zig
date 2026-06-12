@@ -359,7 +359,15 @@ test "node plugin dns resolver settings are stateful" {
     var servers_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_get_servers(&servers_ptr, &servers_len));
     defer _ = plugin.sa_node_plugin_free_buffer(servers_ptr, servers_len);
-    try std.testing.expectEqualStrings(servers_json, (servers_ptr orelse return error.NullDnsServers)[0..@intCast(servers_len)]);
+    try std.testing.expectEqualStrings("[\"127.0.0.1\",\"[::1]:5353\",\"8.8.8.8\"]", (servers_ptr orelse return error.NullDnsServers)[0..@intCast(servers_len)]);
+
+    const node_ports_json = "[\"4.4.4.4:53\",\"[2001:4860:4860::8888]:53\",\"103.238.225.181:666\",\"[fe80::483a:5aff:fee6:1f04]:666\",\"[fe80::483a:5aff:fee6:1f04]\"]";
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_set_servers(node_ports_json.ptr, node_ports_json.len));
+    var normalized_ptr: ?[*]const u8 = null;
+    var normalized_len: u64 = 0;
+    try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_get_servers(&normalized_ptr, &normalized_len));
+    defer _ = plugin.sa_node_plugin_free_buffer(normalized_ptr, normalized_len);
+    try std.testing.expectEqualStrings("[\"4.4.4.4\",\"2001:4860:4860::8888\",\"103.238.225.181:666\",\"[fe80::483a:5aff:fee6:1f04]:666\",\"fe80::483a:5aff:fee6:1f04\"]", (normalized_ptr orelse return error.NullDnsNormalizedServers)[0..@intCast(normalized_len)]);
 
     const invalid_servers = "[\"example.com\"]";
     try std.testing.expect(plugin.sa_node_plugin_dns_set_servers(invalid_servers.ptr, invalid_servers.len) != 0);
@@ -436,7 +444,11 @@ test "node plugin dns resolver instances keep independent settings" {
     var servers_len: u64 = 0;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_dns_resolver_get_servers(resolver, &servers_ptr, &servers_len));
     defer _ = plugin.sa_node_plugin_free_buffer(servers_ptr, servers_len);
-    try std.testing.expectEqualStrings(servers_json, (servers_ptr orelse return error.NullResolverServers)[0..@intCast(servers_len)]);
+    const expected_servers_json = if (sock_addr.getPort() == 53)
+        "[\"127.0.0.1\"]"
+    else
+        servers_json;
+    try std.testing.expectEqualStrings(expected_servers_json, (servers_ptr orelse return error.NullResolverServers)[0..@intCast(servers_len)]);
 
     var snapshot_ptr: ?[*]const u8 = null;
     var snapshot_len: u64 = 0;

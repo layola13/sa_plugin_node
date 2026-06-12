@@ -2244,36 +2244,69 @@ const DnsResolverHandle = struct {
     }
 };
 
-fn parseDnsServer(server: []const u8) bool {
-    if (server.len == 0) return false;
-    if (std.net.Address.parseIp(server, 53)) |_| return true else |_| {}
+fn parseDnsServerAddress(server: []const u8) !std.net.Address {
+    if (server.len == 0) return error.InvalidServer;
+    if (std.net.Address.parseIp(server, 53)) |addr| return addr else |_| {}
 
     if (server[0] == '[') {
-        const end = std.mem.indexOfScalar(u8, server, ']') orelse return false;
-        if (std.net.Address.parseIp6(server[1..end], 53)) |_| {} else |_| return false;
-        if (end + 1 == server.len) return true;
-        if (server[end + 1] != ':') return false;
-        const port = std.fmt.parseInt(u16, server[end + 2 ..], 10) catch return false;
-        return port > 0;
+        const end = std.mem.indexOfScalar(u8, server, ']') orelse return error.InvalidServer;
+        var port: u16 = 53;
+        if (end + 1 < server.len) {
+            if (server[end + 1] != ':') return error.InvalidServer;
+            port = try std.fmt.parseInt(u16, server[end + 2 ..], 10);
+            if (port == 0) return error.InvalidServer;
+        }
+        return std.net.Address.parseIp6(server[1..end], port);
     }
 
     if (std.mem.lastIndexOfScalar(u8, server, ':')) |colon| {
-        if (std.mem.indexOfScalar(u8, server[0..colon], ':') != null) return false;
-        const port = std.fmt.parseInt(u16, server[colon + 1 ..], 10) catch return false;
-        if (port == 0) return false;
-        if (std.net.Address.parseIp4(server[0..colon], 53)) |_| return true else |_| {}
+        if (std.mem.indexOfScalar(u8, server[0..colon], ':') != null) return error.InvalidServer;
+        const port = try std.fmt.parseInt(u16, server[colon + 1 ..], 10);
+        if (port == 0) return error.InvalidServer;
+        return std.net.Address.parseIp4(server[0..colon], port);
     }
-    return false;
+    return error.InvalidServer;
 }
 
-fn validateDnsServersJson(servers: []const u8) !void {
-    var parsed = try std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, servers, .{});
-    defer parsed.deinit();
-    const arr = parsed.value.array;
-    for (arr.items) |item| {
-        const server = item.string;
-        if (!parseDnsServer(server)) return error.InvalidServer;
+fn appendDnsServerCanonical(out: *std.ArrayList(u8), server: std.net.Address) !void {
+    const host = try tlsAddressToOwnedHost(std.heap.page_allocator, server);
+    defer std.heap.page_allocator.free(host);
+    if (server.getPort() == 53) {
+        try appendJsonString(out, host);
+        return;
     }
+    switch (server.any.family) {
+        std.posix.AF.INET => {
+            const canonical = try std.fmt.allocPrint(std.heap.page_allocator, "{s}:{d}", .{ host, server.getPort() });
+            defer std.heap.page_allocator.free(canonical);
+            try appendJsonString(out, canonical);
+        },
+        std.posix.AF.INET6 => {
+            const canonical = try std.fmt.allocPrint(std.heap.page_allocator, "[{s}]:{d}", .{ host, server.getPort() });
+            defer std.heap.page_allocator.free(canonical);
+            try appendJsonString(out, canonical);
+        },
+        else => return error.InvalidServer,
+    }
+}
+
+fn normalizeDnsServersJson(allocator: std.mem.Allocator, servers: []const u8) ![]u8 {
+    var parsed = try std.json.parseFromSlice(std.json.Value, allocator, servers, .{});
+    defer parsed.deinit();
+    if (parsed.value != .array) return error.InvalidServer;
+    const arr = parsed.value.array;
+    var out = std.ArrayList(u8).init(allocator);
+    errdefer out.deinit();
+    try out.append('[');
+    for (arr.items, 0..) |item, i| {
+        if (item != .string) return error.InvalidServer;
+        const server = item.string;
+        const addr = try parseDnsServerAddress(server);
+        if (i != 0) try out.append(',');
+        try appendDnsServerCanonical(&out, addr);
+    }
+    try out.append(']');
+    return out.toOwnedSlice();
 }
 
 fn parseDnsLookupOrder(order_ptr: ?[*]const u8, order_len: u64) !DnsLookupOrder {
@@ -2551,27 +2584,6 @@ fn encodeDnsName(out: *std.ArrayList(u8), hostname: []const u8) !void {
         try out.appendSlice(label);
     }
     try out.append(0);
-}
-
-fn parseDnsServerAddress(server: []const u8) !std.net.Address {
-    if (std.net.Address.parseIp(server, 53)) |addr| return addr else |_| {}
-
-    if (server.len > 0 and server[0] == '[') {
-        const end = std.mem.indexOfScalar(u8, server, ']') orelse return error.InvalidServer;
-        var port: u16 = 53;
-        if (end + 1 < server.len) {
-            if (server[end + 1] != ':') return error.InvalidServer;
-            port = try std.fmt.parseInt(u16, server[end + 2 ..], 10);
-        }
-        return std.net.Address.parseIp6(server[1..end], port);
-    }
-
-    if (std.mem.lastIndexOfScalar(u8, server, ':')) |colon| {
-        if (std.mem.indexOfScalar(u8, server[0..colon], ':') != null) return error.InvalidServer;
-        const port = try std.fmt.parseInt(u16, server[colon + 1 ..], 10);
-        return std.net.Address.parseIp4(server[0..colon], port);
-    }
-    return error.InvalidServer;
 }
 
 fn firstDnsServerAddress(servers_json: []const u8) !std.net.Address {
@@ -2963,8 +2975,7 @@ pub export fn sa_node_plugin_dns_get_servers(out_ptr: ?*?[*]const u8, out_len: ?
 
 pub export fn sa_node_plugin_dns_set_servers(servers_ptr: ?[*]const u8, servers_len: u64) u32 {
     const servers = (servers_ptr orelse return fail())[0..servers_len];
-    validateDnsServersJson(servers) catch return fail();
-    const owned = std.heap.page_allocator.dupe(u8, servers) catch return fail();
+    const owned = normalizeDnsServersJson(std.heap.page_allocator, servers) catch return fail();
     dns_config_mutex.lock();
     defer dns_config_mutex.unlock();
     if (dns_custom_servers) |old| std.heap.page_allocator.free(old);
@@ -3012,9 +3023,8 @@ pub export fn sa_node_plugin_dns_resolver_free(resolver_ptr: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_dns_resolver_set_servers(resolver_ptr: ?*anyopaque, servers_ptr: ?[*]const u8, servers_len: u64) u32 {
     const resolver: *DnsResolverHandle = @ptrCast(@alignCast(resolver_ptr orelse return fail()));
-    const servers = servers_ptr.?[0..servers_len];
-    validateDnsServersJson(servers) catch return fail();
-    const owned = resolver.allocator.dupe(u8, servers) catch return fail();
+    const servers = (servers_ptr orelse return fail())[0..servers_len];
+    const owned = normalizeDnsServersJson(resolver.allocator, servers) catch return fail();
     if (resolver.servers_json) |old| resolver.allocator.free(old);
     resolver.servers_json = owned;
     return 0;

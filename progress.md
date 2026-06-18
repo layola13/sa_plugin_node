@@ -63,12 +63,16 @@
 
 ## Current Helper Tranche
 
-- Scope: installed main node.sal HTTP request body facade coverage
+- Scope: installed main node.sal dgram disconnect remoteAddress coverage
 - Current status: `1 / 1` helper features completed (`100.0%`)
 - Planned helpers:
-  - Main `node.sal` HTTP, HTTPS, and HTTP/2 one-shot request helpers exercise non-empty request body arguments through the facade
+  - Main `node.sal` dgram connected socket lifecycle verifies remoteAddress fails after disconnect, matching Node's disconnected socket behavior
 
 ## Recent Completed Helper Features
+
+- installed main `node.sal` dgram disconnect remoteAddress coverage completed:
+  - `tests/node_test_dgram_extra.sa` now verifies `NODE_DGRAM_REMOTE_ADDRESS` fails after `NODE_DGRAM_DISCONNECT` on a previously connected UDP socket
+  - The coverage reuses the existing real loopback UDP connected-socket lifecycle and the existing native dgram disconnect/remoteAddress helpers
 
 - installed main `node.sal` HTTP request body facade coverage completed:
   - `tests/node_test_http_extra.sa` now calls `NODE_HTTP_REQUEST_JSON` and `NODE_HTTPS_REQUEST_JSON` with non-empty body buffers through the main facade path

@@ -51,5 +51,16 @@
       ]
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "http-client": {
+      "version": ">=0.1.0",
+      "abi": 1,
+      "path": "../sa_plugin_http_client"
+    },
+    "http-server": {
+      "version": ">=0.1.0",
+      "abi": 1,
+      "path": "../sa_plugin_http_server"
+    }
+  }
 }

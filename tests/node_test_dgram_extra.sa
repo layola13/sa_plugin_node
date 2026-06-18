@@ -75,9 +75,17 @@ L_ENTRY:
     s_send_after_disconnect = add 0, 0
     EXPAND NODE_DGRAM_SEND_CONNECTED s_send_after_disconnect, sender, S_MSG, 4
     after_disconnect_ok = eq s_send_after_disconnect, 0
-    br after_disconnect_ok -> L_ERR_CONNECTED_SEND_AFTER_DISCONNECT, L_CLOSE
-L_CLOSE:
+    br after_disconnect_ok -> L_ERR_CONNECTED_SEND_AFTER_DISCONNECT, L_REMOTE_AFTER_DISCONNECT
+L_REMOTE_AFTER_DISCONNECT:
     !after_disconnect_ok
+    remote_after_ptr = add 0, 0
+    remote_after_len = add 0, 0
+    s_remote_after_disconnect = add 0, 0
+    EXPAND NODE_DGRAM_REMOTE_ADDRESS s_remote_after_disconnect, remote_after_ptr, remote_after_len, sender
+    remote_after_disconnect_ok = eq s_remote_after_disconnect, 0
+    br remote_after_disconnect_ok -> L_ERR_REMOTE_AFTER_DISCONNECT, L_CLOSE
+L_CLOSE:
+    !remote_after_disconnect_ok
     s_close_sender = add 0, 0
     EXPAND NODE_DGRAM_CLOSE s_close_sender, sender
     s_close_receiver = add 0, 0
@@ -90,6 +98,9 @@ L_CLOSE:
     !free_peer
     !s_close_receiver
     !s_close_sender
+    !remote_after_len
+    !remote_after_ptr
+    !s_remote_after_disconnect
     !s_send_after_disconnect
     !s_disconnect
     !s_recv
@@ -109,6 +120,9 @@ L_CLOSE:
     return
 L_ERR_CONNECTED_SEND_AFTER_DISCONNECT:
     !after_disconnect_ok
+    panic(103)
+L_ERR_REMOTE_AFTER_DISCONNECT:
+    !remote_after_disconnect_ok
     panic(103)
 
 @test "node.dgram blocklists"():

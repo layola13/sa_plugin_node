@@ -2291,13 +2291,13 @@ fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8
     var bytes: [16]u8 = .{0} ** 16;
     if (std.net.Address.parseIp4(address, 0)) |addr| {
         @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
-        const text = try dgramAddressToOwnedHost(addr);
+        const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv4, .bytes = bytes, .text = text };
     } else |_| {}
     if (std.net.Address.parseIp6(address, 0)) |addr| {
         @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
-        const text = try dgramAddressToOwnedHost(addr);
+        const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv6, .bytes = bytes, .text = text };
     } else |_| {}
@@ -2310,14 +2310,14 @@ fn blockListParseAddressForFamily(allocator: std.mem.Allocator, address: []const
         .ipv4 => {
             const addr = try std.net.Address.parseIp4(address, 0);
             @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
-            const text = try dgramAddressToOwnedHost(addr);
+            const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         .ipv6 => {
             const addr = try std.net.Address.parseIp6(address, 0);
             @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
-            const text = try dgramAddressToOwnedHost(addr);
+            const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
         },
@@ -2486,13 +2486,13 @@ fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: std.net.Ad
     switch (addr.any.family) {
         std.posix.AF.INET => {
             @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
-            const text = try dgramAddressToOwnedHost(addr);
+            const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         std.posix.AF.INET6 => {
             @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
-            const text = try dgramAddressToOwnedHost(addr);
+            const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
         },
@@ -3025,7 +3025,7 @@ fn netUnlinkUnixSocketPath(path: []const u8) void {
 
 fn netAddressToAttemptString(addr: std.net.Address) ![]u8 {
     const allocator = std.heap.page_allocator;
-    const host = try dgramAddressToOwnedHost(addr);
+    const host = try dgramAddressToOwnedHost(allocator, addr);
     defer allocator.free(host);
     return try std.fmt.allocPrint(allocator, "{s}:{d}", .{ host, addr.getPort() });
 }
@@ -3048,7 +3048,7 @@ fn netSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaq
 }
 
 fn appendAddressJson(out: *std.ArrayList(u8), addr: std.net.Address) !void {
-    const host = try dgramAddressToOwnedHost(addr);
+    const host = try dgramAddressToOwnedHost(std.heap.page_allocator, addr);
     defer std.heap.page_allocator.free(host);
     const family = switch (addr.any.family) {
         std.posix.AF.INET => "IPv4",
@@ -3092,7 +3092,7 @@ fn writeSocketAddressProperty(socket_ptr: ?*anyopaque, peer: bool, property: enu
     const stream = obj.stream orelse return 2;
     const addr = getSocketAddress(stream.handle, peer) catch return 2;
     const value = switch (property) {
-        .address => dgramAddressToOwnedHost(addr) catch return 2,
+        .address => dgramAddressToOwnedHost(std.heap.page_allocator, addr) catch return 2,
         .family => std.heap.page_allocator.dupe(u8, switch (addr.any.family) {
             std.posix.AF.INET => "IPv4",
             std.posix.AF.INET6 => "IPv6",
@@ -3823,8 +3823,7 @@ fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !std.net.
     return parseDgramAddressFamily(host_ptr, host_len, port, std.posix.AF.INET);
 }
 
-fn dgramAddressToOwnedHost(addr: std.net.Address) ![]u8 {
-    const allocator = std.heap.page_allocator;
+fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) ![]u8 {
     switch (addr.any.family) {
         std.posix.AF.INET => {
             const bytes = std.mem.asBytes(&addr.in.sa.addr);
@@ -4224,7 +4223,7 @@ pub export fn sa_node_plugin_dgram_recv(
     const owned = std.heap.page_allocator.alloc(u8, n) catch return 2;
     @memcpy(owned[0..n], buf[0..n]);
     std.heap.page_allocator.free(buf);
-    const host = dgramAddressToOwnedHost(src_addr) catch return 2;
+    const host = dgramAddressToOwnedHost(std.heap.page_allocator, src_addr) catch return 2;
 
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;

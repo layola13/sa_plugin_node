@@ -5560,313 +5560,99 @@ pub export fn sa_node_plugin_timers_promises_interval_free(interval_ptr: ?*anyop
     return 0;
 }
 
-// --- HTTP/2 h2c client subset backed by libnghttp2 ---
-const Nghttp2Session = opaque {};
-const Nghttp2SessionCallbacks = opaque {};
-const Nghttp2Frame = opaque {};
+// --- HTTP/2 thin facade: real backend now lives in the sci runtime ---
+//
+// The actual libnghttp2 protocol machine was sunk into sci as the
+// sa_std_http2_* surface (sci/src/runtime/sa_http2.zig). This module no longer
+// keeps its own copy; it forwards the well-known Node-flavored ABI to the
+// sci-level handle-based ABI. String/JSON outputs are returned through the
+// Node-flavored (out_ptr, out_len) slots exactly as before, internally bridged
+// via sci's registered u64 buffer handles (sa_std_http2_buffer_*).
 
-const Nghttp2Nv = extern struct {
-    name: [*]u8,
-    value: [*]u8,
-    namelen: usize,
-    valuelen: usize,
-    flags: u8,
-};
+const SaStdH2 = @import("sa_http2");
 
-const Nghttp2DataSource = extern union {
-    fd: c_int,
-    ptr: ?*anyopaque,
-};
-
-const Nghttp2DataProvider = extern struct {
-    source: Nghttp2DataSource,
-    read_callback: ?*const fn (?*Nghttp2Session, i32, [*]u8, usize, *u32, *Nghttp2DataSource, ?*anyopaque) callconv(.c) isize,
-};
-
-const Nghttp2Version = extern struct {
-    age: c_int,
-    version_num: c_int,
-    version_str: [*:0]const u8,
-    proto_str: [*:0]const u8,
-    proto_str_len: usize,
-};
-
-const Nghttp2OnHeaderCallback = *const fn (?*Nghttp2Session, ?*const Nghttp2Frame, [*]const u8, usize, [*]const u8, usize, u8, ?*anyopaque) callconv(.c) c_int;
-const Nghttp2OnDataChunkRecvCallback = *const fn (?*Nghttp2Session, u8, i32, [*]const u8, usize, ?*anyopaque) callconv(.c) c_int;
-const Nghttp2OnFrameRecvCallback = *const fn (?*Nghttp2Session, ?*const Nghttp2Frame, ?*anyopaque) callconv(.c) c_int;
-
-const Nghttp2CallbacksNewFn = *const fn (*?*Nghttp2SessionCallbacks) callconv(.c) c_int;
-const Nghttp2CallbacksDelFn = *const fn (?*Nghttp2SessionCallbacks) callconv(.c) void;
-const Nghttp2SetOnHeaderFn = *const fn (?*Nghttp2SessionCallbacks, Nghttp2OnHeaderCallback) callconv(.c) void;
-const Nghttp2SetOnDataChunkRecvFn = *const fn (?*Nghttp2SessionCallbacks, Nghttp2OnDataChunkRecvCallback) callconv(.c) void;
-const Nghttp2SetOnFrameRecvFn = *const fn (?*Nghttp2SessionCallbacks, Nghttp2OnFrameRecvCallback) callconv(.c) void;
-const Nghttp2SessionClientNewFn = *const fn (*?*Nghttp2Session, ?*const Nghttp2SessionCallbacks, ?*anyopaque) callconv(.c) c_int;
-const Nghttp2SessionDelFn = *const fn (?*Nghttp2Session) callconv(.c) void;
-const Nghttp2SubmitRequestFn = *const fn (?*Nghttp2Session, ?*const anyopaque, [*]const Nghttp2Nv, usize, ?*const Nghttp2DataProvider, ?*anyopaque) callconv(.c) i32;
-const Nghttp2SubmitSettingsFn = *const fn (?*Nghttp2Session, u8, ?*const anyopaque, usize) callconv(.c) c_int;
-const Nghttp2SessionMemSendFn = *const fn (?*Nghttp2Session, *?[*]const u8) callconv(.c) isize;
-const Nghttp2SessionMemRecvFn = *const fn (?*Nghttp2Session, [*]const u8, usize) callconv(.c) isize;
-const Nghttp2SessionWantFn = *const fn (?*Nghttp2Session) callconv(.c) c_int;
-const Nghttp2VersionFn = *const fn (c_int) callconv(.c) ?*const Nghttp2Version;
-
-const Nghttp2Api = struct {
-    lib: std.DynLib,
-    callbacks_new: Nghttp2CallbacksNewFn,
-    callbacks_del: Nghttp2CallbacksDelFn,
-    callbacks_set_on_header_callback: Nghttp2SetOnHeaderFn,
-    callbacks_set_on_data_chunk_recv_callback: Nghttp2SetOnDataChunkRecvFn,
-    callbacks_set_on_frame_recv_callback: Nghttp2SetOnFrameRecvFn,
-    session_client_new: Nghttp2SessionClientNewFn,
-    session_del: Nghttp2SessionDelFn,
-    submit_request: Nghttp2SubmitRequestFn,
-    submit_settings: Nghttp2SubmitSettingsFn,
-    session_mem_send: Nghttp2SessionMemSendFn,
-    session_mem_recv: Nghttp2SessionMemRecvFn,
-    session_want_read: Nghttp2SessionWantFn,
-    session_want_write: Nghttp2SessionWantFn,
-    version: Nghttp2VersionFn,
-};
-
-const NGHTTP2_NV_FLAG_NONE: u8 = 0;
-const NGHTTP2_DATA_FLAG_EOF: u32 = 1;
-const NGHTTP2_FLAG_NONE: u8 = 0;
-
-const HTTP2_SETTINGS_HEADER_TABLE_SIZE: u16 = 0x1;
-const HTTP2_SETTINGS_ENABLE_PUSH: u16 = 0x2;
-const HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS: u16 = 0x3;
-const HTTP2_SETTINGS_INITIAL_WINDOW_SIZE: u16 = 0x4;
-const HTTP2_SETTINGS_MAX_FRAME_SIZE: u16 = 0x5;
-const HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE: u16 = 0x6;
-const HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL: u16 = 0x8;
-const HTTP2_MAX_FRAME_SIZE: u32 = 0x00ff_ffff;
-const HTTP2_MAX_INITIAL_WINDOW_SIZE: u32 = 0x7fff_ffff;
-const HTTP2_MAX_CUSTOM_SETTINGS: usize = 10;
-const HTTP2_CLIENT_PREFACE = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
-const HTTP2_FRAME_SETTINGS: u8 = 0x4;
-const HTTP2_FLAG_ACK: u8 = 0x1;
-
-const Http2SettingPair = struct {
-    id: u16,
-    value: u32,
-};
-
-fn http2AppendSetting(out: *std.ArrayList(u8), id: u16, value: u32) !void {
-    try out.append(@intCast((id >> 8) & 0xff));
-    try out.append(@intCast(id & 0xff));
-    try out.append(@intCast((value >> 24) & 0xff));
-    try out.append(@intCast((value >> 16) & 0xff));
-    try out.append(@intCast((value >> 8) & 0xff));
-    try out.append(@intCast(value & 0xff));
-}
-
-fn http2JsonNumber(value: std.json.Value) ?u32 {
-    return switch (value) {
-        .integer => |n| if (n >= 0 and n <= std.math.maxInt(u32)) @intCast(n) else null,
-        .float => |n| blk: {
-            if (!std.math.isFinite(n) or n < 0 or n > @as(f64, @floatFromInt(std.math.maxInt(u32)))) break :blk null;
-            const rounded = @floor(n);
-            if (rounded != n) break :blk null;
-            break :blk @intFromFloat(n);
-        },
-        else => null,
+fn http2BridgeHandle(out_ptr: ?*?[*]const u8, out_len: ?*u64, handle: u64) u32 {
+    const slot_ptr = out_ptr orelse {
+        _ = SaStdH2.sa_std_http2_buffer_free(handle);
+        return fail();
     };
-}
-
-fn http2JsonBool(value: std.json.Value) ?bool {
-    return switch (value) {
-        .bool => |b| b,
-        else => null,
+    const slot_len = out_len orelse {
+        _ = SaStdH2.sa_std_http2_buffer_free(handle);
+        return fail();
     };
-}
-
-fn http2AppendNumericSetting(out: *std.ArrayList(u8), obj: std.json.ObjectMap, key: []const u8, id: u16, min: u32, max: u32) !void {
-    const value = obj.get(key) orelse return;
-    const n = http2JsonNumber(value) orelse return error.InvalidSetting;
-    if (n < min or n > max) return error.InvalidSetting;
-    try http2AppendSetting(out, id, n);
-}
-
-fn http2AppendBoolSetting(out: *std.ArrayList(u8), obj: std.json.ObjectMap, key: []const u8, id: u16) !void {
-    const value = obj.get(key) orelse return;
-    const enabled = http2JsonBool(value) orelse return error.InvalidSetting;
-    try http2AppendSetting(out, id, if (enabled) 1 else 0);
-}
-
-fn http2AppendMaxHeaderSetting(out: *std.ArrayList(u8), obj: std.json.ObjectMap) !void {
-    const list_value = obj.get("maxHeaderListSize");
-    const size_value = obj.get("maxHeaderSize");
-    const value = size_value orelse list_value orelse return;
-    const n = http2JsonNumber(value) orelse return error.InvalidSetting;
-    try http2AppendSetting(out, HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE, n);
-}
-
-fn http2KnownSetting(id: u16) bool {
-    return id == HTTP2_SETTINGS_HEADER_TABLE_SIZE or
-        id == HTTP2_SETTINGS_ENABLE_PUSH or
-        id == HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS or
-        id == HTTP2_SETTINGS_INITIAL_WINDOW_SIZE or
-        id == HTTP2_SETTINGS_MAX_FRAME_SIZE or
-        id == HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE or
-        id == HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL;
-}
-
-fn http2AppendCustomSettings(out: *std.ArrayList(u8), obj: std.json.ObjectMap) !void {
-    const custom = obj.get("customSettings") orelse return;
-    if (custom != .object) return error.InvalidSetting;
-    if (custom.object.count() > HTTP2_MAX_CUSTOM_SETTINGS) return error.InvalidSetting;
-    var it = custom.object.iterator();
-    while (it.next()) |entry| {
-        const id = std.fmt.parseInt(u16, entry.key_ptr.*, 10) catch return error.InvalidSetting;
-        if (id == 0) return error.InvalidSetting;
-        const n = http2JsonNumber(entry.value_ptr.*) orelse return error.InvalidSetting;
-        if (http2KnownSetting(id)) continue;
-        try http2AppendSetting(out, id, n);
+    slot_ptr.* = null;
+    slot_len.* = 0;
+    const len = SaStdH2.sa_std_http2_buffer_len(handle);
+    const data_ptr = SaStdH2.sa_std_http2_buffer_data(handle);
+    if (data_ptr == null or len == 0) {
+        _ = SaStdH2.sa_std_http2_buffer_free(handle);
+        return fail();
     }
+    const src = data_ptr.?[0..@intCast(len)];
+    const owned = std.heap.page_allocator.dupe(u8, src) catch {
+        _ = SaStdH2.sa_std_http2_buffer_free(handle);
+        return fail();
+    };
+    _ = SaStdH2.sa_std_http2_buffer_free(handle);
+    slot_ptr.* = owned.ptr;
+    slot_len.* = owned.len;
+    return 0;
 }
 
-fn http2ReadSetting(buf: []const u8, offset: usize) Http2SettingPair {
-    const id = (@as(u16, buf[offset]) << 8) | @as(u16, buf[offset + 1]);
-    const value = (@as(u32, buf[offset + 2]) << 24) |
-        (@as(u32, buf[offset + 3]) << 16) |
-        (@as(u32, buf[offset + 4]) << 8) |
-        @as(u32, buf[offset + 5]);
-    return .{ .id = id, .value = value };
+fn http2SupportedBool() bool {
+    var flag: u32 = 0;
+    _ = SaStdH2.sa_std_http2_supported(&flag);
+    return flag != 0;
 }
 
-fn http2AppendFrame(out: *std.ArrayList(u8), frame_type: u8, flags: u8, stream_id: u32, payload: []const u8) !void {
-    if (payload.len > HTTP2_MAX_FRAME_SIZE) return error.FrameTooLarge;
-    try out.append(@intCast((payload.len >> 16) & 0xff));
-    try out.append(@intCast((payload.len >> 8) & 0xff));
-    try out.append(@intCast(payload.len & 0xff));
-    try out.append(frame_type);
-    try out.append(flags);
-    const sid = stream_id & 0x7fff_ffff;
-    try out.append(@intCast((sid >> 24) & 0x7f));
-    try out.append(@intCast((sid >> 16) & 0xff));
-    try out.append(@intCast((sid >> 8) & 0xff));
-    try out.append(@intCast(sid & 0xff));
-    try out.appendSlice(payload);
+pub export fn sa_node_plugin_http2_supported(out_supported: ?*u32) u32 {
+    const out = out_supported orelse return fail();
+    var flag: u32 = 0;
+    _ = SaStdH2.sa_std_http2_supported(&flag);
+    out.* = flag;
+    return 0;
 }
 
-const Http2FrameHeader = struct {
-    len: usize,
-    frame_type: u8,
-    flags: u8,
-    stream_id: u32,
-};
-
-fn http2ReadFrameHeader(buf: []const u8) !Http2FrameHeader {
-    if (buf.len < 9) return error.ShortFrameHeader;
-    const len = (@as(usize, buf[0]) << 16) | (@as(usize, buf[1]) << 8) | @as(usize, buf[2]);
-    const stream_id = (@as(u32, buf[5] & 0x7f) << 24) |
-        (@as(u32, buf[6]) << 16) |
-        (@as(u32, buf[7]) << 8) |
-        @as(u32, buf[8]);
-    return .{ .len = len, .frame_type = buf[3], .flags = buf[4], .stream_id = stream_id };
+pub export fn sa_node_plugin_http2_client_request(url_ptr: ?[*]const u8, url_len: u64, method_ptr: ?[*]const u8, method_len: u64, body_ptr: ?[*]const u8, body_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_client_request(url_ptr, url_len, method_ptr, method_len, body_ptr, body_len, &handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
-fn http2SettingsPayloadToJson(payload: []const u8) ![]const u8 {
-    var out_ptr: ?[*]const u8 = null;
-    var out_len: u64 = 0;
-    if (sa_node_plugin_http2_get_unpacked_settings_json(payload.ptr, payload.len, &out_ptr, &out_len) != 0) return error.InvalidSettings;
-    return (out_ptr orelse return error.InvalidSettings)[0..@intCast(out_len)];
-}
-
-fn http2AppendJsonU32Field(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: u32) !void {
-    if (!first.*) try out.append(',');
-    first.* = false;
-    try appendJsonString(out, name);
-    try out.writer().print(":{d}", .{value});
-}
-
-fn http2AppendJsonBoolField(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: bool) !void {
-    if (!first.*) try out.append(',');
-    first.* = false;
-    try appendJsonString(out, name);
-    try out.appendSlice(if (value) ":true" else ":false");
+pub export fn sa_node_plugin_http2_nghttp2_version_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_nghttp2_version_json(&handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_get_default_settings_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "{\"headerTableSize\":4096,\"enablePush\":true,\"initialWindowSize\":65535,\"maxFrameSize\":16384,\"maxConcurrentStreams\":4294967295,\"maxHeaderListSize\":65535,\"maxHeaderSize\":65535,\"enableConnectProtocol\":false}");
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_get_default_settings_json(&handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len,
-        \\{"NGHTTP2_ERR_FRAME_SIZE_ERROR":-522,"NGHTTP2_SESSION_SERVER":0,"NGHTTP2_SESSION_CLIENT":1,"NGHTTP2_STREAM_STATE_IDLE":1,"NGHTTP2_STREAM_STATE_OPEN":2,"NGHTTP2_STREAM_STATE_RESERVED_LOCAL":3,"NGHTTP2_STREAM_STATE_RESERVED_REMOTE":4,"NGHTTP2_STREAM_STATE_HALF_CLOSED_LOCAL":5,"NGHTTP2_STREAM_STATE_HALF_CLOSED_REMOTE":6,"NGHTTP2_STREAM_STATE_CLOSED":7,"NGHTTP2_FLAG_NONE":0,"NGHTTP2_FLAG_END_STREAM":1,"NGHTTP2_FLAG_END_HEADERS":4,"NGHTTP2_FLAG_ACK":1,"NGHTTP2_FLAG_PADDED":8,"NGHTTP2_FLAG_PRIORITY":32,"DEFAULT_SETTINGS_HEADER_TABLE_SIZE":4096,"DEFAULT_SETTINGS_ENABLE_PUSH":1,"DEFAULT_SETTINGS_MAX_CONCURRENT_STREAMS":4294967295,"DEFAULT_SETTINGS_INITIAL_WINDOW_SIZE":65535,"DEFAULT_SETTINGS_MAX_FRAME_SIZE":16384,"DEFAULT_SETTINGS_MAX_HEADER_LIST_SIZE":65535,"DEFAULT_SETTINGS_ENABLE_CONNECT_PROTOCOL":0,"MAX_MAX_FRAME_SIZE":16777215,"MIN_MAX_FRAME_SIZE":16384,"MAX_INITIAL_WINDOW_SIZE":2147483647,"NGHTTP2_SETTINGS_HEADER_TABLE_SIZE":1,"NGHTTP2_SETTINGS_ENABLE_PUSH":2,"NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS":3,"NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE":4,"NGHTTP2_SETTINGS_MAX_FRAME_SIZE":5,"NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE":6,"NGHTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL":8,"PADDING_STRATEGY_NONE":0,"PADDING_STRATEGY_ALIGNED":1,"PADDING_STRATEGY_MAX":2,"PADDING_STRATEGY_CALLBACK":1,"NGHTTP2_NO_ERROR":0,"NGHTTP2_PROTOCOL_ERROR":1,"NGHTTP2_INTERNAL_ERROR":2,"NGHTTP2_FLOW_CONTROL_ERROR":3,"NGHTTP2_SETTINGS_TIMEOUT":4,"NGHTTP2_STREAM_CLOSED":5,"NGHTTP2_FRAME_SIZE_ERROR":6,"NGHTTP2_REFUSED_STREAM":7,"NGHTTP2_CANCEL":8,"NGHTTP2_COMPRESSION_ERROR":9,"NGHTTP2_CONNECT_ERROR":10,"NGHTTP2_ENHANCE_YOUR_CALM":11,"NGHTTP2_INADEQUATE_SECURITY":12,"NGHTTP2_HTTP_1_1_REQUIRED":13,"NGHTTP2_DEFAULT_WEIGHT":16,"HTTP2_HEADER_STATUS":":status","HTTP2_HEADER_METHOD":":method","HTTP2_HEADER_AUTHORITY":":authority","HTTP2_HEADER_SCHEME":":scheme","HTTP2_HEADER_PATH":":path","HTTP2_HEADER_PROTOCOL":":protocol","HTTP2_HEADER_ACCEPT_ENCODING":"accept-encoding","HTTP2_HEADER_ACCEPT_LANGUAGE":"accept-language","HTTP2_HEADER_ACCEPT_RANGES":"accept-ranges","HTTP2_HEADER_ACCEPT":"accept","HTTP2_HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS":"access-control-allow-credentials","HTTP2_HEADER_ACCESS_CONTROL_ALLOW_HEADERS":"access-control-allow-headers","HTTP2_HEADER_ACCESS_CONTROL_ALLOW_METHODS":"access-control-allow-methods","HTTP2_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN":"access-control-allow-origin","HTTP2_HEADER_ACCESS_CONTROL_EXPOSE_HEADERS":"access-control-expose-headers","HTTP2_HEADER_ACCESS_CONTROL_REQUEST_HEADERS":"access-control-request-headers","HTTP2_HEADER_ACCESS_CONTROL_REQUEST_METHOD":"access-control-request-method","HTTP2_HEADER_AGE":"age","HTTP2_HEADER_AUTHORIZATION":"authorization","HTTP2_HEADER_CACHE_CONTROL":"cache-control","HTTP2_HEADER_CONNECTION":"connection","HTTP2_HEADER_CONTENT_DISPOSITION":"content-disposition","HTTP2_HEADER_CONTENT_ENCODING":"content-encoding","HTTP2_HEADER_CONTENT_LENGTH":"content-length","HTTP2_HEADER_CONTENT_TYPE":"content-type","HTTP2_HEADER_COOKIE":"cookie","HTTP2_HEADER_DATE":"date","HTTP2_HEADER_ETAG":"etag","HTTP2_HEADER_FORWARDED":"forwarded","HTTP2_HEADER_HOST":"host","HTTP2_HEADER_IF_MODIFIED_SINCE":"if-modified-since","HTTP2_HEADER_IF_NONE_MATCH":"if-none-match","HTTP2_HEADER_IF_RANGE":"if-range","HTTP2_HEADER_LAST_MODIFIED":"last-modified","HTTP2_HEADER_LINK":"link","HTTP2_HEADER_LOCATION":"location","HTTP2_HEADER_RANGE":"range","HTTP2_HEADER_REFERER":"referer","HTTP2_HEADER_SERVER":"server","HTTP2_HEADER_SET_COOKIE":"set-cookie","HTTP2_HEADER_STRICT_TRANSPORT_SECURITY":"strict-transport-security","HTTP2_HEADER_TRANSFER_ENCODING":"transfer-encoding","HTTP2_HEADER_TE":"te","HTTP2_HEADER_UPGRADE_INSECURE_REQUESTS":"upgrade-insecure-requests","HTTP2_HEADER_UPGRADE":"upgrade","HTTP2_HEADER_USER_AGENT":"user-agent","HTTP2_HEADER_VARY":"vary","HTTP2_HEADER_X_CONTENT_TYPE_OPTIONS":"x-content-type-options","HTTP2_HEADER_X_FRAME_OPTIONS":"x-frame-options","HTTP2_HEADER_KEEP_ALIVE":"keep-alive","HTTP2_HEADER_PROXY_CONNECTION":"proxy-connection","HTTP2_HEADER_X_XSS_PROTECTION":"x-xss-protection","HTTP2_HEADER_ALT_SVC":"alt-svc","HTTP2_HEADER_CONTENT_SECURITY_POLICY":"content-security-policy","HTTP2_HEADER_EARLY_DATA":"early-data","HTTP2_HEADER_EXPECT_CT":"expect-ct","HTTP2_HEADER_ORIGIN":"origin","HTTP2_HEADER_PURPOSE":"purpose","HTTP2_HEADER_TIMING_ALLOW_ORIGIN":"timing-allow-origin","HTTP2_HEADER_X_FORWARDED_FOR":"x-forwarded-for","HTTP2_HEADER_PRIORITY":"priority","HTTP2_HEADER_ACCEPT_CHARSET":"accept-charset","HTTP2_HEADER_ACCESS_CONTROL_MAX_AGE":"access-control-max-age","HTTP2_HEADER_ALLOW":"allow","HTTP2_HEADER_CONTENT_LANGUAGE":"content-language","HTTP2_HEADER_CONTENT_LOCATION":"content-location","HTTP2_HEADER_CONTENT_MD5":"content-md5","HTTP2_HEADER_CONTENT_RANGE":"content-range","HTTP2_HEADER_DNT":"dnt","HTTP2_HEADER_EXPECT":"expect","HTTP2_HEADER_EXPIRES":"expires","HTTP2_HEADER_FROM":"from","HTTP2_HEADER_IF_MATCH":"if-match","HTTP2_HEADER_IF_UNMODIFIED_SINCE":"if-unmodified-since","HTTP2_HEADER_MAX_FORWARDS":"max-forwards","HTTP2_HEADER_PREFER":"prefer","HTTP2_HEADER_PROXY_AUTHENTICATE":"proxy-authenticate","HTTP2_HEADER_PROXY_AUTHORIZATION":"proxy-authorization","HTTP2_HEADER_REFRESH":"refresh","HTTP2_HEADER_RETRY_AFTER":"retry-after","HTTP2_HEADER_TRAILER":"trailer","HTTP2_HEADER_TK":"tk","HTTP2_HEADER_VIA":"via","HTTP2_HEADER_WARNING":"warning","HTTP2_HEADER_WWW_AUTHENTICATE":"www-authenticate","HTTP2_HEADER_HTTP2_SETTINGS":"http2-settings","HTTP2_METHOD_ACL":"ACL","HTTP2_METHOD_BASELINE_CONTROL":"BASELINE-CONTROL","HTTP2_METHOD_BIND":"BIND","HTTP2_METHOD_CHECKIN":"CHECKIN","HTTP2_METHOD_CHECKOUT":"CHECKOUT","HTTP2_METHOD_CONNECT":"CONNECT","HTTP2_METHOD_COPY":"COPY","HTTP2_METHOD_DELETE":"DELETE","HTTP2_METHOD_GET":"GET","HTTP2_METHOD_HEAD":"HEAD","HTTP2_METHOD_LABEL":"LABEL","HTTP2_METHOD_LINK":"LINK","HTTP2_METHOD_LOCK":"LOCK","HTTP2_METHOD_MERGE":"MERGE","HTTP2_METHOD_MKACTIVITY":"MKACTIVITY","HTTP2_METHOD_MKCALENDAR":"MKCALENDAR","HTTP2_METHOD_MKCOL":"MKCOL","HTTP2_METHOD_MKREDIRECTREF":"MKREDIRECTREF","HTTP2_METHOD_MKWORKSPACE":"MKWORKSPACE","HTTP2_METHOD_MOVE":"MOVE","HTTP2_METHOD_OPTIONS":"OPTIONS","HTTP2_METHOD_ORDERPATCH":"ORDERPATCH","HTTP2_METHOD_PATCH":"PATCH","HTTP2_METHOD_POST":"POST","HTTP2_METHOD_PRI":"PRI","HTTP2_METHOD_PROPFIND":"PROPFIND","HTTP2_METHOD_PROPPATCH":"PROPPATCH","HTTP2_METHOD_PUT":"PUT","HTTP2_METHOD_REBIND":"REBIND","HTTP2_METHOD_REPORT":"REPORT","HTTP2_METHOD_SEARCH":"SEARCH","HTTP2_METHOD_TRACE":"TRACE","HTTP2_METHOD_UNBIND":"UNBIND","HTTP2_METHOD_UNCHECKOUT":"UNCHECKOUT","HTTP2_METHOD_UNLINK":"UNLINK","HTTP2_METHOD_UNLOCK":"UNLOCK","HTTP2_METHOD_UPDATE":"UPDATE","HTTP2_METHOD_UPDATEREDIRECTREF":"UPDATEREDIRECTREF","HTTP2_METHOD_VERSION_CONTROL":"VERSION-CONTROL","HTTP_STATUS_CONTINUE":100,"HTTP_STATUS_SWITCHING_PROTOCOLS":101,"HTTP_STATUS_PROCESSING":102,"HTTP_STATUS_EARLY_HINTS":103,"HTTP_STATUS_OK":200,"HTTP_STATUS_CREATED":201,"HTTP_STATUS_ACCEPTED":202,"HTTP_STATUS_NON_AUTHORITATIVE_INFORMATION":203,"HTTP_STATUS_NO_CONTENT":204,"HTTP_STATUS_RESET_CONTENT":205,"HTTP_STATUS_PARTIAL_CONTENT":206,"HTTP_STATUS_MULTI_STATUS":207,"HTTP_STATUS_ALREADY_REPORTED":208,"HTTP_STATUS_IM_USED":226,"HTTP_STATUS_MULTIPLE_CHOICES":300,"HTTP_STATUS_MOVED_PERMANENTLY":301,"HTTP_STATUS_FOUND":302,"HTTP_STATUS_SEE_OTHER":303,"HTTP_STATUS_NOT_MODIFIED":304,"HTTP_STATUS_USE_PROXY":305,"HTTP_STATUS_TEMPORARY_REDIRECT":307,"HTTP_STATUS_PERMANENT_REDIRECT":308,"HTTP_STATUS_BAD_REQUEST":400,"HTTP_STATUS_UNAUTHORIZED":401,"HTTP_STATUS_PAYMENT_REQUIRED":402,"HTTP_STATUS_FORBIDDEN":403,"HTTP_STATUS_NOT_FOUND":404,"HTTP_STATUS_METHOD_NOT_ALLOWED":405,"HTTP_STATUS_NOT_ACCEPTABLE":406,"HTTP_STATUS_PROXY_AUTHENTICATION_REQUIRED":407,"HTTP_STATUS_REQUEST_TIMEOUT":408,"HTTP_STATUS_CONFLICT":409,"HTTP_STATUS_GONE":410,"HTTP_STATUS_LENGTH_REQUIRED":411,"HTTP_STATUS_PRECONDITION_FAILED":412,"HTTP_STATUS_PAYLOAD_TOO_LARGE":413,"HTTP_STATUS_URI_TOO_LONG":414,"HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE":415,"HTTP_STATUS_RANGE_NOT_SATISFIABLE":416,"HTTP_STATUS_EXPECTATION_FAILED":417,"HTTP_STATUS_TEAPOT":418,"HTTP_STATUS_MISDIRECTED_REQUEST":421,"HTTP_STATUS_UNPROCESSABLE_ENTITY":422,"HTTP_STATUS_LOCKED":423,"HTTP_STATUS_FAILED_DEPENDENCY":424,"HTTP_STATUS_TOO_EARLY":425,"HTTP_STATUS_UPGRADE_REQUIRED":426,"HTTP_STATUS_PRECONDITION_REQUIRED":428,"HTTP_STATUS_TOO_MANY_REQUESTS":429,"HTTP_STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE":431,"HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS":451,"HTTP_STATUS_INTERNAL_SERVER_ERROR":500,"HTTP_STATUS_NOT_IMPLEMENTED":501,"HTTP_STATUS_BAD_GATEWAY":502,"HTTP_STATUS_SERVICE_UNAVAILABLE":503,"HTTP_STATUS_GATEWAY_TIMEOUT":504,"HTTP_STATUS_HTTP_VERSION_NOT_SUPPORTED":505,"HTTP_STATUS_VARIANT_ALSO_NEGOTIATES":506,"HTTP_STATUS_INSUFFICIENT_STORAGE":507,"HTTP_STATUS_LOOP_DETECTED":508,"HTTP_STATUS_BANDWIDTH_LIMIT_EXCEEDED":509,"HTTP_STATUS_NOT_EXTENDED":510,"HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED":511}
-    );
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_constants_json(&handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_sensitive_headers(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return writeOwnedString(out_ptr, out_len, "Symbol(sensitiveHeaders)");
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_sensitive_headers(&handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_get_packed_settings(settings_json_ptr: ?[*]const u8, settings_json_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const settings_json = if (settings_json_ptr) |ptr| ptr[0..settings_json_len] else "{}";
-    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, settings_json, .{}) catch return fail();
-    defer parsed.deinit();
-    if (parsed.value != .object) return fail();
-    const obj = parsed.value.object;
-
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out.deinit();
-    http2AppendCustomSettings(&out, obj) catch return fail();
-    http2AppendNumericSetting(&out, obj, "headerTableSize", HTTP2_SETTINGS_HEADER_TABLE_SIZE, 0, std.math.maxInt(u32)) catch return fail();
-    http2AppendNumericSetting(&out, obj, "maxConcurrentStreams", HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 0, std.math.maxInt(u32)) catch return fail();
-    http2AppendNumericSetting(&out, obj, "initialWindowSize", HTTP2_SETTINGS_INITIAL_WINDOW_SIZE, 0, HTTP2_MAX_INITIAL_WINDOW_SIZE) catch return fail();
-    http2AppendNumericSetting(&out, obj, "maxFrameSize", HTTP2_SETTINGS_MAX_FRAME_SIZE, 16_384, HTTP2_MAX_FRAME_SIZE) catch return fail();
-    http2AppendMaxHeaderSetting(&out, obj) catch return fail();
-    http2AppendBoolSetting(&out, obj, "enablePush", HTTP2_SETTINGS_ENABLE_PUSH) catch return fail();
-    http2AppendBoolSetting(&out, obj, "enableConnectProtocol", HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL) catch return fail();
-
-    const owned = out.toOwnedSlice() catch return fail();
-    out_ptr.?.* = owned.ptr;
-    out_len.?.* = owned.len;
-    return 0;
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_get_packed_settings(settings_json_ptr, settings_json_len, &handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_get_unpacked_settings_json(buf_ptr: ?[*]const u8, buf_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const buf = if (buf_ptr) |ptr| ptr[0..buf_len] else return fail();
-    if (buf.len % 6 != 0) return fail();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out.deinit();
-    out.append('{') catch return fail();
-    var first = true;
-    var custom = std.ArrayList(Http2SettingPair).init(std.heap.page_allocator);
-    defer custom.deinit();
-
-    var offset: usize = 0;
-    while (offset < buf.len) : (offset += 6) {
-        const pair = http2ReadSetting(buf, offset);
-        switch (pair.id) {
-            HTTP2_SETTINGS_HEADER_TABLE_SIZE => http2AppendJsonU32Field(&out, &first, "headerTableSize", pair.value) catch return fail(),
-            HTTP2_SETTINGS_ENABLE_PUSH => http2AppendJsonBoolField(&out, &first, "enablePush", pair.value != 0) catch return fail(),
-            HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS => http2AppendJsonU32Field(&out, &first, "maxConcurrentStreams", pair.value) catch return fail(),
-            HTTP2_SETTINGS_INITIAL_WINDOW_SIZE => http2AppendJsonU32Field(&out, &first, "initialWindowSize", pair.value) catch return fail(),
-            HTTP2_SETTINGS_MAX_FRAME_SIZE => http2AppendJsonU32Field(&out, &first, "maxFrameSize", pair.value) catch return fail(),
-            HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE => {
-                http2AppendJsonU32Field(&out, &first, "maxHeaderListSize", pair.value) catch return fail();
-                http2AppendJsonU32Field(&out, &first, "maxHeaderSize", pair.value) catch return fail();
-            },
-            HTTP2_SETTINGS_ENABLE_CONNECT_PROTOCOL => http2AppendJsonBoolField(&out, &first, "enableConnectProtocol", pair.value != 0) catch return fail(),
-            else => custom.append(pair) catch return fail(),
-        }
-    }
-
-    if (custom.items.len > 0) {
-        if (!first) out.append(',') catch return fail();
-        first = false;
-        out.appendSlice("\"customSettings\":{") catch return fail();
-        for (custom.items, 0..) |pair, i| {
-            if (i != 0) out.append(',') catch return fail();
-            out.writer().print("\"{d}\":{d}", .{ pair.id, pair.value }) catch return fail();
-        }
-        out.append('}') catch return fail();
-    }
-    out.append('}') catch return fail();
-    const owned = out.toOwnedSlice() catch return fail();
-    out_ptr.?.* = owned.ptr;
-    out_len.?.* = owned.len;
-    return 0;
+    var handle: u64 = 0;
+    if (SaStdH2.sa_std_http2_get_unpacked_settings_json(buf_ptr, buf_len, &handle) != 0) return fail();
+    return http2BridgeHandle(out_ptr, out_len, handle);
 }
 
 pub export fn sa_node_plugin_http2_perform_server_handshake(
@@ -5879,54 +5665,20 @@ pub export fn sa_node_plugin_http2_perform_server_handshake(
     out_json_ptr: ?*?[*]const u8,
     out_json_len: ?*u64,
 ) u32 {
-    const input = (input_ptr orelse return fail())[0..input_len];
-    if (input.len < HTTP2_CLIENT_PREFACE.len + 9) return fail();
-    if (!std.mem.eql(u8, input[0..HTTP2_CLIENT_PREFACE.len], HTTP2_CLIENT_PREFACE)) return fail();
-
-    const frame_start = HTTP2_CLIENT_PREFACE.len;
-    const header = http2ReadFrameHeader(input[frame_start..]) catch return fail();
-    if (header.frame_type != HTTP2_FRAME_SETTINGS or header.stream_id != 0) return fail();
-    if ((header.flags & HTTP2_FLAG_ACK) != 0) return fail();
-    if (header.len % 6 != 0) return fail();
-    const payload_start = frame_start + 9;
-    const payload_end = payload_start + header.len;
-    if (payload_end > input.len) return fail();
-    const client_settings = input[payload_start..payload_end];
-
-    const client_settings_json = http2SettingsPayloadToJson(client_settings) catch return fail();
-    defer _ = base.sa_node_plugin_free_buffer(client_settings_json.ptr, client_settings_json.len);
-
-    var server_settings_ptr: ?[*]const u8 = null;
-    var server_settings_len: u64 = 0;
-    if (sa_node_plugin_http2_get_packed_settings(settings_json_ptr, settings_json_len, &server_settings_ptr, &server_settings_len) != 0) return fail();
-    defer _ = base.sa_node_plugin_free_buffer(server_settings_ptr, server_settings_len);
-    const server_settings = if (server_settings_ptr) |ptr| ptr[0..server_settings_len] else "";
-
-    var outbound = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer outbound.deinit();
-    http2AppendFrame(&outbound, HTTP2_FRAME_SETTINGS, 0, 0, server_settings) catch return fail();
-    http2AppendFrame(&outbound, HTTP2_FRAME_SETTINGS, HTTP2_FLAG_ACK, 0, "") catch return fail();
-
-    var meta = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer meta.deinit();
-    meta.appendSlice("{\"preface\":true,\"clientSettings\":") catch return fail();
-    meta.appendSlice(client_settings_json) catch return fail();
-    meta.writer().print(",\"clientSettingsBytes\":{d},\"serverSettingsBytes\":{d},\"outboundBytes\":{d},\"frames\":[\"SETTINGS\",\"SETTINGS_ACK\"]}}", .{
-        client_settings.len,
-        server_settings.len,
-        outbound.items.len,
-    }) catch return fail();
-
-    const owned_outbound = outbound.toOwnedSlice() catch return fail();
-    errdefer std.heap.page_allocator.free(owned_outbound);
-    const owned_meta = meta.toOwnedSlice() catch return fail();
-    out_bytes_ptr.?.* = owned_outbound.ptr;
-    out_bytes_len.?.* = owned_outbound.len;
-    out_json_ptr.?.* = owned_meta.ptr;
-    out_json_len.?.* = owned_meta.len;
-    return 0;
+    var bytes_h: u64 = 0;
+    var json_h: u64 = 0;
+    if (SaStdH2.sa_std_http2_perform_server_handshake(input_ptr, input_len, settings_json_ptr, settings_json_len, &bytes_h, &json_h) != 0) {
+        if (bytes_h != 0) _ = SaStdH2.sa_std_http2_buffer_free(bytes_h);
+        if (json_h != 0) _ = SaStdH2.sa_std_http2_buffer_free(json_h);
+        return fail();
+    }
+    const rb = http2BridgeHandle(out_bytes_ptr, out_bytes_len, bytes_h);
+    if (rb != 0) {
+        if (json_h != 0) _ = SaStdH2.sa_std_http2_buffer_free(json_h);
+        return rb;
+    }
+    return http2BridgeHandle(out_json_ptr, out_json_len, json_h);
 }
-
 // --- QUIC / HTTP/3 metadata subset ---
 fn dynLibAvailable(candidates: []const []const u8) bool {
     for (candidates) |candidate| {
@@ -6365,306 +6117,6 @@ pub export fn sa_node_plugin_dtls_close(endpoint_ptr: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_dtls_free(endpoint_ptr: ?*anyopaque) u32 {
     return sa_node_plugin_quic_endpoint_free(endpoint_ptr);
-}
-
-var nghttp2_api: ?Nghttp2Api = null;
-var nghttp2_api_mutex = std.Thread.Mutex{};
-
-fn loadNghttp2Api() ?*Nghttp2Api {
-    nghttp2_api_mutex.lock();
-    defer nghttp2_api_mutex.unlock();
-    if (nghttp2_api) |*api| return api;
-
-    const candidates = [_][]const u8{
-        "libnghttp2.so.14",
-        "/lib/x86_64-linux-gnu/libnghttp2.so.14",
-        "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14",
-    };
-
-    for (candidates) |candidate| {
-        var lib = std.DynLib.open(candidate) catch continue;
-        const callbacks_new = lib.lookup(Nghttp2CallbacksNewFn, "nghttp2_session_callbacks_new") orelse {
-            lib.close();
-            continue;
-        };
-        const callbacks_del = lib.lookup(Nghttp2CallbacksDelFn, "nghttp2_session_callbacks_del") orelse {
-            lib.close();
-            continue;
-        };
-        const set_header = lib.lookup(Nghttp2SetOnHeaderFn, "nghttp2_session_callbacks_set_on_header_callback") orelse {
-            lib.close();
-            continue;
-        };
-        const set_data = lib.lookup(Nghttp2SetOnDataChunkRecvFn, "nghttp2_session_callbacks_set_on_data_chunk_recv_callback") orelse {
-            lib.close();
-            continue;
-        };
-        const set_frame = lib.lookup(Nghttp2SetOnFrameRecvFn, "nghttp2_session_callbacks_set_on_frame_recv_callback") orelse {
-            lib.close();
-            continue;
-        };
-        const session_client_new = lib.lookup(Nghttp2SessionClientNewFn, "nghttp2_session_client_new") orelse {
-            lib.close();
-            continue;
-        };
-        const session_del = lib.lookup(Nghttp2SessionDelFn, "nghttp2_session_del") orelse {
-            lib.close();
-            continue;
-        };
-        const submit_request = lib.lookup(Nghttp2SubmitRequestFn, "nghttp2_submit_request") orelse {
-            lib.close();
-            continue;
-        };
-        const submit_settings = lib.lookup(Nghttp2SubmitSettingsFn, "nghttp2_submit_settings") orelse {
-            lib.close();
-            continue;
-        };
-        const mem_send = lib.lookup(Nghttp2SessionMemSendFn, "nghttp2_session_mem_send") orelse {
-            lib.close();
-            continue;
-        };
-        const mem_recv = lib.lookup(Nghttp2SessionMemRecvFn, "nghttp2_session_mem_recv") orelse {
-            lib.close();
-            continue;
-        };
-        const want_read = lib.lookup(Nghttp2SessionWantFn, "nghttp2_session_want_read") orelse {
-            lib.close();
-            continue;
-        };
-        const want_write = lib.lookup(Nghttp2SessionWantFn, "nghttp2_session_want_write") orelse {
-            lib.close();
-            continue;
-        };
-        const version = lib.lookup(Nghttp2VersionFn, "nghttp2_version") orelse {
-            lib.close();
-            continue;
-        };
-        nghttp2_api = .{
-            .lib = lib,
-            .callbacks_new = callbacks_new,
-            .callbacks_del = callbacks_del,
-            .callbacks_set_on_header_callback = set_header,
-            .callbacks_set_on_data_chunk_recv_callback = set_data,
-            .callbacks_set_on_frame_recv_callback = set_frame,
-            .session_client_new = session_client_new,
-            .session_del = session_del,
-            .submit_request = submit_request,
-            .submit_settings = submit_settings,
-            .session_mem_send = mem_send,
-            .session_mem_recv = mem_recv,
-            .session_want_read = want_read,
-            .session_want_write = want_write,
-            .version = version,
-        };
-        return &nghttp2_api.?;
-    }
-    return null;
-}
-
-const Http2ResponseState = struct {
-    allocator: std.mem.Allocator,
-    headers: std.ArrayList(Header),
-    body: std.ArrayList(u8),
-    status: u16 = 0,
-    frames: u64 = 0,
-
-    const Header = struct { name: []u8, value: []u8 };
-
-    fn init(allocator: std.mem.Allocator) Http2ResponseState {
-        return .{ .allocator = allocator, .headers = std.ArrayList(Header).init(allocator), .body = std.ArrayList(u8).init(allocator) };
-    }
-
-    fn deinit(self: *Http2ResponseState) void {
-        for (self.headers.items) |header| {
-            self.allocator.free(header.name);
-            self.allocator.free(header.value);
-        }
-        self.headers.deinit();
-        self.body.deinit();
-    }
-
-    fn appendHeader(self: *Http2ResponseState, name: []const u8, value: []const u8) !void {
-        const name_owned = try self.allocator.dupe(u8, name);
-        errdefer self.allocator.free(name_owned);
-        const value_owned = try self.allocator.dupe(u8, value);
-        errdefer self.allocator.free(value_owned);
-        if (std.mem.eql(u8, name, ":status")) {
-            self.status = std.fmt.parseInt(u16, value, 10) catch 0;
-        }
-        try self.headers.append(.{ .name = name_owned, .value = value_owned });
-    }
-
-    fn toJson(self: *Http2ResponseState, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-        var json = std.ArrayList(u8).init(self.allocator);
-        errdefer json.deinit();
-        json.writer().print("{{\"status\":{d},\"headers\":{{", .{self.status}) catch return fail();
-        var first = true;
-        for (self.headers.items) |header| {
-            if (std.mem.startsWith(u8, header.name, ":")) continue;
-            if (!first) json.appendSlice(",") catch return fail();
-            first = false;
-            appendJsonString(&json, header.name) catch return fail();
-            json.appendSlice(":") catch return fail();
-            appendJsonString(&json, header.value) catch return fail();
-        }
-        json.appendSlice("},\"body\":") catch return fail();
-        appendJsonString(&json, self.body.items) catch return fail();
-        json.writer().print(",\"bodyLen\":{d},\"frames\":{d}}}", .{ self.body.items.len, self.frames }) catch return fail();
-        const owned = json.toOwnedSlice() catch return fail();
-        out_ptr.?.* = owned.ptr;
-        out_len.?.* = owned.len;
-        return 0;
-    }
-};
-
-fn http2OnHeader(_: ?*Nghttp2Session, _: ?*const Nghttp2Frame, name_ptr: [*]const u8, name_len: usize, value_ptr: [*]const u8, value_len: usize, _: u8, user_data: ?*anyopaque) callconv(.c) c_int {
-    const state: *Http2ResponseState = @ptrCast(@alignCast(user_data orelse return -1));
-    state.appendHeader(name_ptr[0..name_len], value_ptr[0..value_len]) catch return -1;
-    return 0;
-}
-
-fn http2SetStatus(out_ptr: ?*?[*]const u8, out_len: ?*u64, status: []const u8) u32 {
-    return writeOwnedString(out_ptr, out_len, status);
-}
-
-fn http2OnDataChunkRecv(_: ?*Nghttp2Session, _: u8, _: i32, data_ptr: [*]const u8, data_len: usize, user_data: ?*anyopaque) callconv(.c) c_int {
-    const state: *Http2ResponseState = @ptrCast(@alignCast(user_data orelse return -1));
-    state.body.appendSlice(data_ptr[0..data_len]) catch return -1;
-    return 0;
-}
-
-fn http2OnFrameRecv(_: ?*Nghttp2Session, _: ?*const Nghttp2Frame, user_data: ?*anyopaque) callconv(.c) c_int {
-    const state: *Http2ResponseState = @ptrCast(@alignCast(user_data orelse return -1));
-    state.frames += 1;
-    return 0;
-}
-
-fn http2DataRead(_: ?*Nghttp2Session, _: i32, buf: [*]u8, len: usize, data_flags: *u32, source: *Nghttp2DataSource, _: ?*anyopaque) callconv(.c) isize {
-    const body: *[]const u8 = @ptrCast(@alignCast(source.ptr orelse return -1));
-    const n = @min(len, body.*.len);
-    @memcpy(buf[0..n], body.*[0..n]);
-    body.* = body.*[n..];
-    if (body.*.len == 0) data_flags.* |= NGHTTP2_DATA_FLAG_EOF;
-    return @intCast(n);
-}
-
-fn http2FlushOutbound(api: *Nghttp2Api, session: ?*Nghttp2Session, stream: *std.net.Stream) u32 {
-    while (api.session_want_write(session) != 0) {
-        var data_ptr: ?[*]const u8 = null;
-        const n = api.session_mem_send(session, &data_ptr);
-        if (n < 0) return fail();
-        if (n == 0) break;
-        stream.writeAll(data_ptr.?[0..@intCast(n)]) catch return fail();
-    }
-    return 0;
-}
-
-fn http2ParseUrl(url: []const u8) !struct { scheme: []const u8, host: []const u8, port: u16, path: []const u8 } {
-    const marker = std.mem.indexOf(u8, url, "://") orelse return error.InvalidUrl;
-    const scheme = url[0..marker];
-    if (!std.mem.eql(u8, scheme, "http")) return error.UnsupportedScheme;
-    const rest = url[marker + 3 ..];
-    const slash = std.mem.indexOfScalar(u8, rest, '/') orelse rest.len;
-    const authority = rest[0..slash];
-    const path = if (slash < rest.len) rest[slash..] else "/";
-    var port: u16 = 80;
-    const host = if (authority.len > 0 and authority[0] == '[') blk: {
-        const end = std.mem.indexOfScalar(u8, authority, ']') orelse return error.InvalidUrl;
-        if (end == 1) return error.InvalidUrl;
-        if (end + 1 < authority.len) {
-            if (authority[end + 1] != ':') return error.InvalidUrl;
-            port = try std.fmt.parseInt(u16, authority[end + 2 ..], 10);
-        }
-        break :blk authority[1..end];
-    } else blk: {
-        var host = authority;
-        if (std.mem.lastIndexOfScalar(u8, authority, ':')) |colon| {
-            host = authority[0..colon];
-            port = try std.fmt.parseInt(u16, authority[colon + 1 ..], 10);
-        }
-        break :blk host;
-    };
-    if (host.len == 0) return error.InvalidUrl;
-    if (std.mem.indexOfScalar(u8, host, ':') != null) {
-        _ = std.net.Address.parseIp6(host, port) catch return error.InvalidUrl;
-    }
-    return .{ .scheme = scheme, .host = host, .port = port, .path = path };
-}
-
-pub export fn sa_node_plugin_http2_client_request(url_ptr: ?[*]const u8, url_len: u64, method_ptr: ?[*]const u8, method_len: u64, body_ptr: ?[*]const u8, body_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const api = loadNghttp2Api() orelse return fail();
-    const allocator = std.heap.page_allocator;
-    const url = url_ptr.?[0..url_len];
-    const parsed = http2ParseUrl(url) catch return fail();
-    const method = if (method_ptr) |ptr| ptr[0..method_len] else "GET";
-    const body = if (body_ptr) |ptr| ptr[0..body_len] else "";
-
-    var stream = std.net.tcpConnectToHost(allocator, parsed.host, parsed.port) catch return http2SetStatus(out_ptr, out_len, "{\"error\":\"connect\"}");
-    defer stream.close();
-
-    var state = Http2ResponseState.init(allocator);
-    defer state.deinit();
-
-    var callbacks: ?*Nghttp2SessionCallbacks = null;
-    if (api.callbacks_new(&callbacks) != 0) return fail();
-    defer api.callbacks_del(callbacks);
-    api.callbacks_set_on_header_callback(callbacks, http2OnHeader);
-    api.callbacks_set_on_data_chunk_recv_callback(callbacks, http2OnDataChunkRecv);
-    api.callbacks_set_on_frame_recv_callback(callbacks, http2OnFrameRecv);
-
-    var session: ?*Nghttp2Session = null;
-    if (api.session_client_new(&session, callbacks, @ptrCast(&state)) != 0) return fail();
-    defer api.session_del(session);
-
-    if (api.submit_settings(session, NGHTTP2_FLAG_NONE, null, 0) != 0) return fail();
-
-    var authority_buf: [512]u8 = undefined;
-    const authority = if (parsed.port == 80)
-        std.fmt.bufPrint(&authority_buf, "{s}", .{parsed.host}) catch return fail()
-    else
-        std.fmt.bufPrint(&authority_buf, "{s}:{d}", .{ parsed.host, parsed.port }) catch return fail();
-
-    var nva = [_]Nghttp2Nv{
-        .{ .name = @constCast(@as([*]const u8, @ptrCast(":method".ptr))), .value = @constCast(method.ptr), .namelen = 7, .valuelen = method.len, .flags = NGHTTP2_NV_FLAG_NONE },
-        .{ .name = @constCast(@as([*]const u8, @ptrCast(":scheme".ptr))), .value = @constCast(parsed.scheme.ptr), .namelen = 7, .valuelen = parsed.scheme.len, .flags = NGHTTP2_NV_FLAG_NONE },
-        .{ .name = @constCast(@as([*]const u8, @ptrCast(":authority".ptr))), .value = @constCast(authority.ptr), .namelen = 10, .valuelen = authority.len, .flags = NGHTTP2_NV_FLAG_NONE },
-        .{ .name = @constCast(@as([*]const u8, @ptrCast(":path".ptr))), .value = @constCast(parsed.path.ptr), .namelen = 5, .valuelen = parsed.path.len, .flags = NGHTTP2_NV_FLAG_NONE },
-    };
-
-    var body_slice = body;
-    var provider = Nghttp2DataProvider{
-        .source = .{ .ptr = @ptrCast(&body_slice) },
-        .read_callback = http2DataRead,
-    };
-    const provider_ptr: ?*const Nghttp2DataProvider = if (body.len > 0) &provider else null;
-    const req_id = api.submit_request(session, null, &nva, nva.len, provider_ptr, null);
-    if (req_id < 0) return fail();
-    if (http2FlushOutbound(api, session, &stream) != 0) return fail();
-
-    var read_buf: [8192]u8 = undefined;
-    var saw_response = false;
-    var idle_reads: u8 = 0;
-    while (api.session_want_read(session) != 0 and idle_reads < 4) {
-        const n = stream.read(&read_buf) catch return fail();
-        if (n == 0) break;
-        idle_reads = 0;
-        const consumed = api.session_mem_recv(session, &read_buf, n);
-        if (consumed < 0) return fail();
-        if (http2FlushOutbound(api, session, &stream) != 0) return fail();
-        if (state.status != 0) saw_response = true;
-        if (saw_response and state.body.items.len > 0) break;
-    }
-
-    if (!saw_response) return fail();
-    return state.toJson(out_ptr, out_len);
-}
-
-pub export fn sa_node_plugin_http2_nghttp2_version_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const api = loadNghttp2Api() orelse return fail();
-    const version = api.version(0) orelse return fail();
-    var buffer: [192]u8 = undefined;
-    const json = std.fmt.bufPrint(&buffer, "{{\"version\":\"{s}\",\"proto\":\"{s}\",\"versionNum\":{d}}}", .{ version.version_str, version.proto_str, version.version_num }) catch return fail();
-    return writeOwnedString(out_ptr, out_len, json);
 }
 
 const http2_export_names = [_][]const u8{
@@ -8126,7 +7578,7 @@ pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len:
     out.appendSlice("{\"module\":\"http2\",\"supported\":true,\"mode\":\"top-level-native-http2-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &http2_export_names) catch return fail();
     out.appendSlice(",\"nghttp2Available\":") catch return fail();
-    out.appendSlice(if (loadNghttp2Api() != null) "true" else "false") catch return fail();
+    out.appendSlice(if (http2SupportedBool()) "true" else "false") catch return fail();
     out.appendSlice(",\"defaultSettings\":") catch return fail();
     out.appendSlice((defaults_ptr orelse return fail())[0..@intCast(defaults_len)]) catch return fail();
     out.appendSlice(",\"sensitiveHeaders\":") catch return fail();
@@ -8162,7 +7614,7 @@ pub export fn sa_node_plugin_http2_config_json(out_ptr: ?*?[*]const u8, out_len:
     out.appendSlice(",\"sensitiveHeaders\":") catch return fail();
     out.appendSlice((sensitive_ptr orelse return fail())[0..@intCast(sensitive_len)]) catch return fail();
     out.appendSlice(",\"transport\":\"cleartext prior-knowledge h2c client helper\",\"nghttp2Available\":") catch return fail();
-    out.appendSlice(if (loadNghttp2Api() != null) "true" else "false") catch return fail();
+    out.appendSlice(if (http2SupportedBool()) "true" else "false") catch return fail();
     out.appendSlice(",\"serverHandshakeModel\":\"explicit client preface plus SETTINGS parser returning server SETTINGS and SETTINGS ACK frame bytes\",\"serverSupport\":false,\"tlsAlpnSupport\":false,\"sessionModel\":\"not-modeled\"}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }

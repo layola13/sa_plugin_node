@@ -3,6 +3,7 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../../sci";
     const build_options = b.addOptions();
     build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
 
@@ -33,9 +34,25 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
 
+    const sa_net_primitives = b.createModule(.{
+        .root_source_file = b.path(b.pathJoin(&.{ sci_root, "src", "runtime", "sa_net_primitives.zig" })),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const sa_http2 = b.createModule(.{
+        .root_source_file = b.path(b.pathJoin(&.{ sci_root, "src", "runtime", "sa_http2.zig" })),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
     root_module.addImport("plugin_api", plugin_api);
+    root_module.addImport("sa_http2", sa_http2);
     http_client_module.addImport("plugin_api", plugin_api);
     http_server_module.addImport("plugin_api", plugin_api);
+    http_client_module.addImport("sa_net_primitives", sa_net_primitives);
+    http_server_module.addImport("sa_net_primitives", sa_net_primitives);
     root_module.addImport("http_client", http_client_module);
     root_module.addImport("http_server", http_server_module);
     root_module.addOptions("build_options", build_options);
@@ -46,6 +63,7 @@ pub fn build(b: *std.Build) void {
         .linkage = .dynamic,
     });
     lib.linkSystemLibrary("resolv");
+    lib.linkSystemLibrary("dl");
 
     b.installArtifact(lib);
 
@@ -62,10 +80,12 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("plugin_api", plugin_api);
 
     const run_main_tests = b.addRunArtifact(main_tests);
+    main_tests.linkSystemLibrary("dl");
 
     const plugin_tests = b.addTest(.{
         .root_module = test_module,
     });
+    plugin_tests.linkSystemLibrary("dl");
     const run_plugin_tests = b.addRunArtifact(plugin_tests);
     if (b.args) |args| {
         run_main_tests.addArgs(args);

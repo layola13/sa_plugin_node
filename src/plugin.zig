@@ -1,9 +1,10 @@
 const std = @import("std");
 const plugin_api = @import("plugin_api");
-pub usingnamespace @import("node_saasm_api.zig");
-pub usingnamespace @import("node_saasm_api_ext.zig");
-pub usingnamespace @import("node_saasm_extra.zig");
-pub usingnamespace @import("node_http_bridge.zig");
+const builtin = @import("builtin");
+
+pub usingnamespace if (builtin.os.tag == .windows) @import("node_windows.zig") else @import("node_posix.zig");
+
+pub usingnamespace if (builtin.os.tag == .windows) @import("node_windows_stubs.zig") else struct {};
 
 const skills = [_]plugin_api.SkillSection{
     .{

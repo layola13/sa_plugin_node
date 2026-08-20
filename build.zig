@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../../sci";
+    const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../sci";
     const build_options = b.addOptions();
     build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
 
@@ -62,8 +62,10 @@ pub fn build(b: *std.Build) void {
         .root_module = root_module,
         .linkage = .dynamic,
     });
-    lib.linkSystemLibrary("resolv");
-    lib.linkSystemLibrary("dl");
+    if (target.result.os.tag == .linux) {
+        lib.linkSystemLibrary("resolv");
+        lib.linkSystemLibrary("dl");
+    }
 
     b.installArtifact(lib);
 
@@ -72,7 +74,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const test_module = b.createModule(.{
-        .root_source_file = b.path("tests/plugin_test.zig"),
+        .root_source_file = if (target.result.os.tag == .windows) b.path("tests/node_windows_test.zig") else b.path("tests/plugin_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -80,12 +82,12 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("plugin_api", plugin_api);
 
     const run_main_tests = b.addRunArtifact(main_tests);
-    main_tests.linkSystemLibrary("dl");
+    if (target.result.os.tag == .linux) main_tests.linkSystemLibrary("dl");
 
     const plugin_tests = b.addTest(.{
         .root_module = test_module,
     });
-    plugin_tests.linkSystemLibrary("dl");
+    if (target.result.os.tag == .linux) plugin_tests.linkSystemLibrary("dl");
     const run_plugin_tests = b.addRunArtifact(plugin_tests);
     if (b.args) |args| {
         run_main_tests.addArgs(args);

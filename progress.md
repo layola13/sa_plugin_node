@@ -515,3 +515,15 @@
   - `fileURLToPath`
   - `fileURLToPathBuffer`
   - `canParse`
+
+## 2026-10-08 安装侧记（下游 tsgosa 真机验证）
+
+- **正式安装被拒**：`sa plugin install <node>` 在权限复核后中止：
+  `plugin artifact references process symbol without declared process permission: execve`。
+  制品引用了 `execve`，而 `sap.json` 侧 `process` 声明（`spawn: true` + 仅 `echo` 的 `exec` 白名单）未被安装器静态策略接受
+  （sci `src/plugins.zig` `verifyArtifactStaticPolicy`，`execve` 归 `.process`  capability）。
+  正式修复（manifest 补声明或安装器规则调整）归本仓上游裁决，不在本轮改动。
+- **本环境解法**：`sa plugin install --dev` 装上（连带 http-client/http-server 依赖），`sa plugin list` 四件全绿。
+- **验证**：下游 `tsgosa/demos/203_node_path/204_node_str/205_node_buf/289_hash` 在 `--dev` 安装后真机全 PASS
+  （此前 `PackageNotResolved`）；node 转译投影侧（`@import "node.sai"`）早通，至此链接侧打通。
+- 附带：构建前 `PATH` 首位置真 Zig 0.14.1；sci 检出路径问题见 `sa_plugin_http_client/README.md` 已知安装问题（同布局坑）。

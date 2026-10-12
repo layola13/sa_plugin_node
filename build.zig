@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../../sci";
+    const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../sci";
     const build_options = b.addOptions();
     build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
 
@@ -35,13 +35,15 @@ pub fn build(b: *std.Build) void {
     });
 
     const sa_net_primitives = b.createModule(.{
-        .root_source_file = b.path(b.pathJoin(&.{ sci_root, "src", "runtime", "sa_net_primitives.zig" })),
+        // NB: sci_root may be absolute (outside the build root), where
+        // b.path() panics; cwd_relative supports absolute paths.
+        .root_source_file = .{ .cwd_relative = b.pathJoin(&.{ sci_root, "src", "runtime", "sa_net_primitives.zig" }) },
         .target = target,
         .optimize = optimize,
     });
 
     const sa_http2 = b.createModule(.{
-        .root_source_file = b.path(b.pathJoin(&.{ sci_root, "src", "runtime", "sa_http2.zig" })),
+        .root_source_file = .{ .cwd_relative = b.pathJoin(&.{ sci_root, "src", "runtime", "sa_http2.zig" }) },
         .target = target,
         .optimize = optimize,
         .link_libc = true,

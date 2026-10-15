@@ -46,7 +46,7 @@ fn writeOwnedBool(out_bool: ?*u32, value: bool) u32 {
 }
 
 fn writeJsonValue(out_ptr: ?*?[*]const u8, out_len: ?*u64, value: anytype) u32 {
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
     std.json.stringify(value, .{}, json.writer()) catch return fail();
     const owned = json.toOwnedSlice() catch return fail();
@@ -70,7 +70,7 @@ var async_resource_next_id: u64 = 1;
 var async_resource_last_id: u64 = 0;
 var async_context_stack = std.ArrayListUnmanaged(AsyncContextFrame){};
 
-fn jsonEscapeAppend(out: *std.ArrayList(u8), bytes: []const u8) !void {
+fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     for (bytes) |b| {
         switch (b) {
             '"' => try out.appendSlice("\\\""),
@@ -83,13 +83,13 @@ fn jsonEscapeAppend(out: *std.ArrayList(u8), bytes: []const u8) !void {
     }
 }
 
-fn appendJsonString(out: *std.ArrayList(u8), bytes: []const u8) !void {
+fn appendJsonString(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     try out.append('"');
     try jsonEscapeAppend(out, bytes);
     try out.append('"');
 }
 
-fn appendEnvStringField(out: *std.ArrayList(u8), name: []const u8, env_name: []const u8) !void {
+fn appendEnvStringField(out: *std.array_list.Managed(u8), name: []const u8, env_name: []const u8) !void {
     try out.appendSlice(",\"");
     try out.appendSlice(name);
     try out.appendSlice("\":");
@@ -100,7 +100,7 @@ fn appendEnvStringField(out: *std.ArrayList(u8), name: []const u8, env_name: []c
     }
 }
 
-fn appendStringArray(out: *std.ArrayList(u8), items: []const []const u8) !void {
+fn appendStringArray(out: *std.array_list.Managed(u8), items: []const []const u8) !void {
     try out.append('[');
     for (items, 0..) |item, i| {
         if (i != 0) try out.append(',');
@@ -124,47 +124,47 @@ fn cloneOrNullTerminatedDup(allocator: std.mem.Allocator, text: []const u8) ![]u
     return allocator.dupe(u8, text);
 }
 
-fn appendJsonFieldSeparator(out: *std.ArrayList(u8), first: *bool) !void {
+fn appendJsonFieldSeparator(out: *std.array_list.Managed(u8), first: *bool) !void {
     if (!first.*) try out.append(',');
     first.* = false;
 }
 
-fn appendJsonFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: std.json.Value) !void {
+fn appendJsonFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []const u8, value: std.json.Value) !void {
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
     try std.json.stringify(value, .{}, out.writer());
 }
 
-fn appendJsonStringFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: []const u8) !void {
+fn appendJsonStringFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []const u8, value: []const u8) !void {
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
     try appendJsonString(out, value);
 }
 
-fn appendJsonRawFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, raw_json: []const u8) !void {
+fn appendJsonRawFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []const u8, raw_json: []const u8) !void {
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
     try out.appendSlice(raw_json);
 }
 
-fn appendJsonIntFieldValue(out: *std.ArrayList(u8), first: *bool, name: []const u8, value: i64) !void {
+fn appendJsonIntFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []const u8, value: i64) !void {
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
     try out.writer().print("{d}", .{value});
 }
 
-fn appendJsonObjectMembers(out: *std.ArrayList(u8), first: *bool, object: std.json.ObjectMap) !void {
+fn appendJsonObjectMembers(out: *std.array_list.Managed(u8), first: *bool, object: std.json.ObjectMap) !void {
     var it = object.iterator();
     while (it.next()) |entry| {
         try appendJsonFieldValue(out, first, entry.key_ptr.*, entry.value_ptr.*);
     }
 }
 
-fn appendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8) !void {
+fn appendOwnedStringArray(out: *std.array_list.Managed(u8), items: []const []u8) !void {
     try out.append('[');
     for (items, 0..) |item, i| {
         if (i != 0) try out.append(',');
@@ -215,7 +215,7 @@ fn asyncContextTrackingClear() void {
     async_context_stack.clearRetainingCapacity();
 }
 
-fn asyncContextTrackingWriteSnapshotJson(out: *std.ArrayList(u8)) !void {
+fn asyncContextTrackingWriteSnapshotJson(out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"supported\":true,\"model\":\"explicit-native-stack\",\"depth\":");
     try out.writer().print("{d}", .{async_context_stack.items.len});
     try out.appendSlice(",\"executionAsyncId\":");
@@ -245,7 +245,7 @@ fn asyncContextTrackingWriteSnapshotJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_async_hooks_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     asyncContextTrackingWriteSnapshotJson(&out) catch return fail();
     if (out.items.len > 1 and out.items[out.items.len - 1] == '}') {
@@ -271,7 +271,7 @@ pub export fn sa_node_plugin_async_hooks_status_json(out_ptr: ?*?[*]const u8, ou
     if (sa_node_plugin_async_hooks_snapshot_json(&snapshot_ptr, &snapshot_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(snapshot_ptr, snapshot_len);
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"async_hooks\",\"supported\":true,\"mode\":\"top-level-native-async-hooks-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &async_hooks_export_names) catch return fail();
@@ -282,7 +282,7 @@ pub export fn sa_node_plugin_async_hooks_status_json(out_ptr: ?*?[*]const u8, ou
 }
 
 pub export fn sa_node_plugin_async_hooks_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &async_hooks_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -297,7 +297,7 @@ pub export fn sa_node_plugin_async_hooks_feature_support_json(out_ptr: ?*?[*]con
 }
 
 pub export fn sa_node_plugin_stream_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"stream\",\"supported\":true,\"mode\":\"top-level-native-stream-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &stream_export_names) catch return fail();
@@ -306,7 +306,7 @@ pub export fn sa_node_plugin_stream_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_stream_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &stream_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -321,7 +321,7 @@ pub export fn sa_node_plugin_stream_feature_support_json(out_ptr: ?*?[*]const u8
 }
 
 pub export fn sa_node_plugin_readline_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"readline\",\"supported\":true,\"mode\":\"top-level-native-readline-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &readline_export_names) catch return fail();
@@ -330,7 +330,7 @@ pub export fn sa_node_plugin_readline_status_json(out_ptr: ?*?[*]const u8, out_l
 }
 
 pub export fn sa_node_plugin_readline_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &readline_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -349,7 +349,7 @@ pub export fn sa_node_plugin_readline_create_interface(input_ptr: ?[*]const u8, 
 }
 
 pub export fn sa_node_plugin_timers_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"timers\",\"supported\":true,\"mode\":\"top-level-native-timers-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &timers_export_names) catch return fail();
@@ -358,7 +358,7 @@ pub export fn sa_node_plugin_timers_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_timers_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &timers_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -373,7 +373,7 @@ pub export fn sa_node_plugin_timers_feature_support_json(out_ptr: ?*?[*]const u8
 }
 
 pub export fn sa_node_plugin_console_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"console\",\"supported\":true,\"mode\":\"top-level-native-console-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &console_export_names) catch return fail();
@@ -382,7 +382,7 @@ pub export fn sa_node_plugin_console_status_json(out_ptr: ?*?[*]const u8, out_le
 }
 
 pub export fn sa_node_plugin_console_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &console_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -397,7 +397,7 @@ pub export fn sa_node_plugin_console_feature_support_json(out_ptr: ?*?[*]const u
 }
 
 pub export fn sa_node_plugin_events_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"events\",\"supported\":true,\"mode\":\"top-level-native-events-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &events_export_names) catch return fail();
@@ -406,7 +406,7 @@ pub export fn sa_node_plugin_events_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_events_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &events_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -428,7 +428,7 @@ pub export fn sa_node_plugin_fs_status_json(out_ptr: ?*?[*]const u8, out_len: ?*
     if (sa_node_plugin_constants_json(&constants_ptr, &constants_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"fs\",\"supported\":true,\"mode\":\"top-level-native-fs-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &fs_export_names) catch return fail();
@@ -439,7 +439,7 @@ pub export fn sa_node_plugin_fs_status_json(out_ptr: ?*?[*]const u8, out_len: ?*
 }
 
 pub export fn sa_node_plugin_fs_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &fs_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -461,7 +461,7 @@ pub export fn sa_node_plugin_crypto_status_json(out_ptr: ?*?[*]const u8, out_len
     if (ext.sa_node_plugin_crypto_get_hashes(&hashes_ptr, &hashes_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(hashes_ptr, hashes_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"crypto\",\"supported\":true,\"mode\":\"top-level-native-crypto-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &crypto_export_names) catch return fail();
@@ -472,7 +472,7 @@ pub export fn sa_node_plugin_crypto_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_crypto_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &crypto_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -491,7 +491,7 @@ pub export fn sa_node_plugin_crypto_secure_heap_used_json(out_ptr: ?*?[*]const u
 }
 
 pub export fn sa_node_plugin_util_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"util\",\"supported\":true,\"mode\":\"top-level-native-util-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &util_export_names) catch return fail();
@@ -500,7 +500,7 @@ pub export fn sa_node_plugin_util_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_util_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &util_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -539,7 +539,7 @@ pub export fn sa_node_plugin_util_to_usv_string(input_ptr: ?[*]const u8, input_l
     const input = (input_ptr orelse return fail())[0..input_len];
     var view = std.unicode.Utf8View.init(input) catch return fail();
     var it = view.iterator();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     while (it.nextCodepoint()) |cp| {
         const normalized_cp: u21 = if (cp >= 0xD800 and cp <= 0xDFFF) 0xFFFD else cp;
@@ -551,7 +551,7 @@ pub export fn sa_node_plugin_util_to_usv_string(input_ptr: ?[*]const u8, input_l
 }
 
 pub export fn sa_node_plugin_buffer_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"buffer\",\"supported\":true,\"mode\":\"top-level-native-buffer-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &buffer_export_names) catch return fail();
@@ -560,7 +560,7 @@ pub export fn sa_node_plugin_buffer_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_buffer_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &buffer_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -579,7 +579,7 @@ pub export fn sa_node_plugin_buffer_feature_support_json(out_ptr: ?*?[*]const u8
 }
 
 pub export fn sa_node_plugin_url_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"url\",\"supported\":true,\"mode\":\"top-level-native-url-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &url_export_names) catch return fail();
@@ -588,7 +588,7 @@ pub export fn sa_node_plugin_url_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_url_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &url_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -603,7 +603,7 @@ pub export fn sa_node_plugin_url_feature_support_json(out_ptr: ?*?[*]const u8, o
 }
 
 pub export fn sa_node_plugin_process_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"process\",\"supported\":true,\"mode\":\"top-level-native-process-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &process_export_names) catch return fail();
@@ -612,7 +612,7 @@ pub export fn sa_node_plugin_process_status_json(out_ptr: ?*?[*]const u8, out_le
 }
 
 pub export fn sa_node_plugin_process_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &process_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -688,7 +688,7 @@ fn processAllowedNodeEnvironmentFlagsHas(flag: []const u8) bool {
 }
 
 pub export fn sa_node_plugin_process_allowed_node_environment_flags_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &process_allowed_node_environment_flags) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -730,7 +730,7 @@ pub export fn sa_node_plugin_process_emit_warning_json(
         }
     }
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"type\":") catch return fail();
     appendJsonString(&out, warning_type) catch return fail();
@@ -791,14 +791,14 @@ pub export fn sa_node_plugin_process_argv0(out_ptr: ?*?[*]const u8, out_len: ?*u
 pub export fn sa_node_plugin_process_exec_argv_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendOwnedStringArray(&out, config.exec_argv_tokens.items) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_os_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"os\",\"supported\":true,\"mode\":\"top-level-native-os-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &os_export_names) catch return fail();
@@ -807,7 +807,7 @@ pub export fn sa_node_plugin_os_status_json(out_ptr: ?*?[*]const u8, out_len: ?*
 }
 
 pub export fn sa_node_plugin_os_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &os_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -822,7 +822,7 @@ pub export fn sa_node_plugin_os_feature_support_json(out_ptr: ?*?[*]const u8, ou
 }
 
 pub export fn sa_node_plugin_path_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"path\",\"supported\":true,\"mode\":\"top-level-native-path-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &path_export_names) catch return fail();
@@ -831,7 +831,7 @@ pub export fn sa_node_plugin_path_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_path_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &path_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -846,7 +846,7 @@ pub export fn sa_node_plugin_path_feature_support_json(out_ptr: ?*?[*]const u8, 
 }
 
 pub export fn sa_node_plugin_querystring_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"querystring\",\"supported\":true,\"mode\":\"top-level-native-querystring-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &querystring_export_names) catch return fail();
@@ -855,7 +855,7 @@ pub export fn sa_node_plugin_querystring_status_json(out_ptr: ?*?[*]const u8, ou
 }
 
 pub export fn sa_node_plugin_querystring_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &querystring_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -870,7 +870,7 @@ pub export fn sa_node_plugin_querystring_feature_support_json(out_ptr: ?*?[*]con
 }
 
 pub export fn sa_node_plugin_punycode_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"punycode\",\"supported\":true,\"mode\":\"top-level-native-punycode-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &punycode_export_names) catch return fail();
@@ -879,7 +879,7 @@ pub export fn sa_node_plugin_punycode_status_json(out_ptr: ?*?[*]const u8, out_l
 }
 
 pub export fn sa_node_plugin_punycode_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &punycode_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -898,7 +898,7 @@ pub export fn sa_node_plugin_punycode_feature_support_json(out_ptr: ?*?[*]const 
 }
 
 pub export fn sa_node_plugin_string_decoder_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"string_decoder\",\"supported\":true,\"mode\":\"top-level-native-string-decoder-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &string_decoder_export_names) catch return fail();
@@ -907,7 +907,7 @@ pub export fn sa_node_plugin_string_decoder_status_json(out_ptr: ?*?[*]const u8,
 }
 
 pub export fn sa_node_plugin_string_decoder_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &string_decoder_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -922,7 +922,7 @@ pub export fn sa_node_plugin_string_decoder_feature_support_json(out_ptr: ?*?[*]
 }
 
 pub export fn sa_node_plugin_zlib_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"zlib\",\"supported\":true,\"mode\":\"top-level-native-zlib-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &zlib_export_names) catch return fail();
@@ -931,7 +931,7 @@ pub export fn sa_node_plugin_zlib_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_zlib_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &zlib_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1005,7 +1005,7 @@ pub export fn sa_node_plugin_async_hooks_async_resource_snapshot_json(handle_ptr
 const DiagnosticsChannel = struct {
     allocator: std.mem.Allocator,
     name: []u8,
-    subscribers: std.ArrayList(?*anyopaque),
+    subscribers: std.array_list.Managed(?*anyopaque),
     enabled: bool = false,
 
     fn init(allocator: std.mem.Allocator, name: []const u8) !*DiagnosticsChannel {
@@ -1013,7 +1013,7 @@ const DiagnosticsChannel = struct {
         self.* = .{
             .allocator = allocator,
             .name = try allocator.dupe(u8, name),
-            .subscribers = std.ArrayList(?*anyopaque).init(allocator),
+            .subscribers = std.array_list.Managed(?*anyopaque).init(allocator),
             .enabled = false,
         };
         return self;
@@ -1086,7 +1086,7 @@ pub export fn sa_node_plugin_diagnostics_channel_snapshot_json(channel_ptr: ?*an
 }
 
 pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"async_context_tracking\",\"supported\":true,\"mode\":\"explicit-native-stack\",\"capabilities\":[\"async resource handle integration\",\"explicit enter and exit\",\"execution and trigger async id lookup\",\"stack depth and snapshot JSON\",\"reset current native stack\"],\"limitations\":[\"no automatic propagation across host callbacks\",\"no JavaScript AsyncLocalStorage or promise hook semantics\",\"context changes occur only through explicit native enter/exit helpers\"],\"depth\":") catch return fail();
     out.writer().print("{d}", .{async_context_stack.items.len}) catch return fail();
@@ -1100,7 +1100,7 @@ fn assertBuildFailureJson(actual: []const u8, expected: []const u8, operator: []
     if (ext.sa_node_plugin_util_diff(actual.ptr, actual.len, expected.ptr, expected.len, operator.ptr, operator.len, &diff_ptr, &diff_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(diff_ptr, diff_len);
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"name\":\"AssertionError\",\"code\":\"ERR_ASSERTION\",\"actual\":") catch return fail();
     out.appendSlice(actual) catch return fail();
@@ -1123,7 +1123,7 @@ fn assertBuildFailureJson(actual: []const u8, expected: []const u8, operator: []
 }
 
 pub export fn sa_node_plugin_assert_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"assert\",\"supported\":true,\"mode\":\"top-level-native-assert-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &assert_export_names) catch return fail();
@@ -1132,7 +1132,7 @@ pub export fn sa_node_plugin_assert_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_assert_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &assert_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1206,7 +1206,7 @@ pub export fn sa_node_plugin_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*
     defer os_parsed.deinit();
     if (os_parsed.value != .object) return fail();
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.append('{') catch return fail();
     var first = true;
@@ -1232,7 +1232,7 @@ pub export fn sa_node_plugin_constants_json(out_ptr: ?*?[*]const u8, out_len: ?*
 }
 
 pub export fn sa_node_plugin_constants_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"constants\",\"supported\":true,\"mode\":\"top-level-native-constants-facade\",\"exports\":") catch return fail();
     constantsAppendExportNamesJson(&out) catch return fail();
@@ -1240,7 +1240,7 @@ pub export fn sa_node_plugin_constants_status_json(out_ptr: ?*?[*]const u8, out_
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
-fn constantsAppendExportNamesJson(out: *std.ArrayList(u8)) !void {
+fn constantsAppendExportNamesJson(out: *std.array_list.Managed(u8)) !void {
     var constants_ptr: ?[*]const u8 = null;
     var constants_len: u64 = 0;
     if (sa_node_plugin_constants_json(&constants_ptr, &constants_len) != 0) return error.Unexpected;
@@ -1261,7 +1261,7 @@ fn constantsAppendExportNamesJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_constants_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     constantsAppendExportNamesJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1276,7 +1276,7 @@ pub export fn sa_node_plugin_constants_feature_support_json(out_ptr: ?*?[*]const
 }
 
 pub export fn sa_node_plugin_sys_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"sys\",\"supported\":true,\"mode\":\"top-level-native-sys-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &sys_export_names) catch return fail();
@@ -1285,7 +1285,7 @@ pub export fn sa_node_plugin_sys_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_sys_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &sys_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1320,7 +1320,7 @@ pub export fn sa_node_plugin_sys_inherits(child_ptr: ?[*]const u8, child_len: u6
 }
 
 pub export fn sa_node_plugin_async_context_tracking_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     asyncContextTrackingWriteSnapshotJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1373,32 +1373,32 @@ pub export fn sa_node_plugin_async_context_tracking_reset() u32 {
 
 const CommandLineOptionsConfig = struct {
     allocator: std.mem.Allocator,
-    argv: std.ArrayList([]u8),
-    exec_argv_tokens: std.ArrayList([]u8),
-    node_options_tokens: std.ArrayList([]u8),
-    env_files: std.ArrayList([]u8),
-    optional_env_files: std.ArrayList([]u8),
-    conditions: std.ArrayList([]u8),
-    preload_modules: std.ArrayList([]u8),
-    inspect_flags: std.ArrayList([]u8),
+    argv: std.array_list.Managed([]u8),
+    exec_argv_tokens: std.array_list.Managed([]u8),
+    node_options_tokens: std.array_list.Managed([]u8),
+    env_files: std.array_list.Managed([]u8),
+    optional_env_files: std.array_list.Managed([]u8),
+    conditions: std.array_list.Managed([]u8),
+    preload_modules: std.array_list.Managed([]u8),
+    inspect_flags: std.array_list.Managed([]u8),
     saw_node_options: bool = false,
     saw_argv: bool = false,
 
     fn init(allocator: std.mem.Allocator) CommandLineOptionsConfig {
         return .{
             .allocator = allocator,
-            .argv = std.ArrayList([]u8).init(allocator),
-            .exec_argv_tokens = std.ArrayList([]u8).init(allocator),
-            .node_options_tokens = std.ArrayList([]u8).init(allocator),
-            .env_files = std.ArrayList([]u8).init(allocator),
-            .optional_env_files = std.ArrayList([]u8).init(allocator),
-            .conditions = std.ArrayList([]u8).init(allocator),
-            .preload_modules = std.ArrayList([]u8).init(allocator),
-            .inspect_flags = std.ArrayList([]u8).init(allocator),
+            .argv = std.array_list.Managed([]u8).init(allocator),
+            .exec_argv_tokens = std.array_list.Managed([]u8).init(allocator),
+            .node_options_tokens = std.array_list.Managed([]u8).init(allocator),
+            .env_files = std.array_list.Managed([]u8).init(allocator),
+            .optional_env_files = std.array_list.Managed([]u8).init(allocator),
+            .conditions = std.array_list.Managed([]u8).init(allocator),
+            .preload_modules = std.array_list.Managed([]u8).init(allocator),
+            .inspect_flags = std.array_list.Managed([]u8).init(allocator),
         };
     }
 
-    fn freeItems(allocator: std.mem.Allocator, list: *std.ArrayList([]u8)) void {
+    fn freeItems(allocator: std.mem.Allocator, list: *std.array_list.Managed([]u8)) void {
         for (list.items) |item| allocator.free(item);
         list.deinit();
     }
@@ -1415,7 +1415,7 @@ const CommandLineOptionsConfig = struct {
     }
 };
 
-fn commandLineOptionsPush(list: *std.ArrayList([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
+fn commandLineOptionsPush(list: *std.array_list.Managed([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
     try list.append(try allocator.dupe(u8, value));
 }
 
@@ -1597,7 +1597,7 @@ fn commandLineOptionsHasFlagInternal(flag: []const u8) bool {
     return false;
 }
 
-fn commandLineOptionsWriteStatusJson(config: *const CommandLineOptionsConfig, out: *std.ArrayList(u8)) !void {
+fn commandLineOptionsWriteStatusJson(config: *const CommandLineOptionsConfig, out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"module\":\"command_line_options\",\"supported\":true,\"mode\":\"native-process-env\",\"argvSource\":\"std.process.args\",\"nodeOptionsParsing\":\"whitespace-tokenized\",\"nodeOptionsPresent\":");
     try out.appendSlice(if (config.saw_node_options) "true" else "false");
     try out.appendSlice(",\"argvPresent\":");
@@ -1625,7 +1625,7 @@ fn commandLineOptionsWriteStatusJson(config: *const CommandLineOptionsConfig, ou
 pub export fn sa_node_plugin_command_line_options_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     commandLineOptionsWriteStatusJson(&config, &out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1634,7 +1634,7 @@ pub export fn sa_node_plugin_command_line_options_status_json(out_ptr: ?*?[*]con
 pub export fn sa_node_plugin_command_line_options_argv_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendOwnedStringArray(&out, config.argv.items) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1643,7 +1643,7 @@ pub export fn sa_node_plugin_command_line_options_argv_json(out_ptr: ?*?[*]const
 pub export fn sa_node_plugin_command_line_options_node_options_tokens_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendOwnedStringArray(&out, config.node_options_tokens.items) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1652,7 +1652,7 @@ pub export fn sa_node_plugin_command_line_options_node_options_tokens_json(out_p
 pub export fn sa_node_plugin_command_line_options_env_files_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var config = commandLineOptionsReadConfig(std.heap.page_allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"required\":") catch return fail();
     appendOwnedStringArray(&out, config.env_files.items) catch return fail();
@@ -1707,7 +1707,7 @@ fn deprecatedNoWarningsInternal() bool {
     return nodeOptionsHasFlag("--no-warnings") or envTruthy("NODE_NO_WARNINGS");
 }
 
-fn deprecatedAppendFlagsObject(out: *std.ArrayList(u8)) !void {
+fn deprecatedAppendFlagsObject(out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"pendingDeprecation\":");
     try out.appendSlice(if (deprecatedPendingEnabledInternal()) "true" else "false");
     try out.appendSlice(",\"noDeprecation\":");
@@ -1728,7 +1728,7 @@ fn deprecatedRegisteredCount() u64 {
 }
 
 pub export fn sa_node_plugin_deprecated_flags_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     deprecatedAppendFlagsObject(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -1792,7 +1792,7 @@ pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code
         stored_message = entry.message;
     }
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"code\":") catch return fail();
     appendJsonString(&out, code) catch return fail();
@@ -1812,7 +1812,7 @@ pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, o
     deprecated_mutex.lock();
     defer deprecated_mutex.unlock();
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"flags\":") catch return fail();
     deprecatedAppendFlagsObject(&out) catch return fail();
@@ -1835,7 +1835,7 @@ pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, o
 }
 
 pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"deprecated\",\"supported\":true,\"mode\":\"native-registry\",\"registeredCount\":") catch return fail();
     out.writer().print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
@@ -1848,7 +1848,7 @@ pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out
 pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
     defer env_map.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"environment_variables\",\"supported\":true,\"mode\":\"native-process-env\",\"entryCount\":") catch return fail();
     out.writer().print("{d}", .{env_map.count()}) catch return fail();
@@ -1859,7 +1859,7 @@ pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]co
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
-fn environmentVariablesAppendObject(out: *std.ArrayList(u8), map: *const std.process.EnvMap) !void {
+fn environmentVariablesAppendObject(out: *std.array_list.Managed(u8), map: *const std.process.EnvMap) !void {
     try out.append('{');
     var it = map.iterator();
     var first = true;
@@ -1888,7 +1888,7 @@ fn environmentVariablesTrimSpaces(bytes: []const u8) []const u8 {
 }
 
 fn environmentVariablesExpandDoubleQuotedNewlines(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     errdefer out.deinit();
     var i: usize = 0;
     while (i < value.len) : (i += 1) {
@@ -2044,7 +2044,7 @@ fn environmentVariablesParseContent(allocator: std.mem.Allocator, content_in: []
     return store;
 }
 
-fn environmentVariablesAppendStoreObject(out: *std.ArrayList(u8), store: *const std.StringHashMap([]u8)) !void {
+fn environmentVariablesAppendStoreObject(out: *std.array_list.Managed(u8), store: *const std.StringHashMap([]u8)) !void {
     try out.append('{');
     var it = store.iterator();
     var first = true;
@@ -2061,7 +2061,7 @@ fn environmentVariablesAppendStoreObject(out: *std.ArrayList(u8), store: *const 
 pub export fn sa_node_plugin_environment_variables_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
     defer env_map.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     environmentVariablesAppendObject(&out, &env_map) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2085,7 +2085,7 @@ pub export fn sa_node_plugin_environment_variables_parse_env_json(content_ptr: ?
     const content = if (content_len == 0) "" else (content_ptr orelse return fail())[0..content_len];
     var store = environmentVariablesParseContent(std.heap.page_allocator, content) catch return fail();
     defer environmentVariablesStoreDeinit(&store, std.heap.page_allocator);
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     environmentVariablesAppendStoreObject(&out, &store) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2126,7 +2126,7 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
         loaded_count += 1;
     }
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, path) catch return fail();
@@ -2217,20 +2217,20 @@ fn errorsSystemMessage(errnum: i32) []const u8 {
     return std.mem.span(msg_z);
 }
 
-fn errorsAppendQuotedField(out: *std.ArrayList(u8), name: []const u8, value: []const u8) !void {
+fn errorsAppendQuotedField(out: *std.array_list.Managed(u8), name: []const u8, value: []const u8) !void {
     try out.appendSlice(",\"");
     try out.appendSlice(name);
     try out.appendSlice("\":");
     try appendJsonString(out, value);
 }
 
-fn errorsAppendQuotedMessage(out: *std.ArrayList(u8), name: []const u8, comptime fmt: []const u8, args: anytype) !void {
+fn errorsAppendQuotedMessage(out: *std.array_list.Managed(u8), name: []const u8, comptime fmt: []const u8, args: anytype) !void {
     const text = try std.fmt.allocPrint(std.heap.page_allocator, fmt, args);
     defer std.heap.page_allocator.free(text);
     try errorsAppendQuotedField(out, name, text);
 }
 
-fn errorsBuildSystemErrorJson(out: *std.ArrayList(u8), errnum: i32, syscall: []const u8, path: ?[]const u8, dest: ?[]const u8) !void {
+fn errorsBuildSystemErrorJson(out: *std.array_list.Managed(u8), errnum: i32, syscall: []const u8, path: ?[]const u8, dest: ?[]const u8) !void {
     const code = errorsLookupSystemName(errnum);
     const message = errorsSystemMessage(errnum);
     try out.appendSlice("{\"code\":");
@@ -2264,7 +2264,7 @@ fn errorsBuildSystemErrorJson(out: *std.ArrayList(u8), errnum: i32, syscall: []c
 }
 
 pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"errors\",\"supported\":true,\"mode\":\"native-error-codes\",\"nodeCodes\":") catch return fail();
     appendStringArray(&out, &node_error_codes) catch return fail();
@@ -2277,7 +2277,7 @@ pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_errors_codes_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"node\":") catch return fail();
     appendStringArray(&out, &node_error_codes) catch return fail();
@@ -2304,7 +2304,7 @@ pub export fn sa_node_plugin_errors_system_error_json(errnum: i64, syscall_ptr: 
     const syscall = if (syscall_len == 0) "unknown" else (syscall_ptr orelse return fail())[0..syscall_len];
     const path = if (path_len == 0) null else (path_ptr orelse return fail())[0..path_len];
     const dest = if (dest_len == 0) null else (dest_ptr orelse return fail())[0..dest_len];
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     errorsBuildSystemErrorJson(&out, @intCast(errnum), syscall, path, dest) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2330,7 +2330,7 @@ pub export fn sa_node_plugin_errors_invalid_arg_type_json(name_ptr: ?[*]const u8
     const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
     const expected = if (expected_len == 0) return fail() else (expected_ptr orelse return fail())[0..expected_len];
     const actual_type = if (actual_type_len == 0) return fail() else (actual_type_ptr orelse return fail())[0..actual_type_len];
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"code\":\"ERR_INVALID_ARG_TYPE\",\"name\":") catch return fail();
     appendJsonString(&out, name) catch return fail();
@@ -2347,7 +2347,7 @@ pub export fn sa_node_plugin_errors_invalid_arg_value_json(name_ptr: ?[*]const u
     const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
     const value = if (value_len == 0) "" else (value_ptr orelse return fail())[0..value_len];
     const reason = if (reason_len == 0) "is invalid" else (reason_ptr orelse return fail())[0..reason_len];
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"code\":\"ERR_INVALID_ARG_VALUE\",\"name\":") catch return fail();
     appendJsonString(&out, name) catch return fail();
@@ -2364,7 +2364,7 @@ pub export fn sa_node_plugin_errors_out_of_range_json(name_ptr: ?[*]const u8, na
     const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
     const range = if (range_len == 0) return fail() else (range_ptr orelse return fail())[0..range_len];
     const received = if (received_len == 0) "" else (received_ptr orelse return fail())[0..received_len];
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"code\":\"ERR_OUT_OF_RANGE\",\"name\":") catch return fail();
     appendJsonString(&out, name) catch return fail();
@@ -2443,7 +2443,7 @@ fn internationalizationHasEncodingInternal(name: []const u8) bool {
     return false;
 }
 
-fn internationalizationWriteConfigJson(out: *std.ArrayList(u8)) !void {
+fn internationalizationWriteConfigJson(out: *std.array_list.Managed(u8)) !void {
     const allocator = std.heap.page_allocator;
     const locale = try internationalizationOwnedLocale(allocator);
     defer allocator.free(locale);
@@ -2472,7 +2472,7 @@ fn internationalizationWriteConfigJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_internationalization_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"internationalization\",\"supported\":true,\"mode\":\"locale-env-and-unicode-primitives\",\"icu\":false") catch return fail();
     appendEnvStringField(&out, "lang", "LANG") catch return fail();
@@ -2493,7 +2493,7 @@ pub export fn sa_node_plugin_internationalization_status_json(out_ptr: ?*?[*]con
 }
 
 pub export fn sa_node_plugin_internationalization_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     internationalizationWriteConfigJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2506,7 +2506,7 @@ pub export fn sa_node_plugin_internationalization_effective_locale_json(out_ptr:
 }
 
 pub export fn sa_node_plugin_internationalization_supported_encodings_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &internationalization_supported_encodings) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2571,7 +2571,7 @@ fn iterableStreamsHasValue(items: []const []const u8, name: []const u8) bool {
     return false;
 }
 
-fn iterableStreamsWriteBridgeJson(out: *std.ArrayList(u8)) !void {
+fn iterableStreamsWriteBridgeJson(out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"mode\":\"poll-read-byte-iterators\",\"classic\":{");
     try out.appendSlice("\"readableNew\":true,\"writableNew\":true,\"duplexNew\":true,\"transformNew\":true,\"passthroughNew\":true,\"pipeline\":true,\"finished\":true,\"compose\":true");
     try out.appendSlice("},\"web\":{");
@@ -2582,7 +2582,7 @@ fn iterableStreamsWriteBridgeJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_iterable_streams_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"iterable_streams\",\"supported\":true,\"mode\":\"poll-read-byte-iterators\",\"streamTypes\":") catch return fail();
     appendStringArray(&out, &iterable_stream_types) catch return fail();
@@ -2595,21 +2595,21 @@ pub export fn sa_node_plugin_iterable_streams_status_json(out_ptr: ?*?[*]const u
 }
 
 pub export fn sa_node_plugin_iterable_streams_stream_types_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &iterable_stream_types) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_iterable_streams_capabilities_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &iterable_stream_capabilities) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_iterable_streams_bridge_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     iterableStreamsWriteBridgeJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2798,7 +2798,7 @@ pub export fn sa_node_plugin_permissions_is_audit_mode(out_bool: ?*u64) u32 {
 }
 
 pub export fn sa_node_plugin_permissions_available_flags_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &permissions_available_flags) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2835,7 +2835,7 @@ pub export fn sa_node_plugin_permissions_status_json(out_ptr: ?*?[*]const u8, ou
 
     const flags = if (flags_ptr) |ptr| ptr[0..@intCast(flags_len)] else "[]";
     const declared = if (declared_ptr) |ptr| ptr[0..@intCast(declared_len)] else "null";
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"permissions\",\"supported\":true,\"model\":\"sa-plugin-manifest\",\"sandboxEnforced\":false,\"devMode\":") catch return fail();
     out.appendSlice(if (dev_mode) "true" else "false") catch return fail();
@@ -2878,9 +2878,9 @@ const ReplSession = struct {
     allocator: std.mem.Allocator,
     prompt: []u8,
     continuation_prompt: []u8,
-    buffer: std.ArrayList(u8),
-    history: std.ArrayList([]u8),
-    commands: std.ArrayList(ReplCommand),
+    buffer: std.array_list.Managed(u8),
+    history: std.array_list.Managed([]u8),
+    commands: std.array_list.Managed(ReplCommand),
     terminal: bool,
     use_colors: bool,
     closed: bool = false,
@@ -2893,9 +2893,9 @@ const ReplSession = struct {
             .allocator = allocator,
             .prompt = try allocator.dupe(u8, if (prompt.len == 0) "node> " else prompt),
             .continuation_prompt = try allocator.dupe(u8, "... "),
-            .buffer = std.ArrayList(u8).init(allocator),
-            .history = std.ArrayList([]u8).init(allocator),
-            .commands = std.ArrayList(ReplCommand).init(allocator),
+            .buffer = std.array_list.Managed(u8).init(allocator),
+            .history = std.array_list.Managed([]u8).init(allocator),
+            .commands = std.array_list.Managed(ReplCommand).init(allocator),
             .terminal = replIsTerminal(),
             .use_colors = replShouldUseColors(),
         };
@@ -2959,7 +2959,7 @@ fn replFindCommand(session: *const ReplSession, name: []const u8) ?*const ReplCo
     return null;
 }
 
-fn replAppendCommandsJson(out: *std.ArrayList(u8), session: *const ReplSession) !void {
+fn replAppendCommandsJson(out: *std.array_list.Managed(u8), session: *const ReplSession) !void {
     try out.append('[');
     var first = true;
     for (repl_builtin_commands) |command| {
@@ -2984,14 +2984,14 @@ fn replAppendCommandsJson(out: *std.ArrayList(u8), session: *const ReplSession) 
 }
 
 fn replWriteHistoryJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendOwnedStringArray(&out, session.history.items) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 fn replWriteSnapshotJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"prompt\":") catch return fail();
     appendJsonString(&out, session.prompt) catch return fail();
@@ -3017,7 +3017,7 @@ fn replWriteSnapshotJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, o
 
 fn replWriteEvalResultJson(session: *ReplSession, line: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const trimmed = std.mem.trim(u8, line, " \t");
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
 
     if (trimmed.len == 0) {
@@ -3091,7 +3091,7 @@ fn replWriteEvalResultJson(session: *ReplSession, line: []const u8, out_ptr: ?*?
 }
 
 pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"repl\",\"supported\":true,\"mode\":\"top-level-native-repl-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &repl_export_names) catch return fail();
@@ -3104,14 +3104,14 @@ pub export fn sa_node_plugin_repl_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_repl_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &repl_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_repl_default_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"prompt\":\"node> \",\"continuationPrompt\":\"... \",\"terminal\":") catch return fail();
     out.appendSlice(if (replIsTerminal()) "true" else "false") catch return fail();
@@ -3208,16 +3208,16 @@ const TestRunnerConfig = struct {
     timeout: ?u64 = null,
     isolation: ?[]u8 = null,
     rerun_failures_path: ?[]u8 = null,
-    reporters: std.ArrayList([]u8),
-    reporter_destinations: std.ArrayList([]u8),
+    reporters: std.array_list.Managed([]u8),
+    reporter_destinations: std.array_list.Managed([]u8),
     saw_node_options: bool = false,
     saw_argv: bool = false,
 
     fn init(allocator: std.mem.Allocator) TestRunnerConfig {
         return .{
             .allocator = allocator,
-            .reporters = std.ArrayList([]u8).init(allocator),
-            .reporter_destinations = std.ArrayList([]u8).init(allocator),
+            .reporters = std.array_list.Managed([]u8).init(allocator),
+            .reporter_destinations = std.array_list.Managed([]u8).init(allocator),
         };
     }
 
@@ -3237,7 +3237,7 @@ fn testRunnerFlagValue(token: []const u8, prefix: []const u8) ?[]const u8 {
     return token[prefix.len + 1 ..];
 }
 
-fn testRunnerConfigPush(list: *std.ArrayList([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
+fn testRunnerConfigPush(list: *std.array_list.Managed([]u8), allocator: std.mem.Allocator, value: []const u8) !void {
     try list.append(try allocator.dupe(u8, value));
 }
 
@@ -3353,7 +3353,7 @@ fn testRunnerReadConfig(allocator: std.mem.Allocator) !TestRunnerConfig {
     return config;
 }
 
-fn testRunnerAppendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8) !void {
+fn testRunnerAppendOwnedStringArray(out: *std.array_list.Managed(u8), items: []const []u8) !void {
     try out.append('[');
     for (items, 0..) |item, i| {
         if (i != 0) try out.append(',');
@@ -3362,7 +3362,7 @@ fn testRunnerAppendOwnedStringArray(out: *std.ArrayList(u8), items: []const []u8
     try out.append(']');
 }
 
-fn testRunnerWriteConfigJson(config: *const TestRunnerConfig, out: *std.ArrayList(u8)) !void {
+fn testRunnerWriteConfigJson(config: *const TestRunnerConfig, out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"coverage\":");
     try out.appendSlice(if (config.coverage) "true" else "false");
     try out.appendSlice(",\"watch\":");
@@ -3407,7 +3407,7 @@ fn testRunnerWriteConfigJson(config: *const TestRunnerConfig, out: *std.ArrayLis
 }
 
 pub export fn sa_node_plugin_test_runner_builtin_reporters_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -3417,7 +3417,7 @@ pub export fn sa_node_plugin_test_runner_config_json(out_ptr: ?*?[*]const u8, ou
     const allocator = std.heap.page_allocator;
     var config = testRunnerReadConfig(allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     testRunnerWriteConfigJson(&config, &out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -3439,7 +3439,7 @@ pub export fn sa_node_plugin_test_runner_status_json(out_ptr: ?*?[*]const u8, ou
     const allocator = std.heap.page_allocator;
     var config = testRunnerReadConfig(allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"test_runner\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"sync-native-config-introspection\",\"builtinReporters\":") catch return fail();
     appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
@@ -3453,7 +3453,7 @@ pub export fn sa_node_plugin_test_status_json(out_ptr: ?*?[*]const u8, out_len: 
     const allocator = std.heap.page_allocator;
     var config = testRunnerReadConfig(allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"test\",\"supported\":true,\"backend\":\"sa test\",\"mode\":\"top-level-native-test-module\",\"exports\":") catch return fail();
     appendStringArray(&out, &test_module_export_names) catch return fail();
@@ -3466,7 +3466,7 @@ pub export fn sa_node_plugin_test_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_test_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &test_module_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -3476,7 +3476,7 @@ pub export fn sa_node_plugin_test_config_json(out_ptr: ?*?[*]const u8, out_len: 
     const allocator = std.heap.page_allocator;
     var config = testRunnerReadConfig(allocator) catch return fail();
     defer config.deinit();
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"backend\":\"sa test\",\"aliasModel\":{\"describe\":\"suite\",\"it\":\"test\"},\"reporters\":") catch return fail();
     appendStringArray(&out, &test_runner_builtin_reporters) catch return fail();
@@ -3500,7 +3500,7 @@ pub export fn sa_node_plugin_test_property_support_json(out_ptr: ?*?[*]const u8,
 
 pub export fn sa_node_plugin_test_feature_support_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const allocator = std.heap.page_allocator;
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"test\":{\"supported\":true,\"mode\":\"native top-level metadata for sa test integration\"},\"suite\":{\"supported\":true,\"mode\":\"describe alias metadata only\"},\"describe\":{\"supported\":true,\"mode\":\"alias of suite metadata\"},\"it\":{\"supported\":true,\"mode\":\"alias of test metadata\"},\"assert\":") catch return fail();
     out.appendSlice("{\"supported\":true,\"register\":false,\"reason\":\"native assert compatibility helpers are available, but node:test assert.register callbacks are not modeled\"}") catch return fail();
@@ -3512,7 +3512,7 @@ pub export fn sa_node_plugin_test_feature_support_json(out_ptr: ?*?[*]const u8, 
 const DomainHandle = struct {
     allocator: std.mem.Allocator,
     id: u64,
-    members: std.ArrayList(?*anyopaque),
+    members: std.array_list.Managed(?*anyopaque),
     disposed: bool = false,
 
     fn init(allocator: std.mem.Allocator, id: u64) !*DomainHandle {
@@ -3520,7 +3520,7 @@ const DomainHandle = struct {
         handle.* = .{
             .allocator = allocator,
             .id = id,
-            .members = std.ArrayList(?*anyopaque).init(allocator),
+            .members = std.array_list.Managed(?*anyopaque).init(allocator),
             .disposed = false,
         };
         return handle;
@@ -3534,7 +3534,7 @@ const DomainHandle = struct {
 
 var domain_next_id: u64 = 1;
 var domain_active: ?*DomainHandle = null;
-var domain_stack = std.ArrayList(*DomainHandle).init(std.heap.page_allocator);
+var domain_stack = std.array_list.Managed(*DomainHandle).init(std.heap.page_allocator);
 
 const domain_export_names = [_][]const u8{
     "Domain",
@@ -3583,7 +3583,7 @@ fn domainStackDepthFor(domain: *DomainHandle) u64 {
 }
 
 fn domainSnapshotJson(domain: *DomainHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"id\":") catch return fail();
     out.writer().print("{d}", .{domain.id}) catch return fail();
@@ -3696,7 +3696,7 @@ const WebStreamKind = enum { readable, writable, transform_readable, transform_w
 const WebStreamHandle = struct {
     allocator: std.mem.Allocator,
     kind: WebStreamKind,
-    buffer: std.ArrayList(u8),
+    buffer: std.array_list.Managed(u8),
     read_offset: usize = 0,
     closed: bool = false,
     peer: ?*WebStreamHandle = null,
@@ -3706,7 +3706,7 @@ const WebStreamHandle = struct {
         handle.* = .{
             .allocator = allocator,
             .kind = kind,
-            .buffer = std.ArrayList(u8).init(allocator),
+            .buffer = std.array_list.Managed(u8).init(allocator),
         };
         return handle;
     }
@@ -3879,7 +3879,7 @@ pub export fn sa_node_plugin_perf_hooks_measure(name_ptr: ?[*]const u8, name_len
     return 0;
 }
 
-fn appendPerfEntries(list: *std.ArrayList(u8), kind: []const u8, entries: *std.StringHashMap(i64)) !void {
+fn appendPerfEntries(list: *std.array_list.Managed(u8), kind: []const u8, entries: *std.StringHashMap(i64)) !void {
     var it = entries.iterator();
     while (it.next()) |entry| {
         try list.appendSlice(if (list.items.len > 1) "," else "");
@@ -3892,7 +3892,7 @@ fn appendPerfEntries(list: *std.ArrayList(u8), kind: []const u8, entries: *std.S
 }
 
 pub export fn sa_node_plugin_perf_hooks_entries_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
     json.appendSlice("[") catch return fail();
     var first = true;
@@ -3973,7 +3973,7 @@ pub export fn sa_node_plugin_perf_hooks_status_json(out_ptr: ?*?[*]const u8, out
     if (sa_node_plugin_perf_hooks_entries_json(&entries_ptr, &entries_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(entries_ptr, entries_len);
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"perf_hooks\",\"supported\":true,\"mode\":\"top-level-native-perf-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &perf_hooks_export_names) catch return fail();
@@ -3994,14 +3994,14 @@ pub export fn sa_node_plugin_perf_hooks_status_json(out_ptr: ?*?[*]const u8, out
 }
 
 pub export fn sa_node_plugin_perf_hooks_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &perf_hooks_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_perf_hooks_supported_entry_types_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4021,7 +4021,7 @@ pub export fn sa_node_plugin_perf_hooks_performance_json(out_ptr: ?*?[*]const u8
     if (ext.sa_node_plugin_perf_hooks_event_loop_utilization(&elu_ptr, &elu_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(elu_ptr, elu_len);
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"nowMs\":") catch return fail();
     out.writer().print("{d}", .{now_ms}) catch return fail();
@@ -4060,7 +4060,7 @@ pub export fn sa_node_plugin_report_status_json(out_ptr: ?*?[*]const u8, out_len
     if (sa_node_plugin_report_get_json(&report_ptr, &report_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(report_ptr, report_len);
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"report\",\"supported\":true,\"mode\":\"top-level-native-report-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &report_export_names) catch return fail();
@@ -4113,7 +4113,7 @@ pub export fn sa_node_plugin_report_write_file(filename_ptr: ?[*]const u8, filen
 }
 
 pub export fn sa_node_plugin_report_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &report_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4140,7 +4140,7 @@ const sea_export_names = [_][]const u8{
     "getAssetKeys",
 };
 
-fn seaProviderConfigJson(out: *std.ArrayList(u8)) !void {
+fn seaProviderConfigJson(out: *std.array_list.Managed(u8)) !void {
     var is_sea: u32 = 0;
     if (sa_node_plugin_sea_is_sea(&is_sea) != 0) return error.Unexpected;
 
@@ -4167,7 +4167,7 @@ fn seaProviderConfigJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_sea_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"sea\",\"supported\":true,\"mode\":\"top-level-sea-asset-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &sea_export_names) catch return fail();
@@ -4178,14 +4178,14 @@ pub export fn sa_node_plugin_sea_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_sea_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &sea_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_sea_config_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     seaProviderConfigJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4196,7 +4196,7 @@ pub export fn sa_node_plugin_sea_feature_support_json(out_ptr: ?*?[*]const u8, o
 }
 
 pub export fn sa_node_plugin_sea_asset_keys_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.append('[') catch return fail();
     var first = true;
@@ -4252,7 +4252,7 @@ fn seaLookupAsset(key: []const u8, allocator: std.mem.Allocator) ![]u8 {
                     .float => |n| std.fmt.allocPrint(allocator, "{d}", .{n}),
                     .bool => |b| allocator.dupe(u8, if (b) "true" else "false"),
                     else => blk: {
-                        var out = std.ArrayList(u8).init(allocator);
+                        var out = std.array_list.Managed(u8).init(allocator);
                         errdefer out.deinit();
                         try std.json.stringify(value, .{}, out.writer());
                         break :blk out.toOwnedSlice();
@@ -4337,7 +4337,7 @@ pub export fn sa_node_plugin_sea_get_asset_as_blob(key_ptr: ?[*]const u8, key_le
         std.heap.page_allocator.free(bytes);
         return fail();
     };
-    blob.* = .{ .allocator = std.heap.page_allocator, .kind = .readable, .buffer = std.ArrayList(u8).init(std.heap.page_allocator) };
+    blob.* = .{ .allocator = std.heap.page_allocator, .kind = .readable, .buffer = std.array_list.Managed(u8).init(std.heap.page_allocator) };
     blob.buffer.appendSlice(bytes) catch {
         std.heap.page_allocator.free(bytes);
         blob.buffer.deinit();
@@ -4408,7 +4408,7 @@ pub export fn sa_node_plugin_trace_events_tracing_free(handle_ptr: ?*anyopaque) 
 }
 
 pub export fn sa_node_plugin_trace_events_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"trace_events\",\"supported\":true,\"mode\":\"top-level-native-trace-events-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &trace_events_export_names) catch return fail();
@@ -4417,7 +4417,7 @@ pub export fn sa_node_plugin_trace_events_status_json(out_ptr: ?*?[*]const u8, o
 }
 
 pub export fn sa_node_plugin_trace_events_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &trace_events_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4566,7 +4566,7 @@ pub export fn sa_node_plugin_tty_stream_free(handle_ptr: ?*anyopaque) u32 {
 
 // --- Worker threads ---
 var worker_env_data = std.StringHashMap([]u8).init(std.heap.page_allocator);
-var worker_main_thread_messages = std.ArrayList([]u8).init(std.heap.page_allocator);
+var worker_main_thread_messages = std.array_list.Managed([]u8).init(std.heap.page_allocator);
 
 const worker_threads_export_names = [_][]const u8{
     "isInternalThread",
@@ -4594,7 +4594,7 @@ const worker_threads_export_names = [_][]const u8{
 
 const MessagePortHandle = struct {
     allocator: std.mem.Allocator,
-    inbox: std.ArrayList([]u8),
+    inbox: std.array_list.Managed([]u8),
     peer: ?*MessagePortHandle = null,
     closed: bool = false,
 
@@ -4602,7 +4602,7 @@ const MessagePortHandle = struct {
         const self = try allocator.create(MessagePortHandle);
         self.* = .{
             .allocator = allocator,
-            .inbox = std.ArrayList([]u8).init(allocator),
+            .inbox = std.array_list.Managed([]u8).init(allocator),
             .peer = null,
             .closed = false,
         };
@@ -4623,7 +4623,7 @@ pub export fn sa_node_plugin_worker_threads_status_json(out_ptr: ?*?[*]const u8,
     if (sa_node_plugin_worker_threads_resource_limits_json(&limits_ptr, &limits_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(limits_ptr, limits_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"worker_threads\",\"supported\":true,\"mode\":\"top-level-main-thread-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &worker_threads_export_names) catch return fail();
@@ -4634,7 +4634,7 @@ pub export fn sa_node_plugin_worker_threads_status_json(out_ptr: ?*?[*]const u8,
 }
 
 pub export fn sa_node_plugin_worker_threads_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &worker_threads_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4845,7 +4845,7 @@ pub export fn sa_node_plugin_child_process_exec_sync_json(argv_ptr: ?*const anyo
 }
 
 pub export fn sa_node_plugin_child_process_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"child_process\",\"supported\":true,\"mode\":\"top-level-native-child-process-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &child_process_export_names) catch return fail();
@@ -4866,7 +4866,7 @@ const child_process_export_names = [_][]const u8{
 };
 
 pub export fn sa_node_plugin_child_process_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &child_process_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -4906,7 +4906,7 @@ const cluster_export_names = [_][]const u8{
 const ClusterPrimaryConfig = struct {
     allocator: std.mem.Allocator,
     exec: ?[]u8 = null,
-    args: std.ArrayList([]u8),
+    args: std.array_list.Managed([]u8),
     cwd: ?[]u8 = null,
     env: std.process.EnvMap,
     use_custom_env: bool = false,
@@ -4914,7 +4914,7 @@ const ClusterPrimaryConfig = struct {
     fn init(allocator: std.mem.Allocator) ClusterPrimaryConfig {
         return .{
             .allocator = allocator,
-            .args = std.ArrayList([]u8).init(allocator),
+            .args = std.array_list.Managed([]u8).init(allocator),
             .env = std.process.EnvMap.init(allocator),
         };
     }
@@ -4942,7 +4942,7 @@ const ClusterWorkerHandle = struct {
     allocator: std.mem.Allocator,
     child: std.process.Child,
     command: []u8,
-    args: std.ArrayList([]u8),
+    args: std.array_list.Managed([]u8),
     cwd: ?[]u8 = null,
     env_count: u64 = 0,
     connected: bool = true,
@@ -5017,7 +5017,7 @@ fn clusterSignalFromNumber(signal: u64) ?u8 {
     return @intCast(signal);
 }
 
-fn clusterParseStoredArgs(args_ptr: ?[*]const u8, args_len: u64, out: *std.ArrayList([]u8), allocator: std.mem.Allocator) !void {
+fn clusterParseStoredArgs(args_ptr: ?[*]const u8, args_len: u64, out: *std.array_list.Managed([]u8), allocator: std.mem.Allocator) !void {
     if (args_len == 0) return;
     const ptr = args_ptr orelse return error.InvalidArgs;
     if (args_len <= 64) {
@@ -5077,7 +5077,7 @@ fn clusterWorkerDecodeStatus(worker: *ClusterWorkerHandle, status: u32) void {
 }
 
 fn clusterPrimarySnapshotJson(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"exec\":") catch return fail();
     if (cluster_primary_config.exec) |exec| {
@@ -5169,7 +5169,7 @@ fn clusterWorkerHandle(worker_ptr: ?*anyopaque) ?*ClusterWorkerHandle {
 
 fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     clusterWorkerRefresh(worker);
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"pid\":") catch return fail();
     out.writer().print("{d}", .{worker.child.id}) catch return fail();
@@ -5242,7 +5242,7 @@ fn clusterSpawnWorker(exec: []const u8, args: []const []const u8, cwd: ?[]const 
     };
     errdefer allocator.free(command);
 
-    var owned_args = std.ArrayList([]u8).init(allocator);
+    var owned_args = std.array_list.Managed([]u8).init(allocator);
     errdefer {
         for (owned_args.items) |arg| allocator.free(arg);
         owned_args.deinit();
@@ -5315,7 +5315,7 @@ pub export fn sa_node_plugin_cluster_primary_snapshot_json(out_ptr: ?*?[*]const 
 
 pub export fn sa_node_plugin_cluster_fork(exec_ptr: ?[*]const u8, exec_len: u64, args_ptr: ?[*]const u8, args_len: u64, out_worker: ?*?*anyopaque) u32 {
     const allocator = std.heap.page_allocator;
-    var effective_args = std.ArrayList([]u8).init(allocator);
+    var effective_args = std.array_list.Managed([]u8).init(allocator);
     defer {
         for (effective_args.items) |arg| allocator.free(arg);
         effective_args.deinit();
@@ -5890,7 +5890,7 @@ fn quicCreateEndpoint(family: u32, server: bool, local_host: []const u8, local_p
 fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     quicRefreshLocalAddress(handle);
 
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"family\":") catch return fail();
     out.writer().print("{d}", .{handle.family}) catch return fail();
@@ -5920,7 +5920,7 @@ fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u
 }
 
 fn quicWriteSessionSnapshot(handle: *QuicSessionHandle, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"closed\":") catch return fail();
     out.appendSlice(if (handle.closed) "true" else "false") catch return fail();
@@ -6064,7 +6064,7 @@ pub export fn sa_node_plugin_http3_session_free(session_ptr: ?*anyopaque) u32 {
 }
 
 pub export fn sa_node_plugin_dtls_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"dtls\",\"supported\":true,\"mode\":\"top-level-native-dtls-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &dtls_export_names) catch return fail();
@@ -6073,7 +6073,7 @@ pub export fn sa_node_plugin_dtls_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_dtls_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &dtls_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -6691,7 +6691,7 @@ const dns_export_names = [_][]const u8{
 
 // --- Status-only compatibility shims ---
 pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     var primary_ptr: ?[*]const u8 = null;
     var primary_len: u64 = 0;
@@ -6709,7 +6709,7 @@ pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_le
 }
 
 pub export fn sa_node_plugin_cluster_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &cluster_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -6724,7 +6724,7 @@ pub export fn sa_node_plugin_cluster_feature_support_json(out_ptr: ?*?[*]const u
 }
 
 pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"domain\",\"supported\":true,\"mode\":\"top-level-native-domain-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &domain_export_names) catch return fail();
@@ -6745,7 +6745,7 @@ pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_domain_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &domain_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -6881,7 +6881,7 @@ fn moduleEnsureDir(path: []const u8) !void {
 }
 
 fn moduleWriteCompileCacheResultJson(status_code: u64, directory: ?[]const u8, message: ?[]const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"status\":") catch return fail();
     out.writer().print("{d}", .{status_code}) catch return fail();
@@ -6903,7 +6903,7 @@ fn moduleWriteCompileCacheResultJson(status_code: u64, directory: ?[]const u8, m
 
 fn moduleWriteSourceMapsSupportJson(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     moduleInitSourceMapsSupport();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"enabled\":") catch return fail();
     out.appendSlice(if (module_source_maps_enabled) "true" else "false") catch return fail();
@@ -6926,7 +6926,7 @@ fn moduleFindSourceMappingUrl(text: []const u8) ?[]const u8 {
     return value;
 }
 
-fn moduleAppendGlobalPaths(out: *std.ArrayList(u8), allocator: std.mem.Allocator) !void {
+fn moduleAppendGlobalPaths(out: *std.array_list.Managed(u8), allocator: std.mem.Allocator) !void {
     try out.append('[');
     var first = true;
     if (std.posix.getenv("NODE_PATH")) |node_path| {
@@ -7000,7 +7000,7 @@ pub export fn sa_node_plugin_module_status_json(out_ptr: ?*?[*]const u8, out_len
     var source_maps_len: u64 = 0;
     if (moduleWriteSourceMapsSupportJson(&source_maps_ptr, &source_maps_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(source_maps_ptr, source_maps_len);
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"module\",\"supported\":true,\"mode\":\"top-level-native-module-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &module_export_names) catch return fail();
@@ -7025,14 +7025,14 @@ pub export fn sa_node_plugin_module_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_module_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &module_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_module_builtin_modules_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &module_builtin_modules) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7043,7 +7043,7 @@ pub export fn sa_node_plugin_module_constants_json(out_ptr: ?*?[*]const u8, out_
 }
 
 pub export fn sa_node_plugin_module_global_paths_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     moduleAppendGlobalPaths(&out, std.heap.page_allocator) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7067,7 +7067,7 @@ pub export fn sa_node_plugin_module_find_package_json(path_ptr: ?[*]const u8, pa
     const found = moduleFindPackageJsonPath(std.heap.page_allocator, input) catch return fail();
     defer if (found) |path| std.heap.page_allocator.free(path);
     if (found) |path| {
-        var out = std.ArrayList(u8).init(std.heap.page_allocator);
+        var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
         defer out.deinit();
         appendJsonString(&out, path) catch return fail();
         return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7092,7 +7092,7 @@ pub export fn sa_node_plugin_module_flush_compile_cache_json(out_ptr: ?*?[*]cons
 
 pub export fn sa_node_plugin_module_get_compile_cache_dir_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (!module_compile_cache_enabled) return writeOwnedString(out_ptr, out_len, "null");
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendJsonString(&out, module_compile_cache_dir orelse return fail()) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7124,7 +7124,7 @@ pub export fn sa_node_plugin_module_find_source_map_json(path_ptr: ?[*]const u8,
     const source_map_url = moduleFindSourceMappingUrl(data) orelse return writeOwnedString(out_ptr, out_len, "null");
     moduleInitSourceMapsSupport();
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"found\":true,\"path\":") catch return fail();
     appendJsonString(&out, absolute) catch return fail();
@@ -7150,7 +7150,7 @@ pub export fn sa_node_plugin_module_config_json(out_ptr: ?*?[*]const u8, out_len
     var source_maps_len: u64 = 0;
     if (moduleWriteSourceMapsSupportJson(&source_maps_ptr, &source_maps_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(source_maps_ptr, source_maps_len);
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"builtinModuleModel\":\"builtinModules is exported as a native static name list\",\"compileCacheModel\":{\"enabled\":") catch return fail();
     out.appendSlice(if (module_compile_cache_enabled) "true" else "false") catch return fail();
@@ -7304,7 +7304,7 @@ fn inspectorConfigSnapshot(allocator: std.mem.Allocator) !InspectorConfigSnapsho
 pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var snapshot = inspectorConfigSnapshot(std.heap.page_allocator) catch return fail();
     defer snapshot.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"inspector\",\"supported\":true,\"mode\":\"top-level-config-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &inspector_export_names) catch return fail();
@@ -7329,7 +7329,7 @@ pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_
 }
 
 pub export fn sa_node_plugin_inspector_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &inspector_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7354,7 +7354,7 @@ pub export fn sa_node_plugin_inspector_config_json(out_ptr: ?*?[*]const u8, out_
     var snapshot = inspectorConfigSnapshot(allocator) catch return fail();
     defer snapshot.deinit();
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"enabled\":") catch return fail();
     out.appendSlice(if (snapshot.enabled) "true" else "false") catch return fail();
@@ -7393,7 +7393,7 @@ pub export fn sa_node_plugin_inspector_config_json(out_ptr: ?*?[*]const u8, out_
 pub export fn sa_node_plugin_inspector_url_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var snapshot = inspectorConfigSnapshot(std.heap.page_allocator) catch return fail();
     defer snapshot.deinit();
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"active\":false,\"configured\":") catch return fail();
     out.appendSlice(if (snapshot.enabled) "true" else "false") catch return fail();
@@ -7430,7 +7430,7 @@ pub export fn sa_node_plugin_http_status_json(out_ptr: ?*?[*]const u8, out_len: 
     if (sa_node_plugin_http_status_codes_json(&status_codes_ptr, &status_codes_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(status_codes_ptr, status_codes_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"http\",\"supported\":true,\"mode\":\"top-level-native-http1-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &http_export_names) catch return fail();
@@ -7474,7 +7474,7 @@ pub export fn sa_node_plugin_http_status_codes_json(out_ptr: ?*?[*]const u8, out
 }
 
 pub export fn sa_node_plugin_http_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &http_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7493,7 +7493,7 @@ pub export fn sa_node_plugin_http_config_json(out_ptr: ?*?[*]const u8, out_len: 
     if (sa_node_plugin_http_status_codes_json(&status_codes_ptr, &status_codes_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(status_codes_ptr, status_codes_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
     out.writer().print("{d}", .{http_max_idle_parsers}) catch return fail();
@@ -7537,7 +7537,7 @@ pub export fn sa_node_plugin_http_validate_header_value(name_ptr: ?[*]const u8, 
 }
 
 pub export fn sa_node_plugin_https_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"https\",\"supported\":true,\"mode\":\"top-level-native-https-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &https_export_names) catch return fail();
@@ -7546,7 +7546,7 @@ pub export fn sa_node_plugin_https_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_https_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &https_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7573,7 +7573,7 @@ pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len:
     if (sa_node_plugin_http2_sensitive_headers(&sensitive_ptr, &sensitive_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"http2\",\"supported\":true,\"mode\":\"top-level-native-http2-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &http2_export_names) catch return fail();
@@ -7588,7 +7588,7 @@ pub export fn sa_node_plugin_http2_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_http2_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &http2_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7607,7 +7607,7 @@ pub export fn sa_node_plugin_http2_config_json(out_ptr: ?*?[*]const u8, out_len:
     if (sa_node_plugin_http2_sensitive_headers(&sensitive_ptr, &sensitive_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(sensitive_ptr, sensitive_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"defaultSettings\":") catch return fail();
     out.appendSlice((defaults_ptr orelse return fail())[0..@intCast(defaults_len)]) catch return fail();
@@ -7640,7 +7640,7 @@ pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: 
     const nghttp3 = quicNgHttp3Available();
     const openssl = quicOpenSslAvailable();
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"quic\",\"supported\":") catch return fail();
     out.appendSlice(if (ngtcp2 and nghttp3 and openssl) "true" else "false") catch return fail();
@@ -7655,7 +7655,7 @@ pub export fn sa_node_plugin_quic_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_quic_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &quic_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7674,7 +7674,7 @@ pub export fn sa_node_plugin_quic_config_json(out_ptr: ?*?[*]const u8, out_len: 
     if (sa_node_plugin_quic_capabilities_json(&caps_ptr, &caps_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(caps_ptr, caps_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"constants\":") catch return fail();
     out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
@@ -7699,7 +7699,7 @@ pub export fn sa_node_plugin_http3_status_json(out_ptr: ?*?[*]const u8, out_len:
     if (sa_node_plugin_http3_constants_json(&constants_ptr, &constants_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"http3\",\"supported\":") catch return fail();
     out.appendSlice(if (ngtcp2 and nghttp3 and openssl) "true" else "false") catch return fail();
@@ -7718,7 +7718,7 @@ pub export fn sa_node_plugin_http3_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_http3_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &http3_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7735,7 +7735,7 @@ pub export fn sa_node_plugin_http3_config_json(out_ptr: ?*?[*]const u8, out_len:
     if (sa_node_plugin_http3_constants_json(&constants_ptr, &constants_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"constants\":") catch return fail();
     out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
@@ -7771,7 +7771,7 @@ pub export fn sa_node_plugin_tls_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     if (ext.sa_node_plugin_tls_root_certificates_json(&root_ptr, &root_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(root_ptr, root_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"tls\",\"supported\":true,\"mode\":\"top-level-native-tls-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &tls_export_names) catch return fail();
@@ -7786,7 +7786,7 @@ pub export fn sa_node_plugin_tls_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_tls_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &tls_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7800,7 +7800,7 @@ pub export fn sa_node_plugin_tls_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     if (ext.sa_node_plugin_tls_default_constants_json(&constants_ptr, &constants_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(constants_ptr, constants_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"defaults\":") catch return fail();
     out.appendSlice((constants_ptr orelse return fail())[0..@intCast(constants_len)]) catch return fail();
@@ -7827,7 +7827,7 @@ fn tlsHostnameMatchesPattern(hostname: []const u8, pattern: []const u8) bool {
     return prefix.len > 0 and std.mem.indexOfScalar(u8, prefix, '.') == null;
 }
 
-fn tlsAppendIdentityResult(out: *std.ArrayList(u8), hostname: []const u8, authorized: bool, reason: []const u8, matched: []const u8) !void {
+fn tlsAppendIdentityResult(out: *std.array_list.Managed(u8), hostname: []const u8, authorized: bool, reason: []const u8, matched: []const u8) !void {
     try out.appendSlice("{\"hostname\":");
     try appendJsonString(out, hostname);
     try out.appendSlice(",\"authorized\":");
@@ -7896,7 +7896,7 @@ pub export fn sa_node_plugin_tls_check_server_identity(host_ptr: ?[*]const u8, h
 
     const ip_mode = tlsIsIpAddressName(hostname);
     var san_present = false;
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
 
     if (ip_mode) {
@@ -7948,7 +7948,7 @@ pub export fn sa_node_plugin_tls_check_server_identity(host_ptr: ?[*]const u8, h
 }
 
 pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"dgram\",\"supported\":true,\"mode\":\"top-level-native-dgram-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &dgram_export_names) catch return fail();
@@ -7957,7 +7957,7 @@ pub export fn sa_node_plugin_dgram_status_json(out_ptr: ?*?[*]const u8, out_len:
 }
 
 pub export fn sa_node_plugin_dgram_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &dgram_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -7979,7 +7979,7 @@ pub export fn sa_node_plugin_net_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     var auto_select_timeout: u64 = 0;
     if (ext.sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&auto_select_timeout) != 0) return fail();
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"net\",\"supported\":true,\"mode\":\"top-level-native-net-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &net_export_names) catch return fail();
@@ -7992,7 +7992,7 @@ pub export fn sa_node_plugin_net_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_net_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &net_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -8005,7 +8005,7 @@ pub export fn sa_node_plugin_net_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     var auto_select_timeout: u64 = 0;
     if (ext.sa_node_plugin_net_get_default_auto_select_family_attempt_timeout(&auto_select_timeout) != 0) return fail();
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"socketModel\":\"explicit native TCP or Unix socket handle\",\"serverModel\":\"explicit native listener handle\",\"blockListModel\":\"explicit native BlockList handle with Node-style family arguments\",\"socketAddressModel\":\"explicit native SocketAddress handle\",\"defaultAutoSelectFamily\":") catch return fail();
     out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
@@ -8037,7 +8037,7 @@ pub export fn sa_node_plugin_dns_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     if (ext.sa_node_plugin_dns_get_default_result_order(&order_ptr, &order_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(order_ptr, order_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"dns\",\"supported\":true,\"mode\":\"top-level-native-dns-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &dns_export_names) catch return fail();
@@ -8052,7 +8052,7 @@ pub export fn sa_node_plugin_dns_status_json(out_ptr: ?*?[*]const u8, out_len: ?
 }
 
 pub export fn sa_node_plugin_dns_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &dns_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -8071,7 +8071,7 @@ pub export fn sa_node_plugin_dns_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     if (ext.sa_node_plugin_dns_get_default_result_order(&order_ptr, &order_len) != 0) return fail();
     defer _ = base.sa_node_plugin_free_buffer(order_ptr, order_len);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"resolverModel\":\"explicit native Resolver handle with setServers/getServers/setLocalAddress/cancel/resolve/reverse/snapshot helpers\",\"lookupModel\":\"synchronous native OS resolver JSON helpers\",\"promisesModel\":\"dns.promises names return already-resolved native buffers rather than JavaScript Promise objects\",\"customServerModel\":\"resolver handles can issue UDP DNS queries to configured servers\",\"defaultResultOrder\":") catch return fail();
     out.appendSlice((order_ptr orelse return fail())[0..@intCast(order_len)]) catch return fail();
@@ -8109,7 +8109,7 @@ fn wasiReadJsonConfig(allocator: std.mem.Allocator, env_name: []const u8, defaul
     defer parsed.deinit();
     if (parsed.value != expected_kind) return error.InvalidWasiConfig;
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     errdefer out.deinit();
     try std.json.stringify(parsed.value, .{}, out.writer());
     return out.toOwnedSlice();
@@ -8136,14 +8136,14 @@ fn wasiAllowedInternal() bool {
 }
 
 pub export fn sa_node_plugin_wasi_supported_versions_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &wasi_supported_versions) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_wasi_import_modules_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &wasi_import_module_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -8169,7 +8169,7 @@ pub export fn sa_node_plugin_wasi_config_json(out_ptr: ?*?[*]const u8, out_len: 
     const preopens_json = wasiReadJsonConfig(allocator, "SA_NODE_WASI_PREOPENS", "{}", .object) catch return fail();
     defer allocator.free(preopens_json);
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"version\":") catch return fail();
     appendJsonString(&out, version) catch return fail();
@@ -8217,7 +8217,7 @@ pub export fn sa_node_plugin_wasi_status_json(out_ptr: ?*?[*]const u8, out_len: 
     const imports = if (imports_ptr) |ptr| ptr[0..@intCast(imports_len)] else "[]";
     const config = if (config_ptr) |ptr| ptr[0..@intCast(config_len)] else "{}";
 
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"wasi\",\"supported\":true,\"mode\":\"top-level-native-wasi-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &wasi_export_names) catch return fail();
@@ -8236,7 +8236,7 @@ pub export fn sa_node_plugin_wasi_status_json(out_ptr: ?*?[*]const u8, out_len: 
 }
 
 pub export fn sa_node_plugin_wasi_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &wasi_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -8270,11 +8270,11 @@ const VfsHandle = struct {
     allocator: std.mem.Allocator,
     entries: std.StringHashMap(VfsEntry),
     cwd: []u8,
-    watchers: std.ArrayList(*VfsWatcherHandle),
+    watchers: std.array_list.Managed(*VfsWatcherHandle),
 
     fn init(allocator: std.mem.Allocator) !*VfsHandle {
         const handle = try allocator.create(VfsHandle);
-        handle.* = .{ .allocator = allocator, .entries = std.StringHashMap(VfsEntry).init(allocator), .cwd = try allocator.dupe(u8, "/"), .watchers = std.ArrayList(*VfsWatcherHandle).init(allocator) };
+        handle.* = .{ .allocator = allocator, .entries = std.StringHashMap(VfsEntry).init(allocator), .cwd = try allocator.dupe(u8, "/"), .watchers = std.array_list.Managed(*VfsWatcherHandle).init(allocator) };
         const root_key = try allocator.dupe(u8, "/");
         try handle.entries.put(root_key, .{ .kind = .dir });
         return handle;
@@ -8313,7 +8313,7 @@ const VfsWatcherHandle = struct {
     path: []u8,
     recursive: bool,
     closed: bool = false,
-    events: std.ArrayList(VfsWatchEvent),
+    events: std.array_list.Managed(VfsWatchEvent),
 
     fn deinit(self: *VfsWatcherHandle, unlink: bool) void {
         if (unlink) {
@@ -8366,7 +8366,7 @@ const VfsDirEntryInfo = struct {
 const VfsDirHandle = struct {
     allocator: std.mem.Allocator,
     path: []u8,
-    entries: std.ArrayList(VfsDirEntryInfo),
+    entries: std.array_list.Managed(VfsDirEntryInfo),
     index: usize = 0,
     closed: bool = false,
 
@@ -8411,7 +8411,7 @@ fn vfsHandle(ptr: ?*anyopaque) ?*VfsHandle {
 }
 
 fn vfsNormalize(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
-    var parts = std.ArrayList([]const u8).init(allocator);
+    var parts = std.array_list.Managed([]const u8).init(allocator);
     defer parts.deinit();
     var it = std.mem.splitScalar(u8, path, '/');
     while (it.next()) |part| {
@@ -8423,7 +8423,7 @@ fn vfsNormalize(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
         try parts.append(part);
     }
     if (parts.items.len == 0) return allocator.dupe(u8, "/");
-    var out = std.ArrayList(u8).init(allocator);
+    var out = std.array_list.Managed(u8).init(allocator);
     errdefer out.deinit();
     for (parts.items) |part| {
         try out.append('/');
@@ -8562,7 +8562,7 @@ fn vfsRemovePath(handle: *VfsHandle, path: []const u8, recursive: bool) !void {
     if (std.mem.eql(u8, path, "/")) return error.Root;
     if (entry.kind == .dir and vfsHasChildren(handle, path) and !recursive) return error.DirNotEmpty;
 
-    var keys = std.ArrayList([]const u8).init(handle.allocator);
+    var keys = std.array_list.Managed([]const u8).init(handle.allocator);
     defer keys.deinit();
     var it = handle.entries.keyIterator();
     while (it.next()) |key_ptr| {
@@ -8750,7 +8750,7 @@ pub export fn sa_node_plugin_vfs_file_fstat_json(file_ptr: ?*anyopaque, out_ptr:
     const file = vfsFileHandle(file_ptr) orelse return fail();
     if (file.closed) return fail();
     const entry = file.vfs.entries.get(file.path) orelse return fail();
-    var out = std.ArrayList(u8).init(file.vfs.allocator);
+    var out = std.array_list.Managed(u8).init(file.vfs.allocator);
     defer out.deinit();
     vfsAppendStat(&out, file.path, entry) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -8783,7 +8783,7 @@ pub export fn sa_node_plugin_vfs_opendir(vfs_ptr: ?*anyopaque, path_ptr: ?[*]con
 
     const dir = handle.allocator.create(VfsDirHandle) catch return fail();
     errdefer handle.allocator.destroy(dir);
-    dir.* = .{ .allocator = handle.allocator, .path = handle.allocator.dupe(u8, lookup.path) catch return fail(), .entries = std.ArrayList(VfsDirEntryInfo).init(handle.allocator) };
+    dir.* = .{ .allocator = handle.allocator, .path = handle.allocator.dupe(u8, lookup.path) catch return fail(), .entries = std.array_list.Managed(VfsDirEntryInfo).init(handle.allocator) };
     errdefer handle.allocator.free(dir.path);
     errdefer dir.entries.deinit();
 
@@ -8831,7 +8831,7 @@ pub export fn sa_node_plugin_vfs_dir_close(dir_ptr: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_vfs_dir_snapshot_json(dir_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const dir = vfsDirHandle(dir_ptr) orelse return fail();
-    var out = std.ArrayList(u8).init(dir.allocator);
+    var out = std.array_list.Managed(u8).init(dir.allocator);
     defer out.deinit();
     out.writer().print("{{\"path\":", .{}) catch return fail();
     appendJsonString(&out, dir.path) catch return fail();
@@ -8885,14 +8885,14 @@ pub export fn sa_node_plugin_vfs_rename(vfs_ptr: ?*anyopaque, old_ptr: ?[*]const
     vfsEnsureParentDir(handle, new_path) catch return fail();
     if (root_entry.kind == .dir and std.mem.startsWith(u8, new_path, old_path) and new_path.len > old_path.len and new_path[old_path.len] == '/') return fail();
 
-    var old_keys = std.ArrayList([]const u8).init(handle.allocator);
+    var old_keys = std.array_list.Managed([]const u8).init(handle.allocator);
     defer old_keys.deinit();
-    var new_keys = std.ArrayList([]u8).init(handle.allocator);
+    var new_keys = std.array_list.Managed([]u8).init(handle.allocator);
     defer {
         for (new_keys.items) |key| handle.allocator.free(key);
         new_keys.deinit();
     }
-    var cloned = std.ArrayList(VfsEntry).init(handle.allocator);
+    var cloned = std.array_list.Managed(VfsEntry).init(handle.allocator);
     defer {
         for (cloned.items) |*entry| entry.deinit(handle.allocator);
         cloned.deinit();
@@ -9008,7 +9008,7 @@ pub export fn sa_node_plugin_vfs_cwd(vfs_ptr: ?*anyopaque, out_ptr: ?*?[*]const 
     return writeOwnedBytes(out_ptr, out_len, handle.cwd);
 }
 
-fn vfsAppendStat(out: *std.ArrayList(u8), path: []const u8, entry: VfsEntry) !void {
+fn vfsAppendStat(out: *std.array_list.Managed(u8), path: []const u8, entry: VfsEntry) !void {
     try out.appendSlice("{\"path\":");
     try appendJsonString(out, path);
     try out.appendSlice(",\"type\":");
@@ -9029,7 +9029,7 @@ pub export fn sa_node_plugin_vfs_stat_json(vfs_ptr: ?*anyopaque, path_ptr: ?[*]c
     const handle = vfsHandle(vfs_ptr) orelse return fail();
     const lookup = vfsLookup(handle, path_ptr.?[0..path_len], true, 0) catch return fail();
     defer handle.allocator.free(lookup.path);
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     vfsAppendStat(&out, lookup.path, lookup.entry) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -9039,7 +9039,7 @@ pub export fn sa_node_plugin_vfs_lstat_json(vfs_ptr: ?*anyopaque, path_ptr: ?[*]
     const handle = vfsHandle(vfs_ptr) orelse return fail();
     const lookup = vfsLookup(handle, path_ptr.?[0..path_len], false, 0) catch return fail();
     defer handle.allocator.free(lookup.path);
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     vfsAppendStat(&out, lookup.path, lookup.entry) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -9055,7 +9055,7 @@ pub export fn sa_node_plugin_vfs_readdir(vfs_ptr: ?*anyopaque, path_ptr: ?[*]con
     defer handle.allocator.free(path);
     const dir_entry = handle.entries.get(path) orelse return fail();
     if (dir_entry.kind != .dir) return fail();
-    var names = std.ArrayList([]const u8).init(handle.allocator);
+    var names = std.array_list.Managed([]const u8).init(handle.allocator);
     defer names.deinit();
     var it = handle.entries.iterator();
     while (it.next()) |entry| {
@@ -9069,7 +9069,7 @@ pub export fn sa_node_plugin_vfs_readdir(vfs_ptr: ?*anyopaque, path_ptr: ?[*]con
         names.append(rest) catch return fail();
     }
     std.mem.sort([]const u8, names.items, {}, vfsSortStrings);
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.append('[') catch return fail();
     for (names.items, 0..) |name, i| {
@@ -9088,7 +9088,7 @@ pub export fn sa_node_plugin_vfs_watch(vfs_ptr: ?*anyopaque, path_ptr: ?[*]const
     errdefer handle.allocator.destroy(watcher);
     const owned_path = handle.allocator.dupe(u8, lookup.path) catch return fail();
     errdefer handle.allocator.free(owned_path);
-    watcher.* = .{ .vfs = handle, .path = owned_path, .recursive = recursive != 0, .events = std.ArrayList(VfsWatchEvent).init(handle.allocator) };
+    watcher.* = .{ .vfs = handle, .path = owned_path, .recursive = recursive != 0, .events = std.array_list.Managed(VfsWatchEvent).init(handle.allocator) };
     handle.watchers.append(watcher) catch return fail();
     out_watcher.?.* = @ptrCast(watcher);
     return 0;
@@ -9113,7 +9113,7 @@ pub export fn sa_node_plugin_vfs_watcher_next(watcher_ptr: ?*anyopaque, out_even
 
 pub export fn sa_node_plugin_vfs_watcher_snapshot_json(watcher_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const watcher = vfsWatcherHandle(watcher_ptr) orelse return fail();
-    var out = std.ArrayList(u8).init(watcher.vfs.allocator);
+    var out = std.array_list.Managed(u8).init(watcher.vfs.allocator);
     defer out.deinit();
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, watcher.path) catch return fail();
@@ -9139,12 +9139,12 @@ pub export fn sa_node_plugin_vfs_watcher_close(watcher_ptr: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_vfs_snapshot_json(vfs_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const handle = vfsHandle(vfs_ptr) orelse return fail();
-    var keys = std.ArrayList([]const u8).init(handle.allocator);
+    var keys = std.array_list.Managed([]const u8).init(handle.allocator);
     defer keys.deinit();
     var it = handle.entries.keyIterator();
     while (it.next()) |key_ptr| keys.append(key_ptr.*) catch return fail();
     std.mem.sort([]const u8, keys.items, {}, vfsSortStrings);
-    var out = std.ArrayList(u8).init(handle.allocator);
+    var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"provider\":\"memory\",\"readonly\":false,\"supportsSymlinks\":true,\"supportsWatch\":true,\"watchers\":") catch return fail();
     out.writer().print("{d},\"cwd\":", .{handle.watchers.items.len}) catch return fail();
@@ -9574,7 +9574,7 @@ const SqliteTagStoreHandle = struct {
     db: ?*Sqlite3,
     capacity: usize,
     clock: u64 = 0,
-    entries: std.ArrayList(SqliteTagEntry),
+    entries: std.array_list.Managed(SqliteTagEntry),
 
     fn deinit(self: *SqliteTagStoreHandle, api: *SqliteApi) void {
         for (self.entries.items) |*entry| entry.deinit(api, self.allocator);
@@ -9586,7 +9586,7 @@ const SqliteTagStoreHandle = struct {
 pub export fn sa_node_plugin_sqlite_version_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const api = loadSqliteApi() orelse return fail();
     const version = std.mem.span(api.libversion());
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
     json.writer().print("{{\"sqlite\":", .{}) catch return fail();
     appendJsonString(&json, version) catch return fail();
@@ -9625,7 +9625,7 @@ pub export fn sa_node_plugin_sqlite_exec(db_ptr: ?*anyopaque, sql_ptr: ?[*]const
     return if (api.exec(handle.db, sql_z.ptr, null, null, null) == SQLITE_OK) 0 else fail();
 }
 
-fn sqliteAppendRow(api: *SqliteApi, stmt: ?*Sqlite3Stmt, out: *std.ArrayList(u8)) !void {
+fn sqliteAppendRow(api: *SqliteApi, stmt: ?*Sqlite3Stmt, out: *std.array_list.Managed(u8)) !void {
     try out.append('{');
     const cols = api.column_count(stmt);
     var i: c_int = 0;
@@ -9669,7 +9669,7 @@ pub export fn sa_node_plugin_sqlite_query_json(db_ptr: ?*anyopaque, sql_ptr: ?[*
     var stmt: ?*Sqlite3Stmt = null;
     if (api.prepare_v2(handle.db, sql_z.ptr, -1, &stmt, null) != SQLITE_OK) return fail();
     defer _ = api.finalize(stmt);
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.append('[') catch return fail();
     var first = true;
@@ -9710,7 +9710,7 @@ pub export fn sa_node_plugin_sqlite_step_json(stmt_ptr: ?*anyopaque, out_ready: 
     }
     if (rc != SQLITE_ROW) return fail();
     out_ready.?.* = 1;
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     sqliteAppendRow(api, handle.stmt, &out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -10047,7 +10047,7 @@ fn sqliteTagStoreQuery(store: *SqliteTagStoreHandle, sql: []const u8, params_jso
     const api = loadSqliteApi() orelse return fail();
     const stmt = sqliteTagStoreGetStmt(store, api, sql) catch return fail();
     sqliteBindJsonArray(api, stmt, params_json) catch return fail();
-    var out = std.ArrayList(u8).init(store.allocator);
+    var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
     if (!first_only) out.append('[') catch return fail();
     var first = true;
@@ -10077,7 +10077,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_new(db_ptr: ?*anyopaque, capacity: 
     const allocator = std.heap.page_allocator;
     const store = allocator.create(SqliteTagStoreHandle) catch return fail();
     const cap: usize = @intCast(if (capacity == 0) 1000 else @min(capacity, 100_000));
-    store.* = .{ .allocator = allocator, .db = db_handle.db, .capacity = cap, .entries = std.ArrayList(SqliteTagEntry).init(allocator) };
+    store.* = .{ .allocator = allocator, .db = db_handle.db, .capacity = cap, .entries = std.array_list.Managed(SqliteTagEntry).init(allocator) };
     out_store.?.* = @ptrCast(store);
     return 0;
 }
@@ -10102,7 +10102,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_run(store_ptr: ?*anyopaque, sql_ptr
     sqliteBindJsonArray(api, stmt, params) catch return fail();
     const rc = api.step(stmt);
     if (rc != SQLITE_DONE and rc != SQLITE_ROW) return fail();
-    var out = std.ArrayList(u8).init(store.allocator);
+    var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
     out.writer().print("{{\"changes\":{d},\"lastInsertRowid\":{d}}}", .{ api.changes(store.db), api.last_insert_rowid(store.db) }) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -10110,7 +10110,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_run(store_ptr: ?*anyopaque, sql_ptr
 
 pub export fn sa_node_plugin_sqlite_tagstore_snapshot_json(store_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const store = sqliteTagStoreHandle(store_ptr) orelse return fail();
-    var out = std.ArrayList(u8).init(store.allocator);
+    var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
     out.writer().print("{{\"capacity\":{d},\"size\":{d},\"sql\":[", .{ store.capacity, store.entries.items.len }) catch return fail();
     for (store.entries.items, 0..) |entry, i| {
@@ -10138,7 +10138,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_free(store_ptr: ?*anyopaque) u32 {
 }
 
 pub export fn sa_node_plugin_tty_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"tty\",\"supported\":true,\"mode\":\"top-level-native-tty-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &tty_export_names) catch return fail();
@@ -10154,7 +10154,7 @@ const tty_export_names = [_][]const u8{
     "WriteStream",
 };
 
-fn ttyAppendRuntimeJson(out: *std.ArrayList(u8)) !void {
+fn ttyAppendRuntimeJson(out: *std.array_list.Managed(u8)) !void {
     var stdin_is_tty: u64 = 0;
     if (sa_node_plugin_tty_isatty(0, &stdin_is_tty) != 0) return error.Unexpected;
     var stdout_is_tty: u64 = 0;
@@ -10192,14 +10192,14 @@ fn ttyAppendRuntimeJson(out: *std.ArrayList(u8)) !void {
 }
 
 pub export fn sa_node_plugin_tty_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &tty_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
 pub export fn sa_node_plugin_tty_stdio_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     ttyAppendRuntimeJson(&out) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -10221,7 +10221,7 @@ const diagnostics_channel_export_names = [_][]const u8{
 };
 
 pub export fn sa_node_plugin_diagnostics_channel_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"diagnostics_channel\",\"supported\":true,\"mode\":\"top-level-native-channel-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &diagnostics_channel_export_names) catch return fail();
@@ -10230,7 +10230,7 @@ pub export fn sa_node_plugin_diagnostics_channel_status_json(out_ptr: ?*?[*]cons
 }
 
 pub export fn sa_node_plugin_diagnostics_channel_exports_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendStringArray(&out, &diagnostics_channel_export_names) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);

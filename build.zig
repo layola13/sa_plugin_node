@@ -1,11 +1,17 @@
 const std = @import("std");
 
+/// NOTE(Zig 0.17): `Build.pathFromRoot` was removed. Equivalent helper.
+fn pathFromRoot(b: *std.Build, sub_path: []const u8) []u8 {
+    const root_path = b.root.root_dir.path orelse ".";
+    return std.fs.path.resolve(b.allocator, &.{ root_path, sub_path }) catch @panic("OOM");
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../sci";
     const build_options = b.addOptions();
-    build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
+    build_options.addOption([]const u8, "plugin_root", pathFromRoot(b, "."));
 
     const plugin_api = b.createModule(.{
         .root_source_file = b.path("src/plugin_api.zig"),
@@ -64,8 +70,8 @@ pub fn build(b: *std.Build) void {
         .root_module = root_module,
         .linkage = .dynamic,
     });
-    lib.linkSystemLibrary("resolv");
-    lib.linkSystemLibrary("dl");
+    root_module.linkSystemLibrary("resolv", .{});
+    root_module.linkSystemLibrary("dl", .{});
 
     b.installArtifact(lib);
 
@@ -82,17 +88,13 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("plugin_api", plugin_api);
 
     const run_main_tests = b.addRunArtifact(main_tests);
-    main_tests.linkSystemLibrary("dl");
+    main_tests.root_module.linkSystemLibrary("dl", .{});
 
     const plugin_tests = b.addTest(.{
         .root_module = test_module,
     });
-    plugin_tests.linkSystemLibrary("dl");
+    plugin_tests.root_module.linkSystemLibrary("dl", .{});
     const run_plugin_tests = b.addRunArtifact(plugin_tests);
-    if (b.args) |args| {
-        run_main_tests.addArgs(args);
-        run_plugin_tests.addArgs(args);
-    }
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_main_tests.step);

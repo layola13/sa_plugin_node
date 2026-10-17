@@ -903,7 +903,7 @@ test "node plugin buffer base64 and byte checks" {
 }
 
 test "node plugin web crypto sync helpers" {
-    var random_buf: [32]u8 = .{0} ** 32;
+    var random_buf: [32]u8 = .{0}**32;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_web_crypto_get_random_values(&random_buf, random_buf.len));
     try std.testing.expect(!std.mem.allEqual(u8, random_buf[0..], 0));
 
@@ -962,7 +962,7 @@ test "node plugin web crypto key encrypt sign helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_web_crypto_verify(hmac_key, "tamper".ptr, 6, mac_ptr, mac_len, &mac_ok));
     try std.testing.expectEqual(@as(u32, 0), mac_ok);
 
-    var seed: [32]u8 = [_]u8{0x42} ** 32;
+    var seed: [32]u8 = [_]u8{0x42}**32;
     var ed_private: ?*anyopaque = null;
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_web_crypto_import_key_raw("Ed25519".ptr, 7, "sign".ptr, 4, &seed, seed.len, &ed_private));
     defer _ = plugin.sa_node_plugin_web_crypto_key_free(ed_private);
@@ -991,7 +991,7 @@ test "node plugin web crypto key encrypt sign helpers" {
     try std.testing.expectEqual(@as(u32, 0), plugin.sa_node_plugin_web_crypto_generate_key("AES-GCM".ptr, 7, "encrypt".ptr, 7, 256, &aes_key));
     defer _ = plugin.sa_node_plugin_web_crypto_key_free(aes_key);
 
-    const iv = [_]u8{0x11} ** 12;
+    const iv = [_]u8{0x11}**12;
     const aad = "aad";
     var encrypted_ptr: ?[*]const u8 = null;
     var encrypted_len: u64 = 0;

@@ -1,4 +1,5 @@
 const std = @import("std");
+const sio = @import("sio");
 const http_client = @import("http_client");
 const http_server = @import("http_server");
 
@@ -62,7 +63,7 @@ fn httpOneShotJson(method: []const u8, url: []const u8, body: ?[]const u8, out_p
 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print("{{\"statusCode\":{d},\"body\":", .{sa_node_plugin_http_client_resp_status(resp)}) catch return 2;
+    sio.managedWriter(&out).print("{{\"statusCode\":{d},\"body\":", .{sa_node_plugin_http_client_resp_status(resp)}) catch return 2;
     appendJsonString(&out, (body_ptr orelse return 2)[0..body_len]) catch return 2;
     out.appendSlice(",\"contentType\":") catch return 2;
     if (has_content_type) {

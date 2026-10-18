@@ -1,6 +1,45 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const base = @import("node_saasm_api.zig");
+const sio = @import("sio");
+
+fn envGet(name: []const u8) ?[]const u8 {
+    const name_z = std.heap.page_allocator.dupeSentinel(u8, name, 0) catch return null;
+    defer std.heap.page_allocator.free(name_z);
+    const value = getenv(name_z.ptr) orelse return null;
+    return std.mem.span(value);
+}
+
+fn sioSleep(ns: u64) void {
+    sio.io().sleep(.fromNanoseconds(ns), .awake) catch {};
+}
+
+fn spinLock(m: *std.atomic.Mutex) void {
+    while (!m.tryLock()) std.Thread.yield() catch {};
+}
+
+fn stringifyIntoList(list: *std.array_list.Managed(u8), value: anytype) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyIntoListOpts(list: *std.array_list.Managed(u8), value: anytype, opts: std.json.Stringify.Options) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, opts, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyToOwned(allocator: std.mem.Allocator, value: anytype) ![]u8 {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    return try allocator.dupe(u8, aw.written());
+}
+
+extern fn getenv(name: [*:0]const u8) ?[*:0]u8;
 const posix = std.posix;
 
 const Idn2ToAscii8zFn = *const fn (input: [*:0]const u8, output: ?*?[*:0]u8, flags: c_int) callconv(.c) c_int;
@@ -99,11 +138,11 @@ const Statvfs = extern struct {
 };
 
 var idn2_api: ?Idn2Api = null;
-var idn2_api_mutex = std.Thread.Mutex{};
+var idn2_api_mutex = std.atomic.Mutex.unlocked;
 var brotli_api: ?BrotliApi = null;
-var brotli_api_mutex = std.Thread.Mutex{};
+var brotli_api_mutex = std.atomic.Mutex.unlocked;
 var zstd_api: ?ZstdApi = null;
-var zstd_api_mutex = std.Thread.Mutex{};
+var zstd_api_mutex = std.atomic.Mutex.unlocked;
 
 const ZSTD_CONTENTSIZE_UNKNOWN = std.math.maxInt(u64) - 1;
 const ZSTD_CONTENTSIZE_ERROR = std.math.maxInt(u64);
@@ -168,7 +207,7 @@ const TlsSecureContextHandle = struct {
 
 var tls_default_ca_pem: ?[]u8 = null;
 var tls_default_ca_count: u64 = 0;
-var tls_default_ca_mutex = std.Thread.Mutex{};
+var tls_default_ca_mutex = std.atomic.Mutex.unlocked;
 
 fn tlsProtocolName(version: std.crypto.tls.ProtocolVersion) []const u8 {
     return switch (version) {
@@ -337,14 +376,14 @@ fn tlsBundleToPemArrayJson(allocator: std.mem.Allocator, bundle: *const std.cryp
 }
 
 fn tlsWriteExtraCaCertificatesJson(allocator: std.mem.Allocator, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const path = std.process.getEnvVarOwned(allocator, "NODE_EXTRA_CA_CERTS") catch |err| switch (err) {
+    const path = sio.getEnvVarOwned(allocator, "NODE_EXTRA_CA_CERTS") catch |err| switch (err) {
         error.EnvironmentVariableNotFound => return writeOwned(out_ptr, out_len, "[]"),
         else => return fail(),
     };
     defer allocator.free(path);
     var bundle: std.crypto.Certificate.Bundle = .{};
     defer bundle.deinit(allocator);
-    bundle.addCertsFromFilePath(allocator, std.fs.cwd(), path) catch return fail();
+    bundle.addCertsFromFilePath(allocator, sio.cwd(), path) catch return fail();
     return tlsBundleToPemArrayJson(allocator, &bundle, out_ptr, out_len);
 }
 
@@ -403,7 +442,7 @@ fn tlsWriteSocketAddressJson(handle: *TlsClientHandle, peer: bool, out_ptr: ?*?[
     defer out.deinit();
     out.appendSlice("{\"address\":") catch return fail();
     appendJsonString(&out, host) catch return fail();
-    out.writer().print(",\"port\":{d},\"family\":\"{s}\"}}", .{
+    sio.managedWriter(&out).print(",\"port\":{d},\"family\":\"{s}\"}}", .{
         addr.getPort(),
         switch (addr.any.family) {
             std.posix.AF.INET => "IPv4",
@@ -765,7 +804,7 @@ fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
             '\n' => try out.appendSlice("\\n"),
             '\r' => try out.appendSlice("\\r"),
             '\t' => try out.appendSlice("\\t"),
-            else => if (b < 0x20) try out.writer().print("\\u{x:0>4}", .{b}) else try out.append(b),
+            else => if (b < 0x20) try sio.managedWriter(&out).print("\\u{x:0>4}", .{b}) else try out.append(b),
         }
     }
 }
@@ -1189,7 +1228,7 @@ pub export fn sa_node_plugin_crypto_get_hashes(out_ptr: ?*?[*]const u8, out_len:
 
 // Web Crypto subset: sync helpers backed by std.crypto primitives.
 pub export fn sa_node_plugin_web_crypto_get_random_values(buf_ptr: ?[*]u8, buf_len: u64) u32 {
-    std.crypto.random.bytes(buf_ptr.?[0..buf_len]);
+    sio.io().random(buf_ptr.?[0..buf_len]);
     return 0;
 }
 
@@ -1487,7 +1526,7 @@ pub export fn sa_node_plugin_fs_chmod(path_ptr: ?[*]const u8, path_len: u64, mod
 
 pub export fn sa_node_plugin_fs_chown(path_ptr: ?[*]const u8, path_len: u64, uid: u64, gid: u64) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     if (chown(path_z.ptr, u32FromU64(uid) orelse return fail(), u32FromU64(gid) orelse return fail()) != 0) return fail();
     return 0;
@@ -1696,7 +1735,7 @@ const DirIterHandle = struct {
 pub export fn sa_node_plugin_fs_opendir(path_ptr: ?[*]const u8, path_len: u64, out_handle: ?*?*anyopaque) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     var dir = if (std.fs.path.isAbsolute(path))
-        std.fs.openDirAbsolute(path, .{ .iterate = true }) catch return fail()
+        sio.openDirAbsolute(path, .{ .iterate = true }) catch return fail()
     else
         fs.cwd().openDir(path, .{ .iterate = true }) catch return fail();
     const handle = std.heap.page_allocator.create(DirIterHandle) catch {
@@ -1856,7 +1895,7 @@ pub export fn sa_node_plugin_fs_cp(src_ptr: ?[*]const u8, src_len: u64, dst_ptr:
 
 pub export fn sa_node_plugin_fs_statfs(path_ptr: ?[*]const u8, out_json_ptr: ?*?[*]const u8, out_json_len: ?*u64) u32 {
     const path = cStringSliceBounded(path_ptr.?);
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     var st: Statvfs = undefined;
     if (statvfs(path_z.ptr, &st) != 0) return fail();
@@ -1892,7 +1931,7 @@ pub export fn sa_node_plugin_fs_truncate(path_ptr: ?[*]const u8, path_len: u64, 
 
 pub export fn sa_node_plugin_fs_utimes(path_ptr: ?[*]const u8, path_len: u64, atime_ms: u64, mtime_ms: u64) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     var times = [2]std.c.timespec{ msToTimespec(atime_ms), msToTimespec(mtime_ms) };
     if (std.c.utimensat(posix.AT.FDCWD, path_z.ptr, &times, 0) != 0) return fail();
@@ -2106,7 +2145,7 @@ pub export fn sa_node_plugin_events_emit_with_error(ee_ptr: ?*anyopaque, event_p
 var console_count_map = std.StringHashMap(u64).init(std.heap.page_allocator);
 
 fn consoleWrite(prefix: []const u8, data_ptr: ?[*]const u8, data_len: u64) void {
-    const out = std.io.getStdOut().writer();
+    const out = sio.getStdOut().writer();
     const data = if (data_len == 0)
         ""
     else
@@ -2160,7 +2199,7 @@ pub export fn sa_node_plugin_console_count_reset(label_ptr: ?[*]const u8, label_
 
 pub export fn sa_node_plugin_console_assert(condition: u32, data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (condition == 0) {
-        const err = std.io.getStdErr().writer();
+        const err = sio.getStdErr().writer();
         err.print("Assertion failed: {s}\n", .{data_ptr.?[0..data_len]}) catch {};
     }
     return 0;
@@ -2208,7 +2247,7 @@ const DnsTypeCaa = 257;
 const DnsTypeSoa = 6;
 const DnsTypeAny = 255;
 
-var dns_config_mutex = std.Thread.Mutex{};
+var dns_config_mutex = std.atomic.Mutex.unlocked;
 var dns_custom_servers: ?[]u8 = null;
 var dns_default_result_order: []const u8 = "verbatim";
 
@@ -2377,7 +2416,7 @@ fn appendDnsLookupAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Ad
     defer std.heap.page_allocator.free(host);
     try out.appendSlice("{\"address\":");
     try appendJsonString(out, host);
-    try out.writer().print(",\"family\":{d}}}", .{dnsAddressFamilyValue(addr)});
+    try sio.managedWriter(&out).print(",\"family\":{d}}}", .{dnsAddressFamilyValue(addr)});
 }
 
 pub export fn sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ?[*]const u8, hostname_len: u64, family: u32, all: u32, hints: u32, order_ptr: ?[*]const u8, order_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -2386,7 +2425,7 @@ pub export fn sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ?[*]const u8
     const order = parseDnsLookupOrder(order_ptr, order_len) catch return fail();
     const hostname = (hostname_ptr orelse return fail())[0..hostname_len];
     if (hostname.len == 0) return fail();
-    const host_z = std.heap.page_allocator.dupeZ(u8, hostname) catch return fail();
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, hostname, 0) catch return fail();
     defer std.heap.page_allocator.free(host_z);
 
     var list = std.net.getAddressList(std.heap.page_allocator, host_z, 0) catch return fail();
@@ -2452,7 +2491,7 @@ pub export fn sa_node_plugin_dns_lookup_options(hostname_ptr: ?[*]const u8, host
 }
 
 fn writeSystemDnsServers(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const resolv = std.fs.openFileAbsolute("/etc/resolv.conf", .{}) catch return writeOwned(out_ptr, out_len, "[]");
+    const resolv = sio.openFileAbsolute("/etc/resolv.conf", .{}) catch return writeOwned(out_ptr, out_len, "[]");
     defer resolv.close();
     const data = resolv.readToEndAlloc(std.heap.page_allocator, 64 * 1024) catch return fail();
     defer std.heap.page_allocator.free(data);
@@ -2483,7 +2522,7 @@ fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address, fa
     switch (addr.any.family) {
         std.posix.AF.INET => {
             const bytes = std.mem.asBytes(&addr.in.sa.addr);
-            try out.writer().print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
+            try sio.managedWriter(&out).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
         },
         std.posix.AF.INET6 => {
             var buf: [64]u8 = undefined;
@@ -2568,7 +2607,7 @@ fn readDnsNameAlloc(allocator: std.mem.Allocator, packet: []const u8, start: usi
 }
 
 fn dnsQuery(hostname: []const u8, rrtype: u16, packet: []u8) ![]u8 {
-    const host_z = try std.heap.page_allocator.dupeZ(u8, hostname);
+    const host_z = try std.heap.page_allocator.dupeSentinel(u8, hostname, 0);
     defer std.heap.page_allocator.free(host_z);
     const n = res_query(host_z.ptr, DnsClassIn, rrtype, packet.ptr, @intCast(packet.len));
     if (n < 0) return error.QueryFailed;
@@ -2615,16 +2654,16 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: std.net.Address, ti
     defer query.deinit();
 
     var random_id: u16 = undefined;
-    std.crypto.random.bytes(std.mem.asBytes(&random_id));
-    try query.writer().writeInt(u16, random_id, .big);
-    try query.writer().writeInt(u16, 0x0100, .big);
-    try query.writer().writeInt(u16, 1, .big);
-    try query.writer().writeInt(u16, 0, .big);
-    try query.writer().writeInt(u16, 0, .big);
-    try query.writer().writeInt(u16, 0, .big);
+    sio.io().random(std.mem.asBytes(&random_id));
+    try sio.managedWriter(&query).writeInt(u16, random_id, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0x0100, .big);
+    try sio.managedWriter(&query).writeInt(u16, 1, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
     try encodeDnsName(&query, hostname);
-    try query.writer().writeInt(u16, rrtype, .big);
-    try query.writer().writeInt(u16, DnsClassIn, .big);
+    try sio.managedWriter(&query).writeInt(u16, rrtype, .big);
+    try sio.managedWriter(&query).writeInt(u16, DnsClassIn, .big);
 
     const family: u32 = if (server.any.family == std.posix.AF.INET6) std.posix.AF.INET6 else std.posix.AF.INET;
     const fd = try std.posix.socket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
@@ -2684,7 +2723,7 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
             DnsTypeA => {
                 if (rdlen != 4) return error.Truncated;
                 const bytes = packet[offset .. offset + 4];
-                try out.writer().print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
+                try sio.managedWriter(&out).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
             },
             DnsTypeAaaa => {
                 if (rdlen != 16) return error.Truncated;
@@ -2706,9 +2745,9 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 const priority = std.mem.readInt(u16, packet[offset .. offset + 2][0..2], .big);
                 const rec = try readDnsNameAlloc(std.heap.page_allocator, packet, offset + 2);
                 defer std.heap.page_allocator.free(rec.name);
-                try out.writer().print("{{\"exchange\":", .{});
+                try sio.managedWriter(&out).print("{{\"exchange\":", .{});
                 try appendJsonString(out, rec.name);
-                try out.writer().print(",\"priority\":{d}}}", .{priority});
+                try sio.managedWriter(&out).print(",\"priority\":{d}}}", .{priority});
             },
             DnsTypeSrv => {
                 if (rdlen < 7) return error.Truncated;
@@ -2717,9 +2756,9 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 const port = std.mem.readInt(u16, packet[offset + 4 .. offset + 6][0..2], .big);
                 const rec = try readDnsNameAlloc(std.heap.page_allocator, packet, offset + 6);
                 defer std.heap.page_allocator.free(rec.name);
-                try out.writer().print("{{\"name\":", .{});
+                try sio.managedWriter(&out).print("{{\"name\":", .{});
                 try appendJsonString(out, rec.name);
-                try out.writer().print(",\"priority\":{d},\"weight\":{d},\"port\":{d}}}", .{ priority, weight, port });
+                try sio.managedWriter(&out).print(",\"priority\":{d},\"weight\":{d},\"port\":{d}}}", .{ priority, weight, port });
             },
             DnsTypeTlsa => {
                 if (rdlen < 3) return error.Truncated;
@@ -2732,7 +2771,7 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 const enc = std.heap.page_allocator.alloc(u8, enc_len) catch return error.Truncated;
                 defer std.heap.page_allocator.free(enc);
                 _ = std.base64.standard.Encoder.encode(enc, data);
-                try out.writer().print("{{\"certUsage\":{d},\"selector\":{d},\"match\":{d},\"data\":", .{ cert_usage, selector, match });
+                try sio.managedWriter(&out).print("{{\"certUsage\":{d},\"selector\":{d},\"match\":{d},\"data\":", .{ cert_usage, selector, match });
                 try appendJsonString(out, enc);
                 try out.append('}');
             },
@@ -2757,15 +2796,15 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 if (replacement_off > offset + rdlen) return error.Truncated;
                 const rec = try readDnsNameAlloc(std.heap.page_allocator, packet, replacement_off);
                 defer std.heap.page_allocator.free(rec.name);
-                try out.writer().print("{{\"flags\":", .{});
+                try sio.managedWriter(&out).print("{{\"flags\":", .{});
                 try appendJsonString(out, packet[flags_off .. flags_off + flags_len]);
-                try out.writer().print(",\"service\":", .{});
+                try sio.managedWriter(&out).print(",\"service\":", .{});
                 try appendJsonString(out, packet[service_off .. service_off + service_len]);
-                try out.writer().print(",\"regexp\":", .{});
+                try sio.managedWriter(&out).print(",\"regexp\":", .{});
                 try appendJsonString(out, packet[regexp_off .. regexp_off + regexp_len]);
-                try out.writer().print(",\"replacement\":", .{});
+                try sio.managedWriter(&out).print(",\"replacement\":", .{});
                 try appendJsonString(out, rec.name);
-                try out.writer().print(",\"order\":{d},\"preference\":{d}}}", .{ order, preference });
+                try sio.managedWriter(&out).print(",\"order\":{d},\"preference\":{d}}}", .{ order, preference });
             },
             DnsTypeCaa => {
                 if (rdlen < 2) return error.Truncated;
@@ -2774,7 +2813,7 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 if (@as(usize, 2) + tag_len > rdlen) return error.Truncated;
                 const tag = packet[offset + 2 .. offset + 2 + tag_len];
                 const value = packet[offset + 2 + tag_len .. offset + rdlen];
-                try out.writer().print("{{\"critical\":{d},\"type\":", .{critical});
+                try sio.managedWriter(&out).print("{{\"critical\":{d},\"type\":", .{critical});
                 try appendJsonString(out, "CAA");
                 try out.append(',');
                 try appendJsonString(out, tag);
@@ -2794,11 +2833,11 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 const retry = std.mem.readInt(u32, packet[soa_base + 8 .. soa_base + 12][0..4], .big);
                 const expire = std.mem.readInt(u32, packet[soa_base + 12 .. soa_base + 16][0..4], .big);
                 const minimum = std.mem.readInt(u32, packet[soa_base + 16 .. soa_base + 20][0..4], .big);
-                try out.writer().print("{{\"nsname\":", .{});
+                try sio.managedWriter(&out).print("{{\"nsname\":", .{});
                 try appendJsonString(out, mname.name);
-                try out.writer().print(",\"hostmaster\":", .{});
+                try sio.managedWriter(&out).print(",\"hostmaster\":", .{});
                 try appendJsonString(out, rname.name);
-                try out.writer().print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum });
+                try sio.managedWriter(&out).print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum });
             },
             DnsTypeTxt => {
                 try out.append('[');
@@ -2892,11 +2931,11 @@ fn writeSoaRecord(hostname: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64)
 
         if (!first) out.appendSlice(",") catch return fail();
         first = false;
-        out.writer().print("{{\"nsname\":", .{}) catch return fail();
+        sio.managedWriter(&out).print("{{\"nsname\":", .{}) catch return fail();
         appendJsonString(&out, mname.name) catch return fail();
-        out.writer().print(",\"hostmaster\":", .{}) catch return fail();
+        sio.managedWriter(&out).print(",\"hostmaster\":", .{}) catch return fail();
         appendJsonString(&out, rname.name) catch return fail();
-        out.writer().print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum }) catch return fail();
+        sio.managedWriter(&out).print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum }) catch return fail();
     }
 
     out.appendSlice("]") catch return fail();
@@ -2906,7 +2945,7 @@ fn writeSoaRecord(hostname: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64)
 pub fn dnsReverseName(ip: []const u8, out: *std.array_list.Managed(u8)) !void {
     if (std.net.Address.parseIp4(ip, 0)) |addr| {
         const bytes = std.mem.asBytes(&addr.in.sa.addr);
-        try out.writer().print("{d}.{d}.{d}.{d}.in-addr.arpa", .{ bytes[3], bytes[2], bytes[1], bytes[0] });
+        try sio.managedWriter(&out).print("{d}.{d}.{d}.{d}.in-addr.arpa", .{ bytes[3], bytes[2], bytes[1], bytes[0] });
         return;
     } else |_| {}
     if (std.net.Address.parseIp6(ip, 0)) |addr| {
@@ -2915,8 +2954,8 @@ pub fn dnsReverseName(ip: []const u8, out: *std.array_list.Managed(u8)) !void {
         while (i > 0) {
             i -= 1;
             const byte = bytes[i];
-            try out.writer().print("{x}.", .{byte & 0x0f});
-            try out.writer().print("{x}.", .{byte >> 4});
+            try sio.managedWriter(&out).print("{x}.", .{byte & 0x0f});
+            try sio.managedWriter(&out).print("{x}.", .{byte >> 4});
         }
         try out.appendSlice("ip6.arpa");
         return;
@@ -3131,7 +3170,7 @@ pub export fn sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ?*anyopaqu
     const resolver: *DnsResolverHandle = @ptrCast(@alignCast(resolver_ptr orelse return fail()));
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    json.writer().print("{{\"timeoutMs\":{d},\"tries\":{d},\"servers\":", .{ resolver.timeout_ms, resolver.tries }) catch return fail();
+    sio.managedWriter(&json).print("{{\"timeoutMs\":{d},\"tries\":{d},\"servers\":", .{ resolver.timeout_ms, resolver.tries }) catch return fail();
     if (resolver.servers_json) |servers| {
         json.appendSlice(servers) catch return fail();
     } else {
@@ -3151,7 +3190,7 @@ pub export fn sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ?*anyopaqu
     } else {
         json.appendSlice("null") catch return fail();
     }
-    json.writer().print("}},\"cancelCount\":{d}", .{resolver.cancel_count}) catch return fail();
+    sio.managedWriter(&json).print("}},\"cancelCount\":{d}", .{resolver.cancel_count}) catch return fail();
     json.append('}') catch return fail();
     return writeOwned(out_ptr, out_len, json.items);
 }
@@ -3325,7 +3364,7 @@ fn buildCommandArgv(command_ptr: ?[*]const u8, command_len: u64, args_ptr: ?[*]c
 }
 
 fn runChildCapture(argv: []const []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const result = std.process.Child.run(.{
+    const result = sio.Child.run(.{
         .allocator = std.heap.page_allocator,
         .argv = argv,
         .max_output_bytes = 1024 * 1024,
@@ -3352,7 +3391,7 @@ pub export fn sa_node_plugin_child_process_exec(
     _ = options_json_ptr;
     _ = options_json_len;
     var argv = [_][]const u8{ "sh", "-c", command };
-    var child = std.process.Child.init(&argv, std.heap.page_allocator);
+    var child = sio.Child.init(&argv, std.heap.page_allocator);
     child.stderr_behavior = .Pipe;
     child.stdout_behavior = .Pipe;
     child.spawn() catch return fail();
@@ -3400,7 +3439,7 @@ pub export fn sa_node_plugin_child_process_fork(
     argv.append("node") catch return fail();
     argv.append(module_ptr.?[0..module_len]) catch return fail();
     if (args_len > 0) parseSaArgvVector(args_ptr, args_len, &argv) catch argv.append(args_ptr.?[0..args_len]) catch return fail();
-    var child = std.process.Child.init(argv.items, std.heap.page_allocator);
+    var child = sio.Child.init(argv.items, std.heap.page_allocator);
     child.stdin_behavior = .Ignore;
     child.stdout_behavior = .Ignore;
     child.stderr_behavior = .Ignore;
@@ -3418,7 +3457,7 @@ pub export fn sa_node_plugin_child_process_spawn(
 ) u32 {
     var argv = buildCommandArgv(command_ptr, command_len, args_ptr, args_len, std.heap.page_allocator) catch return fail();
     defer argv.deinit();
-    var child = std.process.Child.init(argv.items, std.heap.page_allocator);
+    var child = sio.Child.init(argv.items, std.heap.page_allocator);
     child.spawn() catch return fail();
     out_pid.?.* = @intCast(child.id);
     return 0;
@@ -3479,12 +3518,12 @@ fn streamHandle(handle_ptr: ?*anyopaque) ?*StreamHandle {
 fn writeStreamState(out_ptr: ?*?[*]const u8, out_len: ?*u64, h: *const StreamHandle) u32 {
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print(
+    sio.managedWriter(&out).print(
         "{{\"id\":{d},\"kind\":",
         .{h.id},
     ) catch return fail();
     appendJsonString(&out, h.kind) catch return fail();
-    out.writer().print(
+    sio.managedWriter(&out).print(
         ",\"destroyed\":{},\"ended\":{},\"errored\":{},\"errorCount\":{d},\"bufferedLength\":{d},\"pipedTo\":{d},\"pipedFrom\":{d},\"composedCount\":{d}}}",
         .{ h.destroyed, h.ended, h.error_count != 0, h.error_count, h.data.items.len, h.piped_to, h.piped_from, h.composed_count },
     ) catch return fail();
@@ -3522,14 +3561,14 @@ pub export fn sa_node_plugin_stream_pipeline(steps_ptr: ?*const anyopaque, steps
 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print("{{\"status\":\"ok\",\"count\":{d},\"firstId\":{d},\"lastId\":{d}}}", .{ count, first.id, last_id }) catch return fail();
+    sio.managedWriter(&out).print("{{\"status\":\"ok\",\"count\":{d},\"firstId\":{d},\"lastId\":{d}}}", .{ count, first.id, last_id }) catch return fail();
     return writeOwned(out_ptr, out_len, out.items);
 }
 pub export fn sa_node_plugin_stream_finished(handle_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const h = streamHandle(handle_ptr) orelse return writeOwned(out_ptr, out_len, "{\"finished\":false,\"destroyed\":false,\"errored\":true,\"error\":\"ERR_INVALID_STREAM\"}");
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print(
+    sio.managedWriter(&out).print(
         "{{\"finished\":{},\"destroyed\":{},\"ended\":{},\"errored\":{},\"bufferedLength\":{d}}}",
         .{ h.ended or h.destroyed, h.destroyed, h.ended, h.error_count != 0, h.data.items.len },
     ) catch return fail();
@@ -3810,7 +3849,7 @@ pub export fn sa_node_plugin_tls_default_constants_json(out_ptr: ?*?[*]const u8,
     out.appendSlice("{\"CLIENT_RENEG_LIMIT\":3,\"CLIENT_RENEG_WINDOW\":600,\"DEFAULT_ECDH_CURVE\":\"auto\",\"DEFAULT_MIN_VERSION\":\"TLSv1.2\",\"DEFAULT_MAX_VERSION\":\"TLSv1.3\",\"DEFAULT_CIPHERS\":") catch return fail();
     appendJsonString(&out, TLS_DEFAULT_CIPHERS) catch return fail();
     out.appendSlice(",\"nativeCipherCount\":") catch return fail();
-    out.writer().print("{d}", .{tls_supported_ciphers.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{tls_supported_ciphers.len}) catch return fail();
     out.append('}') catch return fail();
     const owned = out.toOwnedSlice() catch return fail();
     out_ptr.?.* = owned.ptr;
@@ -3940,7 +3979,7 @@ pub export fn sa_node_plugin_tls_secure_context_snapshot_json(context_ptr: ?*any
     const ctx: *TlsSecureContextHandle = @ptrCast(@alignCast(context_ptr orelse return fail()));
     var out = std.array_list.Managed(u8).init(ctx.allocator);
     defer out.deinit();
-    out.writer().print("{{\"caCount\":{d},\"hasCA\":{},\"hasCert\":{},\"hasKey\":{},\"hasCiphers\":{}", .{ ctx.ca_count, ctx.ca_pem != null, ctx.cert_pem != null, ctx.key_pem != null, ctx.ciphers != null }) catch return fail();
+    sio.managedWriter(&out).print("{{\"caCount\":{d},\"hasCA\":{},\"hasCert\":{},\"hasKey\":{},\"hasCiphers\":{}", .{ ctx.ca_count, ctx.ca_pem != null, ctx.cert_pem != null, ctx.key_pem != null, ctx.ciphers != null }) catch return fail();
     out.appendSlice(",\"minVersion\":") catch return fail();
     if (ctx.min_version) |v| appendJsonString(&out, v) catch return fail() else out.appendSlice("null") catch return fail();
     out.appendSlice(",\"maxVersion\":") catch return fail();
@@ -4233,7 +4272,7 @@ pub export fn sa_node_plugin_tls_close(socket_ptr: ?*anyopaque) u32 {
 
 const TimerHandle = struct { id: u64, ms: u64, is_interval: bool, callback: ?*anyopaque, created_ns: i128, refed: bool = true, cleared: bool = false };
 var timer_next_id: u64 = 1;
-var timer_mutex = std.Thread.Mutex{};
+var timer_mutex = std.atomic.Mutex.unlocked;
 var timer_registry = std.AutoHashMap(u64, *TimerHandle).init(std.heap.page_allocator);
 
 fn timerCreate(ms: u64, is_interval: bool, out_id: ?*u64) u32 {
@@ -4241,7 +4280,7 @@ fn timerCreate(ms: u64, is_interval: bool, out_id: ?*u64) u32 {
     const h = std.heap.page_allocator.create(TimerHandle) catch return fail();
     timer_mutex.lock();
     defer timer_mutex.unlock();
-    h.* = .{ .id = timer_next_id, .ms = ms, .is_interval = is_interval, .callback = null, .created_ns = std.time.nanoTimestamp() };
+    h.* = .{ .id = timer_next_id, .ms = ms, .is_interval = is_interval, .callback = null, .created_ns = sio.nanoTimestamp() };
     timer_registry.put(h.id, h) catch {
         std.heap.page_allocator.destroy(h);
         return fail();
@@ -4479,32 +4518,27 @@ pub export fn sa_node_plugin_buffer_resolve_object_url(url_ptr: ?[*]const u8, ur
 
 pub export fn sa_node_plugin_zlib_deflate_raw(data_ptr: ?[*]const u8, data_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const input = data_ptr.?[0..data_len];
-    const in_stream = std.io.fixedBufferStream(input);
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-    var compressor = std.compress.flate.compressor(out_list.writer(), .{}) catch return fail();
-    compressor.writer().writeAll(input) catch return fail();
+    var aw: std.Io.Writer.Allocating = std.Io.Writer.Allocating.initCapacity(std.heap.page_allocator, 64) catch return fail();
+    defer aw.deinit();
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var compressor = std.compress.flate.Compress.init(&aw.writer, &window, .raw, .default) catch return fail();
+    (&compressor.writer).writeAll(input) catch return fail();
     compressor.finish() catch return fail();
-    const slice = out_list.toOwnedSlice() catch return fail();
+    const slice = aw.toOwnedSlice() catch return fail();
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
-    _ = in_stream;
     return 0;
 }
 
 pub export fn sa_node_plugin_zlib_inflate_raw(data_ptr: ?[*]const u8, data_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const input = data_ptr.?[0..data_len];
-    var in_stream = std.io.fixedBufferStream(input);
-    var decompressor = std.compress.flate.decompressor(in_stream.reader());
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-    var temp: [4096]u8 = undefined;
-    while (true) {
-        const n = decompressor.reader().read(&temp) catch return fail();
-        if (n == 0) break;
-        out_list.appendSlice(temp[0..n]) catch return fail();
-    }
-    const slice = out_list.toOwnedSlice() catch return fail();
+    var in_reader = std.Io.Reader.fixed(input);
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var decompressor = std.compress.flate.Decompress.init(&in_reader, .raw, &window);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    defer aw.deinit();
+    _ = decompressor.reader.streamRemaining(&aw.writer) catch return fail();
+    const slice = aw.toOwnedSlice() catch return fail();
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -4512,39 +4546,22 @@ pub export fn sa_node_plugin_zlib_inflate_raw(data_ptr: ?[*]const u8, data_len: 
 
 pub export fn sa_node_plugin_zlib_unzip(data_ptr: ?[*]const u8, data_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const input = data_ptr.?[0..data_len];
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
+    // NOTE(Zig 0.17): flate Decompress with .gzip then .zlib fallback.
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    errdefer aw.deinit();
     {
-        var in_stream = std.io.fixedBufferStream(input);
-        var decompressor = std.compress.gzip.decompressor(in_stream.reader());
-        var temp: [4096]u8 = undefined;
-        while (true) {
-            const n = decompressor.reader().read(&temp) catch break;
-            if (n == 0) break;
-            out_list.appendSlice(temp[0..n]) catch return fail();
-        }
-        if (out_list.items.len > 0) {
-            const slice = out_list.toOwnedSlice() catch return fail();
-            out_ptr.?.* = slice.ptr;
-            out_len.?.* = slice.len;
-            return 0;
-        }
+        var in_reader = std.Io.Reader.fixed(input);
+        var window: [std.compress.flate.max_window_len]u8 = undefined;
+        var decompressor = std.compress.flate.Decompress.init(&in_reader, .gzip, &window);
+        _ = decompressor.reader.streamRemaining(&aw.writer) catch {
+            aw.clearRetainingCapacity();
+            var in_reader2 = std.Io.Reader.fixed(input);
+            var window2: [std.compress.flate.max_window_len]u8 = undefined;
+            var decompressor2 = std.compress.flate.Decompress.init(&in_reader2, .zlib, &window2);
+            _ = decompressor2.reader.streamRemaining(&aw.writer) catch return fail();
+        };
     }
-
-    out_list.clearRetainingCapacity();
-    {
-        var in_stream = std.io.fixedBufferStream(input);
-        var decompressor = std.compress.zlib.decompressor(in_stream.reader());
-        var temp: [4096]u8 = undefined;
-        while (true) {
-            const n = decompressor.reader().read(&temp) catch return fail();
-            if (n == 0) break;
-            out_list.appendSlice(temp[0..n]) catch return fail();
-        }
-    }
-
-    const slice = out_list.toOwnedSlice() catch return fail();
+    const slice = aw.toOwnedSlice() catch return fail();
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -4706,7 +4723,7 @@ pub export fn sa_node_plugin_url_domain_to_unicode(domain_ptr: ?[*]const u8, dom
 }
 
 fn appendPercentEncodedByte(out: *std.array_list.Managed(u8), byte: u8) !void {
-    try out.writer().print("%{X:0>2}", .{byte});
+    try sio.managedWriter(&out).print("%{X:0>2}", .{byte});
 }
 
 fn appendFileUrlPathEncoded(out: *std.array_list.Managed(u8), path: []const u8) !void {
@@ -4784,25 +4801,25 @@ pub export fn sa_node_plugin_url_to_http_options(h: ?*anyopaque, out_ptr: ?*?[*]
     defer out.deinit();
     out.appendSlice("{") catch return fail();
     out.appendSlice("\"protocol\":") catch return fail();
-    std.json.stringify(protocol, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, protocol) catch return fail();
     out.appendSlice(",\"auth\":") catch return fail();
-    std.json.stringify(auth, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, auth) catch return fail();
     out.appendSlice(",\"host\":") catch return fail();
-    std.json.stringify(host, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, host) catch return fail();
     out.appendSlice(",\"hostname\":") catch return fail();
-    std.json.stringify(hostname, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, hostname) catch return fail();
     out.appendSlice(",\"port\":") catch return fail();
-    std.json.stringify(port, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, port) catch return fail();
     out.appendSlice(",\"pathname\":") catch return fail();
-    std.json.stringify(pathname, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, pathname) catch return fail();
     out.appendSlice(",\"search\":") catch return fail();
-    std.json.stringify(search, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, search) catch return fail();
     out.appendSlice(",\"hash\":") catch return fail();
-    std.json.stringify(hash, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, hash) catch return fail();
     out.appendSlice(",\"path\":") catch return fail();
-    std.json.stringify(path_buf.items, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, path_buf.items) catch return fail();
     out.appendSlice(",\"href\":") catch return fail();
-    std.json.stringify(handle.href, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, handle.href) catch return fail();
     out.append('}') catch return fail();
     return writeOwned(out_ptr, out_len, out.items);
 }
@@ -4880,11 +4897,11 @@ const DeprecationRecord = struct {
     message: []u8,
 };
 
-var util_mutex = std.Thread.Mutex{};
+var util_mutex = std.atomic.Mutex.unlocked;
 var util_deprecations = std.array_list.Managed(DeprecationRecord).init(std.heap.page_allocator);
 
 fn nodeDebugSectionEnabled(section: []const u8) bool {
-    const env = std.process.getEnvVarOwned(std.heap.page_allocator, "NODE_DEBUG") catch return false;
+    const env = sio.getEnvVarOwned(std.heap.page_allocator, "NODE_DEBUG") catch return false;
     defer std.heap.page_allocator.free(env);
     var sections = std.mem.splitScalar(u8, env, ',');
     while (sections.next()) |raw| {
@@ -4903,7 +4920,7 @@ pub export fn sa_node_plugin_util_debuglog(section_ptr: ?[*]const u8, section_le
     defer out.deinit();
     out.appendSlice("{\"section\":") catch return fail();
     appendJsonString(&out, section) catch return fail();
-    out.writer().print(
+    sio.managedWriter(&out).print(
         ",\"enabled\":{},\"pid\":{d},\"prefix\":",
         .{ enabled, std.c.getpid() },
     ) catch return fail();
@@ -4980,9 +4997,9 @@ pub export fn sa_node_plugin_util_parse_args(config_ptr: ?[*]const u8, config_le
                 const eq_idx = std.mem.indexOfScalar(u8, arg_s, '=') orelse continue;
                 if (!first) values.append(',') catch return fail();
                 first = false;
-                std.json.stringify(arg_s[2..eq_idx], .{}, values.writer()) catch return fail();
+                stringifyIntoList(&values, arg_s[2..eq_idx]) catch return fail();
                 values.append(':') catch return fail();
-                std.json.stringify(arg_s[eq_idx + 1 ..], .{}, values.writer()) catch return fail();
+                stringifyIntoList(&values, arg_s[eq_idx + 1 ..]) catch return fail();
             }
         },
         else => {},
@@ -5003,7 +5020,7 @@ pub export fn sa_node_plugin_util_parse_args(config_ptr: ?[*]const u8, config_le
                 if (std.mem.startsWith(u8, arg_s, "--")) continue;
                 if (!first) positionals.append(',') catch return fail();
                 first = false;
-                std.json.stringify(arg_s, .{}, positionals.writer()) catch return fail();
+                stringifyIntoList(&positionals, arg_s) catch return fail();
             }
         },
         else => {},
@@ -5026,7 +5043,7 @@ pub export fn sa_node_plugin_util_mime_type(str_ptr: ?[*]const u8, str_len: u64,
     const mime = mimeTypeForPath(s);
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
-    std.json.stringify(mime, .{}, out.writer()) catch return fail();
+    stringifyIntoList(&out, mime) catch return fail();
     const slice = out.toOwnedSlice() catch return fail();
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
@@ -5062,7 +5079,7 @@ fn appendReadlineMove(out: *std.array_list.Managed(u8), amount: i64, positive_co
     if (amount == 0) return;
     const code = if (amount > 0) positive_code else negative_code;
     const magnitude: u64 = @intCast(if (amount > 0) amount else -amount);
-    try out.writer().print("\x1b[{d}{c}", .{ magnitude, code });
+    try sio.managedWriter(&out).print("\x1b[{d}{c}", .{ magnitude, code });
 }
 
 pub export fn sa_node_plugin_readline_clear_line(fd: u64, dir: u64) u64 {
@@ -5144,7 +5161,7 @@ pub export fn sa_node_plugin_readline_promises_snapshot_json(interface_ptr: ?*an
     const handle: *ReadlinePromisesInterface = @ptrCast(@alignCast(interface_ptr orelse return fail()));
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    json.writer().print("{{\"closed\":{s},\"offset\":{d},\"inputLen\":{d}}}", .{ if (handle.closed) "true" else "false", handle.offset, handle.input.len }) catch return fail();
+    sio.managedWriter(&json).print("{{\"closed\":{s},\"offset\":{d},\"inputLen\":{d}}}", .{ if (handle.closed) "true" else "false", handle.offset, handle.input.len }) catch return fail();
     return writeOwned(out_ptr, out_len, json.items);
 }
 
@@ -5301,7 +5318,7 @@ pub export fn sa_node_plugin_process_umask(mask: u32, set_mask: u32, out_old: ?*
 
 pub export fn sa_node_plugin_process_chdir(path_ptr: ?[*]const u8, path_len: u64) u32 {
     const path = (path_ptr orelse return fail())[0..path_len];
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     return if (chdir(path_z.ptr) == 0) 0 else fail();
 }
@@ -5357,7 +5374,7 @@ pub export fn sa_node_plugin_process_resource_usage_json(out_ptr: ?*?[*]const u8
     if (getrusage(RUSAGE_SELF, &usage) != 0) return fail();
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print(
+    sio.managedWriter(&out).print(
         "{{\"userCPUTime\":{d},\"systemCPUTime\":{d},\"maxRSS\":{d},\"sharedMemorySize\":{d},\"unsharedDataSize\":{d},\"unsharedStackSize\":{d},\"minorPageFault\":{d},\"majorPageFault\":{d},\"swappedOut\":{d},\"fsRead\":{d},\"fsWrite\":{d},\"ipcSent\":{d},\"ipcReceived\":{d},\"signalsCount\":{d},\"voluntaryContextSwitches\":{d},\"involuntaryContextSwitches\":{d}}}",
         .{
             @as(i64, @intCast(usage.ru_utime.tv_sec)) * 1_000_000 + @as(i64, @intCast(usage.ru_utime.tv_usec)),
@@ -5382,7 +5399,7 @@ pub export fn sa_node_plugin_process_resource_usage_json(out_ptr: ?*?[*]const u8
 }
 
 fn processParseMemInfo(key: []const u8) u64 {
-    var file = std.fs.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
+    var file = sio.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
     defer file.close();
     var buf: [4096]u8 = undefined;
     const n = file.readAll(&buf) catch return 0;
@@ -5398,7 +5415,7 @@ fn processParseMemInfo(key: []const u8) u64 {
 }
 
 fn processReadU64File(path: []const u8) ?u64 {
-    var file = std.fs.openFileAbsolute(path, .{}) catch return null;
+    var file = sio.openFileAbsolute(path, .{}) catch return null;
     defer file.close();
     var buf: [128]u8 = undefined;
     const n = file.readAll(&buf) catch return null;
@@ -5518,7 +5535,7 @@ pub export fn sa_node_plugin_perf_hooks_histogram_get_statistics(handle_ptr: ?*a
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
-    json.writer().print(
+    sio.managedWriter(&json).print(
         "{{\"count\":{d},\"sum\":{d},\"min\":{d},\"max\":{d},\"mean\":{d},\"stddev\":{d:.3},\"exceeds\":0,\"percentiles\":{{\"50\":{d},\"75\":{d},\"90\":{d},\"99\":{d}}}}}",
         .{ count, sum, min, max, mean, stddev, histogramPercentile(sorted, 50), histogramPercentile(sorted, 75), histogramPercentile(sorted, 90), histogramPercentile(sorted, 99) },
     ) catch return fail();
@@ -5535,10 +5552,10 @@ pub export fn sa_node_plugin_perf_hooks_histogram_free(handle_ptr: ?*anyopaque) 
 
 pub export fn sa_node_plugin_perf_hooks_event_loop_utilization(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (perf_elu_start_wall_ns == 0) {
-        perf_elu_start_wall_ns = std.time.nanoTimestamp();
+        perf_elu_start_wall_ns = sio.nanoTimestamp();
         perf_elu_start_cpu_us = rusageCpuMicros();
     }
-    const elapsed_ns = @max(@as(i128, 0), std.time.nanoTimestamp() - perf_elu_start_wall_ns);
+    const elapsed_ns = @max(@as(i128, 0), sio.nanoTimestamp() - perf_elu_start_wall_ns);
     const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
     const cpu_now = rusageCpuMicros();
     const active_ms = @as(f64, @floatFromInt(if (cpu_now > perf_elu_start_cpu_us) cpu_now - perf_elu_start_cpu_us else 0)) / 1000.0;

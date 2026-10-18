@@ -1,4 +1,41 @@
 const std = @import("std");
+const sio = @import("sio");
+
+fn envGet(name: []const u8) ?[]const u8 {
+    const name_z = std.heap.page_allocator.dupeSentinel(u8, name, 0) catch return null;
+    defer std.heap.page_allocator.free(name_z);
+    const value = getenv(name_z.ptr) orelse return null;
+    return std.mem.span(value);
+}
+
+fn sioSleep(ns: u64) void {
+    sio.io().sleep(.fromNanoseconds(ns), .awake) catch {};
+}
+
+fn spinLock(m: *std.atomic.Mutex) void {
+    while (!m.tryLock()) std.Thread.yield() catch {};
+}
+
+fn stringifyIntoList(list: *std.array_list.Managed(u8), value: anytype) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyIntoListOpts(list: *std.array_list.Managed(u8), value: anytype, opts: std.json.Stringify.Options) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, opts, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyToOwned(allocator: std.mem.Allocator, value: anytype) ![]u8 {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    return try allocator.dupe(u8, aw.written());
+}
 
 extern fn sa_node_plugin_dns_promises_resolve(hostname_ptr: ?[*]const u8, hostname_len: u64, rrtype_ptr: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32;
 const builtin = @import("builtin");
@@ -59,7 +96,7 @@ var process_start_ms: i64 = 0;
 
 fn getProcessStartMs() i64 {
     if (process_start_ms == 0) {
-        process_start_ms = std.time.milliTimestamp();
+        process_start_ms = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     }
     return process_start_ms;
 }
@@ -72,7 +109,7 @@ fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
             '\n' => try out.appendSlice("\\n"),
             '\r' => try out.appendSlice("\\r"),
             '\t' => try out.appendSlice("\\t"),
-            else => if (b < 0x20) try out.writer().print("\\u{x:0>4}", .{b}) else try out.append(b),
+            else => if (b < 0x20) try sio.managedWriter(&out).print("\\u{x:0>4}", .{b}) else try out.append(b),
         }
     }
 }
@@ -99,7 +136,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     var model_name: []const u8 = "Intel(R) Xeon(R) CPU @ 2.50GHz";
     const speed: u64 = 2500;
 
-    if (std.fs.openFileAbsolute("/proc/cpuinfo", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/cpuinfo", .{})) |file| {
         defer file.close();
         var buf: [4096]u8 = undefined;
         if (file.readAll(&buf)) |n| {
@@ -125,7 +162,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     }).init(std.heap.page_allocator);
     defer cpus_list.deinit();
 
-    if (std.fs.openFileAbsolute("/proc/stat", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/stat", .{})) |file| {
         defer file.close();
         var buf: [8192]u8 = undefined;
         if (file.readAll(&buf)) |n| {
@@ -176,7 +213,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
 }
 
 fn parseMemInfo(key: []const u8) u64 {
-    var file = std.fs.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
+    var file = sio.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
     defer file.close();
     var buf: [2048]u8 = undefined;
     const n = file.readAll(&buf) catch return 0;
@@ -206,7 +243,7 @@ pub export fn sa_node_plugin_os_freemem(out_mem: ?*u64) u32 {
 }
 
 pub export fn sa_node_plugin_os_homedir(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const home = std.posix.getenv("HOME") orelse "/home/vscode";
+    const home = envGet("HOME") orelse "/home/vscode";
     const owned = std.heap.page_allocator.dupe(u8, home) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -214,7 +251,7 @@ pub export fn sa_node_plugin_os_homedir(out_ptr: ?*?[*]const u8, out_len: ?*u64)
 }
 
 pub export fn sa_node_plugin_os_tmpdir(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const tmp = std.posix.getenv("TMPDIR") orelse (std.posix.getenv("TMP") orelse (std.posix.getenv("TEMP") orelse "/tmp"));
+    const tmp = envGet("TMPDIR") orelse (envGet("TMP") orelse (envGet("TEMP") orelse "/tmp"));
     const owned = std.heap.page_allocator.dupe(u8, tmp) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -255,7 +292,7 @@ pub export fn sa_node_plugin_os_type(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
 }
 
 pub export fn sa_node_plugin_os_system_uptime(out_uptime: ?*u64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/uptime", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/uptime", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
     const n = file.readAll(&buf) catch return 2;
@@ -268,7 +305,7 @@ pub export fn sa_node_plugin_os_system_uptime(out_uptime: ?*u64) u32 {
 }
 
 pub export fn sa_node_plugin_os_loadavg(out_load: ?*f64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/loadavg", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/loadavg", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
     const n = file.readAll(&buf) catch return 2;
@@ -360,9 +397,9 @@ pub export fn sa_node_plugin_os_hostname(out_ptr: ?*?[*]const u8, out_len: ?*u64
 pub export fn sa_node_plugin_os_user_info(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const uid = getuid();
     const gid = getgid();
-    const user = std.posix.getenv("USER") orelse "vscode";
-    const home = std.posix.getenv("HOME") orelse "/home/vscode";
-    const shell = std.posix.getenv("SHELL") orelse "/bin/bash";
+    const user = envGet("USER") orelse "vscode";
+    const home = envGet("HOME") orelse "/home/vscode";
+    const shell = envGet("SHELL") orelse "/bin/bash";
 
     var out_buf: [512]u8 = undefined;
     const json = std.fmt.bufPrint(&out_buf, "{{\"uid\":{d},\"gid\":{d},\"username\":\"{s}\",\"homedir\":\"{s}\",\"shell\":\"{s}\"}}", .{ uid, gid, user, home, shell }) catch return 2;
@@ -377,7 +414,7 @@ pub export fn sa_node_plugin_os_user_info(out_ptr: ?*?[*]const u8, out_len: ?*u6
 
 pub export fn sa_node_plugin_process_hrtime_bigint(out_ns: ?*u64) u32 {
     const ts = std.posix.clock_gettime(.MONOTONIC) catch {
-        out_ns.?.* = @as(u64, @intCast(std.time.nanoTimestamp()));
+        out_ns.?.* = @as(u64, @intCast(sio.nanoTimestamp()));
         return 0;
     };
     out_ns.?.* = @as(u64, @intCast(ts.sec)) * 1_000_000_000 + @as(u64, @intCast(ts.nsec));
@@ -388,7 +425,7 @@ pub export fn sa_node_plugin_process_cpu_usage(out_ptr: ?*?[*]const u8, out_len:
     var user_us: u64 = 0;
     var system_us: u64 = 0;
 
-    if (std.fs.openFileAbsolute("/proc/self/stat", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/self/stat", .{})) |file| {
         defer file.close();
         var buf: [1024]u8 = undefined;
         if (file.readAll(&buf)) |n| {
@@ -419,7 +456,7 @@ pub export fn sa_node_plugin_process_cpu_usage(out_ptr: ?*?[*]const u8, out_len:
 pub export fn sa_node_plugin_process_memory_usage(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var rss: u64 = 0;
 
-    if (std.fs.openFileAbsolute("/proc/self/statm", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/self/statm", .{})) |file| {
         defer file.close();
         var buf: [128]u8 = undefined;
         if (file.readAll(&buf)) |n| {
@@ -454,14 +491,14 @@ pub export fn sa_node_plugin_process_cwd(out_ptr: ?*?[*]const u8, out_len: ?*u64
 
 pub export fn sa_node_plugin_process_uptime(out_uptime: ?*f64) u32 {
     const start = getProcessStartMs();
-    const current = std.time.milliTimestamp();
+    const current = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     const diff_ms = @as(f64, @floatFromInt(current - start));
     out_uptime.?.* = diff_ms / 1000.0;
     return 0;
 }
 
 pub export fn sa_node_plugin_process_argv_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/self/cmdline", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/self/cmdline", .{}) catch return 2;
     defer file.close();
     var buf: [4096]u8 = undefined;
     const n = file.readAll(&buf) catch return 2;
@@ -645,7 +682,7 @@ pub export fn sa_node_plugin_path_to_namespaced_path(path: ?[*]const u8, len: u6
 
 pub export fn sa_node_plugin_crypto_random_bytes(size: u64, out_ptr: ?*?[*]const u8) u32 {
     const buf = std.heap.page_allocator.alloc(u8, size) catch return 2;
-    std.crypto.random.bytes(buf);
+    sio.io().random(buf);
     out_ptr.?.* = buf.ptr;
     return 0;
 }
@@ -699,14 +736,14 @@ pub export fn sa_node_plugin_crypto_pbkdf2(pass: ?[*]const u8, pass_len: u64, sa
 
 pub export fn sa_node_plugin_zlib_gzip(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var compressor = std.compress.gzip.compressor(out_list.writer(), .{}) catch return 2;
-    compressor.writer().writeAll(d) catch return 2;
+    var aw: std.Io.Writer.Allocating = std.Io.Writer.Allocating.initCapacity(std.heap.page_allocator, 64) catch return 2;
+    defer aw.deinit();
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var compressor = std.compress.flate.Compress.init(&aw.writer, &window, .gzip, .default) catch return 2;
+    (&compressor.writer).writeAll(d) catch return 2;
     compressor.finish() catch return 2;
 
-    const slice = out_list.toOwnedSlice() catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -714,20 +751,13 @@ pub export fn sa_node_plugin_zlib_gzip(data: ?[*]const u8, len: u64, out_ptr: ?*
 
 pub export fn sa_node_plugin_zlib_gunzip(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var in_stream = std.io.fixedBufferStream(d);
-    var decompressor = std.compress.gzip.decompressor(in_stream.reader());
-
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var temp_buf: [1024]u8 = undefined;
-    while (true) {
-        const bytes_read = decompressor.read(&temp_buf) catch return 2;
-        if (bytes_read == 0) break;
-        out_list.appendSlice(temp_buf[0..bytes_read]) catch return 2;
-    }
-
-    const slice = out_list.toOwnedSlice() catch return 2;
+    var in_reader = std.Io.Reader.fixed(d);
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var decompressor = std.compress.flate.Decompress.init(&in_reader, .gzip, &window);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    defer aw.deinit();
+    _ = decompressor.reader.streamRemaining(&aw.writer) catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -766,7 +796,7 @@ pub export fn sa_node_plugin_process_getgid(out_gid: ?*u32) u32 {
 pub export fn sa_node_plugin_process_env_get(key_ptr: ?[*]const u8, key_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (key_ptr == null or key_len == 0) return 2;
     const key = key_ptr.?[0..key_len];
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
 
     const value = getenv(key_z.ptr) orelse return 1; // 1 means null/not found
@@ -782,9 +812,9 @@ pub export fn sa_node_plugin_process_env_set(key_ptr: ?[*]const u8, key_len: u64
     const key = key_ptr.?[0..key_len];
     const value = if (val_ptr) |p| p[0..val_len] else &[_]u8{};
 
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
-    const val_z = std.heap.page_allocator.dupeZ(u8, value) catch return 2;
+    const val_z = std.heap.page_allocator.dupeSentinel(u8, value, 0) catch return 2;
     defer std.heap.page_allocator.free(val_z);
 
     if (setenv(key_z.ptr, val_z.ptr, 1) != 0) return 2;
@@ -794,7 +824,7 @@ pub export fn sa_node_plugin_process_env_set(key_ptr: ?[*]const u8, key_len: u64
 pub export fn sa_node_plugin_process_env_delete(key_ptr: ?[*]const u8, key_len: u64) u32 {
     if (key_ptr == null or key_len == 0) return 2;
     const key = key_ptr.?[0..key_len];
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
 
     if (unsetenv(key_z.ptr) != 0) return 2;
@@ -1093,21 +1123,21 @@ pub export fn sa_node_plugin_url_parse(data: ?[*]const u8, len: u64, out_ptr: ?*
     errdefer json.deinit();
 
     json.appendSlice("{\"protocol\":") catch return 2;
-    std.json.stringify(protocol, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, protocol) catch return 2;
     json.appendSlice(",\"auth\":") catch return 2;
-    std.json.stringify(auth, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, auth) catch return 2;
     json.appendSlice(",\"host\":") catch return 2;
-    std.json.stringify(host, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, host) catch return 2;
     json.appendSlice(",\"hostname\":") catch return 2;
-    std.json.stringify(hostname, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, hostname) catch return 2;
     json.appendSlice(",\"port\":") catch return 2;
-    std.json.stringify(port, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, port) catch return 2;
     json.appendSlice(",\"pathname\":") catch return 2;
-    std.json.stringify(pathname, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, pathname) catch return 2;
     json.appendSlice(",\"search\":") catch return 2;
-    std.json.stringify(search, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, search) catch return 2;
     json.appendSlice(",\"hash\":") catch return 2;
-    std.json.stringify(hash, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, hash) catch return 2;
     json.append('}') catch return 2;
 
     const slice = json.toOwnedSlice() catch return 2;
@@ -1277,7 +1307,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
                 if (spec == 's') {
                     switch (val) {
                         .string => |s| out.appendSlice(s) catch return 2,
-                        else => std.json.stringify(val, .{}, out.writer()) catch return 2,
+                        else => stringifyIntoList(&out, val) catch return 2,
                     }
                 } else if (spec == 'd') {
                     var num_buf: [64]u8 = undefined;
@@ -1288,7 +1318,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
                     };
                     out.appendSlice(num_str) catch return 2;
                 } else if (spec == 'j') {
-                    std.json.stringify(val, .{}, out.writer()) catch return 2;
+                    stringifyIntoList(&out, val) catch return 2;
                 } else {
                     out.append('%') catch return 2;
                     out.append(spec) catch return 2;
@@ -1306,7 +1336,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
 
     while (arg_idx < args.len) : (arg_idx += 1) {
         if (out.items.len > 0) out.append(' ') catch return 2;
-        std.json.stringify(args[arg_idx], .{}, out.writer()) catch return 2;
+        stringifyIntoList(&out, args[arg_idx]) catch return 2;
     }
 
     const slice = out.toOwnedSlice() catch return 2;
@@ -1336,7 +1366,7 @@ pub export fn sa_node_plugin_util_inspect(json_ptr: ?[*]const u8, json_len: u64,
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
-    std.json.stringify(parsed.value, .{ .whitespace = .indent_2 }, out.writer()) catch return 2;
+    stringifyIntoListOpts(&out, parsed.value, .{ .whitespace = .indent_2 }) catch return 2;
 
     const slice = out.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
@@ -1664,15 +1694,15 @@ pub export fn sa_node_plugin_path_parse(path_ptr: ?[*]const u8, len: u64, out_pt
     errdefer json.deinit();
 
     json.appendSlice("{\"root\":") catch return 2;
-    std.json.stringify(root, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, root) catch return 2;
     json.appendSlice(",\"dir\":") catch return 2;
-    std.json.stringify(dir, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, dir) catch return 2;
     json.appendSlice(",\"base\":") catch return 2;
-    std.json.stringify(base, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, base) catch return 2;
     json.appendSlice(",\"ext\":") catch return 2;
-    std.json.stringify(ext, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, ext) catch return 2;
     json.appendSlice(",\"name\":") catch return 2;
-    std.json.stringify(name, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, name) catch return 2;
     json.append('}') catch return 2;
 
     const slice = json.toOwnedSlice() catch return 2;
@@ -1768,7 +1798,7 @@ pub export fn sa_node_plugin_util_strip_vt_control_characters(data: ?[*]const u8
 
 pub export fn sa_node_plugin_crypto_random_uuid(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var bytes: [16]u8 = undefined;
-    std.crypto.random.bytes(&bytes);
+    sio.io().random(&bytes);
 
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
@@ -1844,14 +1874,14 @@ pub export fn sa_node_plugin_crypto_hmac(algo: ?[*]const u8, algo_len: u64, key:
 
 pub export fn sa_node_plugin_zlib_deflate(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var compressor = std.compress.zlib.compressor(out_list.writer(), .{}) catch return 2;
-    compressor.writer().writeAll(d) catch return 2;
+    var aw: std.Io.Writer.Allocating = std.Io.Writer.Allocating.initCapacity(std.heap.page_allocator, 64) catch return 2;
+    defer aw.deinit();
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var compressor = std.compress.flate.Compress.init(&aw.writer, &window, .zlib, .default) catch return 2;
+    (&compressor.writer).writeAll(d) catch return 2;
     compressor.finish() catch return 2;
 
-    const slice = out_list.toOwnedSlice() catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -1859,20 +1889,13 @@ pub export fn sa_node_plugin_zlib_deflate(data: ?[*]const u8, len: u64, out_ptr:
 
 pub export fn sa_node_plugin_zlib_inflate(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var in_stream = std.io.fixedBufferStream(d);
-    var decompressor = std.compress.zlib.decompressor(in_stream.reader());
-
-    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var temp_buf: [1024]u8 = undefined;
-    while (true) {
-        const bytes_read = decompressor.read(&temp_buf) catch return 2;
-        if (bytes_read == 0) break;
-        out_list.appendSlice(temp_buf[0..bytes_read]) catch return 2;
-    }
-
-    const slice = out_list.toOwnedSlice() catch return 2;
+    var in_reader = std.Io.Reader.fixed(d);
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var decompressor = std.compress.flate.Decompress.init(&in_reader, .zlib, &window);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    defer aw.deinit();
+    _ = decompressor.reader.streamRemaining(&aw.writer) catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -2078,13 +2101,13 @@ pub export fn sa_node_plugin_readline_create() ?*anyopaque {
 pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const u8, query_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     _ = rl;
     const q = if (query) |p| p[0..query_len] else &[_]u8{};
-    std.io.getStdOut().writer().writeAll(q) catch return 2;
+    sio.getStdOut().writer().writeAll(q) catch return 2;
 
     var buf = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer buf.deinit();
 
-    const stdin = std.io.getStdIn().reader();
-    stdin.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| {
+    const stdin = std.Io.getStdIn().reader();
+    stdin.streamUntilDelimiter(sio.managedWriter(&buf), '\n', null) catch |err| {
         if (err == error.EndOfStream) {} else return 2;
     };
 
@@ -2148,7 +2171,7 @@ pub export fn sa_node_plugin_stream_write(writable: ?*anyopaque, data: ?[*]const
 
 pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const host = hostname.?[0..len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
@@ -2160,7 +2183,7 @@ pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_pt
         switch (list.any.family) {
             std.posix.AF.INET => {
                 const bytes = std.mem.asBytes(&list.in.sa.addr);
-                json.writer().print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
+                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
             },
             std.posix.AF.INET6 => {
                 var buf: [64]u8 = undefined;
@@ -2704,9 +2727,9 @@ pub export fn sa_node_plugin_net_socket_address_json(addr_ptr: ?*anyopaque, out_
     defer out.deinit();
     out.appendSlice("{\"address\":") catch return 2;
     appendJsonString(&out, addr.text) catch return 2;
-    out.writer().print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
+    sio.managedWriter(&out).print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
     appendJsonString(&out, if (addr.family == .ipv4) "ipv4" else "ipv6") catch return 2;
-    out.writer().print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
+    sio.managedWriter(&out).print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
     const owned = out.toOwnedSlice() catch return 2;
     out_slot.* = owned.ptr;
     len_slot.* = owned.len;
@@ -3019,7 +3042,7 @@ fn netUnlinkUnixSocketPath(path: []const u8) void {
     if (std.fs.path.isAbsolute(path)) {
         std.fs.deleteFileAbsolute(path) catch {};
     } else {
-        std.fs.cwd().deleteFile(path) catch {};
+        sio.cwd().deleteFile(path) catch {};
     }
 }
 
@@ -3055,7 +3078,7 @@ fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address) !v
         std.posix.AF.INET6 => "IPv6",
         else => "unknown",
     };
-    try out.writer().print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
+    try sio.managedWriter(&out).print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
 }
 
 fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3222,7 +3245,7 @@ fn netConnectWithOptionalBlockList(host_ptr: ?[*]const u8, host_len: u64, port: 
     const out = out_socket orelse return 2;
     out.* = null;
     const host = host_ptr.?[0..host_len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
     const address = netResolveAddress(host_z, port) catch return 2;
@@ -3281,7 +3304,7 @@ pub export fn sa_node_plugin_net_connect_unix(path_ptr: ?[*]const u8, path_len: 
 
 pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, port: u64, out_server: ?*?*anyopaque) u32 {
     const host = host_ptr.?[0..host_len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
     const address = if (std.mem.eql(u8, host, "0.0.0.0") or host.len == 0)
@@ -4252,13 +4275,13 @@ fn nodeFsPathSlice(path_ptr: ?[*]const u8, path_len: u64) ?[]const u8 {
 
 pub export fn sa_node_plugin_fs_stat(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openFileAbsolute(path_z, .{}) catch return 2
+        sio.openFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().openFile(path_z, .{}) catch return 2;
+        sio.cwd().openFile(path_z, .{}) catch return 2;
     defer file.close();
 
     const stat = file.stat() catch return 2;
@@ -4289,13 +4312,13 @@ pub export fn sa_node_plugin_fs_lstat(path_ptr: ?[*]const u8, path_len: u64, out
 
 pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var dir = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
+        sio.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
     else
-        std.fs.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
+        sio.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
     defer dir.close();
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
@@ -4323,13 +4346,13 @@ pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, o
 
 pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var dir = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
+        sio.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
     else
-        std.fs.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
+        sio.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
     defer dir.close();
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
@@ -4365,14 +4388,14 @@ pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_
 
 pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var buf: [std.fs.max_path_bytes]u8 = undefined;
     const target = if (std.fs.path.isAbsolute(path_z))
         std.fs.readLinkAbsolute(path_z, &buf) catch return 2
     else
-        std.fs.cwd().readLink(path_z, &buf) catch return 2;
+        sio.cwd().readLink(path_z, &buf) catch return 2;
 
     const owned = std.heap.page_allocator.dupe(u8, target) catch return 2;
     out_ptr.?.* = owned.ptr;
@@ -4382,7 +4405,7 @@ pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, 
 
 pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const resolved = std.fs.path.resolve(std.heap.page_allocator, &.{path_z}) catch return 2;
@@ -4393,17 +4416,17 @@ pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, 
 
 pub export fn sa_node_plugin_fs_exists(path_ptr: ?[*]const u8, path_len: u64, out_bool: ?*u32) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var exists = false;
     if (std.fs.path.isAbsolute(path_z)) {
-        if (std.fs.openFileAbsolute(path_z, .{})) |file| {
+        if (sio.openFileAbsolute(path_z, .{})) |file| {
             file.close();
             exists = true;
         } else |_| {}
     } else {
-        if (std.fs.cwd().openFile(path_z, .{})) |file| {
+        if (sio.cwd().openFile(path_z, .{})) |file| {
             file.close();
             exists = true;
         } else |_| {}
@@ -4419,13 +4442,13 @@ pub export fn sa_node_plugin_fs_access(path_ptr: ?[*]const u8, path_len: u64, mo
 
 pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openFileAbsolute(path_z, .{}) catch return 2
+        sio.openFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().openFile(path_z, .{}) catch return 2;
+        sio.cwd().openFile(path_z, .{}) catch return 2;
     defer file.close();
 
     const size = (file.stat() catch return 2).size;
@@ -4442,15 +4465,15 @@ pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64,
 
 pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64, data_ptr: ?[*]const u8, data_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const data = if (data_ptr) |p| p[0..data_len] else &[_]u8{};
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.createFileAbsolute(path_z, .{}) catch return 2
+        sio.createFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().createFile(path_z, .{}) catch return 2;
+        sio.cwd().createFile(path_z, .{}) catch return 2;
     defer file.close();
 
     file.writeAll(data) catch return 2;
@@ -4459,23 +4482,23 @@ pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64
 
 pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, recursive: u8) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const is_abs = std.fs.path.isAbsolute(path_z);
     if (recursive != 0) {
         if (is_abs) {
-            var root_dir = std.fs.openDirAbsolute("/", .{}) catch return 2;
+            var root_dir = sio.openDirAbsolute("/", .{}) catch return 2;
             defer root_dir.close();
             root_dir.makePath(path_z[1..]) catch return 2;
         } else {
-            std.fs.cwd().makePath(path_z) catch return 2;
+            sio.cwd().makePath(path_z) catch return 2;
         }
     } else {
         if (is_abs) {
             std.fs.makeDirAbsolute(path_z) catch return 2;
         } else {
-            std.fs.cwd().makeDir(path_z) catch return 2;
+            sio.cwd().makeDir(path_z) catch return 2;
         }
     }
     return 0;
@@ -4483,60 +4506,60 @@ pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, rec
 
 pub export fn sa_node_plugin_fs_rmdir(path_ptr: ?[*]const u8, path_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
         std.fs.deleteDirAbsolute(path_z) catch return 2;
     } else {
-        std.fs.cwd().deleteDir(path_z) catch return 2;
+        sio.cwd().deleteDir(path_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_unlink(path_ptr: ?[*]const u8, path_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
         std.fs.deleteFileAbsolute(path_z) catch return 2;
     } else {
-        std.fs.cwd().deleteFile(path_z) catch return 2;
+        sio.cwd().deleteFile(path_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_rename(old_ptr: ?[*]const u8, old_len: u64, new_ptr: ?[*]const u8, new_len: u64) u32 {
     const old = nodeFsPathSlice(old_ptr, old_len) orelse return 2;
-    const old_z = std.heap.page_allocator.dupeZ(u8, old) catch return 2;
+    const old_z = std.heap.page_allocator.dupeSentinel(u8, old, 0) catch return 2;
     defer std.heap.page_allocator.free(old_z);
 
     const new = nodeFsPathSlice(new_ptr, new_len) orelse return 2;
-    const new_z = std.heap.page_allocator.dupeZ(u8, new) catch return 2;
+    const new_z = std.heap.page_allocator.dupeSentinel(u8, new, 0) catch return 2;
     defer std.heap.page_allocator.free(new_z);
 
     if (std.fs.path.isAbsolute(old_z) and std.fs.path.isAbsolute(new_z)) {
         std.fs.renameAbsolute(old_z, new_z) catch return 2;
     } else {
-        std.fs.cwd().rename(old_z, new_z) catch return 2;
+        sio.cwd().rename(old_z, new_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_copy_file(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
     const src = nodeFsPathSlice(src_ptr, src_len) orelse return 2;
-    const src_z = std.heap.page_allocator.dupeZ(u8, src) catch return 2;
+    const src_z = std.heap.page_allocator.dupeSentinel(u8, src, 0) catch return 2;
     defer std.heap.page_allocator.free(src_z);
 
     const dst = nodeFsPathSlice(dst_ptr, dst_len) orelse return 2;
-    const dst_z = std.heap.page_allocator.dupeZ(u8, dst) catch return 2;
+    const dst_z = std.heap.page_allocator.dupeSentinel(u8, dst, 0) catch return 2;
     defer std.heap.page_allocator.free(dst_z);
 
     if (std.fs.path.isAbsolute(src_z) and std.fs.path.isAbsolute(dst_z)) {
         std.fs.copyFileAbsolute(src_z, dst_z, .{}) catch return 2;
     } else {
-        std.fs.cwd().copyFile(src_z, std.fs.cwd(), dst_z, .{}) catch return 2;
+        sio.cwd().copyFile(src_z, sio.cwd(), dst_z, .{}) catch return 2;
     }
     return 0;
 }
@@ -4571,7 +4594,7 @@ pub export fn sa_node_plugin_process_exec(
         }
     }
 
-    const run_res = std.process.Child.run(.{
+    const run_res = sio.Child.run(.{
         .allocator = allocator,
         .argv = argv,
         .cwd = cwd,
@@ -4579,7 +4602,7 @@ pub export fn sa_node_plugin_process_exec(
     }) catch return 2;
 
     switch (run_res.term) {
-        .Exited => |code| out_code.?.* = code,
+        .exited => |code| out_code.?.* = code,
         else => out_code.?.* = 1,
     }
 
@@ -4597,8 +4620,8 @@ var console_timers = std.StringHashMap(i64).init(std.heap.page_allocator);
 pub export fn sa_node_plugin_console_log(data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (data_ptr) |ptr| {
         const slice = ptr[0..data_len];
-        std.io.getStdOut().writeAll(slice) catch return 2;
-        std.io.getStdOut().writeAll("\n") catch return 2;
+        sio.getStdOut().writeAll(slice) catch return 2;
+        sio.getStdOut().writeAll("\n") catch return 2;
     }
     return 0;
 }
@@ -4606,8 +4629,8 @@ pub export fn sa_node_plugin_console_log(data_ptr: ?[*]const u8, data_len: u64) 
 pub export fn sa_node_plugin_console_error(data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (data_ptr) |ptr| {
         const slice = ptr[0..data_len];
-        std.io.getStdErr().writeAll(slice) catch return 2;
-        std.io.getStdErr().writeAll("\n") catch return 2;
+        sio.getStdErr().writeAll(slice) catch return 2;
+        sio.getStdErr().writeAll("\n") catch return 2;
     }
     return 0;
 }
@@ -4616,7 +4639,7 @@ pub export fn sa_node_plugin_console_time(label_ptr: ?[*]const u8, label_len: u6
     if (label_ptr) |ptr| {
         const label = ptr[0..label_len];
         const label_dup = std.heap.page_allocator.dupe(u8, label) catch return 2;
-        console_timers.put(label_dup, std.time.milliTimestamp()) catch return 2;
+        console_timers.put(label_dup, @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)))) catch return 2;
     }
     return 0;
 }
@@ -4626,7 +4649,7 @@ pub export fn sa_node_plugin_console_time_end(label_ptr: ?[*]const u8, label_len
         const label = ptr[0..label_len];
         if (console_timers.fetchRemove(label)) |kv| {
             const start = kv.value;
-            const elapsed = @as(f64, @floatFromInt(std.time.milliTimestamp() - start));
+            const elapsed = @as(f64, @floatFromInt(@as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms))) - start));
             if (out_ms) |slot| slot.* = elapsed;
             std.heap.page_allocator.free(kv.key);
             return 0;
@@ -4636,7 +4659,7 @@ pub export fn sa_node_plugin_console_time_end(label_ptr: ?[*]const u8, label_len
 }
 
 pub export fn sa_node_plugin_console_clear() u32 {
-    std.io.getStdOut().writeAll("\x1b[2J\x1b[H") catch return 2;
+    sio.getStdOut().writeAll("\x1b[2J\x1b[H") catch return 2;
     return 0;
 }
 

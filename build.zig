@@ -62,6 +62,7 @@ pub fn build(b: *std.Build) void {
     });
 
     root_module.addImport("plugin_api", plugin_api);
+    root_module.addImport("sio", sio_module);
     root_module.addImport("sa_http2", sa_http2);
     http_client_module.addImport("plugin_api", plugin_api);
     http_server_module.addImport("plugin_api", plugin_api);

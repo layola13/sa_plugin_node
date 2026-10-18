@@ -4,8 +4,23 @@ const build_options = @import("build_options");
 const plugin_api = @import("plugin_api");
 const base = @import("node_saasm_api.zig");
 const ext = @import("node_saasm_api_ext.zig");
+const sio = @import("sio");
 const linux = std.os.linux;
 const posix = std.posix;
+
+extern fn getenv(name: [*:0]const u8) ?[*:0]u8;
+
+// NOTE(Zig 0.17): `std.posix.isatty` removed; use libc `isatty`.
+fn isattyFd(fd: posix.fd_t) bool {
+    return std.c.isatty(fd) != 0;
+}
+
+fn envGet(name: []const u8) ?[]const u8 {
+    const name_z = std.heap.page_allocator.dupeSentinel(u8, name, 0) catch return null;
+    defer std.heap.page_allocator.free(name_z);
+    const value = getenv(name_z.ptr) orelse return null;
+    return std.mem.span(value);
+}
 
 const SaSlice = extern struct {
     ptr: [*]const u8,
@@ -45,10 +60,19 @@ fn writeOwnedBool(out_bool: ?*u32, value: bool) u32 {
     return 0;
 }
 
+// NOTE(Zig 0.17): `std.json.stringify(v, opts, writer)` removed; route
+// through `Stringify.value` into a temp buffer, then append.
+fn stringifyIntoList(list: *std.array_list.Managed(u8), value: anytype) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
 fn writeJsonValue(out_ptr: ?*?[*]const u8, out_len: ?*u64, value: anytype) u32 {
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
-    std.json.stringify(value, .{}, json.writer()) catch return fail();
+    stringifyIntoList(&json, value) catch return fail();
     const owned = json.toOwnedSlice() catch return fail();
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -68,7 +92,7 @@ fn writeStatusJson(out_ptr: ?*?[*]const u8, out_len: ?*u64, module_name: []const
 // --- Async hooks ---
 var async_resource_next_id: u64 = 1;
 var async_resource_last_id: u64 = 0;
-var async_context_stack = std.ArrayListUnmanaged(AsyncContextFrame){};
+var async_context_stack = std.ArrayListUnmanaged(AsyncContextFrame).empty;
 
 fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     for (bytes) |b| {
@@ -78,7 +102,7 @@ fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
             '\n' => try out.appendSlice("\\n"),
             '\r' => try out.appendSlice("\\r"),
             '\t' => try out.appendSlice("\\t"),
-            else => if (b < 0x20) try out.writer().print("\\u{x:0>4}", .{b}) else try out.append(b),
+            else => if (b < 0x20) try sio.managedWriter(out).print("\\u{x:0>4}", .{b}) else try out.append(b),
         }
     }
 }
@@ -93,7 +117,7 @@ fn appendEnvStringField(out: *std.array_list.Managed(u8), name: []const u8, env_
     try out.appendSlice(",\"");
     try out.appendSlice(name);
     try out.appendSlice("\":");
-    if (std.posix.getenv(env_name)) |value| {
+    if (envGet(env_name)) |value| {
         try appendJsonString(out, value);
     } else {
         try out.appendSlice("null");
@@ -110,14 +134,14 @@ fn appendStringArray(out: *std.array_list.Managed(u8), items: []const []const u8
 }
 
 fn envTruthy(name: []const u8) bool {
-    const value = std.posix.getenv(name) orelse return false;
+    const value = envGet(name) orelse return false;
     if (value.len == 0) return false;
     if (std.mem.eql(u8, value, "0")) return false;
     return !std.ascii.eqlIgnoreCase(value, "false");
 }
 
 fn nodeOptionsHasFlag(flag: []const u8) bool {
-    return std.mem.indexOf(u8, std.posix.getenv("NODE_OPTIONS") orelse "", flag) != null;
+    return std.mem.indexOf(u8, envGet("NODE_OPTIONS") orelse "", flag) != null;
 }
 
 fn cloneOrNullTerminatedDup(allocator: std.mem.Allocator, text: []const u8) ![]u8 {
@@ -133,7 +157,7 @@ fn appendJsonFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
-    try std.json.stringify(value, .{}, out.writer());
+    try stringifyIntoList(out, value);
 }
 
 fn appendJsonStringFieldValue(out: *std.array_list.Managed(u8), first: *bool, name: []const u8, value: []const u8) !void {
@@ -154,7 +178,7 @@ fn appendJsonIntFieldValue(out: *std.array_list.Managed(u8), first: *bool, name:
     try appendJsonFieldSeparator(out, first);
     try appendJsonString(out, name);
     try out.append(':');
-    try out.writer().print("{d}", .{value});
+    try sio.managedWriter(out).print("{d}", .{value});
 }
 
 fn appendJsonObjectMembers(out: *std.array_list.Managed(u8), first: *bool, object: std.json.ObjectMap) !void {
@@ -217,16 +241,16 @@ fn asyncContextTrackingClear() void {
 
 fn asyncContextTrackingWriteSnapshotJson(out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("{\"supported\":true,\"model\":\"explicit-native-stack\",\"depth\":");
-    try out.writer().print("{d}", .{async_context_stack.items.len});
+    try sio.managedWriter(out).print("{d}", .{async_context_stack.items.len});
     try out.appendSlice(",\"executionAsyncId\":");
     if (asyncContextTrackingCurrent()) |frame| {
-        try out.writer().print("{d}", .{frame.async_id});
+        try sio.managedWriter(out).print("{d}", .{frame.async_id});
     } else {
-        try out.writer().print("{d}", .{async_resource_last_id});
+        try sio.managedWriter(out).print("{d}", .{async_resource_last_id});
     }
     try out.appendSlice(",\"triggerAsyncId\":");
     if (asyncContextTrackingCurrent()) |frame| {
-        try out.writer().print("{d}", .{frame.trigger_async_id});
+        try sio.managedWriter(out).print("{d}", .{frame.trigger_async_id});
     } else {
         try out.appendSlice("0");
     }
@@ -234,9 +258,9 @@ fn asyncContextTrackingWriteSnapshotJson(out: *std.array_list.Managed(u8)) !void
     for (async_context_stack.items, 0..) |frame, i| {
         if (i != 0) try out.append(',');
         try out.appendSlice("{\"asyncId\":");
-        try out.writer().print("{d}", .{frame.async_id});
+        try sio.managedWriter(out).print("{d}", .{frame.async_id});
         try out.appendSlice(",\"triggerAsyncId\":");
-        try out.writer().print("{d}", .{frame.trigger_async_id});
+        try sio.managedWriter(out).print("{d}", .{frame.trigger_async_id});
         try out.appendSlice(",\"type\":");
         try appendJsonString(out, frame.type_name);
         try out.append('}');
@@ -763,8 +787,8 @@ pub export fn sa_node_plugin_process_emit_warning_json(
 }
 
 pub export fn sa_node_plugin_process_exec_path(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var buffer: [std.fs.max_path_bytes]u8 = undefined;
-    const path = std.fs.selfExePath(&buffer) catch return fail();
+    const path = sio.selfExePathAlloc(std.heap.page_allocator) catch return fail();
+    defer std.heap.page_allocator.free(path);
     return writeOwnedString(out_ptr, out_len, path);
 }
 
@@ -773,10 +797,10 @@ pub export fn sa_node_plugin_process_argv0(out_ptr: ?*?[*]const u8, out_len: ?*u
     defer config.deinit();
     if (config.argv.items.len != 0 and config.argv.items[0].len != 0) return writeOwnedString(out_ptr, out_len, config.argv.items[0]);
 
-    if (std.fs.openFileAbsolute("/proc/self/cmdline", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/self/cmdline", .{})) |file| {
         defer file.close();
         var buffer: [4096]u8 = undefined;
-        const n = file.readAll(&buffer) catch 0;
+        const n = file.read(&buffer) catch 0;
         if (n != 0) {
             var it = std.mem.splitScalar(u8, buffer[0..n], '\x00');
             while (it.next()) |arg| {
@@ -1089,7 +1113,7 @@ pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]c
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"async_context_tracking\",\"supported\":true,\"mode\":\"explicit-native-stack\",\"capabilities\":[\"async resource handle integration\",\"explicit enter and exit\",\"execution and trigger async id lookup\",\"stack depth and snapshot JSON\",\"reset current native stack\"],\"limitations\":[\"no automatic propagation across host callbacks\",\"no JavaScript AsyncLocalStorage or promise hook semantics\",\"context changes occur only through explicit native enter/exit helpers\"],\"depth\":") catch return fail();
-    out.writer().print("{d}", .{async_context_stack.items.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{async_context_stack.items.len}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -1533,7 +1557,7 @@ fn commandLineOptionsParseToken(config: *CommandLineOptionsConfig, token: []cons
 }
 
 fn commandLineOptionsParseNodeOptions(config: *CommandLineOptionsConfig) !void {
-    const options = std.posix.getenv("NODE_OPTIONS") orelse return;
+    const options = envGet("NODE_OPTIONS") orelse return;
     config.saw_node_options = true;
     var tokens = std.mem.tokenizeAny(u8, options, " \t\r\n");
     var pending: ?[]const u8 = tokens.next();
@@ -1546,8 +1570,8 @@ fn commandLineOptionsParseNodeOptions(config: *CommandLineOptionsConfig) !void {
 
 fn commandLineOptionsParseArgv(config: *CommandLineOptionsConfig) !void {
     const allocator = config.allocator;
-    const argv = std.process.argsAlloc(allocator) catch return;
-    defer std.process.argsFree(allocator, argv);
+    const argv = sio.argsAlloc(allocator) catch return;
+    defer sio.argsFree(allocator, argv);
     if (argv.len == 0) return;
     config.saw_argv = true;
     for (argv) |arg| {
@@ -1603,7 +1627,7 @@ fn commandLineOptionsWriteStatusJson(config: *const CommandLineOptionsConfig, ou
     try out.appendSlice(",\"argvPresent\":");
     try out.appendSlice(if (config.saw_argv) "true" else "false");
     try out.appendSlice(",\"saPluginDev\":");
-    try out.appendSlice(if (std.posix.getenv("SA_PLUGIN_DEV") != null) "true" else "false");
+    try out.appendSlice(if (envGet("SA_PLUGIN_DEV") != null) "true" else "false");
     try appendEnvStringField(out, "nodeOptions", "NODE_OPTIONS");
     try out.appendSlice(",\"argv\":");
     try appendOwnedStringArray(out, config.argv.items);
@@ -1684,7 +1708,13 @@ const DeprecatedEntry = struct {
     }
 };
 
-var deprecated_mutex = std.Thread.Mutex{};
+var deprecated_mutex = std.atomic.Mutex.unlocked;
+
+// NOTE(Zig 0.17): `std.Thread.Mutex` removed and `std.atomic.Mutex` has no
+// blocking `lock`; spin on `tryLock`.
+fn spinLock(m: *std.atomic.Mutex) void {
+    while (!m.tryLock()) std.Thread.yield() catch {};
+}
 var deprecated_registry = std.StringHashMap(*DeprecatedEntry).init(std.heap.page_allocator);
 
 fn deprecatedPendingEnabledInternal() bool {
@@ -1722,7 +1752,7 @@ fn deprecatedAppendFlagsObject(out: *std.array_list.Managed(u8)) !void {
 }
 
 fn deprecatedRegisteredCount() u64 {
-    deprecated_mutex.lock();
+    spinLock(&deprecated_mutex);
     defer deprecated_mutex.unlock();
     return deprecated_registry.count();
 }
@@ -1735,7 +1765,7 @@ pub export fn sa_node_plugin_deprecated_flags_json(out_ptr: ?*?[*]const u8, out_
 }
 
 pub export fn sa_node_plugin_deprecated_clear() u32 {
-    deprecated_mutex.lock();
+    spinLock(&deprecated_mutex);
     defer deprecated_mutex.unlock();
     var it = deprecated_registry.iterator();
     while (it.next()) |entry| {
@@ -1747,7 +1777,7 @@ pub export fn sa_node_plugin_deprecated_clear() u32 {
 
 pub export fn sa_node_plugin_deprecated_has(code_ptr: ?[*]const u8, code_len: u64, out_bool: ?*u64) u32 {
     const code = if (code_len == 0) "" else (code_ptr orelse return fail())[0..code_len];
-    deprecated_mutex.lock();
+    spinLock(&deprecated_mutex);
     defer deprecated_mutex.unlock();
     out_bool.?.* = if (deprecated_registry.contains(code)) 1 else 0;
     return 0;
@@ -1762,7 +1792,7 @@ pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code
     var count: u64 = 0;
     var stored_message: []const u8 = "";
 
-    deprecated_mutex.lock();
+    spinLock(&deprecated_mutex);
     defer deprecated_mutex.unlock();
 
     if (deprecated_registry.get(code)) |entry| {
@@ -1798,7 +1828,7 @@ pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code
     appendJsonString(&out, code) catch return fail();
     out.appendSlice(",\"message\":") catch return fail();
     appendJsonString(&out, stored_message) catch return fail();
-    out.writer().print(",\"count\":{d},\"firstOccurrence\":{s},\"shouldEmit\":{s},\"flags\":", .{
+    sio.managedWriter(&out).print(",\"count\":{d},\"firstOccurrence\":{s},\"shouldEmit\":{s},\"flags\":", .{
         count,
         if (first_occurrence) "true" else "false",
         if (!deprecatedNoDeprecationInternal() and !deprecatedNoWarningsInternal() and first_occurrence) "true" else "false",
@@ -1809,14 +1839,14 @@ pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code
 }
 
 pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    deprecated_mutex.lock();
+    spinLock(&deprecated_mutex);
     defer deprecated_mutex.unlock();
 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"flags\":") catch return fail();
     deprecatedAppendFlagsObject(&out) catch return fail();
-    out.writer().print(",\"registeredCount\":{d},\"entries\":[", .{deprecated_registry.count()}) catch return fail();
+    sio.managedWriter(&out).print(",\"registeredCount\":{d},\"entries\":[", .{deprecated_registry.count()}) catch return fail();
 
     var first = true;
     var it = deprecated_registry.iterator();
@@ -1827,7 +1857,7 @@ pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, o
         appendJsonString(&out, entry.value_ptr.*.code) catch return fail();
         out.appendSlice(",\"message\":") catch return fail();
         appendJsonString(&out, entry.value_ptr.*.message) catch return fail();
-        out.writer().print(",\"count\":{d}}}", .{entry.value_ptr.*.count}) catch return fail();
+        sio.managedWriter(&out).print(",\"count\":{d}}}", .{entry.value_ptr.*.count}) catch return fail();
     }
 
     out.appendSlice("]}") catch return fail();
@@ -1838,7 +1868,7 @@ pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"deprecated\",\"supported\":true,\"mode\":\"native-registry\",\"registeredCount\":") catch return fail();
-    out.writer().print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
     out.appendSlice(",\"flags\":") catch return fail();
     deprecatedAppendFlagsObject(&out) catch return fail();
     out.appendSlice(",\"capabilities\":[\"util.deprecate-style registry\",\"idempotent deprecation codes\",\"deprecation flag introspection\",\"snapshot and clear helpers\"],\"limitations\":[\"no JavaScript wrapper invocation semantics\",\"no process warning events or warning listeners\",\"registry tracks native deprecation metadata only\"]}") catch return fail();
@@ -1846,20 +1876,20 @@ pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out
 }
 
 pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
+    var env_map = sio.getEnvMap(std.heap.page_allocator) catch return fail();
     defer env_map.deinit();
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"environment_variables\",\"supported\":true,\"mode\":\"native-process-env\",\"entryCount\":") catch return fail();
-    out.writer().print("{d}", .{env_map.count()}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{env_map.count()}) catch return fail();
     out.appendSlice(",\"hasNodeOptions\":") catch return fail();
-    out.appendSlice(if (std.posix.getenv("NODE_OPTIONS") != null) "true" else "false") catch return fail();
+    out.appendSlice(if (envGet("NODE_OPTIONS") != null) "true" else "false") catch return fail();
     appendEnvStringField(&out, "nodeOptions", "NODE_OPTIONS") catch return fail();
     out.appendSlice(",\"capabilities\":[\"host environment snapshot\",\"single-variable lookup\",\"dotenv parse and load helpers\"],\"limitations\":[\"no JavaScript process.env object proxy semantics\",\"no per-Worker environment copies\",\"loadEnvFile follows native host environment behavior and ignores NODE_OPTIONS entries from dotenv content\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
-fn environmentVariablesAppendObject(out: *std.array_list.Managed(u8), map: *const std.process.EnvMap) !void {
+fn environmentVariablesAppendObject(out: *std.array_list.Managed(u8), map: *const sio.EnvMap) !void {
     try out.append('{');
     var it = map.iterator();
     var first = true;
@@ -2059,7 +2089,7 @@ fn environmentVariablesAppendStoreObject(out: *std.array_list.Managed(u8), store
 }
 
 pub export fn sa_node_plugin_environment_variables_snapshot_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var env_map = std.process.getEnvMap(std.heap.page_allocator) catch return fail();
+    var env_map = sio.getEnvMap(std.heap.page_allocator) catch return fail();
     defer env_map.deinit();
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
@@ -2069,13 +2099,13 @@ pub export fn sa_node_plugin_environment_variables_snapshot_json(out_ptr: ?*?[*]
 
 pub export fn sa_node_plugin_environment_variables_has(name_ptr: ?[*]const u8, name_len: u64, out_bool: ?*u64) u32 {
     const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
-    out_bool.?.* = if (std.posix.getenv(name) != null) 1 else 0;
+    out_bool.?.* = if (envGet(name) != null) 1 else 0;
     return 0;
 }
 
 pub export fn sa_node_plugin_environment_variables_get_json(name_ptr: ?[*]const u8, name_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const name = if (name_len == 0) return fail() else (name_ptr orelse return fail())[0..name_len];
-    if (std.posix.getenv(name)) |value| {
+    if (envGet(name)) |value| {
         return writeJsonValue(out_ptr, out_len, value);
     }
     return writeOwnedString(out_ptr, out_len, "null");
@@ -2095,9 +2125,9 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
     const path = if (path_len == 0) ".env" else (path_ptr orelse return fail())[0..path_len];
     const allocator = std.heap.page_allocator;
     var file = if (std.fs.path.isAbsolute(path))
-        std.fs.openFileAbsolute(path, .{}) catch return fail()
+        sio.openFileAbsolute(path, .{}) catch return fail()
     else
-        std.fs.cwd().openFile(path, .{}) catch return fail();
+        sio.cwd().openFile(path, .{}) catch return fail();
     defer file.close();
 
     const content = file.readToEndAlloc(allocator, 1024 * 1024) catch return fail();
@@ -2114,13 +2144,14 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
             skipped_count += 1;
             continue;
         }
-        if (std.posix.getenv(entry.key_ptr.*) != null) {
+        if (envGet(entry.key_ptr.*) != null) {
             skipped_count += 1;
             continue;
         }
-        const key_z = std.fmt.allocPrintZ(allocator, "{s}", .{entry.key_ptr.*}) catch return fail();
+        // NOTE(Zig 0.17): `std.fmt.allocPrintZ` removed; use dupeSentinel.
+        const key_z = allocator.dupeSentinel(u8, entry.key_ptr.*, 0) catch return fail();
         defer allocator.free(key_z);
-        const value_z = std.fmt.allocPrintZ(allocator, "{s}", .{entry.value_ptr.*}) catch return fail();
+        const value_z = allocator.dupeSentinel(u8, entry.value_ptr.*, 0) catch return fail();
         defer allocator.free(value_z);
         if (setenv(key_z.ptr, value_z.ptr, 1) != 0) return fail();
         loaded_count += 1;
@@ -2131,9 +2162,9 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, path) catch return fail();
     out.appendSlice(",\"loaded\":") catch return fail();
-    out.writer().print("{d}", .{loaded_count}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{loaded_count}) catch return fail();
     out.appendSlice(",\"skipped\":") catch return fail();
-    out.writer().print("{d}", .{skipped_count}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{skipped_count}) catch return fail();
     out.appendSlice(",\"entries\":") catch return fail();
     environmentVariablesAppendStoreObject(&out, &store) catch return fail();
     out.append('}') catch return fail();
@@ -2236,7 +2267,7 @@ fn errorsBuildSystemErrorJson(out: *std.array_list.Managed(u8), errnum: i32, sys
     try out.appendSlice("{\"code\":");
     try appendJsonString(out, code);
     try out.appendSlice(",\"errno\":");
-    try out.writer().print("{d}", .{errnum});
+    try sio.managedWriter(out).print("{d}", .{errnum});
     try errorsAppendQuotedField(out, "message", message);
     try errorsAppendQuotedField(out, "syscall", syscall);
     if (path) |file_path| {
@@ -2271,7 +2302,7 @@ pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len
     out.appendSlice(",\"commonSystemCodes\":") catch return fail();
     appendStringArray(&out, &common_system_error_names) catch return fail();
     out.appendSlice(",\"systemCodeCount\":") catch return fail();
-    out.writer().print("{d}", .{system_error_codes.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{system_error_codes.len}) catch return fail();
     out.appendSlice(",\"capabilities\":[\"system errno lookup\",\"native system error JSON\",\"common argument validation diagnostic JSON\"],\"limitations\":[\"no JavaScript Error subclass prototypes\",\"no stack capture or cause chaining\",\"native APIs return status codes and JSON diagnostics\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -2286,7 +2317,7 @@ pub export fn sa_node_plugin_errors_codes_json(out_ptr: ?*?[*]const u8, out_len:
         if (i != 0) out.append(',') catch return fail();
         appendJsonString(&out, entry.name) catch return fail();
         out.append(':') catch return fail();
-        out.writer().print("{d}", .{entry.number}) catch return fail();
+        sio.managedWriter(&out).print("{d}", .{entry.number}) catch return fail();
     }
     out.appendSlice("}}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -2399,15 +2430,15 @@ fn internationalizationFlagValue(token: []const u8, prefix: []const u8) ?[]const
 }
 
 fn internationalizationOwnedLocale(allocator: std.mem.Allocator) ![]u8 {
-    if (std.posix.getenv("LC_ALL")) |value| return allocator.dupe(u8, value);
-    if (std.posix.getenv("LC_CTYPE")) |value| return allocator.dupe(u8, value);
-    if (std.posix.getenv("LANG")) |value| return allocator.dupe(u8, value);
+    if (envGet("LC_ALL")) |value| return allocator.dupe(u8, value);
+    if (envGet("LC_CTYPE")) |value| return allocator.dupe(u8, value);
+    if (envGet("LANG")) |value| return allocator.dupe(u8, value);
     return allocator.dupe(u8, "C");
 }
 
 fn internationalizationConfiguredIcuDataDir(allocator: std.mem.Allocator) ?[]u8 {
-    const argv = std.process.argsAlloc(allocator) catch return null;
-    defer std.process.argsFree(allocator, argv);
+    const argv = sio.argsAlloc(allocator) catch return null;
+    defer sio.argsFree(allocator, argv);
     if (argv.len > 1) {
         var i: usize = 1;
         while (i < argv.len) : (i += 1) {
@@ -2420,7 +2451,7 @@ fn internationalizationConfiguredIcuDataDir(allocator: std.mem.Allocator) ?[]u8 
         }
     }
 
-    const node_options = std.posix.getenv("NODE_OPTIONS") orelse return null;
+    const node_options = envGet("NODE_OPTIONS") orelse return null;
     var tokens = std.mem.tokenizeAny(u8, node_options, " \t\r\n");
     var pending: ?[]const u8 = tokens.next();
     while (pending) |token| {
@@ -2465,7 +2496,7 @@ fn internationalizationWriteConfigJson(out: *std.array_list.Managed(u8)) !void {
         try out.appendSlice("null");
     }
     try out.appendSlice(",\"icuConfigured\":");
-    try out.appendSlice(if (std.posix.getenv("NODE_ICU_DATA") != null or icu_data_dir != null) "true" else "false");
+    try out.appendSlice(if (envGet("NODE_ICU_DATA") != null or icu_data_dir != null) "true" else "false");
     try out.appendSlice(",\"supportedEncodings\":");
     try appendStringArray(out, &internationalization_supported_encodings);
     try out.append('}');
@@ -2521,7 +2552,7 @@ pub export fn sa_node_plugin_internationalization_has_encoding(name_ptr: ?[*]con
 pub export fn sa_node_plugin_internationalization_has_icu_config(out_bool: ?*u64) u32 {
     const icu_data_dir = internationalizationConfiguredIcuDataDir(std.heap.page_allocator);
     defer if (icu_data_dir) |value| std.heap.page_allocator.free(value);
-    out_bool.?.* = if (std.posix.getenv("NODE_ICU_DATA") != null or icu_data_dir != null) 1 else 0;
+    out_bool.?.* = if (envGet("NODE_ICU_DATA") != null or icu_data_dir != null) 1 else 0;
     return 0;
 }
 
@@ -2640,7 +2671,7 @@ const permissions_available_flags = [_][]const u8{
 };
 
 fn permissionsNodeOptions() []const u8 {
-    return std.posix.getenv("NODE_OPTIONS") orelse "";
+    return envGet("NODE_OPTIONS") orelse "";
 }
 
 fn permissionsIsAuditModeInternal() bool {
@@ -2655,9 +2686,9 @@ fn permissionsIsEnabledInternal() bool {
 fn permissionsReadManifestJson(allocator: std.mem.Allocator) ![]u8 {
     const manifest_path = pluginManifestPath();
     var file = if (std.fs.path.isAbsolute(manifest_path))
-        std.fs.openFileAbsolute(manifest_path, .{}) catch return error.ManifestNotFound
+        sio.openFileAbsolute(manifest_path, .{}) catch return error.ManifestNotFound
     else
-        std.fs.cwd().openFile(manifest_path, .{}) catch return error.ManifestNotFound;
+        sio.cwd().openFile(manifest_path, .{}) catch return error.ManifestNotFound;
     defer file.close();
     return file.readToEndAlloc(allocator, 1024 * 1024);
 }
@@ -2822,7 +2853,7 @@ pub export fn sa_node_plugin_permissions_has(scope_ptr: ?[*]const u8, scope_len:
 }
 
 pub export fn sa_node_plugin_permissions_status_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const dev_mode = std.posix.getenv("SA_PLUGIN_DEV") != null;
+    const dev_mode = envGet("SA_PLUGIN_DEV") != null;
     var flags_ptr: ?[*]const u8 = null;
     var flags_len: u64 = 0;
     if (sa_node_plugin_permissions_available_flags_json(&flags_ptr, &flags_len) != 0) return fail();
@@ -2941,13 +2972,13 @@ const ReplSession = struct {
 };
 
 fn replIsTerminal() bool {
-    return posix.isatty(0) and posix.isatty(1);
+    return isattyFd(0) and isattyFd(1);
 }
 
 fn replShouldUseColors() bool {
-    if (std.posix.getenv("NO_COLOR") != null) return false;
-    if (std.posix.getenv("FORCE_COLOR")) |value| return !std.mem.eql(u8, value, "0");
-    const term = std.posix.getenv("TERM") orelse return replIsTerminal();
+    if (envGet("NO_COLOR") != null) return false;
+    if (envGet("FORCE_COLOR")) |value| return !std.mem.eql(u8, value, "0");
+    const term = envGet("TERM") orelse return replIsTerminal();
     if (std.mem.eql(u8, term, "dumb")) return false;
     return replIsTerminal();
 }
@@ -3004,9 +3035,9 @@ fn replWriteSnapshotJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, o
     out.appendSlice(",\"closed\":") catch return fail();
     out.appendSlice(if (session.closed) "true" else "false") catch return fail();
     out.appendSlice(",\"evalCount\":") catch return fail();
-    out.writer().print("{d}", .{session.eval_count}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{session.eval_count}) catch return fail();
     out.appendSlice(",\"historySize\":") catch return fail();
-    out.writer().print("{d}", .{session.history.items.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{session.history.items.len}) catch return fail();
     out.appendSlice(",\"bufferedInput\":") catch return fail();
     appendJsonString(&out, session.buffer.items) catch return fail();
     out.appendSlice(",\"commands\":") catch return fail();
@@ -3151,7 +3182,7 @@ pub export fn sa_node_plugin_repl_eval_line(session_ptr: ?*anyopaque, line_ptr: 
     const session: *ReplSession = @ptrCast(@alignCast(session_ptr orelse return fail()));
     if (session.closed) return fail();
     const raw_line = if (line_ptr) |ptr| ptr[0..line_len] else "";
-    const line = std.mem.trimRight(u8, raw_line, "\r\n");
+    const line = std.mem.trimEnd(u8, raw_line, "\r\n");
     session.eval_count += 1;
     if (line.len != 0) session.appendHistory(line) catch return fail();
     return replWriteEvalResultJson(session, line, out_ptr, out_len);
@@ -3315,7 +3346,7 @@ fn testRunnerParseToken(config: *TestRunnerConfig, token: []const u8, next: ?[]c
 }
 
 fn testRunnerParseNodeOptions(config: *TestRunnerConfig) !void {
-    const options = std.posix.getenv("NODE_OPTIONS") orelse return;
+    const options = envGet("NODE_OPTIONS") orelse return;
     config.saw_node_options = true;
     var tokens = std.mem.tokenizeAny(u8, options, " \t\r\n");
     var pending: ?[]const u8 = tokens.next();
@@ -3328,8 +3359,8 @@ fn testRunnerParseNodeOptions(config: *TestRunnerConfig) !void {
 
 fn testRunnerParseArgv(config: *TestRunnerConfig) !void {
     const allocator = config.allocator;
-    const argv = std.process.argsAlloc(allocator) catch return;
-    defer std.process.argsFree(allocator, argv);
+    const argv = sio.argsAlloc(allocator) catch return;
+    defer sio.argsFree(allocator, argv);
     if (argv.len <= 1) return;
     config.saw_argv = true;
     var i: usize = 1;
@@ -3373,13 +3404,13 @@ fn testRunnerWriteConfigJson(config: *const TestRunnerConfig, out: *std.array_li
     try out.appendSlice(if (config.force_exit) "true" else "false");
     try out.appendSlice(",\"concurrency\":");
     if (config.concurrency) |value| {
-        try out.writer().print("{d}", .{value});
+        try sio.managedWriter(out).print("{d}", .{value});
     } else {
         try out.appendSlice("null");
     }
     try out.appendSlice(",\"timeout\":");
     if (config.timeout) |value| {
-        try out.writer().print("{d}", .{value});
+        try sio.managedWriter(out).print("{d}", .{value});
     } else {
         try out.appendSlice("null");
     }
@@ -3586,20 +3617,20 @@ fn domainSnapshotJson(domain: *DomainHandle, out_ptr: ?*?[*]const u8, out_len: ?
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"id\":") catch return fail();
-    out.writer().print("{d}", .{domain.id}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{domain.id}) catch return fail();
     out.appendSlice(",\"disposed\":") catch return fail();
     out.appendSlice(if (domain.disposed) "true" else "false") catch return fail();
     out.appendSlice(",\"active\":") catch return fail();
     out.appendSlice(if (domain_active == domain) "true" else "false") catch return fail();
     out.appendSlice(",\"stackDepth\":") catch return fail();
-    out.writer().print("{d}", .{domainStackDepthFor(domain)}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{domainStackDepthFor(domain)}) catch return fail();
     out.appendSlice(",\"memberCount\":") catch return fail();
-    out.writer().print("{d}", .{domain.members.items.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{domain.members.items.len}) catch return fail();
     out.appendSlice(",\"members\":[") catch return fail();
     for (domain.members.items, 0..) |member, i| {
         if (i != 0) out.append(',') catch return fail();
         if (member) |ptr| {
-            out.writer().print("{d}", .{@intFromPtr(ptr)}) catch return fail();
+            sio.managedWriter(&out).print("{d}", .{@intFromPtr(ptr)}) catch return fail();
         } else {
             out.appendSlice("0") catch return fail();
         }
@@ -3844,12 +3875,12 @@ var perf_marks = std.StringHashMap(i64).init(std.heap.page_allocator);
 var perf_measures = std.StringHashMap(i64).init(std.heap.page_allocator);
 
 fn perfOriginMs() i64 {
-    if (perf_origin_ms == 0) perf_origin_ms = std.time.milliTimestamp();
+    if (perf_origin_ms == 0) perf_origin_ms = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     return perf_origin_ms;
 }
 
 pub export fn sa_node_plugin_perf_hooks_now_ms(out_ms: ?*f64) u32 {
-    const now = @as(f64, @floatFromInt(std.time.milliTimestamp() - perfOriginMs()));
+    const now = @as(f64, @floatFromInt(@as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms))) - perfOriginMs()));
     out_ms.?.* = now;
     return 0;
 }
@@ -3862,7 +3893,7 @@ pub export fn sa_node_plugin_perf_hooks_time_origin_ms(out_ms: ?*f64) u32 {
 pub export fn sa_node_plugin_perf_hooks_mark(name_ptr: ?[*]const u8, name_len: u64) u32 {
     const name = name_ptr.?[0..name_len];
     const dup = std.heap.page_allocator.dupe(u8, name) catch return fail();
-    perf_marks.put(dup, std.time.milliTimestamp()) catch return fail();
+    perf_marks.put(dup, @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)))) catch return fail();
     return 0;
 }
 
@@ -3871,7 +3902,7 @@ pub export fn sa_node_plugin_perf_hooks_measure(name_ptr: ?[*]const u8, name_len
     const start_name = start_ptr.?[0..start_len];
     const end_name = end_ptr.?[0..end_len];
     const start_ms = perf_marks.get(start_name) orelse perfOriginMs();
-    const end_ms = perf_marks.get(end_name) orelse std.time.milliTimestamp();
+    const end_ms = perf_marks.get(end_name) orelse @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     const duration = @as(f64, @floatFromInt(end_ms - start_ms));
     out_ms.?.* = duration;
     const dup = std.heap.page_allocator.dupe(u8, name) catch return fail();
@@ -3883,11 +3914,11 @@ fn appendPerfEntries(list: *std.array_list.Managed(u8), kind: []const u8, entrie
     var it = entries.iterator();
     while (it.next()) |entry| {
         try list.appendSlice(if (list.items.len > 1) "," else "");
-        try std.json.stringify(.{
+        try stringifyIntoList(list, .{
             .kind = kind,
             .name = entry.key_ptr.*,
             .value = entry.value_ptr.*,
-        }, .{}, list.writer());
+        });
     }
 }
 
@@ -3902,7 +3933,7 @@ pub export fn sa_node_plugin_perf_hooks_entries_json(out_ptr: ?*?[*]const u8, ou
             if (!first) json.appendSlice(",") catch return fail();
             first = false;
             const record = .{ .kind = "mark", .name = entry.key_ptr.*, .startTime = entry.value_ptr.* };
-            std.json.stringify(record, .{}, json.writer()) catch return fail();
+            stringifyIntoList(&json, record) catch return fail();
         }
     }
     {
@@ -3911,7 +3942,7 @@ pub export fn sa_node_plugin_perf_hooks_entries_json(out_ptr: ?*?[*]const u8, ou
             if (!first) json.appendSlice(",") catch return fail();
             first = false;
             const record = .{ .kind = "measure", .name = entry.key_ptr.*, .duration = entry.value_ptr.* };
-            std.json.stringify(record, .{}, json.writer()) catch return fail();
+            stringifyIntoList(&json, record) catch return fail();
         }
     }
     json.appendSlice("]") catch return fail();
@@ -3980,9 +4011,9 @@ pub export fn sa_node_plugin_perf_hooks_status_json(out_ptr: ?*?[*]const u8, out
     out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
     appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
     out.appendSlice(",\"performance\":{\"now\":true,\"timeOrigin\":true,\"mark\":true,\"measure\":true,\"getEntries\":true,\"eventLoopUtilization\":true},\"helpers\":{\"createHistogram\":true,\"timerify\":true,\"monitorEventLoopDelay\":true},\"runtime\":{\"nowMs\":") catch return fail();
-    out.writer().print("{d}", .{now_ms}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{now_ms}) catch return fail();
     out.appendSlice(",\"timeOriginMs\":") catch return fail();
-    out.writer().print("{d}", .{origin_ms}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{origin_ms}) catch return fail();
     out.appendSlice(",\"entries\":") catch return fail();
     out.appendSlice((entries_ptr orelse return fail())[0..@intCast(entries_len)]) catch return fail();
     out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
@@ -4024,9 +4055,9 @@ pub export fn sa_node_plugin_perf_hooks_performance_json(out_ptr: ?*?[*]const u8
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"nowMs\":") catch return fail();
-    out.writer().print("{d}", .{now_ms}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{now_ms}) catch return fail();
     out.appendSlice(",\"timeOriginMs\":") catch return fail();
-    out.writer().print("{d}", .{origin_ms}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{origin_ms}) catch return fail();
     out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
     out.appendSlice((elu_ptr orelse return fail())[0..@intCast(elu_len)]) catch return fail();
     out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
@@ -4071,8 +4102,8 @@ pub export fn sa_node_plugin_report_status_json(out_ptr: ?*?[*]const u8, out_len
 }
 
 pub export fn sa_node_plugin_report_get_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var cwd_buf: [std.fs.max_path_bytes]u8 = undefined;
-    const cwd = std.posix.getcwd(&cwd_buf) catch "/";
+    const cwd = sio.getCwdAlloc(std.heap.page_allocator) catch "/";
+    defer if (!std.mem.eql(u8, cwd, "/")) std.heap.page_allocator.free(cwd);
     const report = .{
         .node = "sa_plugin_node",
         .pid = std.c.getpid(),
@@ -4104,9 +4135,9 @@ pub export fn sa_node_plugin_report_write_file(filename_ptr: ?[*]const u8, filen
     }
 
     const dir_file = if (std.fs.path.isAbsolute(file_path))
-        std.fs.createFileAbsolute(file_path, .{}) catch return fail()
+        sio.createFileAbsolute(file_path, .{}) catch return fail()
     else
-        std.fs.cwd().createFile(file_path, .{}) catch return fail();
+        sio.cwd().createFile(file_path, .{}) catch return fail();
     defer dir_file.close();
     dir_file.writeAll(report_ptr.?[0..report_len]) catch return fail();
     return writeOwnedString(out_ptr, out_len, file_path);
@@ -4129,7 +4160,7 @@ pub export fn sa_node_plugin_report_feature_support_json(out_ptr: ?*?[*]const u8
 
 // --- SEA ---
 pub export fn sa_node_plugin_sea_is_sea(out_bool: ?*u32) u32 {
-    return writeOwnedBool(out_bool, std.posix.getenv("SA_NODE_SEA_ASSETS") != null or std.posix.getenv("SA_NODE_SEA_ASSET_DIR") != null);
+    return writeOwnedBool(out_bool, envGet("SA_NODE_SEA_ASSETS") != null or envGet("SA_NODE_SEA_ASSET_DIR") != null);
 }
 
 const sea_export_names = [_][]const u8{
@@ -4156,9 +4187,9 @@ fn seaProviderConfigJson(out: *std.array_list.Managed(u8)) !void {
     try appendEnvStringField(out, "assetsEnv", "SA_NODE_SEA_ASSETS");
     try appendEnvStringField(out, "assetDir", "SA_NODE_SEA_ASSET_DIR");
     try out.appendSlice(",\"provider\":");
-    if (std.posix.getenv("SA_NODE_SEA_ASSETS") != null) {
+    if (envGet("SA_NODE_SEA_ASSETS") != null) {
         try appendJsonString(out, "environment-json");
-    } else if (std.posix.getenv("SA_NODE_SEA_ASSET_DIR") != null) {
+    } else if (envGet("SA_NODE_SEA_ASSET_DIR") != null) {
         try appendJsonString(out, "filesystem-directory");
     } else {
         try out.appendSlice("null");
@@ -4201,7 +4232,7 @@ pub export fn sa_node_plugin_sea_asset_keys_json(out_ptr: ?*?[*]const u8, out_le
     out.append('[') catch return fail();
     var first = true;
 
-    if (std.process.getEnvVarOwned(std.heap.page_allocator, "SA_NODE_SEA_ASSETS")) |json_text| {
+    if (sio.getEnvVarOwned(std.heap.page_allocator, "SA_NODE_SEA_ASSETS")) |json_text| {
         defer std.heap.page_allocator.free(json_text);
         var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, json_text, .{}) catch null;
         if (parsed) |*tree| {
@@ -4217,12 +4248,12 @@ pub export fn sa_node_plugin_sea_asset_keys_json(out_ptr: ?*?[*]const u8, out_le
         }
     } else |_| {}
 
-    if (std.process.getEnvVarOwned(std.heap.page_allocator, "SA_NODE_SEA_ASSET_DIR")) |dir_path| {
+    if (sio.getEnvVarOwned(std.heap.page_allocator, "SA_NODE_SEA_ASSET_DIR")) |dir_path| {
         defer std.heap.page_allocator.free(dir_path);
         var dir = if (std.fs.path.isAbsolute(dir_path))
-            std.fs.openDirAbsolute(dir_path, .{ .iterate = true }) catch null
+            sio.openDirAbsolute(dir_path, .{}) catch null
         else
-            std.fs.cwd().openDir(dir_path, .{ .iterate = true }) catch null;
+            sio.cwd().openDir(dir_path, .{ .iterate = true }) catch null;
         if (dir) |*d| {
             defer d.close();
             var it = d.iterate();
@@ -4240,7 +4271,7 @@ pub export fn sa_node_plugin_sea_asset_keys_json(out_ptr: ?*?[*]const u8, out_le
 }
 
 fn seaLookupAsset(key: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    if (std.process.getEnvVarOwned(allocator, "SA_NODE_SEA_ASSETS")) |json_text| {
+    if (sio.getEnvVarOwned(allocator, "SA_NODE_SEA_ASSETS")) |json_text| {
         defer allocator.free(json_text);
         var parsed = try std.json.parseFromSlice(std.json.Value, allocator, json_text, .{});
         defer parsed.deinit();
@@ -4254,7 +4285,7 @@ fn seaLookupAsset(key: []const u8, allocator: std.mem.Allocator) ![]u8 {
                     else => blk: {
                         var out = std.array_list.Managed(u8).init(allocator);
                         errdefer out.deinit();
-                        try std.json.stringify(value, .{}, out.writer());
+                        try stringifyIntoList(&out, value);
                         break :blk out.toOwnedSlice();
                     },
                 };
@@ -4262,15 +4293,15 @@ fn seaLookupAsset(key: []const u8, allocator: std.mem.Allocator) ![]u8 {
         }
     } else |_| {}
 
-    if (std.process.getEnvVarOwned(allocator, "SA_NODE_SEA_ASSET_DIR")) |dir_path| {
+    if (sio.getEnvVarOwned(allocator, "SA_NODE_SEA_ASSET_DIR")) |dir_path| {
         defer allocator.free(dir_path);
         if (std.mem.indexOfScalar(u8, key, '/') != null or std.mem.indexOfScalar(u8, key, 0) != null) return error.AssetNotFound;
         const full_path = try std.fs.path.join(allocator, &.{ dir_path, key });
         defer allocator.free(full_path);
         const file = if (std.fs.path.isAbsolute(full_path))
-            std.fs.openFileAbsolute(full_path, .{}) catch return error.AssetNotFound
+            sio.openFileAbsolute(full_path, .{}) catch return error.AssetNotFound
         else
-            std.fs.cwd().openFile(full_path, .{}) catch return error.AssetNotFound;
+            sio.cwd().openFile(full_path, .{}) catch return error.AssetNotFound;
         defer file.close();
         return file.readToEndAlloc(allocator, 64 * 1024 * 1024);
     } else |_| {}
@@ -4292,10 +4323,12 @@ fn seaWriteEncodedAsset(bytes: []const u8, encoding: []const u8, out_ptr: ?*?[*]
     }
     if (std.ascii.eqlIgnoreCase(encoding, "hex")) {
         const out = std.heap.page_allocator.alloc(u8, bytes.len * 2) catch return fail();
-        _ = std.fmt.bufPrint(out, "{s}", .{std.fmt.fmtSliceHexLower(bytes)}) catch {
-            std.heap.page_allocator.free(out);
-            return fail();
-        };
+        // NOTE(Zig 0.17): `std.fmt.fmtSliceHexLower` removed; manual hex loop.
+        const hex_digits = "0123456789abcdef";
+        for (bytes, 0..) |b, i| {
+            out[i * 2] = hex_digits[b >> 4];
+            out[i * 2 + 1] = hex_digits[b & 0xF];
+        }
         out_ptr.?.* = out.ptr;
         out_len.?.* = out.len;
         return 0;
@@ -4469,7 +4502,7 @@ fn makeTtyHandle(fd: posix.fd_t, is_write: bool, out_handle: ?*?*anyopaque) u32 
 }
 
 pub export fn sa_node_plugin_tty_isatty(fd: u64, out_bool: ?*u64) u32 {
-    out_bool.?.* = if (posix.isatty(ttyFdFromU64(fd) orelse return fail())) 1 else 0;
+    out_bool.?.* = if (isattyFd(ttyFdFromU64(fd) orelse return fail())) 1 else 0;
     return 0;
 }
 
@@ -4483,7 +4516,7 @@ pub export fn sa_node_plugin_tty_write_stream_new(fd: u64, out_handle: ?*?*anyop
 
 pub export fn sa_node_plugin_tty_stream_set_raw_mode(handle_ptr: ?*anyopaque, flag: u64) u32 {
     const handle = if (handle_ptr) |ptr| @as(*TtyHandle, @ptrCast(@alignCast(ptr))) else return 0;
-    if (!posix.isatty(handle.fd)) {
+    if (!isattyFd(handle.fd)) {
         handle.raw_mode = flag != 0;
         return 0;
     }
@@ -4516,7 +4549,7 @@ pub export fn sa_node_plugin_tty_stream_get_window_size(handle_ptr: ?*anyopaque,
     var cols: u64 = 0;
     var rows: u64 = 0;
     const fd = ttyHandleFd(handle_ptr, 1);
-    if (posix.isatty(fd)) {
+    if (isattyFd(fd)) {
         var wsz: posix.winsize = undefined;
         const rc = linux.ioctl(fd, linux.T.IOCGWINSZ, @intFromPtr(&wsz));
         if (posix.errno(rc) == .SUCCESS) {
@@ -4524,8 +4557,8 @@ pub export fn sa_node_plugin_tty_stream_get_window_size(handle_ptr: ?*anyopaque,
             rows = wsz.row;
         }
     }
-    if (std.posix.getenv("COLUMNS")) |value| cols = std.fmt.parseInt(u64, value, 10) catch 0;
-    if (std.posix.getenv("LINES")) |value| rows = std.fmt.parseInt(u64, value, 10) catch 0;
+    if (envGet("COLUMNS")) |value| cols = std.fmt.parseInt(u64, value, 10) catch 0;
+    if (envGet("LINES")) |value| rows = std.fmt.parseInt(u64, value, 10) catch 0;
     out_cols.?.* = cols;
     out_rows.?.* = rows;
     return 0;
@@ -4534,15 +4567,15 @@ pub export fn sa_node_plugin_tty_stream_get_window_size(handle_ptr: ?*anyopaque,
 pub export fn sa_node_plugin_tty_stream_get_color_depth(handle_ptr: ?*anyopaque, out_depth: ?*u64) u32 {
     const fd = ttyHandleFd(handle_ptr, 1);
     var depth: u64 = 1;
-    if (std.posix.getenv("NO_COLOR") != null) {
+    if (envGet("NO_COLOR") != null) {
         depth = 1;
-    } else if (std.posix.getenv("FORCE_COLOR")) |value| {
+    } else if (envGet("FORCE_COLOR")) |value| {
         depth = if (std.mem.eql(u8, value, "0")) 1 else 24;
-    } else if (std.posix.getenv("COLORTERM")) |value| {
+    } else if (envGet("COLORTERM")) |value| {
         depth = if (std.mem.indexOf(u8, value, "truecolor") != null or std.mem.indexOf(u8, value, "24bit") != null) 24 else 8;
-    } else if (std.posix.getenv("TERM")) |value| {
-        depth = if (std.mem.indexOf(u8, value, "256color") != null) 8 else if (posix.isatty(fd)) 4 else 1;
-    } else if (posix.isatty(fd)) {
+    } else if (envGet("TERM")) |value| {
+        depth = if (std.mem.indexOf(u8, value, "256color") != null) 8 else if (isattyFd(fd)) 4 else 1;
+    } else if (isattyFd(fd)) {
         depth = 4;
     }
     out_depth.?.* = depth;
@@ -4908,14 +4941,14 @@ const ClusterPrimaryConfig = struct {
     exec: ?[]u8 = null,
     args: std.array_list.Managed([]u8),
     cwd: ?[]u8 = null,
-    env: std.process.EnvMap,
+    env: sio.EnvMap,
     use_custom_env: bool = false,
 
     fn init(allocator: std.mem.Allocator) ClusterPrimaryConfig {
         return .{
             .allocator = allocator,
             .args = std.array_list.Managed([]u8).init(allocator),
-            .env = std.process.EnvMap.init(allocator),
+            .env = sio.EnvMap.init(allocator),
         };
     }
 
@@ -4931,7 +4964,7 @@ const ClusterPrimaryConfig = struct {
         for (self.args.items) |arg| self.allocator.free(arg);
         self.args.clearRetainingCapacity();
         self.env.deinit();
-        self.env = std.process.EnvMap.init(self.allocator);
+        self.env = sio.EnvMap.init(self.allocator);
         self.use_custom_env = false;
     }
 };
@@ -4940,7 +4973,7 @@ var cluster_primary_config = ClusterPrimaryConfig.init(std.heap.page_allocator);
 
 const ClusterWorkerHandle = struct {
     allocator: std.mem.Allocator,
-    child: std.process.Child,
+    child: sio.Child,
     command: []u8,
     args: std.array_list.Managed([]u8),
     cwd: ?[]u8 = null,
@@ -4965,9 +4998,11 @@ const ClusterWorkerHandle = struct {
                 stderr_file.close();
                 self.child.stderr = null;
             }
-            std.posix.kill(self.child.id, std.posix.SIG.KILL) catch {};
-            const waited = std.posix.waitpid(self.child.id, 0);
-            clusterWorkerDecodeStatus(self, waited.status);
+            if (clusterChildPid(self)) |pid| {
+                clusterKillPid(pid, @intFromEnum(std.posix.SIG.KILL));
+                const waited = clusterWaitPid(pid, 0);
+                clusterWorkerDecodeStatus(self, waited.status);
+            }
         } else {
             if (self.child.stdin) |*stdin_file| {
                 stdin_file.close();
@@ -4991,30 +5026,47 @@ const ClusterWorkerHandle = struct {
 };
 
 fn clusterSignalNameToNumber(name: []const u8) ?u8 {
-    if (name.len == 0) return std.posix.SIG.TERM;
+    if (name.len == 0) return @intFromEnum(std.posix.SIG.TERM);
     if (std.ascii.eqlIgnoreCase(name, "0")) return 0;
-    if (std.ascii.eqlIgnoreCase(name, "SIGTERM") or std.ascii.eqlIgnoreCase(name, "TERM")) return std.posix.SIG.TERM;
-    if (std.ascii.eqlIgnoreCase(name, "SIGKILL") or std.ascii.eqlIgnoreCase(name, "KILL")) return std.posix.SIG.KILL;
-    if (std.ascii.eqlIgnoreCase(name, "SIGINT") or std.ascii.eqlIgnoreCase(name, "INT")) return std.posix.SIG.INT;
-    if (std.ascii.eqlIgnoreCase(name, "SIGHUP") or std.ascii.eqlIgnoreCase(name, "HUP")) return std.posix.SIG.HUP;
-    if (std.ascii.eqlIgnoreCase(name, "SIGQUIT") or std.ascii.eqlIgnoreCase(name, "QUIT")) return std.posix.SIG.QUIT;
-    if (std.ascii.eqlIgnoreCase(name, "SIGABRT") or std.ascii.eqlIgnoreCase(name, "ABRT")) return std.posix.SIG.ABRT;
-    if (std.ascii.eqlIgnoreCase(name, "SIGALRM") or std.ascii.eqlIgnoreCase(name, "ALRM")) return std.posix.SIG.ALRM;
-    if (std.ascii.eqlIgnoreCase(name, "SIGUSR1") or std.ascii.eqlIgnoreCase(name, "USR1")) return std.posix.SIG.USR1;
-    if (std.ascii.eqlIgnoreCase(name, "SIGUSR2") or std.ascii.eqlIgnoreCase(name, "USR2")) return std.posix.SIG.USR2;
-    if (std.ascii.eqlIgnoreCase(name, "SIGPIPE") or std.ascii.eqlIgnoreCase(name, "PIPE")) return std.posix.SIG.PIPE;
-    if (std.ascii.eqlIgnoreCase(name, "SIGCHLD") or std.ascii.eqlIgnoreCase(name, "CHLD")) return std.posix.SIG.CHLD;
-    if (std.ascii.eqlIgnoreCase(name, "SIGCONT") or std.ascii.eqlIgnoreCase(name, "CONT")) return std.posix.SIG.CONT;
-    if (std.ascii.eqlIgnoreCase(name, "SIGSTOP") or std.ascii.eqlIgnoreCase(name, "STOP")) return std.posix.SIG.STOP;
-    if (std.ascii.eqlIgnoreCase(name, "SIGTSTP") or std.ascii.eqlIgnoreCase(name, "TSTP")) return std.posix.SIG.TSTP;
-    if (std.ascii.eqlIgnoreCase(name, "SIGTTIN") or std.ascii.eqlIgnoreCase(name, "TTIN")) return std.posix.SIG.TTIN;
-    if (std.ascii.eqlIgnoreCase(name, "SIGTTOU") or std.ascii.eqlIgnoreCase(name, "TTOU")) return std.posix.SIG.TTOU;
+    if (std.ascii.eqlIgnoreCase(name, "SIGTERM") or std.ascii.eqlIgnoreCase(name, "TERM")) return @intFromEnum(std.posix.SIG.TERM);
+    if (std.ascii.eqlIgnoreCase(name, "SIGKILL") or std.ascii.eqlIgnoreCase(name, "KILL")) return @intFromEnum(std.posix.SIG.KILL);
+    if (std.ascii.eqlIgnoreCase(name, "SIGINT") or std.ascii.eqlIgnoreCase(name, "INT")) return @intFromEnum(std.posix.SIG.INT);
+    if (std.ascii.eqlIgnoreCase(name, "SIGHUP") or std.ascii.eqlIgnoreCase(name, "HUP")) return @intFromEnum(std.posix.SIG.HUP);
+    if (std.ascii.eqlIgnoreCase(name, "SIGQUIT") or std.ascii.eqlIgnoreCase(name, "QUIT")) return @intFromEnum(std.posix.SIG.QUIT);
+    if (std.ascii.eqlIgnoreCase(name, "SIGABRT") or std.ascii.eqlIgnoreCase(name, "ABRT")) return @intFromEnum(std.posix.SIG.ABRT);
+    if (std.ascii.eqlIgnoreCase(name, "SIGALRM") or std.ascii.eqlIgnoreCase(name, "ALRM")) return @intFromEnum(std.posix.SIG.ALRM);
+    if (std.ascii.eqlIgnoreCase(name, "SIGUSR1") or std.ascii.eqlIgnoreCase(name, "USR1")) return @intFromEnum(std.posix.SIG.USR1);
+    if (std.ascii.eqlIgnoreCase(name, "SIGUSR2") or std.ascii.eqlIgnoreCase(name, "USR2")) return @intFromEnum(std.posix.SIG.USR2);
+    if (std.ascii.eqlIgnoreCase(name, "SIGPIPE") or std.ascii.eqlIgnoreCase(name, "PIPE")) return @intFromEnum(std.posix.SIG.PIPE);
+    if (std.ascii.eqlIgnoreCase(name, "SIGCHLD") or std.ascii.eqlIgnoreCase(name, "CHLD")) return @intFromEnum(std.posix.SIG.CHLD);
+    if (std.ascii.eqlIgnoreCase(name, "SIGCONT") or std.ascii.eqlIgnoreCase(name, "CONT")) return @intFromEnum(std.posix.SIG.CONT);
+    if (std.ascii.eqlIgnoreCase(name, "SIGSTOP") or std.ascii.eqlIgnoreCase(name, "STOP")) return @intFromEnum(std.posix.SIG.STOP);
+    if (std.ascii.eqlIgnoreCase(name, "SIGTSTP") or std.ascii.eqlIgnoreCase(name, "TSTP")) return @intFromEnum(std.posix.SIG.TSTP);
+    if (std.ascii.eqlIgnoreCase(name, "SIGTTIN") or std.ascii.eqlIgnoreCase(name, "TTIN")) return @intFromEnum(std.posix.SIG.TTIN);
+    if (std.ascii.eqlIgnoreCase(name, "SIGTTOU") or std.ascii.eqlIgnoreCase(name, "TTOU")) return @intFromEnum(std.posix.SIG.TTOU);
     return null;
 }
 
 fn clusterSignalFromNumber(signal: u64) ?u8 {
     if (signal > std.math.maxInt(u8)) return null;
     return @intCast(signal);
+}
+
+// NOTE(Zig 0.17): `std.posix.waitpid` removed; use libc waitpid directly.
+fn clusterWaitPid(pid: std.c.pid_t, flags: c_int) struct { pid: std.c.pid_t, status: u32 } {
+    var status: c_int = 0;
+    const got = std.c.waitpid(pid, &status, flags);
+    if (got <= 0) return .{ .pid = 0, .status = 0 };
+    return .{ .pid = got, .status = @bitCast(status) };
+}
+
+fn clusterChildPid(worker: *ClusterWorkerHandle) ?std.c.pid_t {
+    const inner = worker.child.inner orelse return null;
+    return inner.id;
+}
+
+fn clusterKillPid(pid: std.c.pid_t, sig_num: u8) void {
+    std.posix.kill(pid, @enumFromInt(sig_num)) catch {};
 }
 
 fn clusterParseStoredArgs(args_ptr: ?[*]const u8, args_len: u64, out: *std.array_list.Managed([]u8), allocator: std.mem.Allocator) !void {
@@ -5039,10 +5091,14 @@ fn clusterParseStoredArgs(args_ptr: ?[*]const u8, args_len: u64, out: *std.array
     try out.append(try allocator.dupe(u8, ptr[0..args_len]));
 }
 
-fn clusterSetNonBlocking(file: std.fs.File) u32 {
-    const flags = std.posix.fcntl(file.handle, std.posix.F.GETFL, 0) catch return fail();
-    const new_flags = flags | (@as(usize, 1) << @bitOffsetOf(std.posix.O, "NONBLOCK"));
-    _ = std.posix.fcntl(file.handle, std.posix.F.SETFL, new_flags) catch return fail();
+fn clusterSetNonBlocking(file: sio.File) u32 {
+    const fd = file.inner.handle;
+    const flags = std.c.fcntl(fd, std.c.F.GETFL, @as(c_int, 0));
+    if (flags < 0) return fail();
+    // NOTE(Zig 0.17): `std.posix.O.NONBLOCK` is a packed-bool field now;
+    // derive the raw flag value from its bit offset (old `fcntl` pattern).
+    const nonblock_flag: c_int = @as(c_int, 1) << @bitOffsetOf(std.c.O, "NONBLOCK");
+    if (std.c.fcntl(fd, std.c.F.SETFL, flags | nonblock_flag) < 0) return fail();
     return 0;
 }
 
@@ -5069,7 +5125,7 @@ fn clusterWorkerDecodeStatus(worker: *ClusterWorkerHandle, status: u32) void {
         worker.signal_code = null;
     } else if (std.c.W.IFSIGNALED(status)) {
         worker.exit_code = null;
-        worker.signal_code = std.c.W.TERMSIG(status);
+        worker.signal_code = @intFromEnum(std.c.W.TERMSIG(status));
     } else {
         worker.exit_code = null;
         worker.signal_code = null;
@@ -5158,7 +5214,8 @@ fn clusterSetupPrimaryJson(config_ptr: ?[*]const u8, config_len: u64) u32 {
 
 fn clusterWorkerRefresh(worker: *ClusterWorkerHandle) void {
     if (worker.exited) return;
-    const waited = std.posix.waitpid(worker.child.id, std.c.W.NOHANG);
+    const pid = clusterChildPid(worker) orelse return;
+    const waited = clusterWaitPid(pid, std.c.W.NOHANG);
     if (waited.pid == 0) return;
     clusterWorkerDecodeStatus(worker, waited.status);
 }
@@ -5172,7 +5229,7 @@ fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"pid\":") catch return fail();
-    out.writer().print("{d}", .{worker.child.id}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{clusterChildPid(worker) orelse 0}) catch return fail();
     out.appendSlice(",\"connected\":") catch return fail();
     out.appendSlice(if (worker.connected) "true" else "false") catch return fail();
     out.appendSlice(",\"exited\":") catch return fail();
@@ -5192,18 +5249,18 @@ fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const 
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"envCount\":") catch return fail();
-    out.writer().print("{d}", .{worker.env_count}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{worker.env_count}) catch return fail();
     out.appendSlice(",\"disconnectRequested\":") catch return fail();
     out.appendSlice(if (worker.disconnected_requested) "true" else "false") catch return fail();
     out.appendSlice(",\"exitCode\":") catch return fail();
     if (worker.exit_code) |code| {
-        out.writer().print("{d}", .{code}) catch return fail();
+        sio.managedWriter(&out).print("{d}", .{code}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"signalCode\":") catch return fail();
     if (worker.signal_code) |sig| {
-        out.writer().print("{d}", .{sig}) catch return fail();
+        sio.managedWriter(&out).print("{d}", .{sig}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
@@ -5211,14 +5268,14 @@ fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const 
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
-fn clusterSpawnWorker(exec: []const u8, args: []const []const u8, cwd: ?[]const u8, env_map: ?*const std.process.EnvMap, env_count: u64, out_worker: ?*?*anyopaque) u32 {
+fn clusterSpawnWorker(exec: []const u8, args: []const []const u8, cwd: ?[]const u8, env_map: ?*const sio.EnvMap, env_count: u64, out_worker: ?*?*anyopaque) u32 {
     const allocator = std.heap.page_allocator;
     const argv = allocator.alloc([]const u8, args.len + 1) catch return fail();
     defer allocator.free(argv);
     argv[0] = exec;
     for (args, 0..) |arg, i| argv[i + 1] = arg;
 
-    var child = std.process.Child.init(argv, allocator);
+    var child = sio.Child.init(argv, allocator);
     child.stdin_behavior = .Pipe;
     child.stdout_behavior = .Pipe;
     child.stderr_behavior = .Ignore;
@@ -5337,14 +5394,14 @@ pub export fn sa_node_plugin_cluster_fork(exec_ptr: ?[*]const u8, exec_len: u64,
     defer allocator.free(args_view);
     for (effective_args.items, 0..) |arg, i| args_view[i] = arg;
     const cwd = if (cluster_primary_config.cwd) |configured| configured else null;
-    const env_map: ?*const std.process.EnvMap = if (cluster_primary_config.use_custom_env) &cluster_primary_config.env else null;
+    const env_map: ?*const sio.EnvMap = if (cluster_primary_config.use_custom_env) &cluster_primary_config.env else null;
     const env_count: u64 = if (cluster_primary_config.use_custom_env) cluster_primary_config.env.count() else 0;
     return clusterSpawnWorker(exec, args_view, cwd, env_map, env_count, out_worker);
 }
 
 pub export fn sa_node_plugin_cluster_worker_pid(worker_ptr: ?*anyopaque, out_pid: ?*u64) u32 {
     const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
-    out_pid.?.* = @intCast(worker.child.id);
+    out_pid.?.* = @intCast(clusterChildPid(worker) orelse return fail());
     return 0;
 }
 
@@ -5401,8 +5458,9 @@ pub export fn sa_node_plugin_cluster_worker_kill(worker_ptr: ?*anyopaque, signal
     const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
     clusterWorkerRefresh(worker);
     if (worker.exited) return 0;
-    const sig = clusterSignalFromNumber(if (signal == 0) std.posix.SIG.TERM else signal) orelse return fail();
-    std.posix.kill(worker.child.id, sig) catch return fail();
+    const sig_num = clusterSignalFromNumber(if (signal == 0) @as(u64, @intCast(@intFromEnum(std.posix.SIG.TERM))) else signal) orelse return fail();
+    const pid = clusterChildPid(worker) orelse return fail();
+    clusterKillPid(pid, sig_num);
     return 0;
 }
 
@@ -5411,8 +5469,9 @@ pub export fn sa_node_plugin_cluster_worker_kill_signal(worker_ptr: ?*anyopaque,
     clusterWorkerRefresh(worker);
     if (worker.exited) return 0;
     const signal = if (signal_ptr) |ptr| ptr[0..signal_len] else "SIGTERM";
-    const sig = clusterSignalNameToNumber(signal) orelse return fail();
-    std.posix.kill(worker.child.id, sig) catch return fail();
+    const sig_num = clusterSignalNameToNumber(signal) orelse return fail();
+    const pid = clusterChildPid(worker) orelse return fail();
+    clusterKillPid(pid, sig_num);
     return 0;
 }
 
@@ -5440,8 +5499,10 @@ pub export fn sa_node_plugin_cluster_worker_exited_after_disconnect(worker_ptr: 
 pub export fn sa_node_plugin_cluster_worker_wait_json(worker_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const worker = clusterWorkerHandle(worker_ptr) orelse return fail();
     if (!worker.exited) {
-        const waited = std.posix.waitpid(worker.child.id, 0);
-        clusterWorkerDecodeStatus(worker, waited.status);
+        if (clusterChildPid(worker)) |pid| {
+            const waited = clusterWaitPid(pid, 0);
+            clusterWorkerDecodeStatus(worker, waited.status);
+        }
         clusterCloseStreams(worker);
     }
     return clusterWorkerSnapshotJson(worker, out_ptr, out_len);
@@ -5477,7 +5538,7 @@ const TimersPromisesIntervalHandle = struct {
             .allocator = allocator,
             .delay_ms = delay_ms,
             .value = owned_value,
-            .next_deadline_ms = std.time.milliTimestamp() + @as(i64, @intCast(delay_ms)),
+            .next_deadline_ms = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms))) + @as(i64, @intCast(delay_ms)),
         };
         return handle;
     }
@@ -5489,7 +5550,8 @@ const TimersPromisesIntervalHandle = struct {
 };
 
 fn sleepMs(ms: u64) void {
-    std.time.sleep(ms * std.time.ns_per_ms);
+    const ns = std.math.mul(u64, ms, 1_000_000) catch return;
+    sio.io().sleep(.fromNanoseconds(@intCast(ns)), .awake) catch {};
 }
 
 pub export fn sa_node_plugin_timers_promises_set_timeout(ms: u64, value_ptr: ?[*]const u8, value_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -5529,7 +5591,7 @@ pub export fn sa_node_plugin_timers_promises_interval_next(interval_ptr: ?*anyop
         out_done.?.* = 1;
         return 0;
     }
-    const now = std.time.milliTimestamp();
+    const now = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     if (handle.next_deadline_ms > now) {
         sleepMs(@intCast(handle.next_deadline_ms - now));
     }
@@ -5893,7 +5955,7 @@ fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u
     var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"family\":") catch return fail();
-    out.writer().print("{d}", .{handle.family}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{handle.family}) catch return fail();
     out.appendSlice(",\"server\":") catch return fail();
     out.appendSlice(if (handle.server) "true" else "false") catch return fail();
     out.appendSlice(",\"closed\":") catch return fail();
@@ -5908,13 +5970,13 @@ fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u
     appendJsonString(&out, handle.alpn) catch return fail();
     out.appendSlice(",\"cc\":") catch return fail();
     appendJsonString(&out, handle.cc) catch return fail();
-    out.writer().print(",\"idleTimeoutMs\":{d}", .{handle.idle_timeout_ms}) catch return fail();
+    sio.managedWriter(&out).print(",\"idleTimeoutMs\":{d}", .{handle.idle_timeout_ms}) catch return fail();
     out.appendSlice(",\"localHost\":") catch return fail();
     appendJsonString(&out, handle.local_host) catch return fail();
-    out.writer().print(",\"localPort\":{d}", .{handle.local_port}) catch return fail();
+    sio.managedWriter(&out).print(",\"localPort\":{d}", .{handle.local_port}) catch return fail();
     out.appendSlice(",\"remoteHost\":") catch return fail();
     appendJsonString(&out, handle.remote_host) catch return fail();
-    out.writer().print(",\"remotePort\":{d}", .{handle.remote_port}) catch return fail();
+    sio.managedWriter(&out).print(",\"remotePort\":{d}", .{handle.remote_port}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -6701,7 +6763,7 @@ pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_le
     out.appendSlice("{\"module\":\"cluster\",\"supported\":true,\"mode\":\"top-level-native-cluster-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &cluster_export_names) catch return fail();
     out.appendSlice(",\"isPrimary\":true,\"isMaster\":true,\"isWorker\":false,\"schedulingPolicy\":") catch return fail();
-    out.writer().print("{d}", .{cluster_scheduling_policy}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{cluster_scheduling_policy}) catch return fail();
     out.appendSlice(",\"constants\":{\"SCHED_NONE\":1,\"SCHED_RR\":2},\"settings\":") catch return fail();
     out.appendSlice((primary_ptr orelse return fail())[0..@intCast(primary_len)]) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"setupPrimary\":true,\"setupMaster\":true,\"fork\":true,\"disconnect\":false,\"WorkerClass\":false,\"workerProperty\":false,\"workersMap\":false,\"send\":true,\"kill\":true,\"wait\":true,\"sharedServerHandles\":false,\"internalSerialization\":false},\"capabilities\":[\"setupPrimary and setupMaster config metadata\",\"fork subprocess worker handles\",\"stdin/stdout message exchange\",\"worker pid/alive/connected snapshot\",\"worker disconnect/kill/wait/free\"],\"limitations\":[\"no JavaScript EventEmitter primary or worker object model\",\"no shared libuv server handle distribution\",\"no Node internal IPC framing or structured serialization\",\"workers and worker are exposed as metadata only, not live JavaScript objects\",\"disconnect is only available on explicit native worker handles, not as a top-level cluster object method\"]}") catch return fail();
@@ -6739,7 +6801,7 @@ pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"stackDepth\":") catch return fail();
-    out.writer().print("{d}", .{domain_stack.items.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{domain_stack.items.len}) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"Domain\":true,\"create\":true,\"createDomain\":true,\"active\":true,\"_stack\":true,\"enter\":true,\"exit\":true,\"dispose\":true,\"bind\":false,\"intercept\":false,\"run\":false,\"disposeEvent\":false,\"asyncPropagation\":false},\"capabilities\":[\"create native domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain snapshot and stack-depth metadata\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance or process.domain mutation hooks\",\"no bind/intercept callback wrapping or run() callback execution helper\",\"no uncaught exception capture callback integration\",\"no async_hooks, Promise, or timer callback domain propagation\",\"_stack is exposed as metadata rather than a live JavaScript array\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -6856,11 +6918,11 @@ fn moduleCompileCacheStatusConstantsJson() []const u8 {
 
 fn moduleResolveCompileCacheDir(allocator: std.mem.Allocator) ![]u8 {
     if (module_compile_cache_dir) |dir| return cloneOrNullTerminatedDup(allocator, dir);
-    const resolved = if (std.posix.getenv("NODE_COMPILE_CACHE")) |configured|
+    const resolved = if (envGet("NODE_COMPILE_CACHE")) |configured|
         try allocator.dupe(u8, configured)
-    else if (std.posix.getenv("XDG_CACHE_HOME")) |xdg|
+    else if (envGet("XDG_CACHE_HOME")) |xdg|
         try std.fs.path.join(allocator, &[_][]const u8{ xdg, "sa_plugin_node", "compile-cache" })
-    else if (std.posix.getenv("HOME")) |home|
+    else if (envGet("HOME")) |home|
         try std.fs.path.join(allocator, &[_][]const u8{ home, ".cache", "sa_plugin_node", "compile-cache" })
     else
         try allocator.dupe(u8, "/tmp/sa_plugin_node-compile-cache");
@@ -6870,21 +6932,21 @@ fn moduleResolveCompileCacheDir(allocator: std.mem.Allocator) ![]u8 {
 
 fn moduleEnsureDir(path: []const u8) !void {
     if (std.fs.path.isAbsolute(path)) {
-        var root = try std.fs.openDirAbsolute("/", .{});
+        var root = try sio.openDirAbsolute("/", .{});
         defer root.close();
-        const sub = std.mem.trimLeft(u8, path, "/");
+        const sub = std.mem.trimStart(u8, path, "/");
         if (sub.len == 0) return;
         try root.makePath(sub);
         return;
     }
-    try std.fs.cwd().makePath(path);
+    try sio.cwd().makePath(path);
 }
 
 fn moduleWriteCompileCacheResultJson(status_code: u64, directory: ?[]const u8, message: ?[]const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"status\":") catch return fail();
-    out.writer().print("{d}", .{status_code}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{status_code}) catch return fail();
     out.appendSlice(",\"directory\":") catch return fail();
     if (directory) |dir| {
         appendJsonString(&out, dir) catch return fail();
@@ -6929,7 +6991,7 @@ fn moduleFindSourceMappingUrl(text: []const u8) ?[]const u8 {
 fn moduleAppendGlobalPaths(out: *std.array_list.Managed(u8), allocator: std.mem.Allocator) !void {
     try out.append('[');
     var first = true;
-    if (std.posix.getenv("NODE_PATH")) |node_path| {
+    if (envGet("NODE_PATH")) |node_path| {
         const delimiter: u8 = if (builtin.os.tag == .windows) ';' else ':';
         var parts = std.mem.splitScalar(u8, node_path, delimiter);
         while (parts.next()) |part| {
@@ -6938,7 +7000,7 @@ fn moduleAppendGlobalPaths(out: *std.array_list.Managed(u8), allocator: std.mem.
             try appendJsonString(out, part);
         }
     }
-    if (std.posix.getenv("HOME")) |home| {
+    if (envGet("HOME")) |home| {
         const user_modules = try std.fs.path.join(allocator, &[_][]const u8{ home, ".node_modules" });
         defer allocator.free(user_modules);
         try appendJsonFieldSeparator(out, &first);
@@ -6955,7 +7017,7 @@ fn moduleAppendGlobalPaths(out: *std.array_list.Managed(u8), allocator: std.mem.
 
 fn moduleAbsolutePath(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     if (std.fs.path.isAbsolute(input)) return allocator.dupe(u8, input);
-    const cwd = try std.process.getCwdAlloc(allocator);
+    const cwd = try sio.getCwdAlloc(allocator);
     defer allocator.free(cwd);
     return std.fs.path.join(allocator, &[_][]const u8{ cwd, input });
 }
@@ -6965,7 +7027,7 @@ fn moduleFindPackageJsonPath(allocator: std.mem.Allocator, input: []const u8) !?
     defer allocator.free(absolute);
 
     var current = blk: {
-        if (std.fs.openDirAbsolute(absolute, .{})) |opened_dir| {
+        if (sio.openDirAbsolute(absolute, .{})) |opened_dir| {
             var dir = opened_dir;
             dir.close();
             break :blk try allocator.dupe(u8, absolute);
@@ -6978,8 +7040,8 @@ fn moduleFindPackageJsonPath(allocator: std.mem.Allocator, input: []const u8) !?
     while (true) {
         const candidate = try std.fs.path.join(allocator, &[_][]const u8{ current, "package.json" });
         errdefer allocator.free(candidate);
-        if (std.fs.accessAbsolute(candidate, .{})) |_| {
-            const real = std.fs.realpathAlloc(allocator, candidate) catch candidate;
+        if (std.Io.Dir.accessAbsolute(sio.io(), candidate, .{})) |_| {
+            const real = sio.cwd().realpathAlloc(allocator, candidate) catch candidate;
             if (real.ptr != candidate.ptr) allocator.free(candidate);
             allocator.free(current);
             return real;
@@ -7116,7 +7178,7 @@ pub export fn sa_node_plugin_module_find_source_map_json(path_ptr: ?[*]const u8,
     const absolute = moduleAbsolutePath(allocator, input) catch return fail();
     defer allocator.free(absolute);
 
-    const file = std.fs.openFileAbsolute(absolute, .{}) catch return writeOwnedString(out_ptr, out_len, "null");
+    var file = sio.openFileAbsolute(absolute, .{}) catch return writeOwnedString(out_ptr, out_len, "null");
     defer file.close();
     const data = file.readToEndAlloc(allocator, 1024 * 1024) catch return fail();
     defer allocator.free(data);
@@ -7319,7 +7381,7 @@ pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_
     out.appendSlice(",\"configuredHost\":") catch return fail();
     appendJsonString(&out, snapshot.host) catch return fail();
     out.appendSlice(",\"configuredPort\":") catch return fail();
-    out.writer().print("{d}", .{snapshot.port}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
     out.appendSlice(",\"waitForDebugger\":") catch return fail();
     out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
     out.appendSlice(",\"breakFirstLine\":") catch return fail();
@@ -7377,7 +7439,7 @@ pub export fn sa_node_plugin_inspector_config_json(out_ptr: ?*?[*]const u8, out_
     out.appendSlice(",\"host\":") catch return fail();
     appendJsonString(&out, snapshot.host) catch return fail();
     out.appendSlice(",\"port\":") catch return fail();
-    out.writer().print("{d}", .{snapshot.port}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
     out.appendSlice(",\"waitForDebugger\":") catch return fail();
     out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
     out.appendSlice(",\"breakFirstLine\":") catch return fail();
@@ -7405,7 +7467,7 @@ pub export fn sa_node_plugin_inspector_url_json(out_ptr: ?*?[*]const u8, out_len
     }
     out.appendSlice(",\"port\":") catch return fail();
     if (snapshot.enabled) {
-        out.writer().print("{d}", .{snapshot.port}) catch return fail();
+        sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
@@ -7439,7 +7501,7 @@ pub export fn sa_node_plugin_http_status_json(out_ptr: ?*?[*]const u8, out_len: 
     out.appendSlice(",\"statusCodes\":") catch return fail();
     out.appendSlice((status_codes_ptr orelse return fail())[0..@intCast(status_codes_len)]) catch return fail();
     out.appendSlice(",\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
-    out.writer().print("{d}", .{http_max_idle_parsers}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{http_max_idle_parsers}) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"request\":true,\"get\":true,\"createServer\":true,\"validateHeaderName\":true,\"validateHeaderValue\":true,\"setMaxIdleHTTPParsers\":true,\"METHODS\":true,\"STATUS_CODES\":true,\"maxHeaderSize\":true,\"ClientRequest\":false,\"IncomingMessage\":false,\"OutgoingMessage\":false,\"Server\":false,\"ServerResponse\":false,\"Agent\":false,\"globalAgent\":false,\"WebSocket\":false},\"capabilities\":[\"HTTP/1 request and get JSON helpers\",\"explicit native client/request/response handles\",\"explicit native server/request/response handles\",\"header validation helpers\",\"HTTP metadata for methods, status codes, and max header size\",\"WebSocket bridge helpers through explicit native handles\"],\"limitations\":[\"no JavaScript ClientRequest, IncomingMessage, OutgoingMessage, Server, or ServerResponse class instances\",\"request and get return completed native response JSON rather than asynchronous event emitter objects\",\"no Agent or globalAgent object model\",\"WebSocket is available through explicit bridge helpers rather than the top-level undici WebSocket class export\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -7496,7 +7558,7 @@ pub export fn sa_node_plugin_http_config_json(out_ptr: ?*?[*]const u8, out_len: 
     var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
-    out.writer().print("{d}", .{http_max_idle_parsers}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{http_max_idle_parsers}) catch return fail();
     out.appendSlice(",\"methods\":") catch return fail();
     out.appendSlice((methods_ptr orelse return fail())[0..@intCast(methods_len)]) catch return fail();
     out.appendSlice(",\"statusCodes\":") catch return fail();
@@ -7813,7 +7875,7 @@ pub export fn sa_node_plugin_tls_feature_support_json(out_ptr: ?*?[*]const u8, o
 }
 
 fn tlsIsIpAddressName(hostname: []const u8) bool {
-    _ = std.net.Address.parseIp(hostname, 0) catch return false;
+    _ = std.Io.net.IpAddress.parse(hostname, 0) catch return false;
     return true;
 }
 
@@ -7986,7 +8048,7 @@ pub export fn sa_node_plugin_net_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     out.appendSlice(",\"defaults\":{\"autoSelectFamily\":") catch return fail();
     out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
     out.appendSlice(",\"autoSelectFamilyAttemptTimeout\":") catch return fail();
-    out.writer().print("{d}", .{auto_select_timeout}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{auto_select_timeout}) catch return fail();
     out.appendSlice("},\"featureSupport\":{\"connect\":true,\"createConnection\":true,\"createConnectionOptions\":true,\"listenOptions\":true,\"createServer\":true,\"isIP\":true,\"isIPv4\":true,\"isIPv6\":true,\"BlockList\":true,\"BlockList.familyArguments\":true,\"BlockList.isBlockList\":true,\"SocketAddress\":true,\"SocketAddress.isSocketAddress\":true,\"getDefaultAutoSelectFamily\":true,\"setDefaultAutoSelectFamily\":true,\"getDefaultAutoSelectFamilyAttemptTimeout\":true,\"setDefaultAutoSelectFamilyAttemptTimeout\":true,\"Server\":false,\"Socket\":false,\"Stream\":false,\"_createServerHandle\":false,\"_normalizeArgs\":false},\"capabilities\":[\"TCP and Unix socket connect/listen/accept/read/write/end helpers\",\"socket and server address, timeout, buffer, ref, readyState, and byte-counter metadata\",\"SocketAddress and BlockList native handles with static handle-type checks\",\"BlockList string helpers with Node-style family arguments and IPv4-mapped IPv6 normalization\",\"TCP connect blocklist filtering and createConnection/createServer convenience helpers\",\"createConnection JSON options for host, hostname, port, family, localAddress, localPort, noDelay, keepAlive, keepAliveInitialDelay, and timeoutMs\",\"listen JSON options for TCP host/port and Unix path using existing native listener helpers\",\"default auto-select-family setting metadata and setters\"],\"limitations\":[\"no JavaScript Server, Socket, or Stream class instances\",\"no EventEmitter callback object model for sockets or servers\",\"_createServerHandle and _normalizeArgs internal JavaScript helpers are not modeled\",\"createConnection and createServer return explicit native handles rather than JavaScript objects\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -8010,7 +8072,7 @@ pub export fn sa_node_plugin_net_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     out.appendSlice("{\"socketModel\":\"explicit native TCP or Unix socket handle\",\"serverModel\":\"explicit native listener handle\",\"blockListModel\":\"explicit native BlockList handle with Node-style family arguments\",\"socketAddressModel\":\"explicit native SocketAddress handle\",\"defaultAutoSelectFamily\":") catch return fail();
     out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
     out.appendSlice(",\"defaultAutoSelectFamilyAttemptTimeout\":") catch return fail();
-    out.writer().print("{d}", .{auto_select_timeout}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{auto_select_timeout}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -8089,7 +8151,7 @@ const wasi_supported_versions = [_][]const u8{ "unstable", "preview1" };
 const wasi_import_module_names = [_][]const u8{ "wasi_unstable", "wasi_snapshot_preview1" };
 
 fn wasiVersion() []const u8 {
-    return std.posix.getenv("SA_NODE_WASI_VERSION") orelse "preview1";
+    return envGet("SA_NODE_WASI_VERSION") orelse "preview1";
 }
 
 fn wasiBindingName(version: []const u8) ?[]const u8 {
@@ -8099,7 +8161,7 @@ fn wasiBindingName(version: []const u8) ?[]const u8 {
 }
 
 fn wasiReadJsonConfig(allocator: std.mem.Allocator, env_name: []const u8, default_json: []const u8, expected_kind: std.meta.Tag(std.json.Value)) ![]u8 {
-    const json_text = std.process.getEnvVarOwned(allocator, env_name) catch |err| switch (err) {
+    const json_text = sio.getEnvVarOwned(allocator, env_name) catch |err| switch (err) {
         error.EnvironmentVariableNotFound => return allocator.dupe(u8, default_json),
         else => return err,
     };
@@ -8111,19 +8173,19 @@ fn wasiReadJsonConfig(allocator: std.mem.Allocator, env_name: []const u8, defaul
 
     var out = std.array_list.Managed(u8).init(allocator);
     errdefer out.deinit();
-    try std.json.stringify(parsed.value, .{}, out.writer());
+    try stringifyIntoList(&out, parsed.value);
     return out.toOwnedSlice();
 }
 
 fn wasiReturnOnExit() bool {
-    const value = std.posix.getenv("SA_NODE_WASI_RETURN_ON_EXIT") orelse return true;
+    const value = envGet("SA_NODE_WASI_RETURN_ON_EXIT") orelse return true;
     if (value.len == 0) return true;
     if (std.mem.eql(u8, value, "0")) return false;
     return !std.ascii.eqlIgnoreCase(value, "false");
 }
 
 fn wasiStdioFd(name: []const u8, default_value: u64) u64 {
-    const value = std.posix.getenv(name) orelse return default_value;
+    const value = envGet(name) orelse return default_value;
     return std.fmt.parseInt(u64, value, 10) catch default_value;
 }
 
@@ -8183,7 +8245,7 @@ pub export fn sa_node_plugin_wasi_config_json(out_ptr: ?*?[*]const u8, out_len: 
     out.appendSlice(preopens_json) catch return fail();
     out.appendSlice(",\"returnOnExit\":") catch return fail();
     out.appendSlice(if (wasiReturnOnExit()) "true" else "false") catch return fail();
-    out.writer().print(",\"stdio\":{{\"stdin\":{d},\"stdout\":{d},\"stderr\":{d}}}", .{
+    sio.managedWriter(&out).print(",\"stdio\":{{\"stdin\":{d},\"stdout\":{d},\"stderr\":{d}}}", .{
         wasiStdioFd("SA_NODE_WASI_STDIN", 0),
         wasiStdioFd("SA_NODE_WASI_STDOUT", 1),
         wasiStdioFd("SA_NODE_WASI_STDERR", 2),
@@ -8833,14 +8895,14 @@ pub export fn sa_node_plugin_vfs_dir_snapshot_json(dir_ptr: ?*anyopaque, out_ptr
     const dir = vfsDirHandle(dir_ptr) orelse return fail();
     var out = std.array_list.Managed(u8).init(dir.allocator);
     defer out.deinit();
-    out.writer().print("{{\"path\":", .{}) catch return fail();
+    sio.managedWriter(&out).print("{{\"path\":", .{}) catch return fail();
     appendJsonString(&out, dir.path) catch return fail();
-    out.writer().print(",\"closed\":{s},\"index\":{d},\"entries\":[", .{ if (dir.closed) "true" else "false", dir.index }) catch return fail();
+    sio.managedWriter(&out).print(",\"closed\":{s},\"index\":{d},\"entries\":[", .{ if (dir.closed) "true" else "false", dir.index }) catch return fail();
     for (dir.entries.items, 0..) |entry, i| {
         if (i != 0) out.append(',') catch return fail();
         out.appendSlice("{\"name\":") catch return fail();
         appendJsonString(&out, entry.name) catch return fail();
-        out.writer().print(",\"type\":{d}}}", .{entry.entry_type}) catch return fail();
+        sio.managedWriter(&out).print(",\"type\":{d}}}", .{entry.entry_type}) catch return fail();
     }
     out.appendSlice("]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -9017,7 +9079,7 @@ fn vfsAppendStat(out: *std.array_list.Managed(u8), path: []const u8, entry: VfsE
         .dir => "dir",
         .symlink => "symlink",
     });
-    try out.writer().print(",\"isFile\":{s},\"isDirectory\":{s},\"isSymbolicLink\":{s},\"size\":{d}}}", .{
+    try sio.managedWriter(out).print(",\"isFile\":{s},\"isDirectory\":{s},\"isSymbolicLink\":{s},\"size\":{d}}}", .{
         if (entry.kind == .file) "true" else "false",
         if (entry.kind == .dir) "true" else "false",
         if (entry.kind == .symlink) "true" else "false",
@@ -9117,7 +9179,7 @@ pub export fn sa_node_plugin_vfs_watcher_snapshot_json(watcher_ptr: ?*anyopaque,
     defer out.deinit();
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, watcher.path) catch return fail();
-    out.writer().print(",\"recursive\":{s},\"closed\":{s},\"queued\":{d},\"events\":[", .{ if (watcher.recursive) "true" else "false", if (watcher.closed) "true" else "false", watcher.events.items.len }) catch return fail();
+    sio.managedWriter(&out).print(",\"recursive\":{s},\"closed\":{s},\"queued\":{d},\"events\":[", .{ if (watcher.recursive) "true" else "false", if (watcher.closed) "true" else "false", watcher.events.items.len }) catch return fail();
     for (watcher.events.items, 0..) |event, i| {
         if (i != 0) out.append(',') catch return fail();
         out.appendSlice("{\"event\":") catch return fail();
@@ -9147,7 +9209,7 @@ pub export fn sa_node_plugin_vfs_snapshot_json(vfs_ptr: ?*anyopaque, out_ptr: ?*
     var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"provider\":\"memory\",\"readonly\":false,\"supportsSymlinks\":true,\"supportsWatch\":true,\"watchers\":") catch return fail();
-    out.writer().print("{d},\"cwd\":", .{handle.watchers.items.len}) catch return fail();
+    sio.managedWriter(&out).print("{d},\"cwd\":", .{handle.watchers.items.len}) catch return fail();
     appendJsonString(&out, handle.cwd) catch return fail();
     out.appendSlice(",\"entries\":[") catch return fail();
     for (keys.items, 0..) |key, i| {
@@ -9199,7 +9261,7 @@ pub export fn sa_node_plugin_ffi_close(library_ptr: ?*anyopaque) u32 {
 
 pub export fn sa_node_plugin_ffi_has_symbol(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, out_bool: ?*u32) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
     out_bool.?.* = if (handle.lib.lookup(*const anyopaque, symbol_z)) |_| 1 else 0;
     return 0;
@@ -9207,7 +9269,7 @@ pub export fn sa_node_plugin_ffi_has_symbol(library_ptr: ?*anyopaque, symbol_ptr
 
 pub export fn sa_node_plugin_ffi_call_i64_0(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, out_value: ?*i64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
     const func = handle.lib.lookup(FfiFnI64_0, symbol_z) orelse return fail();
     out_value.?.* = func();
@@ -9216,7 +9278,7 @@ pub export fn sa_node_plugin_ffi_call_i64_0(library_ptr: ?*anyopaque, symbol_ptr
 
 pub export fn sa_node_plugin_ffi_call_i64_1(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, a0: i64, out_value: ?*i64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
     const func = handle.lib.lookup(FfiFnI64_1, symbol_z) orelse return fail();
     out_value.?.* = func(a0);
@@ -9225,7 +9287,7 @@ pub export fn sa_node_plugin_ffi_call_i64_1(library_ptr: ?*anyopaque, symbol_ptr
 
 pub export fn sa_node_plugin_ffi_call_i64_2(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, a0: i64, a1: i64, out_value: ?*i64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
     const func = handle.lib.lookup(FfiFnI64_2, symbol_z) orelse return fail();
     out_value.?.* = func(a0, a1);
@@ -9234,9 +9296,9 @@ pub export fn sa_node_plugin_ffi_call_i64_2(library_ptr: ?*anyopaque, symbol_ptr
 
 pub export fn sa_node_plugin_ffi_call_strlen(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, value_ptr: ?[*]const u8, value_len: u64, out_value: ?*u64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
-    const value_z = std.heap.page_allocator.dupeZ(u8, value_ptr.?[0..value_len]) catch return fail();
+    const value_z = std.heap.page_allocator.dupeSentinel(u8, value_ptr.?[0..value_len], 0) catch return fail();
     defer std.heap.page_allocator.free(value_z);
     const func = handle.lib.lookup(FfiFnStrlen, symbol_z) orelse return fail();
     out_value.?.* = @intCast(func(value_z.ptr));
@@ -9245,9 +9307,9 @@ pub export fn sa_node_plugin_ffi_call_strlen(library_ptr: ?*anyopaque, symbol_pt
 
 pub export fn sa_node_plugin_ffi_call_string_i64(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, value_ptr: ?[*]const u8, value_len: u64, a0: i64, out_value: ?*i64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
-    const value_z = std.heap.page_allocator.dupeZ(u8, value_ptr.?[0..value_len]) catch return fail();
+    const value_z = std.heap.page_allocator.dupeSentinel(u8, value_ptr.?[0..value_len], 0) catch return fail();
     defer std.heap.page_allocator.free(value_z);
     const func = handle.lib.lookup(FfiFnStringI64, symbol_z) orelse return fail();
     out_value.?.* = func(value_z.ptr, a0);
@@ -9256,9 +9318,9 @@ pub export fn sa_node_plugin_ffi_call_string_i64(library_ptr: ?*anyopaque, symbo
 
 pub export fn sa_node_plugin_ffi_call_ptr_string(library_ptr: ?*anyopaque, symbol_ptr: ?[*]const u8, symbol_len: u64, value_ptr: ?[*]const u8, value_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const handle: *FfiLibraryHandle = @ptrCast(@alignCast(library_ptr orelse return fail()));
-    const symbol_z = std.heap.page_allocator.dupeZ(u8, symbol_ptr.?[0..symbol_len]) catch return fail();
+    const symbol_z = std.heap.page_allocator.dupeSentinel(u8, symbol_ptr.?[0..symbol_len], 0) catch return fail();
     defer std.heap.page_allocator.free(symbol_z);
-    const value_z = std.heap.page_allocator.dupeZ(u8, value_ptr.?[0..value_len]) catch return fail();
+    const value_z = std.heap.page_allocator.dupeSentinel(u8, value_ptr.?[0..value_len], 0) catch return fail();
     defer std.heap.page_allocator.free(value_z);
     const func = handle.lib.lookup(FfiFnPtrString, symbol_z) orelse return fail();
     const result = func(value_z.ptr) orelse return fail();
@@ -9375,10 +9437,10 @@ const SqliteApi = struct {
 };
 
 var sqlite_api: ?SqliteApi = null;
-var sqlite_api_mutex = std.Thread.Mutex{};
+var sqlite_api_mutex = std.atomic.Mutex.unlocked;
 
 fn loadSqliteApi() ?*SqliteApi {
-    sqlite_api_mutex.lock();
+    spinLock(&sqlite_api_mutex);
     defer sqlite_api_mutex.unlock();
     if (sqlite_api) |*api| return api;
     const candidates = [_][]const u8{ "libsqlite3.so.0", "/lib/x86_64-linux-gnu/libsqlite3.so.0", "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0" };
@@ -9588,7 +9650,7 @@ pub export fn sa_node_plugin_sqlite_version_json(out_ptr: ?*?[*]const u8, out_le
     const version = std.mem.span(api.libversion());
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    json.writer().print("{{\"sqlite\":", .{}) catch return fail();
+    sio.managedWriter(&json).print("{{\"sqlite\":", .{}) catch return fail();
     appendJsonString(&json, version) catch return fail();
     json.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, json.items);
@@ -9597,7 +9659,7 @@ pub export fn sa_node_plugin_sqlite_version_json(out_ptr: ?*?[*]const u8, out_le
 pub export fn sa_node_plugin_sqlite_open(path_ptr: ?[*]const u8, path_len: u64, out_db: ?*?*anyopaque) u32 {
     const api = loadSqliteApi() orelse return fail();
     const path = path_ptr.?[0..path_len];
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     var db: ?*Sqlite3 = null;
     if (api.open_v2(path_z.ptr, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_URI, null) != SQLITE_OK) return fail();
@@ -9620,7 +9682,7 @@ pub export fn sa_node_plugin_sqlite_close(db_ptr: ?*anyopaque) u32 {
 pub export fn sa_node_plugin_sqlite_exec(db_ptr: ?*anyopaque, sql_ptr: ?[*]const u8, sql_len: u64) u32 {
     const api = loadSqliteApi() orelse return fail();
     const handle: *SqliteDbHandle = @ptrCast(@alignCast(db_ptr orelse return fail()));
-    const sql_z = std.heap.page_allocator.dupeZ(u8, sql_ptr.?[0..sql_len]) catch return fail();
+    const sql_z = std.heap.page_allocator.dupeSentinel(u8, sql_ptr.?[0..sql_len], 0) catch return fail();
     defer std.heap.page_allocator.free(sql_z);
     return if (api.exec(handle.db, sql_z.ptr, null, null, null) == SQLITE_OK) 0 else fail();
 }
@@ -9634,8 +9696,8 @@ fn sqliteAppendRow(api: *SqliteApi, stmt: ?*Sqlite3Stmt, out: *std.array_list.Ma
         try appendJsonString(out, std.mem.span(api.column_name(stmt, i)));
         try out.append(':');
         switch (api.column_type(stmt, i)) {
-            SQLITE_INTEGER => try out.writer().print("{d}", .{api.column_int64(stmt, i)}),
-            SQLITE_FLOAT => try out.writer().print("{d}", .{api.column_double(stmt, i)}),
+            SQLITE_INTEGER => try sio.managedWriter(out).print("{d}", .{api.column_int64(stmt, i)}),
+            SQLITE_FLOAT => try sio.managedWriter(out).print("{d}", .{api.column_double(stmt, i)}),
             SQLITE_TEXT => {
                 const text_ptr = api.column_text(stmt, i) orelse "";
                 const len: usize = @intCast(api.column_bytes(stmt, i));
@@ -9664,7 +9726,7 @@ fn sqliteAppendRow(api: *SqliteApi, stmt: ?*Sqlite3Stmt, out: *std.array_list.Ma
 pub export fn sa_node_plugin_sqlite_query_json(db_ptr: ?*anyopaque, sql_ptr: ?[*]const u8, sql_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const api = loadSqliteApi() orelse return fail();
     const handle: *SqliteDbHandle = @ptrCast(@alignCast(db_ptr orelse return fail()));
-    const sql_z = std.heap.page_allocator.dupeZ(u8, sql_ptr.?[0..sql_len]) catch return fail();
+    const sql_z = std.heap.page_allocator.dupeSentinel(u8, sql_ptr.?[0..sql_len], 0) catch return fail();
     defer std.heap.page_allocator.free(sql_z);
     var stmt: ?*Sqlite3Stmt = null;
     if (api.prepare_v2(handle.db, sql_z.ptr, -1, &stmt, null) != SQLITE_OK) return fail();
@@ -9688,7 +9750,7 @@ pub export fn sa_node_plugin_sqlite_query_json(db_ptr: ?*anyopaque, sql_ptr: ?[*
 pub export fn sa_node_plugin_sqlite_prepare(db_ptr: ?*anyopaque, sql_ptr: ?[*]const u8, sql_len: u64, out_stmt: ?*?*anyopaque) u32 {
     const api = loadSqliteApi() orelse return fail();
     const db_handle: *SqliteDbHandle = @ptrCast(@alignCast(db_ptr orelse return fail()));
-    const sql_z = std.heap.page_allocator.dupeZ(u8, sql_ptr.?[0..sql_len]) catch return fail();
+    const sql_z = std.heap.page_allocator.dupeSentinel(u8, sql_ptr.?[0..sql_len], 0) catch return fail();
     defer std.heap.page_allocator.free(sql_z);
     var stmt: ?*Sqlite3Stmt = null;
     if (api.prepare_v2(db_handle.db, sql_z.ptr, -1, &stmt, null) != SQLITE_OK) return fail();
@@ -9804,7 +9866,7 @@ fn sqlitePagesArg(pages: u64) c_int {
 pub export fn sa_node_plugin_sqlite_backup_init(db_ptr: ?*anyopaque, path_ptr: ?[*]const u8, path_len: u64, out_backup: ?*?*anyopaque) u32 {
     const api = loadSqliteApi() orelse return fail();
     const source: *SqliteDbHandle = @ptrCast(@alignCast(db_ptr orelse return fail()));
-    const path_z = std.heap.page_allocator.dupeZ(u8, path_ptr.?[0..path_len]) catch return fail();
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path_ptr.?[0..path_len], 0) catch return fail();
     defer std.heap.page_allocator.free(path_z);
     var dest: ?*Sqlite3 = null;
     if (api.open_v2(path_z.ptr, &dest, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_URI, null) != SQLITE_OK) return fail();
@@ -9875,7 +9937,7 @@ pub export fn sa_node_plugin_sqlite_session_create(db_ptr: ?*anyopaque, db_name_
     const api = loadSqliteApi() orelse return fail();
     const db_handle: *SqliteDbHandle = @ptrCast(@alignCast(db_ptr orelse return fail()));
     const db_name = if (db_name_ptr) |ptr| ptr[0..db_name_len] else "main";
-    const db_name_z = std.heap.page_allocator.dupeZ(u8, db_name) catch return fail();
+    const db_name_z = std.heap.page_allocator.dupeSentinel(u8, db_name, 0) catch return fail();
     defer std.heap.page_allocator.free(db_name_z);
 
     var raw_session: ?*Sqlite3Session = null;
@@ -9885,7 +9947,7 @@ pub export fn sa_node_plugin_sqlite_session_create(db_ptr: ?*anyopaque, db_name_
     var table_z: ?[:0]u8 = null;
     defer if (table_z) |table| std.heap.page_allocator.free(table);
     const table_name: ?[*:0]const u8 = if (table_len == 0) null else blk: {
-        const table = std.heap.page_allocator.dupeZ(u8, (table_ptr orelse return fail())[0..table_len]) catch return fail();
+        const table = std.heap.page_allocator.dupeSentinel(u8, (table_ptr orelse return fail())[0..table_len], 0) catch return fail();
         table_z = table;
         break :blk table.ptr;
     };
@@ -10032,7 +10094,7 @@ fn sqliteTagStoreGetStmt(store: *SqliteTagStoreHandle, api: *SqliteApi, sql: []c
         removed.deinit(api, store.allocator);
     }
 
-    const sql_z = try store.allocator.dupeZ(u8, sql);
+    const sql_z = try store.allocator.dupeSentinel(u8, sql, 0);
     defer store.allocator.free(sql_z);
     var stmt: ?*Sqlite3Stmt = null;
     if (api.prepare_v2(store.db, sql_z.ptr, -1, &stmt, null) != SQLITE_OK) return error.PrepareFailed;
@@ -10104,7 +10166,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_run(store_ptr: ?*anyopaque, sql_ptr
     if (rc != SQLITE_DONE and rc != SQLITE_ROW) return fail();
     var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
-    out.writer().print("{{\"changes\":{d},\"lastInsertRowid\":{d}}}", .{ api.changes(store.db), api.last_insert_rowid(store.db) }) catch return fail();
+    sio.managedWriter(&out).print("{{\"changes\":{d},\"lastInsertRowid\":{d}}}", .{ api.changes(store.db), api.last_insert_rowid(store.db) }) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -10112,7 +10174,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_snapshot_json(store_ptr: ?*anyopaqu
     const store = sqliteTagStoreHandle(store_ptr) orelse return fail();
     var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
-    out.writer().print("{{\"capacity\":{d},\"size\":{d},\"sql\":[", .{ store.capacity, store.entries.items.len }) catch return fail();
+    sio.managedWriter(&out).print("{{\"capacity\":{d},\"size\":{d},\"sql\":[", .{ store.capacity, store.entries.items.len }) catch return fail();
     for (store.entries.items, 0..) |entry, i| {
         if (i != 0) out.append(',') catch return fail();
         appendJsonString(&out, entry.sql) catch return fail();
@@ -10179,11 +10241,11 @@ fn ttyAppendRuntimeJson(out: *std.array_list.Managed(u8)) !void {
     try out.appendSlice("},\"stdout\":{\"isTTY\":");
     try out.appendSlice(if (stdout_is_tty != 0) "true" else "false");
     try out.appendSlice(",\"columns\":");
-    try out.writer().print("{d}", .{cols});
+    try sio.managedWriter(out).print("{d}", .{cols});
     try out.appendSlice(",\"rows\":");
-    try out.writer().print("{d}", .{rows});
+    try sio.managedWriter(out).print("{d}", .{rows});
     try out.appendSlice(",\"colorDepth\":");
-    try out.writer().print("{d}", .{color_depth});
+    try sio.managedWriter(out).print("{d}", .{color_depth});
     try out.appendSlice(",\"hasColors\":");
     try out.appendSlice(if (has_colors != 0) "true" else "false");
     try out.appendSlice("},\"stderr\":{\"isTTY\":");

@@ -1571,7 +1571,11 @@ pub export fn sa_node_plugin_web_crypto_key_free(key_ptr: ?*anyopaque) u32 {
 
 const fs = std.fs;
 
-fn msToTimespec(ms: u64) posix.timespec {
+fn fsFileFromFd(fd: posix.fd_t) sio.File {
+    return .{ .inner = .{ .handle = fd, .flags = .{ .nonblocking = false } } };
+}
+
+fn msToTimespec(ms: u64) std.c.timespec {
     return .{
         .sec = @intCast(ms / 1000),
         .nsec = @intCast((ms % 1000) * 1_000_000),
@@ -1601,7 +1605,7 @@ fn u32FromU64(value: u64) ?u32 {
 
 pub export fn sa_node_plugin_fs_chmod(path_ptr: ?[*]const u8, path_len: u64, mode: u64) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
-    const file = fs.cwd().openFile(path, .{}) catch return fail();
+    const file = sio.cwd().openFile(path, .{}) catch return fail();
     defer file.close();
     file.chmod(u32FromU64(mode) orelse return fail()) catch return fail();
     return 0;
@@ -1616,45 +1620,44 @@ pub export fn sa_node_plugin_fs_chown(path_ptr: ?[*]const u8, path_len: u64, uid
 }
 
 pub export fn sa_node_plugin_fs_fchmod(fd: u64, mode: u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const file = fsFileFromFd(fdFromU64(fd) orelse return fail());
     file.chmod(u32FromU64(mode) orelse return fail()) catch return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_fchown(fd: u64, uid: u64, gid: u64) u32 {
-    posix.fchown(fdFromU64(fd) orelse return fail(), u32FromU64(uid) orelse return fail(), u32FromU64(gid) orelse return fail()) catch return fail();
+    if (std.c.fchown(fdFromU64(fd) orelse return fail(), u32FromU64(uid) orelse return fail(), u32FromU64(gid) orelse return fail()) != 0) return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_fdatasync(fd: u64) u32 {
-    posix.fdatasync(fdFromU64(fd) orelse return fail()) catch return fail();
+    if (std.c.fdatasync(fdFromU64(fd) orelse return fail()) != 0) return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_fstat(fd: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const file = fsFileFromFd(fdFromU64(fd) orelse return fail());
     const st = file.stat() catch return fail();
     var buffer: [512]u8 = undefined;
     const json = std.fmt.bufPrint(&buffer, "{{\"size\":{d},\"mode\":{d},\"mtimeMs\":{d},\"isFile\":{},\"isDirectory\":{}}}", .{
-        st.size, @as(u64, st.mode), st.mtime, st.kind == .file, st.kind == .directory,
+        st.size, @as(u64, st.permissions.toMode()), st.mtime.toMilliseconds(), st.kind == .file, st.kind == .directory,
     }) catch return fail();
     return writeOwned(out_ptr, out_len, json);
 }
 
 pub export fn sa_node_plugin_fs_fsync(fd: u64) u32 {
-    posix.fsync(fdFromU64(fd) orelse return fail()) catch return fail();
+    if (std.c.fsync(fdFromU64(fd) orelse return fail()) != 0) return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_ftruncate(fd: u64, len: u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
-    file.setEndPos(len) catch return fail();
+    if (std.c.ftruncate(fdFromU64(fd) orelse return fail(), @intCast(len)) != 0) return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_futimes(fd: u64, atime_ms: u64, mtime_ms: u64) u32 {
-    const times = [2]posix.timespec{ msToTimespec(atime_ms), msToTimespec(mtime_ms) };
-    posix.futimens(fdFromU64(fd) orelse return fail(), &times) catch return fail();
+    const times = [2]std.c.timespec{ msToTimespec(atime_ms), msToTimespec(mtime_ms) };
+    if (std.c.futimens(fdFromU64(fd) orelse return fail(), &times) != 0) return fail();
     return 0;
 }
 
@@ -1664,7 +1667,7 @@ pub export fn sa_node_plugin_fs_glob(pattern_ptr: ?[*]const u8, pattern_len: u64
     defer results.deinit();
     results.appendSlice("[") catch return fail();
 
-    var dir = fs.cwd().openDir(".", .{ .iterate = true }) catch return fail();
+    var dir = sio.cwd().openDir(".", .{ .iterate = true }) catch return fail();
     defer dir.close();
     var iter = dir.iterate();
     var first = true;
@@ -1695,7 +1698,11 @@ pub export fn sa_node_plugin_fs_glob(pattern_ptr: ?[*]const u8, pattern_len: u64
 pub export fn sa_node_plugin_fs_link(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
     const src = fsPathSlice(src_ptr, src_len) orelse return fail();
     const dst = fsPathSlice(dst_ptr, dst_len) orelse return fail();
-    posix.linkat(posix.AT.FDCWD, src, posix.AT.FDCWD, dst, 0) catch return fail();
+    const src_z = std.heap.page_allocator.dupeSentinel(u8, src, 0) catch return fail();
+    defer std.heap.page_allocator.free(src_z);
+    const dst_z = std.heap.page_allocator.dupeSentinel(u8, dst, 0) catch return fail();
+    defer std.heap.page_allocator.free(dst_z);
+    if (std.c.linkat(posix.AT.FDCWD, src_z.ptr, posix.AT.FDCWD, dst_z.ptr, 0) != 0) return fail();
     return 0;
 }
 
@@ -1709,17 +1716,17 @@ pub export fn sa_node_plugin_fs_mkdtemp(template_ptr: ?[*]const u8, template_len
     const rand_val = std.mem.readInt(u64, &rand_bytes, .little);
     const suffix = std.fmt.bufPrint(buf[template_name.len..], "{x}", .{rand_val}) catch return fail();
     const full_path = buf[0 .. template_name.len + suffix.len];
-    fs.cwd().makeDir(full_path) catch return fail();
+    sio.cwd().makeDir(full_path) catch return fail();
     return writeOwned(out_ptr, out_len, full_path);
 }
 
 pub export fn sa_node_plugin_fs_open(path_ptr: ?[*]const u8, path_len: u64, flags: u64, mode: u64, out_fd: ?*u64) u32 {
     _ = mode;
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
-    var open_flags: fs.File.OpenFlags = .{};
+    var open_flags: std.Io.Dir.OpenFileOptions = .{};
     if (flags & 2 != 0) open_flags.mode = .read_write else if (flags & 1 != 0) open_flags.mode = .write_only else open_flags.mode = .read_only;
-    const file = fs.cwd().openFile(path, open_flags) catch return fail();
-    out_fd.?.* = @intCast(file.handle);
+    const file = sio.cwd().openFile(path, open_flags) catch return fail();
+    out_fd.?.* = @intCast(file.inner.handle);
     return 0;
 }
 
@@ -1731,23 +1738,33 @@ pub export fn sa_node_plugin_fs_close_fd(fd: u64) u32 {
 }
 
 pub export fn sa_node_plugin_fs_read_fd(fd: u64, buf_ptr: ?[*]u8, len: u64, offset: u64, out_n: ?*u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const os_fd = fdFromU64(fd) orelse return fail();
     const buf = (buf_ptr orelse return fail())[0..len];
-    const n = file.pread(buf, offset) catch return fail();
-    out_n.?.* = n;
+    if (buf.len == 0) {
+        out_n.?.* = 0;
+        return 0;
+    }
+    const rc = std.c.pread(os_fd, buf.ptr, buf.len, @intCast(offset));
+    if (rc < 0) return fail();
+    out_n.?.* = @intCast(rc);
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_write_fd(fd: u64, data_ptr: ?[*]const u8, data_len: u64, offset: u64, out_n: ?*u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const os_fd = fdFromU64(fd) orelse return fail();
     const data = (data_ptr orelse return fail())[0..data_len];
-    const n = file.pwrite(data, offset) catch return fail();
-    out_n.?.* = n;
+    if (data.len == 0) {
+        out_n.?.* = 0;
+        return 0;
+    }
+    const rc = std.c.pwrite(os_fd, data.ptr, data.len, @intCast(offset));
+    if (rc < 0) return fail();
+    out_n.?.* = @intCast(rc);
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_readv(fd: u64, iov_json_ptr: ?[*]const u8, iov_json_len: u64, out_n: ?*u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const file = fsFileFromFd(fdFromU64(fd) orelse return fail());
     const iov_json = if (iov_json_ptr) |p| p[0..iov_json_len] else "[]";
     if (iov_json_len == 0) {
         out_n.?.* = 0;
@@ -1781,7 +1798,7 @@ pub export fn sa_node_plugin_fs_readv(fd: u64, iov_json_ptr: ?[*]const u8, iov_j
 }
 
 pub export fn sa_node_plugin_fs_writev(fd: u64, iov_json_ptr: ?[*]const u8, iov_json_len: u64, out_n: ?*u64) u32 {
-    const file = fs.File{ .handle = fdFromU64(fd) orelse return fail() };
+    const file = fsFileFromFd(fdFromU64(fd) orelse return fail());
     const iov_json = if (iov_json_ptr) |p| p[0..iov_json_len] else "[]";
     if (iov_json_len == 0) {
         out_n.?.* = 0;
@@ -1812,8 +1829,8 @@ pub export fn sa_node_plugin_fs_writev(fd: u64, iov_json_ptr: ?[*]const u8, iov_
 
 const DirIterHandle = struct {
     dir_fd: std.posix.fd_t,
-    dir: fs.Dir,
-    entries: std.array_list.Managed(fs.Dir.Entry),
+    dir: sio.Dir,
+    entries: std.array_list.Managed(sio.Entry),
     index: usize,
 };
 
@@ -1822,12 +1839,12 @@ pub export fn sa_node_plugin_fs_opendir(path_ptr: ?[*]const u8, path_len: u64, o
     var dir = if (std.fs.path.isAbsolute(path))
         sio.openDirAbsolute(path, .{ .iterate = true }) catch return fail()
     else
-        fs.cwd().openDir(path, .{ .iterate = true }) catch return fail();
+        sio.cwd().openDir(path, .{ .iterate = true }) catch return fail();
     const handle = std.heap.page_allocator.create(DirIterHandle) catch {
         dir.close();
         return fail();
     };
-    var entries = std.array_list.Managed(fs.Dir.Entry).init(std.heap.page_allocator);
+    var entries = std.array_list.Managed(sio.Entry).init(std.heap.page_allocator);
     errdefer entries.deinit();
     var iter = dir.iterate();
     while (true) {
@@ -1840,7 +1857,7 @@ pub export fn sa_node_plugin_fs_opendir(path_ptr: ?[*]const u8, path_len: u64, o
             std.heap.page_allocator.destroy(handle);
             return fail();
         };
-        entries.append(.{ .name = name, .kind = entry.kind }) catch {
+        entries.append(.{ .name = name, .kind = entry.kind, .inode = entry.inode }) catch {
             std.heap.page_allocator.free(name);
             for (entries.items) |e| std.heap.page_allocator.free(e.name);
             entries.deinit();
@@ -1849,7 +1866,7 @@ pub export fn sa_node_plugin_fs_opendir(path_ptr: ?[*]const u8, path_len: u64, o
             return fail();
         };
     }
-    handle.* = .{ .dir_fd = dir.fd, .dir = dir, .entries = entries, .index = 0 };
+    handle.* = .{ .dir_fd = dir.fd(), .dir = dir, .entries = entries, .index = 0 };
     out_handle.?.* = @ptrCast(handle);
     return 0;
 }
@@ -1887,47 +1904,47 @@ pub export fn sa_node_plugin_fs_opendir_free(handle_ptr: ?*anyopaque) u32 {
 pub export fn sa_node_plugin_fs_rm(path_ptr: ?[*]const u8, path_len: u64, recursive: u64) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
     if (recursive != 0) {
-        fs.cwd().deleteTree(path) catch return fail();
+        sio.cwd().deleteTree(path) catch return fail();
     } else {
-        fs.cwd().deleteFile(path) catch return fail();
+        sio.cwd().deleteFile(path) catch return fail();
     }
     return 0;
 }
 
 fn fsPathExists(path: []const u8) bool {
-    _ = fs.cwd().statFile(path) catch return false;
+    _ = sio.cwd().statFile(path) catch return false;
     return true;
 }
 
 fn fsEnsureParentPath(path: []const u8) !void {
     if (fs.path.dirname(path)) |parent| {
-        if (parent.len > 0) try fs.cwd().makePath(parent);
+        if (parent.len > 0) try sio.cwd().makePath(parent);
     }
 }
 
-fn fsCopySymlink(src_dir: fs.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
-    var target_buffer: [fs.max_path_bytes]u8 = undefined;
+fn fsCopySymlink(src_dir: sio.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
+    var target_buffer: [sio.max_path_bytes]u8 = undefined;
     const target = try src_dir.readLink(src_path, &target_buffer);
 
     try fsEnsureParentPath(dst_path);
-    if (force) fs.cwd().deleteFile(dst_path) catch {};
-    try fs.cwd().symLink(target, dst_path, .{});
+    if (force) sio.cwd().deleteFile(dst_path) catch {};
+    try sio.cwd().symLink(target, dst_path, .{});
 }
 
 fn fsCopyFilePath(src_path: []const u8, dst_path: []const u8, force: bool) !void {
     try fsEnsureParentPath(dst_path);
-    if (force) fs.cwd().deleteFile(dst_path) catch {};
+    if (force) sio.cwd().deleteFile(dst_path) catch {};
     if (fs.path.isAbsolute(src_path) and fs.path.isAbsolute(dst_path)) {
-        try fs.copyFileAbsolute(src_path, dst_path, .{});
+        try sio.copyFileAbsolute(src_path, dst_path);
     } else {
-        try fs.cwd().copyFile(src_path, fs.cwd(), dst_path, .{});
+        try sio.cwd().copyFile(src_path, sio.cwd(), dst_path, .{});
     }
 }
 
 fn fsCopyDirectoryRecursive(src_path: []const u8, dst_path: []const u8, force: bool) !void {
-    try fs.cwd().makePath(dst_path);
+    try sio.cwd().makePath(dst_path);
 
-    var source_dir = try fs.cwd().openDir(src_path, .{ .iterate = true });
+    var source_dir = try sio.cwd().openDir(src_path, .{ .iterate = true });
     defer source_dir.close();
 
     var walker = try source_dir.walk(std.heap.page_allocator);
@@ -1938,7 +1955,7 @@ fn fsCopyDirectoryRecursive(src_path: []const u8, dst_path: []const u8, force: b
         defer std.heap.page_allocator.free(child_dst);
 
         switch (entry.kind) {
-            .directory => try fs.cwd().makePath(child_dst),
+            .directory => try sio.cwd().makePath(child_dst),
             .file => {
                 const child_src = try fs.path.join(std.heap.page_allocator, &.{ src_path, entry.path });
                 defer std.heap.page_allocator.free(child_src);
@@ -1959,14 +1976,14 @@ fn fsCpPath(src_path: []const u8, dst_path: []const u8, recursive: bool, force: 
     if (dst_exists and error_on_exist) return error.PathAlreadyExists;
     if (dst_exists and !force) return;
 
-    const src_stat = try fs.cwd().statFile(src_path);
+    const src_stat = try sio.cwd().statFile(src_path);
     switch (src_stat.kind) {
         .directory => {
             if (!recursive) return error.IsDir;
             try fsCopyDirectoryRecursive(src_path, dst_path, force);
         },
         .file => try fsCopyFilePath(src_path, dst_path, force),
-        .sym_link => try fsCopySymlink(fs.cwd(), src_path, dst_path, force),
+        .sym_link => try fsCopySymlink(sio.cwd(), src_path, dst_path, force),
         else => return error.UnsupportedFileType,
     }
 }
@@ -2002,15 +2019,15 @@ pub export fn sa_node_plugin_fs_statfs(path_ptr: ?[*]const u8, out_json_ptr: ?*?
 pub export fn sa_node_plugin_fs_symlink(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
     const src = fsPathSlice(src_ptr, src_len) orelse return fail();
     const dst = fsPathSlice(dst_ptr, dst_len) orelse return fail();
-    posix.symlinkat(src, posix.AT.FDCWD, dst) catch return fail();
+    sio.cwd().symLink(src, dst, .{}) catch return fail();
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_truncate(path_ptr: ?[*]const u8, path_len: u64, len: u64) u32 {
     const path = fsPathSlice(path_ptr, path_len) orelse return fail();
-    const file = fs.cwd().openFile(path, .{ .mode = .write_only }) catch return fail();
+    const file = sio.cwd().openFile(path, .{ .mode = .write_only }) catch return fail();
     defer file.close();
-    file.setEndPos(len) catch return fail();
+    if (std.c.ftruncate(file.inner.handle, @intCast(len)) != 0) return fail();
     return 0;
 }
 
@@ -2230,12 +2247,14 @@ pub export fn sa_node_plugin_events_emit_with_error(ee_ptr: ?*anyopaque, event_p
 var console_count_map = std.StringHashMap(u64).init(std.heap.page_allocator);
 
 fn consoleWrite(prefix: []const u8, data_ptr: ?[*]const u8, data_len: u64) void {
-    const out = sio.getStdOut().writer();
+    var wbuf: [8192]u8 = undefined;
+    var out = sio.getStdOut().writer(&wbuf);
     const data = if (data_len == 0)
         ""
     else
         (data_ptr orelse return)[0..data_len];
-    out.print("{s}{s}\n", .{ prefix, data }) catch {};
+    out.interface.print("{s}{s}\n", .{ prefix, data }) catch {};
+    out.interface.flush() catch {};
 }
 
 pub export fn sa_node_plugin_console_warn(data_ptr: ?[*]const u8, data_len: u64) u32 {
@@ -2284,8 +2303,10 @@ pub export fn sa_node_plugin_console_count_reset(label_ptr: ?[*]const u8, label_
 
 pub export fn sa_node_plugin_console_assert(condition: u32, data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (condition == 0) {
-        const err = sio.getStdErr().writer();
-        err.print("Assertion failed: {s}\n", .{data_ptr.?[0..data_len]}) catch {};
+        var wbuf: [8192]u8 = undefined;
+        var err = sio.getStdErr().writer(&wbuf);
+        err.interface.print("Assertion failed: {s}\n", .{data_ptr.?[0..data_len]}) catch {};
+        err.interface.flush() catch {};
     }
     return 0;
 }
@@ -3485,7 +3506,7 @@ fn runChildCapture(argv: []const []const u8, out_ptr: ?*?[*]const u8, out_len: ?
     defer std.heap.page_allocator.free(result.stderr);
     defer std.heap.page_allocator.free(result.stdout);
     switch (result.term) {
-        .Exited => {},
+        .exited => {},
         else => return fail(),
     }
     return writeOwned(out_ptr, out_len, result.stdout);
@@ -3508,8 +3529,8 @@ pub export fn sa_node_plugin_child_process_exec(
     child.stderr_behavior = .Pipe;
     child.stdout_behavior = .Pipe;
     child.spawn() catch return fail();
-    out_pid.?.* = @intCast(child.id);
-    const stdout = child.stdout.?.reader().readAllAlloc(std.heap.page_allocator, 1024 * 1024) catch "";
+    out_pid.?.* = @intCast(child.inner.?.id.?);
+    const stdout = child.stdout.?.readToEndAlloc(std.heap.page_allocator, 1024 * 1024) catch "";
     {
         _ = child.wait() catch null;
     }
@@ -3557,7 +3578,7 @@ pub export fn sa_node_plugin_child_process_fork(
     child.stdout_behavior = .Ignore;
     child.stderr_behavior = .Ignore;
     child.spawn() catch return fail();
-    out_pid.?.* = @intCast(child.id);
+    out_pid.?.* = @intCast(child.inner.?.id.?);
     return 0;
 }
 
@@ -3572,7 +3593,7 @@ pub export fn sa_node_plugin_child_process_spawn(
     defer argv.deinit();
     var child = sio.Child.init(argv.items, std.heap.page_allocator);
     child.spawn() catch return fail();
-    out_pid.?.* = @intCast(child.id);
+    out_pid.?.* = @intCast(child.inner.?.id.?);
     return 0;
 }
 
@@ -3767,7 +3788,7 @@ pub export fn sa_node_plugin_net_is_ipv4(str_ptr: ?[*]const u8, str_len: u64, ou
 pub export fn sa_node_plugin_net_is_ipv6(str_ptr: ?[*]const u8, str_len: u64, out_bool: ?*u64) u32 {
     const out = out_bool orelse return fail();
     const str = (str_ptr orelse return fail())[0..str_len];
-    if (std.net.Address.parseIp6(str, 0)) |_| {
+    if (NetAddr.parseIp6(str, 0)) |_| {
         out.* = 1;
     } else |_| {
         out.* = 0;
@@ -4112,13 +4133,22 @@ pub export fn sa_node_plugin_tls_secure_context_free(context_ptr: ?*anyopaque) u
     return 0;
 }
 
+fn tlsTcpConnectToHost(host: []const u8, port: u16) !std.Io.net.Stream {
+    if (NetAddr.parse(host, port)) |addr| {
+        return addr.connect(sio.io(), .{ .mode = .stream });
+    } else |_| {}
+    const host_name = try std.Io.net.HostName.init(host);
+    const hn = std.Io.net.HostName{ .name = host_name.name };
+    return hn.connect(sio.io(), port, .{ .mode = .stream });
+}
+
 pub export fn sa_node_plugin_tls_connect(host_ptr: ?[*]const u8, host_len: u64, port: u64, servername_ptr: ?[*]const u8, servername_len: u64, reject_unauthorized: u64, out_socket: ?*?*anyopaque) u32 {
     const allocator = std.heap.page_allocator;
     const host = (host_ptr orelse return fail())[0..host_len];
     const servername = if (servername_ptr) |ptr| ptr[0..servername_len] else host;
     if (port > std.math.maxInt(u16)) return fail();
-    const stream = std.net.tcpConnectToHost(allocator, host, @as(u16, @intCast(port))) catch return fail();
-    errdefer stream.close();
+    const stream = tlsTcpConnectToHost(host, @as(u16, @intCast(port))) catch return fail();
+    errdefer stream.close(sio.io());
     return tlsInitClientHandle(allocator, stream, host, servername, reject_unauthorized, 0, out_socket);
 }
 
@@ -4128,8 +4158,8 @@ pub export fn sa_node_plugin_tls_connect_secure_context(context_ptr: ?*anyopaque
     const host = (host_ptr orelse return fail())[0..host_len];
     const servername = if (servername_ptr) |ptr| ptr[0..servername_len] else host;
     if (port > std.math.maxInt(u16)) return fail();
-    const stream = std.net.tcpConnectToHost(allocator, host, @as(u16, @intCast(port))) catch return fail();
-    errdefer stream.close();
+    const stream = tlsTcpConnectToHost(host, @as(u16, @intCast(port))) catch return fail();
+    errdefer stream.close(sio.io());
     return tlsInitClientHandleWithCaPem(allocator, stream, host, servername, reject_unauthorized, 0, ctx.ca_pem, out_socket);
 }
 
@@ -4142,16 +4172,17 @@ pub export fn sa_node_plugin_tls_connect_options(host_ptr: ?[*]const u8, host_le
     const address = tlsParseRemoteAddress(host, port, family) catch return fail();
     if (tlsAddressBlocked(allocator, blocklist_ptr, address)) return 3;
     const stream = tlsConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch return fail();
-    errdefer stream.close();
+    errdefer stream.close(sio.io());
     return tlsInitClientHandle(allocator, stream, host, servername, reject_unauthorized, timeout_ms, out_socket);
 }
 
 pub export fn sa_node_plugin_tls_write(socket_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
     const handle: *TlsClientHandle = @ptrCast(@alignCast(socket_ptr orelse return fail()));
     if (handle.closed or !handle.writable) return fail();
-    const stream = handle.stream orelse return fail();
+    _ = handle.stream orelse return fail();
     const data = data_ptr.?[0..data_len];
-    handle.client.writeAll(stream, data) catch return fail();
+    handle.client.writer.writeAll(data) catch return fail();
+    handle.client.writer.flush() catch return fail();
     handle.bytes_written +|= data_len;
     return 0;
 }
@@ -4159,12 +4190,12 @@ pub export fn sa_node_plugin_tls_write(socket_ptr: ?*anyopaque, data_ptr: ?[*]co
 pub export fn sa_node_plugin_tls_read(socket_ptr: ?*anyopaque, max_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const handle: *TlsClientHandle = @ptrCast(@alignCast(socket_ptr orelse return fail()));
     if (handle.closed or !handle.readable) return fail();
-    const stream = handle.stream orelse return fail();
+    _ = handle.stream orelse return fail();
     const cap = @max(@as(u64, 1), max_len);
     const buf = handle.allocator.alloc(u8, cap) catch return fail();
     errdefer handle.allocator.free(buf);
 
-    const n = handle.client.read(stream, buf) catch return fail();
+    const n = handle.client.reader.readSliceShort(buf) catch return fail();
     if (n == 0) {
         handle.allocator.free(buf);
         handle.readable = false;
@@ -4268,8 +4299,8 @@ pub export fn sa_node_plugin_tls_set_timeout(socket_ptr: ?*anyopaque, timeout_ms
     if (handle.closed) return fail();
     const stream = handle.stream orelse return fail();
     const tv = tlsTimevalFromMs(timeout_ms);
-    std.posix.setsockopt(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) catch return fail();
-    std.posix.setsockopt(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) catch return fail();
+    std.posix.setsockopt(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) catch return fail();
+    std.posix.setsockopt(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) catch return fail();
     handle.timeout_ms = timeout_ms;
     return 0;
 }
@@ -5181,9 +5212,9 @@ fn writeAnsiToFd(fd: u64, bytes: []const u8) u64 {
     const os_fd: posix.fd_t = @intCast(fd);
     var offset: usize = 0;
     while (offset < bytes.len) {
-        const written = posix.write(os_fd, bytes[offset..]) catch return fail();
-        if (written == 0) return fail();
-        offset += written;
+        const rc = std.c.write(os_fd, bytes[offset..].ptr, bytes[offset..].len);
+        if (rc <= 0) return fail();
+        offset += @intCast(rc);
     }
     return 0;
 }
@@ -5519,7 +5550,7 @@ fn processParseMemInfo(key: []const u8) u64 {
     var file = sio.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
     defer file.close();
     var buf: [4096]u8 = undefined;
-    const n = file.readAll(&buf) catch return 0;
+    const n = file.read(&buf) catch return 0;
     var lines = std.mem.tokenizeScalar(u8, buf[0..n], '\n');
     while (lines.next()) |line| {
         if (!std.mem.startsWith(u8, line, key)) continue;
@@ -5535,7 +5566,7 @@ fn processReadU64File(path: []const u8) ?u64 {
     var file = sio.openFileAbsolute(path, .{}) catch return null;
     defer file.close();
     var buf: [128]u8 = undefined;
-    const n = file.readAll(&buf) catch return null;
+    const n = file.read(&buf) catch return null;
     const text = std.mem.trim(u8, buf[0..n], " \t\r\n");
     if (std.mem.eql(u8, text, "max")) return null;
     return std.fmt.parseInt(u64, text, 10) catch null;

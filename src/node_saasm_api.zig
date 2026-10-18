@@ -12,6 +12,16 @@ fn sioSleep(ns: u64) void {
     sio.io().sleep(.fromNanoseconds(ns), .awake) catch {};
 }
 
+fn readFileShort(file: sio.File, buf: []u8) !usize {
+    var total: usize = 0;
+    while (total < buf.len) {
+        const n = try file.read(buf[total..]);
+        if (n == 0) break;
+        total += n;
+    }
+    return total;
+}
+
 fn spinLock(m: *std.atomic.Mutex) void {
     while (!m.tryLock()) std.Thread.yield() catch {};
 }
@@ -139,7 +149,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     if (sio.openFileAbsolute("/proc/cpuinfo", .{})) |file| {
         defer file.close();
         var buf: [4096]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, '\n');
             while (it.next()) |line| {
@@ -165,7 +175,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     if (sio.openFileAbsolute("/proc/stat", .{})) |file| {
         defer file.close();
         var buf: [8192]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, '\n');
             while (it.next()) |line| {
@@ -216,7 +226,7 @@ fn parseMemInfo(key: []const u8) u64 {
     var file = sio.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
     defer file.close();
     var buf: [2048]u8 = undefined;
-    const n = file.readAll(&buf) catch return 0;
+    const n = readFileShort(file, &buf) catch return 0;
     const content = buf[0..n];
 
     var it = std.mem.tokenizeScalar(u8, content, '\n');
@@ -295,7 +305,7 @@ pub export fn sa_node_plugin_os_system_uptime(out_uptime: ?*u64) u32 {
     var file = sio.openFileAbsolute("/proc/uptime", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
     const space_idx = std.mem.indexOfScalar(u8, content, ' ') orelse content.len;
     const uptime_str = std.mem.trim(u8, content[0..space_idx], " \t\r\n");
@@ -308,7 +318,7 @@ pub export fn sa_node_plugin_os_loadavg(out_load: ?*f64) u32 {
     var file = sio.openFileAbsolute("/proc/loadavg", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
     var it = std.mem.tokenizeScalar(u8, content, ' ');
     const l1_str = it.next() orelse return 2;
@@ -413,11 +423,7 @@ pub export fn sa_node_plugin_os_user_info(out_ptr: ?*?[*]const u8, out_len: ?*u6
 // --- process module ---
 
 pub export fn sa_node_plugin_process_hrtime_bigint(out_ns: ?*u64) u32 {
-    const ts = std.posix.clock_gettime(.MONOTONIC) catch {
-        out_ns.?.* = @as(u64, @intCast(sio.nanoTimestamp()));
-        return 0;
-    };
-    out_ns.?.* = @as(u64, @intCast(ts.sec)) * 1_000_000_000 + @as(u64, @intCast(ts.nsec));
+    out_ns.?.* = @as(u64, @intCast(@max(sio.nanoTimestamp(), 0)));
     return 0;
 }
 
@@ -428,7 +434,7 @@ pub export fn sa_node_plugin_process_cpu_usage(out_ptr: ?*?[*]const u8, out_len:
     if (sio.openFileAbsolute("/proc/self/stat", .{})) |file| {
         defer file.close();
         var buf: [1024]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, ' ');
             var field_idx: usize = 1;
@@ -459,7 +465,7 @@ pub export fn sa_node_plugin_process_memory_usage(out_ptr: ?*?[*]const u8, out_l
     if (sio.openFileAbsolute("/proc/self/statm", .{})) |file| {
         defer file.close();
         var buf: [128]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, ' ');
             _ = it.next();
@@ -481,8 +487,7 @@ pub export fn sa_node_plugin_process_memory_usage(out_ptr: ?*?[*]const u8, out_l
 }
 
 pub export fn sa_node_plugin_process_cwd(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var buf: [1024]u8 = undefined;
-    const cwd = std.posix.getcwd(&buf) catch "/home/vscode";
+    const cwd = sio.getCwdAlloc(std.heap.page_allocator) catch "/home/vscode";
     const owned = std.heap.page_allocator.dupe(u8, cwd) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -501,7 +506,7 @@ pub export fn sa_node_plugin_process_argv_json(out_ptr: ?*?[*]const u8, out_len:
     var file = sio.openFileAbsolute("/proc/self/cmdline", .{}) catch return 2;
     defer file.close();
     var buf: [4096]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
@@ -600,8 +605,7 @@ pub export fn sa_node_plugin_path_join(paths_argv: ?*const anyopaque, paths_len:
 
 pub export fn sa_node_plugin_path_resolve(paths_argv: ?*const anyopaque, paths_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (paths_len == 0) {
-        var buf: [1024]u8 = undefined;
-        const cwd = std.posix.getcwd(&buf) catch ".";
+        const cwd = sio.getCwdAlloc(std.heap.page_allocator) catch ".";
         const owned = std.heap.page_allocator.dupe(u8, cwd) catch return 2;
         out_ptr.?.* = owned.ptr;
         out_len.?.* = owned.len;
@@ -2106,7 +2110,7 @@ pub export fn sa_node_plugin_readline_create() ?*anyopaque {
 pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const u8, query_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     _ = rl;
     const q = if (query) |p| p[0..query_len] else &[_]u8{};
-    sio.getStdOut().writer().writeAll(q) catch return 2;
+    sio.getStdOut().writeAll(q) catch return 2;
 
     var buf = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer buf.deinit();
@@ -2316,7 +2320,7 @@ fn blockListFamilyLen(family: BlockListFamily) usize {
 
 fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8, address_len: u64) !BlockListAddress {
     const address = (address_ptr orelse return error.InvalidAddress)[0..address_len];
-    var bytes: [16]u8 = .{0}**16;
+    var bytes: [16]u8 = @splat(@as(u8, 0));
     if (std.net.Address.parseIp4(address, 0)) |addr| {
         @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
         const text = try dgramAddressToOwnedHost(allocator, addr);
@@ -2333,7 +2337,7 @@ fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8
 }
 
 fn blockListParseAddressForFamily(allocator: std.mem.Allocator, address: []const u8, family: BlockListFamily) !BlockListAddress {
-    var bytes: [16]u8 = .{0}**16;
+    var bytes: [16]u8 = @splat(@as(u8, 0));
     switch (family) {
         .ipv4 => {
             const addr = try std.net.Address.parseIp4(address, 0);
@@ -2510,7 +2514,7 @@ fn blockListAddressFromSocketAddress(addr: *const SaNetSocketAddress) BlockListA
 }
 
 fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: std.net.Address) !BlockListAddress {
-    var bytes: [16]u8 = .{0}**16;
+    var bytes: [16]u8 = @splat(@as(u8, 0));
     switch (addr.any.family) {
         std.posix.AF.INET => {
             @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
@@ -4015,7 +4019,7 @@ pub export fn sa_node_plugin_dgram_connect(socket_ptr: ?*anyopaque, host_ptr: ?[
 
 pub export fn sa_node_plugin_dgram_disconnect(socket_ptr: ?*anyopaque) u32 {
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
-    var addr: std.posix.sockaddr = .{ .family = std.posix.AF.UNSPEC, .data = [_]u8{0}**14 };
+    var addr: std.posix.sockaddr = .{ .family = std.posix.AF.UNSPEC, .data = @splat(@as(u8, 0)) };
     std.posix.connect(socket.fd, &addr, @sizeOf(std.posix.sockaddr)) catch return 2;
     socket.connected = false;
     return 0;
@@ -4670,7 +4674,7 @@ pub export fn sa_node_plugin_console_clear() u32 {
 
 // --- Timers Module ---
 pub export fn sa_node_plugin_timers_sleep(ms: u64) u32 {
-    std.time.sleep(ms * std.time.ns_per_ms);
+    sioSleep(ms * std.time.ns_per_ms);
     return 0;
 }
 

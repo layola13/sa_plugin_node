@@ -313,7 +313,7 @@ fn tlsBuildBundleFromPem(allocator: std.mem.Allocator, pem: []const u8) !std.cry
         const cert_end = std.mem.indexOfPos(u8, pem, cert_start, end_marker) orelse return error.MissingEndCertificateMarker;
         start_index = cert_end + end_marker.len;
         const encoded = std.mem.trim(u8, pem[cert_start..cert_end], " \t\r\n");
-        const decoded_upper = try decoder.calcSizeUpperBound(encoded.len);
+        const decoded_upper = decoder.calcSizeUpperBound(encoded.len);
         try bundle.bytes.ensureUnusedCapacity(allocator, decoded_upper);
         const decoded_start: u32 = @intCast(bundle.bytes.items.len);
         const dest = bundle.bytes.allocatedSlice()[decoded_start..][0..decoded_upper];
@@ -436,7 +436,7 @@ fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, 
                 .port = std.mem.nativeToBig(u16, ip.port),
                 .flowinfo = 0,
                 .addr = ip.bytes,
-                .scope_id = ip.scope_id,
+                .scope_id = 0,
             };
             return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in6) };
         },
@@ -453,7 +453,7 @@ fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
     }
     if (storage.family == std.posix.AF.INET6) {
         const sa: *const std.posix.sockaddr.in6 = @ptrCast(@alignCast(storage));
-        return .{ .ip6 = .{ .bytes = sa.addr, .port = std.mem.bigToNative(u16, sa.port), .scope_id = sa.scope_id } };
+        return .{ .ip6 = .{ .bytes = sa.addr, .port = std.mem.bigToNative(u16, sa.port) } };
     }
     return error.InvalidAddressFamily;
 }
@@ -493,7 +493,8 @@ fn tlsGetSocketAddress(handle: *TlsClientHandle, peer: bool) !NetAddr {
     if (peer) {
         try std.posix.getpeername(stream.socket.handle, @ptrCast(&storage), &addr_len);
     } else {
-        try std.posix.getsockname(stream.socket.handle, @ptrCast(&storage), &addr_len);
+        const rc = std.os.linux.getsockname(stream.socket.handle, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return error.SocketNotBound;
     }
     return netSockaddrToAddr(&storage);
 }
@@ -563,7 +564,7 @@ fn tlsParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64
     if ((local_ptr == null or local_len == 0) and local_port == 0) return null;
     const port16: u16 = @intCast(local_port);
     if (family == std.posix.AF.INET6) {
-        if (local_ptr == null or local_len == 0) return .{ .ip6 = .{ .bytes = .{0}**16, .port = port16, .scope_id = 0 } };
+        if (local_ptr == null or local_len == 0) return .{ .ip6 = .{ .bytes = .{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, .port = port16 } };
         return try NetAddr.parseIp6(local_ptr.?[0..local_len], port16);
     }
     if (local_ptr == null or local_len == 0) return .{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = port16 } };
@@ -580,13 +581,41 @@ fn tlsAddressBlocked(allocator: std.mem.Allocator, blocklist_ptr: ?*anyopaque, a
     return blocked != 0;
 }
 
+/// Raw socket syscall wrappers (removed from std.posix in 0.17).
+fn netSocket(domain: u32, socket_type: u32, protocol: u32) !std.posix.fd_t {
+    const rc = std.os.linux.socket(domain, socket_type, protocol);
+    if (rc >= 0xffffff0000000000) return error.SocketFailed;
+    return @intCast(rc);
+}
+
+fn netBindSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.bind(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.BindFailed;
+}
+
+fn netConnectSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.connect(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.ConnectFailed;
+}
+
+fn netSendTo(sockfd: std.posix.fd_t, buf: []const u8, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.sendto(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.SendFailed;
+}
+
+fn netRecvFrom(sockfd: std.posix.fd_t, buf: []u8, storage: *std.posix.sockaddr.storage, len: *std.posix.socklen_t) !usize {
+    const rc = std.os.linux.recvfrom(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.ReceiveFailed;
+    return @intCast(rc);
+}
+
 fn tlsConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.Io.net.Stream {
-    const sockfd = try std.posix.socket(netAddrFamily(address), std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.TCP);
+    const sockfd = try netSocket(netAddrFamily(address), std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.TCP);
     errdefer (std.Io.net.Stream{ .socket = .{ .handle = sockfd, .address = address } }).close(sio.io());
 
     if (try tlsParseLocalAddress(local_ptr, local_len, local_port, netAddrFamily(address))) |local_address| {
         const local_sa = netAddrSockaddr(local_address);
-        try std.posix.bind(sockfd, @ptrCast(&local_sa.storage), local_sa.len);
+        try netBindSocket(sockfd, &local_sa.storage, local_sa.len);
     }
     if (no_delay != 0) {
         const value: c_int = 1;
@@ -607,7 +636,7 @@ fn tlsConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local
     }
 
     const remote_sa = netAddrSockaddr(address);
-    try std.posix.connect(sockfd, @ptrCast(&remote_sa.storage), remote_sa.len);
+    try netConnectSocket(sockfd, &remote_sa.storage, remote_sa.len);
     return .{ .socket = .{ .handle = sockfd, .address = address } };
 }
 
@@ -1922,9 +1951,12 @@ fn fsEnsureParentPath(path: []const u8) !void {
     }
 }
 
-fn fsCopySymlink(src_dir: sio.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
+fn fsCopySymlink(src_dir: std.Io.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
     var target_buffer: [sio.max_path_bytes]u8 = undefined;
-    const target = try src_dir.readLink(src_path, &target_buffer);
+    const target = blk: {
+        const n = try src_dir.readLink(sio.io(), src_path, &target_buffer);
+        break :blk target_buffer[0..n];
+    };
 
     try fsEnsureParentPath(dst_path);
     if (force) sio.cwd().deleteFile(dst_path) catch {};
@@ -1961,7 +1993,7 @@ fn fsCopyDirectoryRecursive(src_path: []const u8, dst_path: []const u8, force: b
                 defer std.heap.page_allocator.free(child_src);
                 try fsCopyFilePath(child_src, child_dst, force);
             },
-            .sym_link => try fsCopySymlink(entry.dir, entry.basename, child_dst, force),
+            .sym_link => try fsCopySymlink(entry.dir.inner, entry.basename, child_dst, force),
             else => {},
         }
     }
@@ -1983,7 +2015,7 @@ fn fsCpPath(src_path: []const u8, dst_path: []const u8, recursive: bool, force: 
             try fsCopyDirectoryRecursive(src_path, dst_path, force);
         },
         .file => try fsCopyFilePath(src_path, dst_path, force),
-        .sym_link => try fsCopySymlink(sio.cwd(), src_path, dst_path, force),
+        .sym_link => try fsCopySymlink(sio.cwd().inner, src_path, dst_path, force),
         else => return error.UnsupportedFileType,
     }
 }
@@ -2504,14 +2536,14 @@ fn dnsAddressAllowedByAddrConfig(addr: NetAddr, has_ipv4: bool, has_ipv6: bool) 
 fn dnsIpv4MappedAddress(addr: NetAddr) ?NetAddr {
     if (addr != .ip4) return null;
     const bytes = addr.ip4.bytes;
-    var mapped = [_]u8{0}**16;
+    var mapped = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     mapped[10] = 0xff;
     mapped[11] = 0xff;
     mapped[12] = bytes[0];
     mapped[13] = bytes[1];
     mapped[14] = bytes[2];
     mapped[15] = bytes[3];
-    return .{ .ip6 = .{ .bytes = mapped, .port = addr.getPort(), .scope_id = 0 } };
+    return .{ .ip6 = .{ .bytes = mapped, .port = addr.getPort() } };
 }
 
 fn appendDnsLookupAddressJson(out: *std.array_list.Managed(u8), addr: NetAddr) !void {
@@ -2551,11 +2583,13 @@ pub export fn sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ?[*]const u8
         if (include) addrs.append(with_port) catch return fail();
     } else |_| {
         const host_name = std.Io.net.HostName.init(hostname) catch return fail();
-        const family_filter: ?NetAddr.Family = if (family == 4) .ip4 else if (family == 6) .ip6 else null;
-        var queue = std.Io.Queue(std.Io.net.HostName.LookupResult).init();
-        defer queue.close();
+        const family_filter: ?std.Io.net.IpAddress.Family = if (family == 4) .ip4 else if (family == 6) .ip6 else null;
+        var lookup_buffer: [32]std.Io.net.HostName.LookupResult = undefined;
+        var queue: std.Io.Queue(std.Io.net.HostName.LookupResult) = .init(&lookup_buffer);
+        defer queue.close(sio.io());
         host_name.lookup(sio.io(), &queue, .{ .port = 0, .family = family_filter }) catch return fail();
-        while (queue.get()) |result| {
+        while (true) {
+            const result = queue.getOne(sio.io()) catch break;
             const with_port = switch (result) {
                 .address => |addr| addr,
                 .canonical_name => continue,
@@ -2662,11 +2696,13 @@ fn writeAddressList(hostname: []const u8, family: u16, out_ptr: ?*?[*]const u8, 
         appendAddressJson(&results, literal, family, &first) catch return fail();
     } else |_| {
         const host_name = std.Io.net.HostName.init(hostname) catch return fail();
-        const family_filter: ?NetAddr.Family = if (family == DnsTypeA) .ip4 else if (family == DnsTypeAaaa) .ip6 else null;
-        var queue = std.Io.Queue(std.Io.net.HostName.LookupResult).init();
-        defer queue.close();
+        const family_filter: ?std.Io.net.IpAddress.Family = if (family == DnsTypeA) .ip4 else if (family == DnsTypeAaaa) .ip6 else null;
+        var lookup_buffer: [32]std.Io.net.HostName.LookupResult = undefined;
+        var queue: std.Io.Queue(std.Io.net.HostName.LookupResult) = .init(&lookup_buffer);
+        defer queue.close(sio.io());
         host_name.lookup(sio.io(), &queue, .{ .port = 0, .family = family_filter }) catch return fail();
-        while (queue.get()) |result| {
+        while (true) {
+            const result = queue.getOne(sio.io()) catch break;
             const addr = switch (result) {
                 .address => |addr| addr,
                 .canonical_name => continue,
@@ -2796,12 +2832,12 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: NetAddr, timeout_ms
     try sio.managedWriter(&query).writeInt(u16, rrtype, .big);
     try sio.managedWriter(&query).writeInt(u16, DnsClassIn, .big);
 
-    const fd = try std.posix.socket(netAddrFamily(server), std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
+    const fd = try netSocket(netAddrFamily(server), std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
     defer std.posix.close(fd);
 
     if (try dnsLocalBindAddress(server, local_ipv4, local_ipv6)) |bind_addr| {
         const bind_sa = netAddrSockaddr(bind_addr);
-        try std.posix.bind(fd, @ptrCast(&bind_sa.storage), bind_sa.len);
+        try netBindSocket(fd, &bind_sa.storage, bind_sa.len);
     }
 
     const timeout = @max(timeout_ms, @as(u64, 100));
@@ -2812,10 +2848,10 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: NetAddr, timeout_ms
     std.posix.setsockopt(fd, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) catch {};
 
     const server_sa = netAddrSockaddr(server);
-    _ = try std.posix.sendto(fd, query.items, 0, @ptrCast(&server_sa.storage), server_sa.len);
+    try netSendTo(fd, query.items, &server_sa.storage, server_sa.len);
     var src_storage: std.posix.sockaddr.storage = undefined;
     var src_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
-    const n = try std.posix.recvfrom(fd, packet, 0, @ptrCast(&src_storage), &src_len);
+    const n = try netRecvFrom(fd, packet, &src_storage, &src_len);
     if (n < 12) return error.Truncated;
     if (std.mem.readInt(u16, packet[0..2], .big) != random_id) return error.InvalidResponse;
     return packet[0..n];
@@ -4138,8 +4174,7 @@ fn tlsTcpConnectToHost(host: []const u8, port: u16) !std.Io.net.Stream {
         return addr.connect(sio.io(), .{ .mode = .stream });
     } else |_| {}
     const host_name = try std.Io.net.HostName.init(host);
-    const hn = std.Io.net.HostName{ .name = host_name.name };
-    return hn.connect(sio.io(), port, .{ .mode = .stream });
+    return host_name.connect(sio.io(), port, .{ .mode = .stream });
 }
 
 pub export fn sa_node_plugin_tls_connect(host_ptr: ?[*]const u8, host_len: u64, port: u64, servername_ptr: ?[*]const u8, servername_len: u64, reject_unauthorized: u64, out_socket: ?*?*anyopaque) u32 {

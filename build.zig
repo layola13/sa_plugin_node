@@ -96,6 +96,7 @@ pub fn build(b: *std.Build) void {
     });
     test_module.addImport("node", root_module);
     test_module.addImport("plugin_api", plugin_api);
+    test_module.addImport("sio", sio_module);
 
     const run_main_tests = b.addRunArtifact(main_tests);
     main_tests.root_module.linkSystemLibrary("dl", .{});

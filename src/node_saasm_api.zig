@@ -109,7 +109,7 @@ fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
             '\n' => try out.appendSlice("\\n"),
             '\r' => try out.appendSlice("\\r"),
             '\t' => try out.appendSlice("\\t"),
-            else => if (b < 0x20) try sio.managedWriter(&out).print("\\u{x:0>4}", .{b}) else try out.append(b),
+            else => if (b < 0x20) try sio.managedWriter(out).print("\\u{x:0>4}", .{b}) else try out.append(b),
         }
     }
 }
@@ -2107,7 +2107,7 @@ pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const
     errdefer buf.deinit();
 
     const stdin = std.Io.getStdIn().reader();
-    stdin.streamUntilDelimiter(sio.managedWriter(&buf), '\n', null) catch |err| {
+    stdin.streamUntilDelimiter(sio.managedWriter(buf), '\n', null) catch |err| {
         if (err == error.EndOfStream) {} else return 2;
     };
 
@@ -2183,7 +2183,7 @@ pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_pt
         switch (list.any.family) {
             std.posix.AF.INET => {
                 const bytes = std.mem.asBytes(&list.in.sa.addr);
-                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
+                sio.managedWriter(json).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
             },
             std.posix.AF.INET6 => {
                 var buf: [64]u8 = undefined;
@@ -2727,9 +2727,9 @@ pub export fn sa_node_plugin_net_socket_address_json(addr_ptr: ?*anyopaque, out_
     defer out.deinit();
     out.appendSlice("{\"address\":") catch return 2;
     appendJsonString(&out, addr.text) catch return 2;
-    sio.managedWriter(&out).print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
+    sio.managedWriter(out).print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
     appendJsonString(&out, if (addr.family == .ipv4) "ipv4" else "ipv6") catch return 2;
-    sio.managedWriter(&out).print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
+    sio.managedWriter(out).print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
     const owned = out.toOwnedSlice() catch return 2;
     out_slot.* = owned.ptr;
     len_slot.* = owned.len;
@@ -3078,7 +3078,7 @@ fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address) !v
         std.posix.AF.INET6 => "IPv6",
         else => "unknown",
     };
-    try sio.managedWriter(&out).print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
+    try sio.managedWriter(out).print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
 }
 
 fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {

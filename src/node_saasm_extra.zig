@@ -1113,7 +1113,7 @@ pub export fn sa_node_plugin_async_context_tracking_status_json(out_ptr: ?*?[*]c
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"async_context_tracking\",\"supported\":true,\"mode\":\"explicit-native-stack\",\"capabilities\":[\"async resource handle integration\",\"explicit enter and exit\",\"execution and trigger async id lookup\",\"stack depth and snapshot JSON\",\"reset current native stack\"],\"limitations\":[\"no automatic propagation across host callbacks\",\"no JavaScript AsyncLocalStorage or promise hook semantics\",\"context changes occur only through explicit native enter/exit helpers\"],\"depth\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{async_context_stack.items.len}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{async_context_stack.items.len}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -1828,7 +1828,7 @@ pub export fn sa_node_plugin_deprecated_record_json(code_ptr: ?[*]const u8, code
     appendJsonString(&out, code) catch return fail();
     out.appendSlice(",\"message\":") catch return fail();
     appendJsonString(&out, stored_message) catch return fail();
-    sio.managedWriter(&out).print(",\"count\":{d},\"firstOccurrence\":{s},\"shouldEmit\":{s},\"flags\":", .{
+    sio.managedWriter(out).print(",\"count\":{d},\"firstOccurrence\":{s},\"shouldEmit\":{s},\"flags\":", .{
         count,
         if (first_occurrence) "true" else "false",
         if (!deprecatedNoDeprecationInternal() and !deprecatedNoWarningsInternal() and first_occurrence) "true" else "false",
@@ -1846,7 +1846,7 @@ pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, o
     defer out.deinit();
     out.appendSlice("{\"flags\":") catch return fail();
     deprecatedAppendFlagsObject(&out) catch return fail();
-    sio.managedWriter(&out).print(",\"registeredCount\":{d},\"entries\":[", .{deprecated_registry.count()}) catch return fail();
+    sio.managedWriter(out).print(",\"registeredCount\":{d},\"entries\":[", .{deprecated_registry.count()}) catch return fail();
 
     var first = true;
     var it = deprecated_registry.iterator();
@@ -1857,7 +1857,7 @@ pub export fn sa_node_plugin_deprecated_snapshot_json(out_ptr: ?*?[*]const u8, o
         appendJsonString(&out, entry.value_ptr.*.code) catch return fail();
         out.appendSlice(",\"message\":") catch return fail();
         appendJsonString(&out, entry.value_ptr.*.message) catch return fail();
-        sio.managedWriter(&out).print(",\"count\":{d}}}", .{entry.value_ptr.*.count}) catch return fail();
+        sio.managedWriter(out).print(",\"count\":{d}}}", .{entry.value_ptr.*.count}) catch return fail();
     }
 
     out.appendSlice("]}") catch return fail();
@@ -1868,7 +1868,7 @@ pub export fn sa_node_plugin_deprecated_status_json(out_ptr: ?*?[*]const u8, out
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"deprecated\",\"supported\":true,\"mode\":\"native-registry\",\"registeredCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{deprecatedRegisteredCount()}) catch return fail();
     out.appendSlice(",\"flags\":") catch return fail();
     deprecatedAppendFlagsObject(&out) catch return fail();
     out.appendSlice(",\"capabilities\":[\"util.deprecate-style registry\",\"idempotent deprecation codes\",\"deprecation flag introspection\",\"snapshot and clear helpers\"],\"limitations\":[\"no JavaScript wrapper invocation semantics\",\"no process warning events or warning listeners\",\"registry tracks native deprecation metadata only\"]}") catch return fail();
@@ -1881,7 +1881,7 @@ pub export fn sa_node_plugin_environment_variables_status_json(out_ptr: ?*?[*]co
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"module\":\"environment_variables\",\"supported\":true,\"mode\":\"native-process-env\",\"entryCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{env_map.count()}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{env_map.count()}) catch return fail();
     out.appendSlice(",\"hasNodeOptions\":") catch return fail();
     out.appendSlice(if (envGet("NODE_OPTIONS") != null) "true" else "false") catch return fail();
     appendEnvStringField(&out, "nodeOptions", "NODE_OPTIONS") catch return fail();
@@ -2162,9 +2162,9 @@ pub export fn sa_node_plugin_environment_variables_load_env_file_json(path_ptr: 
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, path) catch return fail();
     out.appendSlice(",\"loaded\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{loaded_count}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{loaded_count}) catch return fail();
     out.appendSlice(",\"skipped\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{skipped_count}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{skipped_count}) catch return fail();
     out.appendSlice(",\"entries\":") catch return fail();
     environmentVariablesAppendStoreObject(&out, &store) catch return fail();
     out.append('}') catch return fail();
@@ -2302,7 +2302,7 @@ pub export fn sa_node_plugin_errors_status_json(out_ptr: ?*?[*]const u8, out_len
     out.appendSlice(",\"commonSystemCodes\":") catch return fail();
     appendStringArray(&out, &common_system_error_names) catch return fail();
     out.appendSlice(",\"systemCodeCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{system_error_codes.len}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{system_error_codes.len}) catch return fail();
     out.appendSlice(",\"capabilities\":[\"system errno lookup\",\"native system error JSON\",\"common argument validation diagnostic JSON\"],\"limitations\":[\"no JavaScript Error subclass prototypes\",\"no stack capture or cause chaining\",\"native APIs return status codes and JSON diagnostics\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -2317,7 +2317,7 @@ pub export fn sa_node_plugin_errors_codes_json(out_ptr: ?*?[*]const u8, out_len:
         if (i != 0) out.append(',') catch return fail();
         appendJsonString(&out, entry.name) catch return fail();
         out.append(':') catch return fail();
-        sio.managedWriter(&out).print("{d}", .{entry.number}) catch return fail();
+        sio.managedWriter(out).print("{d}", .{entry.number}) catch return fail();
     }
     out.appendSlice("}}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -3035,9 +3035,9 @@ fn replWriteSnapshotJson(session: *const ReplSession, out_ptr: ?*?[*]const u8, o
     out.appendSlice(",\"closed\":") catch return fail();
     out.appendSlice(if (session.closed) "true" else "false") catch return fail();
     out.appendSlice(",\"evalCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{session.eval_count}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{session.eval_count}) catch return fail();
     out.appendSlice(",\"historySize\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{session.history.items.len}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{session.history.items.len}) catch return fail();
     out.appendSlice(",\"bufferedInput\":") catch return fail();
     appendJsonString(&out, session.buffer.items) catch return fail();
     out.appendSlice(",\"commands\":") catch return fail();
@@ -3617,20 +3617,20 @@ fn domainSnapshotJson(domain: *DomainHandle, out_ptr: ?*?[*]const u8, out_len: ?
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"id\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{domain.id}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{domain.id}) catch return fail();
     out.appendSlice(",\"disposed\":") catch return fail();
     out.appendSlice(if (domain.disposed) "true" else "false") catch return fail();
     out.appendSlice(",\"active\":") catch return fail();
     out.appendSlice(if (domain_active == domain) "true" else "false") catch return fail();
     out.appendSlice(",\"stackDepth\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{domainStackDepthFor(domain)}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{domainStackDepthFor(domain)}) catch return fail();
     out.appendSlice(",\"memberCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{domain.members.items.len}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{domain.members.items.len}) catch return fail();
     out.appendSlice(",\"members\":[") catch return fail();
     for (domain.members.items, 0..) |member, i| {
         if (i != 0) out.append(',') catch return fail();
         if (member) |ptr| {
-            sio.managedWriter(&out).print("{d}", .{@intFromPtr(ptr)}) catch return fail();
+            sio.managedWriter(out).print("{d}", .{@intFromPtr(ptr)}) catch return fail();
         } else {
             out.appendSlice("0") catch return fail();
         }
@@ -4011,9 +4011,9 @@ pub export fn sa_node_plugin_perf_hooks_status_json(out_ptr: ?*?[*]const u8, out
     out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
     appendStringArray(&out, &perf_hooks_supported_entry_types) catch return fail();
     out.appendSlice(",\"performance\":{\"now\":true,\"timeOrigin\":true,\"mark\":true,\"measure\":true,\"getEntries\":true,\"eventLoopUtilization\":true},\"helpers\":{\"createHistogram\":true,\"timerify\":true,\"monitorEventLoopDelay\":true},\"runtime\":{\"nowMs\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{now_ms}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{now_ms}) catch return fail();
     out.appendSlice(",\"timeOriginMs\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{origin_ms}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{origin_ms}) catch return fail();
     out.appendSlice(",\"entries\":") catch return fail();
     out.appendSlice((entries_ptr orelse return fail())[0..@intCast(entries_len)]) catch return fail();
     out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
@@ -4055,9 +4055,9 @@ pub export fn sa_node_plugin_perf_hooks_performance_json(out_ptr: ?*?[*]const u8
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"nowMs\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{now_ms}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{now_ms}) catch return fail();
     out.appendSlice(",\"timeOriginMs\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{origin_ms}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{origin_ms}) catch return fail();
     out.appendSlice(",\"eventLoopUtilization\":") catch return fail();
     out.appendSlice((elu_ptr orelse return fail())[0..@intCast(elu_len)]) catch return fail();
     out.appendSlice(",\"supportedEntryTypes\":") catch return fail();
@@ -5229,7 +5229,7 @@ fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"pid\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{clusterChildPid(worker) orelse 0}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{clusterChildPid(worker) orelse 0}) catch return fail();
     out.appendSlice(",\"connected\":") catch return fail();
     out.appendSlice(if (worker.connected) "true" else "false") catch return fail();
     out.appendSlice(",\"exited\":") catch return fail();
@@ -5249,18 +5249,18 @@ fn clusterWorkerSnapshotJson(worker: *ClusterWorkerHandle, out_ptr: ?*?[*]const 
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"envCount\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{worker.env_count}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{worker.env_count}) catch return fail();
     out.appendSlice(",\"disconnectRequested\":") catch return fail();
     out.appendSlice(if (worker.disconnected_requested) "true" else "false") catch return fail();
     out.appendSlice(",\"exitCode\":") catch return fail();
     if (worker.exit_code) |code| {
-        sio.managedWriter(&out).print("{d}", .{code}) catch return fail();
+        sio.managedWriter(out).print("{d}", .{code}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"signalCode\":") catch return fail();
     if (worker.signal_code) |sig| {
-        sio.managedWriter(&out).print("{d}", .{sig}) catch return fail();
+        sio.managedWriter(out).print("{d}", .{sig}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
@@ -5955,7 +5955,7 @@ fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u
     var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"family\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{handle.family}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{handle.family}) catch return fail();
     out.appendSlice(",\"server\":") catch return fail();
     out.appendSlice(if (handle.server) "true" else "false") catch return fail();
     out.appendSlice(",\"closed\":") catch return fail();
@@ -5970,13 +5970,13 @@ fn quicWriteEndpointSnapshot(handle: *QuicEndpointHandle, out_ptr: ?*?[*]const u
     appendJsonString(&out, handle.alpn) catch return fail();
     out.appendSlice(",\"cc\":") catch return fail();
     appendJsonString(&out, handle.cc) catch return fail();
-    sio.managedWriter(&out).print(",\"idleTimeoutMs\":{d}", .{handle.idle_timeout_ms}) catch return fail();
+    sio.managedWriter(out).print(",\"idleTimeoutMs\":{d}", .{handle.idle_timeout_ms}) catch return fail();
     out.appendSlice(",\"localHost\":") catch return fail();
     appendJsonString(&out, handle.local_host) catch return fail();
-    sio.managedWriter(&out).print(",\"localPort\":{d}", .{handle.local_port}) catch return fail();
+    sio.managedWriter(out).print(",\"localPort\":{d}", .{handle.local_port}) catch return fail();
     out.appendSlice(",\"remoteHost\":") catch return fail();
     appendJsonString(&out, handle.remote_host) catch return fail();
-    sio.managedWriter(&out).print(",\"remotePort\":{d}", .{handle.remote_port}) catch return fail();
+    sio.managedWriter(out).print(",\"remotePort\":{d}", .{handle.remote_port}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -6763,7 +6763,7 @@ pub export fn sa_node_plugin_cluster_status_json(out_ptr: ?*?[*]const u8, out_le
     out.appendSlice("{\"module\":\"cluster\",\"supported\":true,\"mode\":\"top-level-native-cluster-facade\",\"exports\":") catch return fail();
     appendStringArray(&out, &cluster_export_names) catch return fail();
     out.appendSlice(",\"isPrimary\":true,\"isMaster\":true,\"isWorker\":false,\"schedulingPolicy\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{cluster_scheduling_policy}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{cluster_scheduling_policy}) catch return fail();
     out.appendSlice(",\"constants\":{\"SCHED_NONE\":1,\"SCHED_RR\":2},\"settings\":") catch return fail();
     out.appendSlice((primary_ptr orelse return fail())[0..@intCast(primary_len)]) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"setupPrimary\":true,\"setupMaster\":true,\"fork\":true,\"disconnect\":false,\"WorkerClass\":false,\"workerProperty\":false,\"workersMap\":false,\"send\":true,\"kill\":true,\"wait\":true,\"sharedServerHandles\":false,\"internalSerialization\":false},\"capabilities\":[\"setupPrimary and setupMaster config metadata\",\"fork subprocess worker handles\",\"stdin/stdout message exchange\",\"worker pid/alive/connected snapshot\",\"worker disconnect/kill/wait/free\"],\"limitations\":[\"no JavaScript EventEmitter primary or worker object model\",\"no shared libuv server handle distribution\",\"no Node internal IPC framing or structured serialization\",\"workers and worker are exposed as metadata only, not live JavaScript objects\",\"disconnect is only available on explicit native worker handles, not as a top-level cluster object method\"]}") catch return fail();
@@ -6801,7 +6801,7 @@ pub export fn sa_node_plugin_domain_status_json(out_ptr: ?*?[*]const u8, out_len
         out.appendSlice("null") catch return fail();
     }
     out.appendSlice(",\"stackDepth\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{domain_stack.items.len}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{domain_stack.items.len}) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"Domain\":true,\"create\":true,\"createDomain\":true,\"active\":true,\"_stack\":true,\"enter\":true,\"exit\":true,\"dispose\":true,\"bind\":false,\"intercept\":false,\"run\":false,\"disposeEvent\":false,\"asyncPropagation\":false},\"capabilities\":[\"create native domain handles\",\"enter and exit explicit domain stack\",\"member registry add/remove/count\",\"active domain snapshot and stack-depth metadata\",\"snapshot, dispose, and free\"],\"limitations\":[\"no JavaScript EventEmitter inheritance or process.domain mutation hooks\",\"no bind/intercept callback wrapping or run() callback execution helper\",\"no uncaught exception capture callback integration\",\"no async_hooks, Promise, or timer callback domain propagation\",\"_stack is exposed as metadata rather than a live JavaScript array\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -6946,7 +6946,7 @@ fn moduleWriteCompileCacheResultJson(status_code: u64, directory: ?[]const u8, m
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.appendSlice("{\"status\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{status_code}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{status_code}) catch return fail();
     out.appendSlice(",\"directory\":") catch return fail();
     if (directory) |dir| {
         appendJsonString(&out, dir) catch return fail();
@@ -7381,7 +7381,7 @@ pub export fn sa_node_plugin_inspector_status_json(out_ptr: ?*?[*]const u8, out_
     out.appendSlice(",\"configuredHost\":") catch return fail();
     appendJsonString(&out, snapshot.host) catch return fail();
     out.appendSlice(",\"configuredPort\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{snapshot.port}) catch return fail();
     out.appendSlice(",\"waitForDebugger\":") catch return fail();
     out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
     out.appendSlice(",\"breakFirstLine\":") catch return fail();
@@ -7439,7 +7439,7 @@ pub export fn sa_node_plugin_inspector_config_json(out_ptr: ?*?[*]const u8, out_
     out.appendSlice(",\"host\":") catch return fail();
     appendJsonString(&out, snapshot.host) catch return fail();
     out.appendSlice(",\"port\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{snapshot.port}) catch return fail();
     out.appendSlice(",\"waitForDebugger\":") catch return fail();
     out.appendSlice(if (snapshot.wait_for_debugger) "true" else "false") catch return fail();
     out.appendSlice(",\"breakFirstLine\":") catch return fail();
@@ -7467,7 +7467,7 @@ pub export fn sa_node_plugin_inspector_url_json(out_ptr: ?*?[*]const u8, out_len
     }
     out.appendSlice(",\"port\":") catch return fail();
     if (snapshot.enabled) {
-        sio.managedWriter(&out).print("{d}", .{snapshot.port}) catch return fail();
+        sio.managedWriter(out).print("{d}", .{snapshot.port}) catch return fail();
     } else {
         out.appendSlice("null") catch return fail();
     }
@@ -7501,7 +7501,7 @@ pub export fn sa_node_plugin_http_status_json(out_ptr: ?*?[*]const u8, out_len: 
     out.appendSlice(",\"statusCodes\":") catch return fail();
     out.appendSlice((status_codes_ptr orelse return fail())[0..@intCast(status_codes_len)]) catch return fail();
     out.appendSlice(",\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{http_max_idle_parsers}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{http_max_idle_parsers}) catch return fail();
     out.appendSlice(",\"featureSupport\":{\"request\":true,\"get\":true,\"createServer\":true,\"validateHeaderName\":true,\"validateHeaderValue\":true,\"setMaxIdleHTTPParsers\":true,\"METHODS\":true,\"STATUS_CODES\":true,\"maxHeaderSize\":true,\"ClientRequest\":false,\"IncomingMessage\":false,\"OutgoingMessage\":false,\"Server\":false,\"ServerResponse\":false,\"Agent\":false,\"globalAgent\":false,\"WebSocket\":false},\"capabilities\":[\"HTTP/1 request and get JSON helpers\",\"explicit native client/request/response handles\",\"explicit native server/request/response handles\",\"header validation helpers\",\"HTTP metadata for methods, status codes, and max header size\",\"WebSocket bridge helpers through explicit native handles\"],\"limitations\":[\"no JavaScript ClientRequest, IncomingMessage, OutgoingMessage, Server, or ServerResponse class instances\",\"request and get return completed native response JSON rather than asynchronous event emitter objects\",\"no Agent or globalAgent object model\",\"WebSocket is available through explicit bridge helpers rather than the top-level undici WebSocket class export\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -7558,7 +7558,7 @@ pub export fn sa_node_plugin_http_config_json(out_ptr: ?*?[*]const u8, out_len: 
     var out = std.array_list.Managed(u8).init(allocator);
     defer out.deinit();
     out.appendSlice("{\"maxHeaderSize\":16384,\"maxIdleHTTPParsers\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{http_max_idle_parsers}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{http_max_idle_parsers}) catch return fail();
     out.appendSlice(",\"methods\":") catch return fail();
     out.appendSlice((methods_ptr orelse return fail())[0..@intCast(methods_len)]) catch return fail();
     out.appendSlice(",\"statusCodes\":") catch return fail();
@@ -8048,7 +8048,7 @@ pub export fn sa_node_plugin_net_status_json(out_ptr: ?*?[*]const u8, out_len: ?
     out.appendSlice(",\"defaults\":{\"autoSelectFamily\":") catch return fail();
     out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
     out.appendSlice(",\"autoSelectFamilyAttemptTimeout\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{auto_select_timeout}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{auto_select_timeout}) catch return fail();
     out.appendSlice("},\"featureSupport\":{\"connect\":true,\"createConnection\":true,\"createConnectionOptions\":true,\"listenOptions\":true,\"createServer\":true,\"isIP\":true,\"isIPv4\":true,\"isIPv6\":true,\"BlockList\":true,\"BlockList.familyArguments\":true,\"BlockList.isBlockList\":true,\"SocketAddress\":true,\"SocketAddress.isSocketAddress\":true,\"getDefaultAutoSelectFamily\":true,\"setDefaultAutoSelectFamily\":true,\"getDefaultAutoSelectFamilyAttemptTimeout\":true,\"setDefaultAutoSelectFamilyAttemptTimeout\":true,\"Server\":false,\"Socket\":false,\"Stream\":false,\"_createServerHandle\":false,\"_normalizeArgs\":false},\"capabilities\":[\"TCP and Unix socket connect/listen/accept/read/write/end helpers\",\"socket and server address, timeout, buffer, ref, readyState, and byte-counter metadata\",\"SocketAddress and BlockList native handles with static handle-type checks\",\"BlockList string helpers with Node-style family arguments and IPv4-mapped IPv6 normalization\",\"TCP connect blocklist filtering and createConnection/createServer convenience helpers\",\"createConnection JSON options for host, hostname, port, family, localAddress, localPort, noDelay, keepAlive, keepAliveInitialDelay, and timeoutMs\",\"listen JSON options for TCP host/port and Unix path using existing native listener helpers\",\"default auto-select-family setting metadata and setters\"],\"limitations\":[\"no JavaScript Server, Socket, or Stream class instances\",\"no EventEmitter callback object model for sockets or servers\",\"_createServerHandle and _normalizeArgs internal JavaScript helpers are not modeled\",\"createConnection and createServer return explicit native handles rather than JavaScript objects\"]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -8072,7 +8072,7 @@ pub export fn sa_node_plugin_net_config_json(out_ptr: ?*?[*]const u8, out_len: ?
     out.appendSlice("{\"socketModel\":\"explicit native TCP or Unix socket handle\",\"serverModel\":\"explicit native listener handle\",\"blockListModel\":\"explicit native BlockList handle with Node-style family arguments\",\"socketAddressModel\":\"explicit native SocketAddress handle\",\"defaultAutoSelectFamily\":") catch return fail();
     out.appendSlice(if (auto_select_family != 0) "true" else "false") catch return fail();
     out.appendSlice(",\"defaultAutoSelectFamilyAttemptTimeout\":") catch return fail();
-    sio.managedWriter(&out).print("{d}", .{auto_select_timeout}) catch return fail();
+    sio.managedWriter(out).print("{d}", .{auto_select_timeout}) catch return fail();
     out.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
@@ -8245,7 +8245,7 @@ pub export fn sa_node_plugin_wasi_config_json(out_ptr: ?*?[*]const u8, out_len: 
     out.appendSlice(preopens_json) catch return fail();
     out.appendSlice(",\"returnOnExit\":") catch return fail();
     out.appendSlice(if (wasiReturnOnExit()) "true" else "false") catch return fail();
-    sio.managedWriter(&out).print(",\"stdio\":{{\"stdin\":{d},\"stdout\":{d},\"stderr\":{d}}}", .{
+    sio.managedWriter(out).print(",\"stdio\":{{\"stdin\":{d},\"stdout\":{d},\"stderr\":{d}}}", .{
         wasiStdioFd("SA_NODE_WASI_STDIN", 0),
         wasiStdioFd("SA_NODE_WASI_STDOUT", 1),
         wasiStdioFd("SA_NODE_WASI_STDERR", 2),
@@ -8895,14 +8895,14 @@ pub export fn sa_node_plugin_vfs_dir_snapshot_json(dir_ptr: ?*anyopaque, out_ptr
     const dir = vfsDirHandle(dir_ptr) orelse return fail();
     var out = std.array_list.Managed(u8).init(dir.allocator);
     defer out.deinit();
-    sio.managedWriter(&out).print("{{\"path\":", .{}) catch return fail();
+    sio.managedWriter(out).print("{{\"path\":", .{}) catch return fail();
     appendJsonString(&out, dir.path) catch return fail();
-    sio.managedWriter(&out).print(",\"closed\":{s},\"index\":{d},\"entries\":[", .{ if (dir.closed) "true" else "false", dir.index }) catch return fail();
+    sio.managedWriter(out).print(",\"closed\":{s},\"index\":{d},\"entries\":[", .{ if (dir.closed) "true" else "false", dir.index }) catch return fail();
     for (dir.entries.items, 0..) |entry, i| {
         if (i != 0) out.append(',') catch return fail();
         out.appendSlice("{\"name\":") catch return fail();
         appendJsonString(&out, entry.name) catch return fail();
-        sio.managedWriter(&out).print(",\"type\":{d}}}", .{entry.entry_type}) catch return fail();
+        sio.managedWriter(out).print(",\"type\":{d}}}", .{entry.entry_type}) catch return fail();
     }
     out.appendSlice("]}") catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
@@ -9179,7 +9179,7 @@ pub export fn sa_node_plugin_vfs_watcher_snapshot_json(watcher_ptr: ?*anyopaque,
     defer out.deinit();
     out.appendSlice("{\"path\":") catch return fail();
     appendJsonString(&out, watcher.path) catch return fail();
-    sio.managedWriter(&out).print(",\"recursive\":{s},\"closed\":{s},\"queued\":{d},\"events\":[", .{ if (watcher.recursive) "true" else "false", if (watcher.closed) "true" else "false", watcher.events.items.len }) catch return fail();
+    sio.managedWriter(out).print(",\"recursive\":{s},\"closed\":{s},\"queued\":{d},\"events\":[", .{ if (watcher.recursive) "true" else "false", if (watcher.closed) "true" else "false", watcher.events.items.len }) catch return fail();
     for (watcher.events.items, 0..) |event, i| {
         if (i != 0) out.append(',') catch return fail();
         out.appendSlice("{\"event\":") catch return fail();
@@ -9209,7 +9209,7 @@ pub export fn sa_node_plugin_vfs_snapshot_json(vfs_ptr: ?*anyopaque, out_ptr: ?*
     var out = std.array_list.Managed(u8).init(handle.allocator);
     defer out.deinit();
     out.appendSlice("{\"provider\":\"memory\",\"readonly\":false,\"supportsSymlinks\":true,\"supportsWatch\":true,\"watchers\":") catch return fail();
-    sio.managedWriter(&out).print("{d},\"cwd\":", .{handle.watchers.items.len}) catch return fail();
+    sio.managedWriter(out).print("{d},\"cwd\":", .{handle.watchers.items.len}) catch return fail();
     appendJsonString(&out, handle.cwd) catch return fail();
     out.appendSlice(",\"entries\":[") catch return fail();
     for (keys.items, 0..) |key, i| {
@@ -9650,7 +9650,7 @@ pub export fn sa_node_plugin_sqlite_version_json(out_ptr: ?*?[*]const u8, out_le
     const version = std.mem.span(api.libversion());
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    sio.managedWriter(&json).print("{{\"sqlite\":", .{}) catch return fail();
+    sio.managedWriter(json).print("{{\"sqlite\":", .{}) catch return fail();
     appendJsonString(&json, version) catch return fail();
     json.append('}') catch return fail();
     return writeOwnedBytes(out_ptr, out_len, json.items);
@@ -10166,7 +10166,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_run(store_ptr: ?*anyopaque, sql_ptr
     if (rc != SQLITE_DONE and rc != SQLITE_ROW) return fail();
     var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
-    sio.managedWriter(&out).print("{{\"changes\":{d},\"lastInsertRowid\":{d}}}", .{ api.changes(store.db), api.last_insert_rowid(store.db) }) catch return fail();
+    sio.managedWriter(out).print("{{\"changes\":{d},\"lastInsertRowid\":{d}}}", .{ api.changes(store.db), api.last_insert_rowid(store.db) }) catch return fail();
     return writeOwnedBytes(out_ptr, out_len, out.items);
 }
 
@@ -10174,7 +10174,7 @@ pub export fn sa_node_plugin_sqlite_tagstore_snapshot_json(store_ptr: ?*anyopaqu
     const store = sqliteTagStoreHandle(store_ptr) orelse return fail();
     var out = std.array_list.Managed(u8).init(store.allocator);
     defer out.deinit();
-    sio.managedWriter(&out).print("{{\"capacity\":{d},\"size\":{d},\"sql\":[", .{ store.capacity, store.entries.items.len }) catch return fail();
+    sio.managedWriter(out).print("{{\"capacity\":{d},\"size\":{d},\"sql\":[", .{ store.capacity, store.entries.items.len }) catch return fail();
     for (store.entries.items, 0..) |entry, i| {
         if (i != 0) out.append(',') catch return fail();
         appendJsonString(&out, entry.sql) catch return fail();

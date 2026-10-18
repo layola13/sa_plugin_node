@@ -1,4 +1,5 @@
 const std = @import("std");
+const sio = @import("sio");
 const plugin_api = @import("plugin_api");
 const plugin = @import("node");
 

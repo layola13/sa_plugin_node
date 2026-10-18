@@ -149,7 +149,14 @@ const ZSTD_CONTENTSIZE_ERROR = std.math.maxInt(u64);
 
 const TlsClientHandle = struct {
     allocator: std.mem.Allocator,
-    stream: ?std.net.Stream,
+    stream: ?std.Io.net.Stream,
+    net_reader: std.Io.net.Stream.Reader = undefined,
+    net_writer: std.Io.net.Stream.Writer = undefined,
+    net_read_buf: [std.crypto.tls.Client.min_buffer_len]u8 = undefined,
+    net_write_buf: [std.crypto.tls.Client.min_buffer_len]u8 = undefined,
+    tls_read_buf: [std.crypto.tls.Client.min_buffer_len]u8 = undefined,
+    tls_write_buf: [std.crypto.tls.Client.min_buffer_len]u8 = undefined,
+    ca_lock: std.Io.RwLock = .init,
     client: std.crypto.tls.Client,
     ca_bundle: std.crypto.Certificate.Bundle,
     host: []u8,
@@ -166,8 +173,8 @@ const TlsClientHandle = struct {
     fn destroySocket(self: *TlsClientHandle) void {
         if (self.closed) return;
         if (self.stream) |stream| {
-            self.client.writeAllEnd(stream, "", true) catch {};
-            stream.close();
+            stream.shutdown(sio.io(), .both) catch {};
+            stream.close(sio.io());
             self.stream = null;
         }
         self.closed = true;
@@ -286,14 +293,18 @@ fn tlsCountPemCertificates(pem: []const u8) u64 {
     return count;
 }
 
+fn tlsNowSec() i64 {
+    return std.Io.Clock.real.now(sio.io()).toSeconds();
+}
+
 fn tlsBuildBundleFromPem(allocator: std.mem.Allocator, pem: []const u8) !std.crypto.Certificate.Bundle {
-    var bundle: std.crypto.Certificate.Bundle = .{};
+    var bundle: std.crypto.Certificate.Bundle = .empty;
     errdefer bundle.deinit(allocator);
 
     const begin_marker = "-----BEGIN CERTIFICATE-----";
     const end_marker = "-----END CERTIFICATE-----";
     const decoder = std.base64.standard.decoderWithIgnore(" \t\r\n");
-    const now_sec = std.time.timestamp();
+    const now_sec = tlsNowSec();
 
     var start_index: usize = 0;
     var found = false;
@@ -316,9 +327,9 @@ fn tlsBuildBundleFromPem(allocator: std.mem.Allocator, pem: []const u8) !std.cry
 }
 
 fn tlsBuildSystemBundle(allocator: std.mem.Allocator) !std.crypto.Certificate.Bundle {
-    var bundle: std.crypto.Certificate.Bundle = .{};
+    var bundle: std.crypto.Certificate.Bundle = .empty;
     errdefer bundle.deinit(allocator);
-    try bundle.rescan(allocator);
+    try bundle.rescan(allocator, sio.io(), std.Io.Clock.real.now(sio.io()));
     return bundle;
 }
 
@@ -381,9 +392,9 @@ fn tlsWriteExtraCaCertificatesJson(allocator: std.mem.Allocator, out_ptr: ?*?[*]
         else => return fail(),
     };
     defer allocator.free(path);
-    var bundle: std.crypto.Certificate.Bundle = .{};
+    var bundle: std.crypto.Certificate.Bundle = .empty;
     defer bundle.deinit(allocator);
-    bundle.addCertsFromFilePath(allocator, sio.cwd(), path) catch return fail();
+    bundle.addCertsFromFilePath(allocator, sio.io(), std.Io.Clock.real.now(sio.io()), sio.cwd().inner, path) catch return fail();
     return tlsBundleToPemArrayJson(allocator, &bundle, out_ptr, out_len);
 }
 
@@ -394,23 +405,77 @@ fn tlsTimevalFromMs(ms: u64) std.posix.timeval {
     };
 }
 
-fn tlsAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) ![]u8 {
-    switch (addr.any.family) {
-        std.posix.AF.INET => {
-            const bytes = std.mem.asBytes(&addr.in.sa.addr);
-            return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
+const NetAddr = std.Io.net.IpAddress;
+
+fn netAddrFamily(addr: NetAddr) u32 {
+    return switch (addr) {
+        .ip4 => std.posix.AF.INET,
+        .ip6 => std.posix.AF.INET6,
+    };
+}
+
+fn netAddrPort(addr: NetAddr) u16 {
+    return addr.getPort();
+}
+
+/// Convert an IpAddress to a sockaddr storage + length for raw syscalls.
+fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, len: std.posix.socklen_t } {
+    var storage: std.posix.sockaddr.storage = undefined;
+    switch (addr) {
+        .ip4 => |ip| {
+            const sa: *std.posix.sockaddr.in = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .addr = std.mem.readInt(u32, &ip.bytes, .big),
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in) };
         },
-        std.posix.AF.INET6 => {
-            if (std.mem.eql(u8, addr.in6.sa.addr[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
+        .ip6 => |ip| {
+            const sa: *std.posix.sockaddr.in6 = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .flowinfo = 0,
+                .addr = ip.bytes,
+                .scope_id = ip.scope_id,
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in6) };
+        },
+    }
+}
+
+/// Convert a sockaddr storage filled by getpeername/getsockname to IpAddress.
+fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
+    if (storage.family == std.posix.AF.INET) {
+        const sa: *const std.posix.sockaddr.in = @ptrCast(@alignCast(storage));
+        var bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &bytes, sa.addr, .big);
+        return .{ .ip4 = .{ .bytes = bytes, .port = std.mem.bigToNative(u16, sa.port) } };
+    }
+    if (storage.family == std.posix.AF.INET6) {
+        const sa: *const std.posix.sockaddr.in6 = @ptrCast(@alignCast(storage));
+        return .{ .ip6 = .{ .bytes = sa.addr, .port = std.mem.bigToNative(u16, sa.port), .scope_id = sa.scope_id } };
+    }
+    return error.InvalidAddressFamily;
+}
+
+fn tlsAddressToOwnedHost(allocator: std.mem.Allocator, addr: NetAddr) ![]u8 {
+    switch (addr) {
+        .ip4 => |ip| {
+            return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] });
+        },
+        .ip6 => |ip| {
+            if (std.Io.net.Ip4Address.fromIp6(ip)) |ip4| {
                 return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{
-                    addr.in6.sa.addr[12],
-                    addr.in6.sa.addr[13],
-                    addr.in6.sa.addr[14],
-                    addr.in6.sa.addr[15],
+                    ip4.bytes[0],
+                    ip4.bytes[1],
+                    ip4.bytes[2],
+                    ip4.bytes[3],
                 });
             }
-            const with_port = try std.fmt.allocPrint(allocator, "{}", .{addr});
-            defer allocator.free(with_port);
+            var buf: [64]u8 = undefined;
+            var out = std.Io.Writer.fixed(&buf);
+            try ip.format(&out);
+            const with_port = out.buffered();
             if (with_port.len >= 2 and with_port[0] == '[') {
                 if (std.mem.lastIndexOfScalar(u8, with_port, ']')) |end| {
                     return try allocator.dupe(u8, with_port[1..end]);
@@ -418,20 +483,19 @@ fn tlsAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) ![
             }
             return try allocator.dupe(u8, with_port);
         },
-        else => return error.InvalidAddressFamily,
     }
 }
 
-fn tlsGetSocketAddress(handle: *TlsClientHandle, peer: bool) !std.net.Address {
+fn tlsGetSocketAddress(handle: *TlsClientHandle, peer: bool) !NetAddr {
     const stream = handle.stream orelse return error.SocketClosed;
-    var addr: std.net.Address = undefined;
+    var storage: std.posix.sockaddr.storage = undefined;
     var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
     if (peer) {
-        try std.posix.getpeername(stream.handle, &addr.any, &addr_len);
+        try std.posix.getpeername(stream.socket.handle, @ptrCast(&storage), &addr_len);
     } else {
-        try std.posix.getsockname(stream.handle, &addr.any, &addr_len);
+        try std.posix.getsockname(stream.socket.handle, @ptrCast(&storage), &addr_len);
     }
-    return addr;
+    return netSockaddrToAddr(&storage);
 }
 
 fn tlsWriteSocketAddressJson(handle: *TlsClientHandle, peer: bool, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -444,10 +508,9 @@ fn tlsWriteSocketAddressJson(handle: *TlsClientHandle, peer: bool, out_ptr: ?*?[
     appendJsonString(&out, host) catch return fail();
     sio.managedWriter(out).print(",\"port\":{d},\"family\":\"{s}\"}}", .{
         addr.getPort(),
-        switch (addr.any.family) {
-            std.posix.AF.INET => "IPv4",
-            std.posix.AF.INET6 => "IPv6",
-            else => "unknown",
+        switch (addr) {
+            .ip4 => "IPv4",
+            .ip6 => "IPv6",
         },
     }) catch return fail();
     const owned = out.toOwnedSlice() catch return fail();
@@ -460,10 +523,9 @@ fn tlsWriteSocketAddressProperty(handle: *TlsClientHandle, peer: bool, property:
     const addr = tlsGetSocketAddress(handle, peer) catch return fail();
     const value = switch (property) {
         .address => tlsAddressToOwnedHost(handle.allocator, addr) catch return fail(),
-        .family => handle.allocator.dupe(u8, switch (addr.any.family) {
-            std.posix.AF.INET => "IPv4",
-            std.posix.AF.INET6 => "IPv6",
-            else => "unknown",
+        .family => handle.allocator.dupe(u8, switch (addr) {
+            .ip4 => "IPv4",
+            .ip6 => "IPv6",
         }) catch return fail(),
     };
     out_ptr.?.* = value.ptr;
@@ -477,57 +539,54 @@ fn tlsWriteSocketAddressPort(handle: *TlsClientHandle, peer: bool, out_port: ?*u
     return 0;
 }
 
-fn tlsParseRemoteAddress(host: []const u8, port: u64, family: u32) !std.net.Address {
+fn tlsParseRemoteAddress(host: []const u8, port: u64, family: u32) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
     const port16: u16 = @intCast(port);
     if (family == 4) {
-        if (std.net.Address.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp4(host, port16)) |addr| return addr else |_| {}
     } else if (family == 6) {
-        if (std.net.Address.parseIp6(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp6(host, port16)) |addr| return addr else |_| {}
     } else if (family == 0) {
-        if (std.net.Address.parseIp(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parse(host, port16)) |addr| return addr else |_| {}
     } else {
         return error.InvalidAddressFamily;
     }
 
-    const list = try std.net.getAddressList(std.heap.page_allocator, host, port16);
-    defer list.deinit();
-    for (list.addrs) |addr| {
-        if (family == 4 and addr.any.family != std.posix.AF.INET) continue;
-        if (family == 6 and addr.any.family != std.posix.AF.INET6) continue;
-        return addr;
-    }
-    return error.HostLacksNetworkAddresses;
+    const addr = try NetAddr.resolve(sio.io(), host, port16);
+    if (family == 4 and addr != .ip4) return error.HostLacksNetworkAddresses;
+    if (family == 6 and addr != .ip6) return error.HostLacksNetworkAddresses;
+    return addr;
 }
 
-fn tlsParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?std.net.Address {
+fn tlsParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?NetAddr {
     if (local_port > std.math.maxInt(u16)) return error.PortOutOfRange;
     if ((local_ptr == null or local_len == 0) and local_port == 0) return null;
     const port16: u16 = @intCast(local_port);
     if (family == std.posix.AF.INET6) {
-        if (local_ptr == null or local_len == 0) return std.net.Address.initIp6(.{0}**16, port16, 0, 0);
-        return try std.net.Address.parseIp6(local_ptr.?[0..local_len], port16);
+        if (local_ptr == null or local_len == 0) return .{ .ip6 = .{ .bytes = .{0}**16, .port = port16, .scope_id = 0 } };
+        return try NetAddr.parseIp6(local_ptr.?[0..local_len], port16);
     }
-    if (local_ptr == null or local_len == 0) return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, port16);
-    return try std.net.Address.parseIp4(local_ptr.?[0..local_len], port16);
+    if (local_ptr == null or local_len == 0) return .{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = port16 } };
+    return try NetAddr.parseIp4(local_ptr.?[0..local_len], port16);
 }
 
-fn tlsAddressBlocked(allocator: std.mem.Allocator, blocklist_ptr: ?*anyopaque, address: std.net.Address) bool {
+fn tlsAddressBlocked(allocator: std.mem.Allocator, blocklist_ptr: ?*anyopaque, address: NetAddr) bool {
     const ptr = blocklist_ptr orelse return false;
     const host = tlsAddressToOwnedHost(allocator, address) catch return false;
     defer allocator.free(host);
     var blocked: u64 = 0;
-    const family = if (address.any.family == std.posix.AF.INET6) "ipv6" else "ipv4";
+    const family = if (address == .ip6) "ipv6" else "ipv4";
     if (base.sa_node_plugin_net_blocklist_check_family(ptr, host.ptr, host.len, family.ptr, family.len, &blocked) != 0) return false;
     return blocked != 0;
 }
 
-fn tlsConnectAddressWithOptions(address: std.net.Address, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.net.Stream {
-    const sockfd = try std.posix.socket(address.any.family, std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.TCP);
-    errdefer std.net.Stream.close(.{ .handle = sockfd });
+fn tlsConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.Io.net.Stream {
+    const sockfd = try std.posix.socket(netAddrFamily(address), std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.TCP);
+    errdefer (std.Io.net.Stream{ .socket = .{ .handle = sockfd, .address = address } }).close(sio.io());
 
-    if (try tlsParseLocalAddress(local_ptr, local_len, local_port, address.any.family)) |local_address| {
-        try std.posix.bind(sockfd, &local_address.any, local_address.getOsSockLen());
+    if (try tlsParseLocalAddress(local_ptr, local_len, local_port, netAddrFamily(address))) |local_address| {
+        const local_sa = netAddrSockaddr(local_address);
+        try std.posix.bind(sockfd, @ptrCast(&local_sa.storage), local_sa.len);
     }
     if (no_delay != 0) {
         const value: c_int = 1;
@@ -547,11 +606,12 @@ fn tlsConnectAddressWithOptions(address: std.net.Address, local_ptr: ?[*]const u
         try std.posix.setsockopt(sockfd, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv));
     }
 
-    try std.posix.connect(sockfd, &address.any, address.getOsSockLen());
-    return .{ .handle = sockfd };
+    const remote_sa = netAddrSockaddr(address);
+    try std.posix.connect(sockfd, @ptrCast(&remote_sa.storage), remote_sa.len);
+    return .{ .socket = .{ .handle = sockfd, .address = address } };
 }
 
-fn tlsInitClientHandleWithCaPem(allocator: std.mem.Allocator, stream: std.net.Stream, host: []const u8, servername: []const u8, reject_unauthorized: u64, timeout_ms: u64, ca_pem: ?[]const u8, out_socket: ?*?*anyopaque) u32 {
+fn tlsInitClientHandleWithCaPem(allocator: std.mem.Allocator, stream: std.Io.net.Stream, host: []const u8, servername: []const u8, reject_unauthorized: u64, timeout_ms: u64, ca_pem: ?[]const u8, out_socket: ?*?*anyopaque) u32 {
     const out = out_socket orelse return fail();
     out.* = null;
     const host_owned = allocator.dupe(u8, host) catch return fail();
@@ -559,24 +619,18 @@ fn tlsInitClientHandleWithCaPem(allocator: std.mem.Allocator, stream: std.net.St
     const servername_owned = allocator.dupe(u8, servername) catch return fail();
     errdefer allocator.free(servername_owned);
 
-    var ca_bundle: std.crypto.Certificate.Bundle = .{};
+    var ca_bundle: std.crypto.Certificate.Bundle = .empty;
     errdefer ca_bundle.deinit(allocator);
     if (reject_unauthorized != 0) {
         ca_bundle = if (ca_pem) |pem| tlsBuildBundleFromPem(allocator, pem) catch return fail() else tlsBuildDefaultBundle(allocator) catch return fail();
     }
 
-    var client = std.crypto.tls.Client.init(stream, .{
-        .host = if (reject_unauthorized != 0) .{ .explicit = servername_owned } else .no_verification,
-        .ca = if (reject_unauthorized != 0) .{ .bundle = ca_bundle } else .no_verification,
-        .ssl_key_log_file = null,
-    }) catch return fail();
-    client.allow_truncation_attacks = true;
-
     const handle = allocator.create(TlsClientHandle) catch return fail();
+    errdefer allocator.destroy(handle);
     handle.* = .{
         .allocator = allocator,
         .stream = stream,
-        .client = client,
+        .client = undefined,
         .ca_bundle = ca_bundle,
         .host = host_owned,
         .servername = servername_owned,
@@ -584,11 +638,37 @@ fn tlsInitClientHandleWithCaPem(allocator: std.mem.Allocator, stream: std.net.St
         .timeout_ms = timeout_ms,
     };
 
+    handle.net_reader = stream.reader(sio.io(), &handle.net_read_buf);
+    handle.net_writer = stream.writer(sio.io(), &handle.net_write_buf);
+    var entropy: [std.crypto.tls.Client.Options.entropy_len]u8 = undefined;
+    sio.io().random(&entropy);
+    handle.client = std.crypto.tls.Client.init(
+        &handle.net_reader.interface,
+        &handle.net_writer.interface,
+        .{
+            .host = if (reject_unauthorized != 0) .{ .explicit = servername_owned } else .no_verification,
+            .ca = if (reject_unauthorized != 0) .{ .bundle = .{
+                .gpa = allocator,
+                .io = sio.io(),
+                .lock = &handle.ca_lock,
+                .bundle = &handle.ca_bundle,
+            } } else .no_verification,
+            .write_buffer = &handle.tls_write_buf,
+            .read_buffer = &handle.tls_read_buf,
+            .entropy = &entropy,
+            .realtime_now = std.Io.Clock.real.now(sio.io()),
+            .allow_truncation_attacks = true,
+        },
+    ) catch {
+        handle.ca_bundle = .empty;
+        return fail();
+    };
+
     out.* = @ptrCast(handle);
     return 0;
 }
 
-fn tlsInitClientHandle(allocator: std.mem.Allocator, stream: std.net.Stream, host: []const u8, servername: []const u8, reject_unauthorized: u64, timeout_ms: u64, out_socket: ?*?*anyopaque) u32 {
+fn tlsInitClientHandle(allocator: std.mem.Allocator, stream: std.Io.net.Stream, host: []const u8, servername: []const u8, reject_unauthorized: u64, timeout_ms: u64, out_socket: ?*?*anyopaque) u32 {
     return tlsInitClientHandleWithCaPem(allocator, stream, host, servername, reject_unauthorized, timeout_ms, null, out_socket);
 }
 
@@ -2655,15 +2735,15 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: std.net.Address, ti
 
     var random_id: u16 = undefined;
     sio.io().random(std.mem.asBytes(&random_id));
-    try sio.managedWriter(query).writeInt(u16, random_id, .big);
-    try sio.managedWriter(query).writeInt(u16, 0x0100, .big);
-    try sio.managedWriter(query).writeInt(u16, 1, .big);
-    try sio.managedWriter(query).writeInt(u16, 0, .big);
-    try sio.managedWriter(query).writeInt(u16, 0, .big);
-    try sio.managedWriter(query).writeInt(u16, 0, .big);
+    try sio.managedWriter(&query).writeInt(u16, random_id, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0x0100, .big);
+    try sio.managedWriter(&query).writeInt(u16, 1, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
+    try sio.managedWriter(&query).writeInt(u16, 0, .big);
     try encodeDnsName(&query, hostname);
-    try sio.managedWriter(query).writeInt(u16, rrtype, .big);
-    try sio.managedWriter(query).writeInt(u16, DnsClassIn, .big);
+    try sio.managedWriter(&query).writeInt(u16, rrtype, .big);
+    try sio.managedWriter(&query).writeInt(u16, DnsClassIn, .big);
 
     const family: u32 = if (server.any.family == std.posix.AF.INET6) std.posix.AF.INET6 else std.posix.AF.INET;
     const fd = try std.posix.socket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
@@ -2931,11 +3011,11 @@ fn writeSoaRecord(hostname: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64)
 
         if (!first) out.appendSlice(",") catch return fail();
         first = false;
-        sio.managedWriter(out).print("{{\"nsname\":", .{}) catch return fail();
+        sio.managedWriter(&out).print("{{\"nsname\":", .{}) catch return fail();
         appendJsonString(&out, mname.name) catch return fail();
-        sio.managedWriter(out).print(",\"hostmaster\":", .{}) catch return fail();
+        sio.managedWriter(&out).print(",\"hostmaster\":", .{}) catch return fail();
         appendJsonString(&out, rname.name) catch return fail();
-        sio.managedWriter(out).print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum }) catch return fail();
+        sio.managedWriter(&out).print(",\"serial\":{d},\"refresh\":{d},\"retry\":{d},\"expire\":{d},\"minimum\":{d}}}", .{ serial, refresh, retry, expire, minimum }) catch return fail();
     }
 
     out.appendSlice("]") catch return fail();
@@ -3170,7 +3250,7 @@ pub export fn sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ?*anyopaqu
     const resolver: *DnsResolverHandle = @ptrCast(@alignCast(resolver_ptr orelse return fail()));
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    sio.managedWriter(json).print("{{\"timeoutMs\":{d},\"tries\":{d},\"servers\":", .{ resolver.timeout_ms, resolver.tries }) catch return fail();
+    sio.managedWriter(&json).print("{{\"timeoutMs\":{d},\"tries\":{d},\"servers\":", .{ resolver.timeout_ms, resolver.tries }) catch return fail();
     if (resolver.servers_json) |servers| {
         json.appendSlice(servers) catch return fail();
     } else {
@@ -3190,7 +3270,7 @@ pub export fn sa_node_plugin_dns_resolver_snapshot_json(resolver_ptr: ?*anyopaqu
     } else {
         json.appendSlice("null") catch return fail();
     }
-    sio.managedWriter(json).print("}},\"cancelCount\":{d}", .{resolver.cancel_count}) catch return fail();
+    sio.managedWriter(&json).print("}},\"cancelCount\":{d}", .{resolver.cancel_count}) catch return fail();
     json.append('}') catch return fail();
     return writeOwned(out_ptr, out_len, json.items);
 }
@@ -3518,12 +3598,12 @@ fn streamHandle(handle_ptr: ?*anyopaque) ?*StreamHandle {
 fn writeStreamState(out_ptr: ?*?[*]const u8, out_len: ?*u64, h: *const StreamHandle) u32 {
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    sio.managedWriter(out).print(
+    sio.managedWriter(&out).print(
         "{{\"id\":{d},\"kind\":",
         .{h.id},
     ) catch return fail();
     appendJsonString(&out, h.kind) catch return fail();
-    sio.managedWriter(out).print(
+    sio.managedWriter(&out).print(
         ",\"destroyed\":{},\"ended\":{},\"errored\":{},\"errorCount\":{d},\"bufferedLength\":{d},\"pipedTo\":{d},\"pipedFrom\":{d},\"composedCount\":{d}}}",
         .{ h.destroyed, h.ended, h.error_count != 0, h.error_count, h.data.items.len, h.piped_to, h.piped_from, h.composed_count },
     ) catch return fail();
@@ -3561,14 +3641,14 @@ pub export fn sa_node_plugin_stream_pipeline(steps_ptr: ?*const anyopaque, steps
 
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    sio.managedWriter(out).print("{{\"status\":\"ok\",\"count\":{d},\"firstId\":{d},\"lastId\":{d}}}", .{ count, first.id, last_id }) catch return fail();
+    sio.managedWriter(&out).print("{{\"status\":\"ok\",\"count\":{d},\"firstId\":{d},\"lastId\":{d}}}", .{ count, first.id, last_id }) catch return fail();
     return writeOwned(out_ptr, out_len, out.items);
 }
 pub export fn sa_node_plugin_stream_finished(handle_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const h = streamHandle(handle_ptr) orelse return writeOwned(out_ptr, out_len, "{\"finished\":false,\"destroyed\":false,\"errored\":true,\"error\":\"ERR_INVALID_STREAM\"}");
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    sio.managedWriter(out).print(
+    sio.managedWriter(&out).print(
         "{{\"finished\":{},\"destroyed\":{},\"ended\":{},\"errored\":{},\"bufferedLength\":{d}}}",
         .{ h.ended or h.destroyed, h.destroyed, h.ended, h.error_count != 0, h.data.items.len },
     ) catch return fail();
@@ -3849,7 +3929,7 @@ pub export fn sa_node_plugin_tls_default_constants_json(out_ptr: ?*?[*]const u8,
     out.appendSlice("{\"CLIENT_RENEG_LIMIT\":3,\"CLIENT_RENEG_WINDOW\":600,\"DEFAULT_ECDH_CURVE\":\"auto\",\"DEFAULT_MIN_VERSION\":\"TLSv1.2\",\"DEFAULT_MAX_VERSION\":\"TLSv1.3\",\"DEFAULT_CIPHERS\":") catch return fail();
     appendJsonString(&out, TLS_DEFAULT_CIPHERS) catch return fail();
     out.appendSlice(",\"nativeCipherCount\":") catch return fail();
-    sio.managedWriter(out).print("{d}", .{tls_supported_ciphers.len}) catch return fail();
+    sio.managedWriter(&out).print("{d}", .{tls_supported_ciphers.len}) catch return fail();
     out.append('}') catch return fail();
     const owned = out.toOwnedSlice() catch return fail();
     out_ptr.?.* = owned.ptr;
@@ -3979,7 +4059,7 @@ pub export fn sa_node_plugin_tls_secure_context_snapshot_json(context_ptr: ?*any
     const ctx: *TlsSecureContextHandle = @ptrCast(@alignCast(context_ptr orelse return fail()));
     var out = std.array_list.Managed(u8).init(ctx.allocator);
     defer out.deinit();
-    sio.managedWriter(out).print("{{\"caCount\":{d},\"hasCA\":{},\"hasCert\":{},\"hasKey\":{},\"hasCiphers\":{}", .{ ctx.ca_count, ctx.ca_pem != null, ctx.cert_pem != null, ctx.key_pem != null, ctx.ciphers != null }) catch return fail();
+    sio.managedWriter(&out).print("{{\"caCount\":{d},\"hasCA\":{},\"hasCert\":{},\"hasKey\":{},\"hasCiphers\":{}", .{ ctx.ca_count, ctx.ca_pem != null, ctx.cert_pem != null, ctx.key_pem != null, ctx.ciphers != null }) catch return fail();
     out.appendSlice(",\"minVersion\":") catch return fail();
     if (ctx.min_version) |v| appendJsonString(&out, v) catch return fail() else out.appendSlice("null") catch return fail();
     out.appendSlice(",\"maxVersion\":") catch return fail();
@@ -4920,7 +5000,7 @@ pub export fn sa_node_plugin_util_debuglog(section_ptr: ?[*]const u8, section_le
     defer out.deinit();
     out.appendSlice("{\"section\":") catch return fail();
     appendJsonString(&out, section) catch return fail();
-    sio.managedWriter(out).print(
+    sio.managedWriter(&out).print(
         ",\"enabled\":{},\"pid\":{d},\"prefix\":",
         .{ enabled, std.c.getpid() },
     ) catch return fail();
@@ -5161,7 +5241,7 @@ pub export fn sa_node_plugin_readline_promises_snapshot_json(interface_ptr: ?*an
     const handle: *ReadlinePromisesInterface = @ptrCast(@alignCast(interface_ptr orelse return fail()));
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
-    sio.managedWriter(json).print("{{\"closed\":{s},\"offset\":{d},\"inputLen\":{d}}}", .{ if (handle.closed) "true" else "false", handle.offset, handle.input.len }) catch return fail();
+    sio.managedWriter(&json).print("{{\"closed\":{s},\"offset\":{d},\"inputLen\":{d}}}", .{ if (handle.closed) "true" else "false", handle.offset, handle.input.len }) catch return fail();
     return writeOwned(out_ptr, out_len, json.items);
 }
 
@@ -5374,7 +5454,7 @@ pub export fn sa_node_plugin_process_resource_usage_json(out_ptr: ?*?[*]const u8
     if (getrusage(RUSAGE_SELF, &usage) != 0) return fail();
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    sio.managedWriter(out).print(
+    sio.managedWriter(&out).print(
         "{{\"userCPUTime\":{d},\"systemCPUTime\":{d},\"maxRSS\":{d},\"sharedMemorySize\":{d},\"unsharedDataSize\":{d},\"unsharedStackSize\":{d},\"minorPageFault\":{d},\"majorPageFault\":{d},\"swappedOut\":{d},\"fsRead\":{d},\"fsWrite\":{d},\"ipcSent\":{d},\"ipcReceived\":{d},\"signalsCount\":{d},\"voluntaryContextSwitches\":{d},\"involuntaryContextSwitches\":{d}}}",
         .{
             @as(i64, @intCast(usage.ru_utime.tv_sec)) * 1_000_000 + @as(i64, @intCast(usage.ru_utime.tv_usec)),
@@ -5535,7 +5615,7 @@ pub export fn sa_node_plugin_perf_hooks_histogram_get_statistics(handle_ptr: ?*a
 
     var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
-    sio.managedWriter(json).print(
+    sio.managedWriter(&json).print(
         "{{\"count\":{d},\"sum\":{d},\"min\":{d},\"max\":{d},\"mean\":{d},\"stddev\":{d:.3},\"exceeds\":0,\"percentiles\":{{\"50\":{d},\"75\":{d},\"90\":{d},\"99\":{d}}}}}",
         .{ count, sum, min, max, mean, stddev, histogramPercentile(sorted, 50), histogramPercentile(sorted, 75), histogramPercentile(sorted, 90), histogramPercentile(sorted, 99) },
     ) catch return fail();

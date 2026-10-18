@@ -100,6 +100,134 @@ const Ipv6Mreq = extern struct {
 extern fn getifaddrs(ifap: *?*struct_ifaddrs) c_int;
 extern fn freeifaddrs(ifa: ?*struct_ifaddrs) void;
 extern fn inet_ntop(af: c_int, src: ?*const anyopaque, dst: [*]u8, size: c_uint) ?[*:0]const u8;
+extern fn close(fd: c_int) c_int;
+
+// NOTE(Zig 0.17): std.net/std.posix.socket removed; Io.net + raw linux syscalls.
+const NetAddr = std.Io.net.IpAddress;
+
+fn netAddrFamily(addr: NetAddr) std.posix.sa_family_t {
+    return switch (addr) {
+        .ip4 => std.posix.AF.INET,
+        .ip6 => std.posix.AF.INET6,
+    };
+}
+
+fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, len: std.posix.socklen_t } {
+    var storage: std.posix.sockaddr.storage = undefined;
+    switch (addr) {
+        .ip4 => |ip| {
+            const sa: *std.posix.sockaddr.in = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .addr = std.mem.readInt(u32, &ip.bytes, .big),
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in) };
+        },
+        .ip6 => |ip| {
+            const sa: *std.posix.sockaddr.in6 = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .flowinfo = 0,
+                .addr = ip.bytes,
+                .scope_id = 0,
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in6) };
+        },
+    }
+}
+
+fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
+    if (storage.family == std.posix.AF.INET) {
+        const sa: *const std.posix.sockaddr.in = @ptrCast(@alignCast(storage));
+        var bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &bytes, sa.addr, .big);
+        return .{ .ip4 = .{ .bytes = bytes, .port = std.mem.bigToNative(u16, sa.port) } };
+    }
+    if (storage.family == std.posix.AF.INET6) {
+        const sa: *const std.posix.sockaddr.in6 = @ptrCast(@alignCast(storage));
+        return .{ .ip6 = .{ .bytes = sa.addr, .port = std.mem.bigToNative(u16, sa.port) } };
+    }
+    return error.InvalidAddressFamily;
+}
+
+fn netSocket(domain: u32, socket_type: u32, protocol: u32) !std.posix.fd_t {
+    const rc = std.os.linux.socket(domain, socket_type, protocol);
+    if (rc >= 0xffffff0000000000) return error.SocketFailed;
+    return @intCast(rc);
+}
+
+fn netBindSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.bind(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.BindFailed;
+}
+
+fn netConnectSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.connect(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.ConnectFailed;
+}
+
+fn netCloseFd(fd: std.posix.fd_t) void {
+    _ = close(@intCast(fd));
+}
+
+fn netCloseSocket(fd: std.posix.fd_t) void {
+    netCloseFd(fd);
+}
+
+const NetAddrList = struct {
+    addrs: []NetAddr,
+    allocator: std.mem.Allocator,
+    fn deinit(self: @This()) void {
+        self.allocator.free(self.addrs);
+    }
+};
+
+fn netGetAddressListCompat(allocator: std.mem.Allocator, host: []const u8, port: u16) !NetAddrList {
+    const addr = try NetAddr.resolve(sio.io(), host, port);
+    const addrs = try allocator.alloc(NetAddr, 1);
+    addrs[0] = addr;
+    return .{ .addrs = addrs, .allocator = allocator };
+}
+
+fn netTcpConnectCompat(address: NetAddr) !std.Io.net.Stream {
+    var addr = address;
+    return addr.connect(sio.io(), .{ .mode = .stream });
+}
+
+fn netConnectUnixCompat(path: []const u8) !std.Io.net.Stream {
+    const ua = try std.Io.net.UnixAddress.init(path);
+    return ua.connect(sio.io());
+}
+
+fn netStreamRead(stream: std.Io.net.Stream, buf: []u8) !usize {
+    if (buf.len == 0) return 0;
+    var rbuf: [8192]u8 = undefined;
+    var r = stream.reader(sio.io(), &rbuf);
+    return r.interface.readSliceShort(buf);
+}
+
+fn netStreamWriteAll(stream: std.Io.net.Stream, bytes: []const u8) !void {
+    var wbuf: [8192]u8 = undefined;
+    var w = stream.writer(sio.io(), &wbuf);
+    try w.interface.writeAll(bytes);
+    try w.interface.flush();
+}
+
+fn netSendTo(sockfd: std.posix.fd_t, buf: []const u8, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.sendto(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.SendFailed;
+}
+
+fn netRecvFrom(sockfd: std.posix.fd_t, buf: []u8, storage: *std.posix.sockaddr.storage, len: *std.posix.socklen_t) !usize {
+    const rc = std.os.linux.recvfrom(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.ReceiveFailed;
+    return @intCast(rc);
+}
+
+fn netShutdownWrite(fd: std.posix.fd_t) !void {
+    const rc = std.os.linux.shutdown(fd, 1); // SHUT_WR
+    if (rc != 0) return error.ShutdownFailed;
+}
 
 // Global process start time for process.uptime()
 var process_start_ms: i64 = 0;
@@ -2193,21 +2321,34 @@ pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_pt
 
     json.appendSlice("[") catch return 2;
 
-    if (std.net.Address.resolveIp(host_z, 0)) |list| {
-        switch (list.any.family) {
-            std.posix.AF.INET => {
-                const bytes = std.mem.asBytes(&list.in.sa.addr);
-                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
+    if (NetAddr.parse(host, 0) catch null) |list| {
+        switch (list) {
+            .ip4 => |ip| {
+                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] }) catch return 2;
             },
-            std.posix.AF.INET6 => {
+            .ip6 => |ip| {
                 var buf: [64]u8 = undefined;
-                const ip_str = std.fmt.bufPrint(&buf, "{}", .{list}) catch return 2;
+                var out = std.Io.Writer.fixed(&buf);
+                ip.format(&out) catch return 2;
+                const ip_str = out.buffered();
                 const clean_ip = if (std.mem.lastIndexOfScalar(u8, ip_str, ']')) |end| ip_str[1..end] else ip_str;
                 json.appendSlice("\"") catch return 2;
                 json.appendSlice(clean_ip) catch return 2;
                 json.appendSlice("\"") catch return 2;
             },
-            else => return 2,
+        }
+    } else if (NetAddr.resolve(sio.io(), host, 0)) |list| {
+        switch (list) {
+            .ip4 => |ip| {
+                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] }) catch return 2;
+            },
+            .ip6 => {
+                if (std.mem.eql(u8, host, "localhost")) {
+                    json.appendSlice("\"127.0.0.1\"") catch return 2;
+                } else {
+                    return 2;
+                }
+            },
         }
     } else |_| {
         if (std.mem.eql(u8, host, "localhost")) {
@@ -2227,17 +2368,20 @@ pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_pt
 
 pub export fn sa_node_plugin_dns_lookup_service(address_ptr: ?[*]const u8, len: u64, port: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const address_text = address_ptr.?[0..len];
-    const address = std.net.Address.resolveIp(address_text, @as(u16, @intCast(port))) catch return 2;
+    if (port > std.math.maxInt(u16)) return 2;
+    const address = NetAddr.parse(address_text, @as(u16, @intCast(port))) catch
+        NetAddr.resolve(sio.io(), address_text, @as(u16, @intCast(port))) catch return 2;
 
+    const sa = netAddrSockaddr(address);
     var host_buf: [1025]u8 = undefined;
     var serv_buf: [32]u8 = undefined;
     const rc = std.c.getnameinfo(
-        &address.any,
-        address.getOsSockLen(),
-        &host_buf,
-        host_buf.len,
-        &serv_buf,
-        serv_buf.len,
+        @ptrCast(&sa.storage),
+        sa.len,
+        @ptrCast(&host_buf),
+        @intCast(host_buf.len),
+        @ptrCast(&serv_buf),
+        @intCast(serv_buf.len),
         .{},
     );
     if (@intFromEnum(rc) != 0) return 2;
@@ -2326,14 +2470,14 @@ fn blockListFamilyLen(family: BlockListFamily) usize {
 fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8, address_len: u64) !BlockListAddress {
     const address = (address_ptr orelse return error.InvalidAddress)[0..address_len];
     var bytes: [16]u8 = @splat(@as(u8, 0));
-    if (std.net.Address.parseIp4(address, 0)) |addr| {
-        @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+    if (NetAddr.parseIp4(address, 0)) |addr| {
+        @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
         const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv4, .bytes = bytes, .text = text };
     } else |_| {}
-    if (std.net.Address.parseIp6(address, 0)) |addr| {
-        @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+    if (NetAddr.parseIp6(address, 0)) |addr| {
+        @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
         const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2345,15 +2489,15 @@ fn blockListParseAddressForFamily(allocator: std.mem.Allocator, address: []const
     var bytes: [16]u8 = @splat(@as(u8, 0));
     switch (family) {
         .ipv4 => {
-            const addr = try std.net.Address.parseIp4(address, 0);
-            @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+            const addr = try NetAddr.parseIp4(address, 0);
+            @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         .ipv6 => {
-            const addr = try std.net.Address.parseIp6(address, 0);
-            @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+            const addr = try NetAddr.parseIp6(address, 0);
+            @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2518,17 +2662,17 @@ fn blockListAddressFromSocketAddress(addr: *const SaNetSocketAddress) BlockListA
     return .{ .family = addr.family, .bytes = addr.bytes, .text = addr.text };
 }
 
-fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: std.net.Address) !BlockListAddress {
+fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: NetAddr) !BlockListAddress {
     var bytes: [16]u8 = @splat(@as(u8, 0));
-    switch (addr.any.family) {
+    switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => {
-            @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+            @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         std.posix.AF.INET6 => {
-            @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+            @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2989,8 +3133,8 @@ pub export fn sa_node_plugin_net_blocklist_rules(blocklist_ptr: ?*anyopaque, out
 pub const SaNetObject = struct {
     is_server: bool,
     allocator: std.mem.Allocator,
-    stream: ?std.net.Stream,
-    server: ?std.net.Server,
+    stream: ?std.Io.net.Stream,
+    server: ?std.Io.net.Server,
     bytes_read: u64 = 0,
     bytes_written: u64 = 0,
     readable: bool = true,
@@ -3031,7 +3175,7 @@ pub const SaNetObject = struct {
             self.closeServerHandle();
         } else {
             if (self.stream) |str| {
-                str.close();
+                str.close(sio.io());
             }
         }
         self.allocator.destroy(self);
@@ -3040,7 +3184,7 @@ pub const SaNetObject = struct {
     fn closeServerHandle(self: *SaNetObject) void {
         if (self.server) |*srv| {
             var s = srv.*;
-            s.deinit();
+            s.deinit(sio.io());
             self.server = null;
         }
         if (self.unix_path) |path| {
@@ -3054,20 +3198,20 @@ pub const SaNetObject = struct {
 fn netUnlinkUnixSocketPath(path: []const u8) void {
     if (path.len == 0 or path[0] == 0) return;
     if (std.fs.path.isAbsolute(path)) {
-        std.fs.deleteFileAbsolute(path) catch {};
+        std.Io.Dir.deleteFileAbsolute(sio.io(), path) catch {};
     } else {
         sio.cwd().deleteFile(path) catch {};
     }
 }
 
-fn netAddressToAttemptString(addr: std.net.Address) ![]u8 {
+fn netAddressToAttemptString(addr: NetAddr) ![]u8 {
     const allocator = std.heap.page_allocator;
     const host = try dgramAddressToOwnedHost(allocator, addr);
     defer allocator.free(host);
     return try std.fmt.allocPrint(allocator, "{s}:{d}", .{ host, addr.getPort() });
 }
 
-fn netAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: std.net.Address) bool {
+fn netAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: NetAddr) bool {
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
@@ -3084,10 +3228,10 @@ fn netSetBlockList(dest: *std.array_list.Managed(BlockListRule), blocklist_ptr: 
     return 0;
 }
 
-fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address) !void {
+fn appendAddressJson(out: *std.array_list.Managed(u8), addr: NetAddr) !void {
     const host = try dgramAddressToOwnedHost(std.heap.page_allocator, addr);
     defer std.heap.page_allocator.free(host);
-    const family = switch (addr.any.family) {
+    const family = switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => "IPv4",
         std.posix.AF.INET6 => "IPv6",
         else => "unknown",
@@ -3096,13 +3240,16 @@ fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address) !v
 }
 
 fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var addr: std.net.Address = undefined;
+    var storage: std.posix.sockaddr.storage = undefined;
     var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
     if (peer) {
-        std.posix.getpeername(fd, &addr.any, &addr_len) catch return 2;
+        const rc = std.os.linux.getpeername(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return 2;
     } else {
-        std.posix.getsockname(fd, &addr.any, &addr_len) catch return 2;
+        const rc = std.os.linux.getsockname(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return 2;
     }
+    const addr = netSockaddrToAddr(&storage) catch return 2;
     var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendAddressJson(&out, addr) catch return 2;
@@ -3112,25 +3259,27 @@ fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]con
     return 0;
 }
 
-fn getSocketAddress(fd: std.posix.socket_t, peer: bool) !std.net.Address {
-    var addr: std.net.Address = undefined;
+fn getSocketAddress(fd: std.posix.socket_t, peer: bool) !NetAddr {
+    var storage: std.posix.sockaddr.storage = undefined;
     var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
     if (peer) {
-        try std.posix.getpeername(fd, &addr.any, &addr_len);
+        const rc = std.os.linux.getpeername(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return error.SocketNotBound;
     } else {
-        try std.posix.getsockname(fd, &addr.any, &addr_len);
+        const rc = std.os.linux.getsockname(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return error.SocketNotBound;
     }
-    return addr;
+    return netSockaddrToAddr(&storage);
 }
 
 fn writeSocketAddressProperty(socket_ptr: ?*anyopaque, peer: bool, property: enum { address, family }, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server) return 2;
     const stream = obj.stream orelse return 2;
-    const addr = getSocketAddress(stream.handle, peer) catch return 2;
+    const addr = getSocketAddress(stream.socket.handle, peer) catch return 2;
     const value = switch (property) {
         .address => dgramAddressToOwnedHost(std.heap.page_allocator, addr) catch return 2,
-        .family => std.heap.page_allocator.dupe(u8, switch (addr.any.family) {
+        .family => std.heap.page_allocator.dupe(u8, switch ((netAddrFamily(addr))) {
             std.posix.AF.INET => "IPv4",
             std.posix.AF.INET6 => "IPv6",
             else => "unknown",
@@ -3145,12 +3294,12 @@ fn writeSocketAddressPort(socket_ptr: ?*anyopaque, peer: bool, out_port: ?*u64) 
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server) return 2;
     const stream = obj.stream orelse return 2;
-    const addr = getSocketAddress(stream.handle, peer) catch return 2;
+    const addr = getSocketAddress(stream.socket.handle, peer) catch return 2;
     out_port.?.* = addr.getPort();
     return 0;
 }
 
-fn netInitSocketObject(stream: std.net.Stream, timeout_ms: u64, attempted_address: ?std.net.Address, out: *?*anyopaque) u32 {
+fn netInitSocketObject(stream: std.Io.net.Stream, timeout_ms: u64, attempted_address: ?NetAddr, out: *?*anyopaque) u32 {
     const socket = std.heap.page_allocator.create(SaNetObject) catch return 2;
     socket.* = .{
         .is_server = false,
@@ -3178,79 +3327,77 @@ fn netInitSocketObject(stream: std.net.Stream, timeout_ms: u64, attempted_addres
     return 0;
 }
 
-fn netParseRemoteAddress(host: []const u8, port: u64, family: u32) !std.net.Address {
+fn netParseRemoteAddress(host: []const u8, port: u64, family: u32) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
     const port16: u16 = @intCast(port);
     if (family == 4) {
-        if (std.net.Address.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp4(host, port16)) |addr| return addr else |_| {}
     } else if (family == 6) {
-        if (std.net.Address.parseIp6(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp6(host, port16)) |addr| return addr else |_| {}
     } else if (family == 0) {
-        if (std.net.Address.parseIp(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parse(host, port16)) |addr| return addr else |_| {}
     } else {
         return error.InvalidAddressFamily;
     }
 
-    const list = try std.net.getAddressList(std.heap.page_allocator, host, port16);
-    defer list.deinit();
-    for (list.addrs) |addr| {
-        if (family == 4 and addr.any.family != std.posix.AF.INET) continue;
-        if (family == 6 and addr.any.family != std.posix.AF.INET6) continue;
-        return addr;
-    }
-    return error.HostLacksNetworkAddresses;
+    const addr = NetAddr.resolve(sio.io(), host, port16) catch return error.HostLacksNetworkAddresses;
+    if (family == 4 and addr != .ip4) return error.HostLacksNetworkAddresses;
+    if (family == 6 and addr != .ip6) return error.HostLacksNetworkAddresses;
+    return addr;
 }
 
-fn netResolveIpLiteral(host: []const u8, port: u64) !std.net.Address {
+fn netResolveIpLiteral(host: []const u8, port: u64) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
-    return std.net.Address.parseIp(host, @intCast(port));
+    return NetAddr.parse(host, @intCast(port));
 }
 
-fn netResolveAddress(host: []const u8, port: u64) !std.net.Address {
+fn netResolveAddress(host: []const u8, port: u64) !NetAddr {
     if (netResolveIpLiteral(host, port)) |addr| return addr else |_| {}
     return netParseRemoteAddress(host, port, 0);
 }
 
-fn netParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?std.net.Address {
+fn netParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?NetAddr {
     if (local_port > std.math.maxInt(u16)) return error.PortOutOfRange;
     if ((local_ptr == null or local_len == 0) and local_port == 0) return null;
     const port16: u16 = @intCast(local_port);
     if (family == std.posix.AF.INET6) {
-        if (local_ptr == null or local_len == 0) return std.net.Address.initIp6(.{0}**16, port16, 0, 0);
-        return try std.net.Address.parseIp6(local_ptr.?[0..local_len], port16);
+        if (local_ptr == null or local_len == 0) return NetAddr{ .ip6 = .{  .bytes = @splat(@as(u8, 0)), .port = port16 } };
+        return try NetAddr.parseIp6(local_ptr.?[0..local_len], port16);
     }
-    if (local_ptr == null or local_len == 0) return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, port16);
-    return try std.net.Address.parseIp4(local_ptr.?[0..local_len], port16);
+    if (local_ptr == null or local_len == 0) return NetAddr{ .ip4 = .{ .bytes = [_]u8{ 0, 0, 0, 0 }, .port = port16 } };
+    return try NetAddr.parseIp4(local_ptr.?[0..local_len], port16);
 }
 
-fn netConnectAddressWithOptions(address: std.net.Address, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.net.Stream {
+fn netConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.Io.net.Stream {
     const sock_flags = std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC;
-    const sockfd = try std.posix.socket(address.any.family, sock_flags, std.posix.IPPROTO.TCP);
-    errdefer std.net.Stream.close(.{ .handle = sockfd });
+    const sockfd = try netSocket(netAddrFamily(address), sock_flags, std.posix.IPPROTO.TCP);
+    errdefer netCloseFd(sockfd);
 
-    if (try netParseLocalAddress(local_ptr, local_len, local_port, address.any.family)) |local_address| {
-        try std.posix.bind(sockfd, &local_address.any, local_address.getOsSockLen());
+    if (try netParseLocalAddress(local_ptr, local_len, local_port, netAddrFamily(address))) |local_address| {
+        const local_sa = netAddrSockaddr(local_address);
+        try netBindSocket(sockfd, &local_sa.storage, local_sa.len);
     }
 
-    try std.posix.connect(sockfd, &address.any, address.getOsSockLen());
-    const stream = std.net.Stream{ .handle = sockfd };
+    const remote_sa = netAddrSockaddr(address);
+    try netConnectSocket(sockfd, &remote_sa.storage, remote_sa.len);
+    const stream = std.Io.net.Stream{ .socket = .{ .handle = sockfd, .address = address } };
 
     if (no_delay != 0) {
         const value: c_int = 1;
-        if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
     }
     if (keep_alive != 0) {
         const value: c_int = 1;
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
         if (keep_alive_initial_delay_secs > 0) {
             const delay: c_int = @intCast(keep_alive_initial_delay_secs);
-            if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return error.SetSockOptError;
+            if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return error.SetSockOptError;
         }
     }
     if (timeout_ms != 0) {
         const tv = timevalFromMs(timeout_ms);
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
     }
     return stream;
 }
@@ -3269,8 +3416,8 @@ fn netConnectWithOptionalBlockList(host_ptr: ?[*]const u8, host_len: u64, port: 
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
 
-    const stream = std.net.tcpConnectToAddress(address) catch return 2;
-    errdefer stream.close();
+    const stream = address.connect(sio.io(), .{ .mode = .stream }) catch return 2;
+    errdefer stream.close(sio.io());
     return netInitSocketObject(stream, 0, address, out);
 }
 
@@ -3292,13 +3439,14 @@ pub export fn sa_node_plugin_net_connect_options(host_ptr: ?[*]const u8, host_le
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
     const stream = netConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch return 2;
-    errdefer stream.close();
+    errdefer stream.close(sio.io());
     return netInitSocketObject(stream, timeout_ms, address, out);
 }
 
 pub export fn sa_node_plugin_net_connect_unix(path_ptr: ?[*]const u8, path_len: u64, out_socket: ?*?*anyopaque) u32 {
     const path = path_ptr.?[0..path_len];
-    const stream = std.net.connectUnixSocket(path) catch return 2;
+    const ua = std.Io.net.UnixAddress.init(path) catch return 2;
+    const stream = ua.connect(sio.io()) catch return 2;
 
     const socket = std.heap.page_allocator.create(SaNetObject) catch return 2;
     socket.* = .{
@@ -3321,12 +3469,14 @@ pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, p
     const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
+    if (port > std.math.maxInt(u16)) return 2;
     const address = if (std.mem.eql(u8, host, "0.0.0.0") or host.len == 0)
-        std.net.Address.initIp4(.{ 0, 0, 0, 0 }, @as(u16, @intCast(port)))
+        NetAddr{ .ip4 = .{ .bytes = [_]u8{ 0, 0, 0, 0 }, .port = @as(u16, @intCast(port)) } }
     else
-        std.net.Address.resolveIp(host_z, @as(u16, @intCast(port))) catch return 2;
+        NetAddr.parse(host, @as(u16, @intCast(port))) catch
+            NetAddr.resolve(sio.io(), host_z, @as(u16, @intCast(port))) catch return 2;
 
-    const server_impl = address.listen(.{ .reuse_address = true }) catch return 2;
+    const server_impl = address.listen(sio.io(), .{ .reuse_address = true }) catch return 2;
 
     const server = std.heap.page_allocator.create(SaNetObject) catch return 2;
     server.* = .{
@@ -3348,9 +3498,9 @@ pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, p
 
 pub export fn sa_node_plugin_net_listen_unix(path_ptr: ?[*]const u8, path_len: u64, out_server: ?*?*anyopaque) u32 {
     const path = path_ptr.?[0..path_len];
-    const address = std.net.Address.initUnix(path) catch return 2;
-    var server_impl = address.listen(.{}) catch return 2;
-    errdefer server_impl.deinit();
+    const ua = std.Io.net.UnixAddress.init(path) catch return 2;
+    var server_impl = ua.listen(sio.io(), .{}) catch return 2;
+    errdefer server_impl.deinit(sio.io());
 
     const owned_path = std.heap.page_allocator.dupe(u8, path) catch return 2;
     errdefer std.heap.page_allocator.free(owned_path);
@@ -3377,16 +3527,16 @@ pub export fn sa_node_plugin_net_listen_unix(path_ptr: ?[*]const u8, path_len: u
 pub export fn sa_node_plugin_net_accept(server_ptr: ?*anyopaque, out_socket: ?*?*anyopaque) u32 {
     const server: *SaNetObject = @ptrCast(@alignCast(server_ptr orelse return 2));
     if (!server.is_server or server.closed) return 2;
-    const connection = if (server.server) |*server_impl| server_impl.accept() catch return 2 else return 2;
+    const connection = if (server.server) |*server_impl| server_impl.accept(sio.io()) catch return 2 else return 2;
 
-    if (netAddressBlocked(server.allocator, server.block_list.items, connection.address)) {
-        connection.stream.close();
+    if (netAddressBlocked(server.allocator, server.block_list.items, connection.socket.address)) {
+        connection.close(sio.io());
         if (out_socket) |slot| slot.* = null;
         return 3;
     }
 
     if (server.max_connections_set and server.connection_count >= server.max_connections) {
-        connection.stream.close();
+        connection.close(sio.io());
         if (out_socket) |slot| slot.* = null;
         return 3;
     }
@@ -3395,7 +3545,7 @@ pub export fn sa_node_plugin_net_accept(server_ptr: ?*anyopaque, out_socket: ?*?
     socket.* = .{
         .is_server = false,
         .allocator = std.heap.page_allocator,
-        .stream = connection.stream,
+         .stream = connection,
         .server = null,
         .bytes_read = 0,
         .bytes_written = 0,
@@ -3420,7 +3570,7 @@ pub export fn sa_node_plugin_net_write(socket_ptr: ?*anyopaque, data: ?[*]const 
     const socket: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (socket.is_server or socket.closed or !socket.writable) return 2;
     const d = data.?[0..data_len];
-    socket.stream.?.writer().writeAll(d) catch return 2;
+    netStreamWriteAll(socket.stream.?, d) catch return 2;
     socket.bytes_written +|= data_len;
     return 0;
 }
@@ -3431,7 +3581,7 @@ pub export fn sa_node_plugin_net_read(socket_ptr: ?*anyopaque, max_len: u64, out
     const buf = std.heap.page_allocator.alloc(u8, max_len) catch return 2;
     errdefer std.heap.page_allocator.free(buf);
 
-    const n = socket.stream.?.reader().read(buf) catch return 2;
+    const n = netStreamRead(socket.stream.?, buf) catch return 2;
     if (n == 0) {
         std.heap.page_allocator.free(buf);
         socket.readable = false;
@@ -3518,14 +3668,14 @@ pub export fn sa_node_plugin_net_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*
         const server = obj.server orelse return 2;
         var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
         defer out.deinit();
-        appendAddressJson(&out, server.listen_address) catch return 2;
+        appendAddressJson(&out, server.socket.address) catch return 2;
         const owned = out.toOwnedSlice() catch return 2;
         out_ptr.?.* = owned.ptr;
         out_len.?.* = owned.len;
         return 0;
     }
     const stream = obj.stream orelse return 2;
-    return writeSocketAddressJson(stream.handle, false, out_ptr, out_len);
+    return writeSocketAddressJson(stream.socket.handle, false, out_ptr, out_len);
 }
 
 pub export fn sa_node_plugin_net_server_address(server_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3537,7 +3687,7 @@ pub export fn sa_node_plugin_net_server_address(server_ptr: ?*anyopaque, out_ptr
 pub export fn sa_node_plugin_net_remote_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return writeSocketAddressJson(stream.handle, true, out_ptr, out_len);
+    return writeSocketAddressJson(stream.socket.handle, true, out_ptr, out_len);
 }
 
 pub export fn sa_node_plugin_net_local_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3647,8 +3797,8 @@ pub export fn sa_node_plugin_net_set_timeout(socket_ptr: ?*anyopaque, timeout_ms
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
     const tv = timevalFromMs(timeout_ms);
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
     obj.timeout_ms = timeout_ms;
     return 0;
 }
@@ -3693,7 +3843,7 @@ pub export fn sa_node_plugin_net_destroy(socket_ptr: ?*anyopaque) u32 {
     if (obj.is_server) return 2;
     if (!obj.closed) {
         if (obj.stream) |stream| {
-            stream.close();
+            stream.close(sio.io());
             obj.stream = null;
         }
         obj.markSocketClosed();
@@ -3711,7 +3861,7 @@ pub export fn sa_node_plugin_net_reset_and_destroy(socket_ptr: ?*anyopaque) u32 
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
     const linger = PosixLinger{ .l_onoff = 1, .l_linger = 0 };
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.LINGER, std.mem.asBytes(&linger)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.LINGER, std.mem.asBytes(&linger)) != 0) return 2;
     obj.deinit();
     return 0;
 }
@@ -3720,17 +3870,17 @@ pub export fn sa_node_plugin_net_set_no_delay(socket_ptr: ?*anyopaque, enable: u
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
     const value: c_int = if (enable != 0) 1 else 0;
-    return setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value));
+    return setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value));
 }
 
 pub export fn sa_node_plugin_net_set_keep_alive(socket_ptr: ?*anyopaque, enable: u32, initial_delay_secs: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
     const value: c_int = if (enable != 0) 1 else 0;
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return 2;
     if (enable != 0 and initial_delay_secs > 0) {
         const delay: c_int = @intCast(initial_delay_secs);
-        if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return 2;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return 2;
     }
     return 0;
 }
@@ -3757,7 +3907,7 @@ const TypeOfServiceOption = struct {
 
 fn socketTypeOfServiceOption(fd: std.posix.socket_t) !TypeOfServiceOption {
     const addr = try getSocketAddress(fd, false);
-    return switch (addr.any.family) {
+    return switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => .{ .level = std.posix.IPPROTO.IP, .option = std.os.linux.IP.TOS },
         std.posix.AF.INET6 => .{ .level = std.posix.IPPROTO.IPV6, .option = std.os.linux.IPV6.TCLASS },
         else => error.UnsupportedAddressFamily,
@@ -3767,25 +3917,25 @@ fn socketTypeOfServiceOption(fd: std.posix.socket_t) !TypeOfServiceOption {
 pub export fn sa_node_plugin_net_set_recv_buffer_size(socket_ptr: ?*anyopaque, size: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketSetBuffer(stream.handle, std.posix.SO.RCVBUF, size);
+    return socketSetBuffer(stream.socket.handle, std.posix.SO.RCVBUF, size);
 }
 
 pub export fn sa_node_plugin_net_set_send_buffer_size(socket_ptr: ?*anyopaque, size: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketSetBuffer(stream.handle, std.posix.SO.SNDBUF, size);
+    return socketSetBuffer(stream.socket.handle, std.posix.SO.SNDBUF, size);
 }
 
 pub export fn sa_node_plugin_net_get_recv_buffer_size(socket_ptr: ?*anyopaque, out_size: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketGetBuffer(stream.handle, std.posix.SO.RCVBUF, out_size);
+    return socketGetBuffer(stream.socket.handle, std.posix.SO.RCVBUF, out_size);
 }
 
 pub export fn sa_node_plugin_net_get_send_buffer_size(socket_ptr: ?*anyopaque, out_size: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketGetBuffer(stream.handle, std.posix.SO.SNDBUF, out_size);
+    return socketGetBuffer(stream.socket.handle, std.posix.SO.SNDBUF, out_size);
 }
 
 pub export fn sa_node_plugin_net_set_type_of_service(socket_ptr: ?*anyopaque, tos: u32) u32 {
@@ -3793,9 +3943,9 @@ pub export fn sa_node_plugin_net_set_type_of_service(socket_ptr: ?*anyopaque, to
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
-    const opt = socketTypeOfServiceOption(stream.handle) catch return 2;
+    const opt = socketTypeOfServiceOption(stream.socket.handle) catch return 2;
     const value: c_int = @intCast(tos);
-    return setSocketOptionRaw(stream.handle, opt.level, opt.option, std.mem.asBytes(&value));
+    return setSocketOptionRaw(stream.socket.handle, opt.level, opt.option, std.mem.asBytes(&value));
 }
 
 pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, out_tos: ?*u64) u32 {
@@ -3803,10 +3953,10 @@ pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, ou
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
-    const opt = socketTypeOfServiceOption(stream.handle) catch return 2;
+    const opt = socketTypeOfServiceOption(stream.socket.handle) catch return 2;
     var value: c_int = 0;
     var value_len: std.posix.socklen_t = @sizeOf(c_int);
-    if (getsockopt(stream.handle, opt.level, opt.option, &value, &value_len) != 0) return 2;
+    if (getsockopt(stream.socket.handle, opt.level, opt.option, &value, &value_len) != 0) return 2;
     if (value_len != @sizeOf(c_int) or value < 0) return 2;
     out.* = @intCast(value);
     return 0;
@@ -3815,7 +3965,7 @@ pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, ou
 pub export fn sa_node_plugin_net_shutdown_write(socket_ptr: ?*anyopaque) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    std.posix.shutdown(stream.handle, .send) catch return 2;
+    netShutdownWrite(stream.socket.handle) catch return 2;
     obj.writable = false;
     return 0;
 }
@@ -3834,45 +3984,45 @@ pub const SaDgramSocket = struct {
         self.send_block_list.deinit();
         blockListFreeRuleList(self.allocator, &self.receive_block_list);
         self.receive_block_list.deinit();
-        std.posix.close(self.fd);
+        netCloseSocket(self.fd);
         self.allocator.destroy(self);
     }
 };
 
-fn parseDgramAddressFamily(host_ptr: ?[*]const u8, host_len: u64, port: u64, family: std.posix.sa_family_t) !std.net.Address {
+fn parseDgramAddressFamily(host_ptr: ?[*]const u8, host_len: u64, port: u64, family: std.posix.sa_family_t) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
     const host = host_ptr.?[0..host_len];
     if (family == std.posix.AF.INET6) {
         if (host.len == 0 or std.mem.eql(u8, host, "::")) {
-            return std.net.Address.initIp6(.{0}**16, @as(u16, @intCast(port)), 0, 0);
+            return NetAddr{ .ip6 = .{ .bytes = @splat(@as(u8, 0)), .port = @as(u16, @intCast(port)) } };
         }
-        return std.net.Address.parseIp6(host, @as(u16, @intCast(port))) catch
-            std.net.Address.resolveIp6(host, @as(u16, @intCast(port)));
+        return NetAddr.parseIp6(host, @as(u16, @intCast(port))) catch
+            NetAddr.resolveIp6(sio.io(), host, @as(u16, @intCast(port)));
     }
     if (host.len == 0 or std.mem.eql(u8, host, "0.0.0.0")) {
-        return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, @as(u16, @intCast(port)));
+        return NetAddr{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = @as(u16, @intCast(port)) } };
     }
-    return std.net.Address.resolveIp(host, @as(u16, @intCast(port))) catch
-        std.net.Address.parseIp(host, @as(u16, @intCast(port)));
+    return NetAddr.resolve(sio.io(), host, @as(u16, @intCast(port))) catch
+        NetAddr.parse(host, @as(u16, @intCast(port)));
 }
 
-fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !std.net.Address {
+fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !NetAddr {
     return parseDgramAddressFamily(host_ptr, host_len, port, std.posix.AF.INET);
 }
 
-fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) ![]u8 {
-    switch (addr.any.family) {
+fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: NetAddr) ![]u8 {
+    switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => {
-            const bytes = std.mem.asBytes(&addr.in.sa.addr);
+            const bytes = std.mem.asBytes(&addr.ip4.bytes);
             return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
         },
         std.posix.AF.INET6 => {
-            if (std.mem.eql(u8, addr.in6.sa.addr[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
+            if (std.mem.eql(u8, addr.ip6.bytes[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
                 return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{
-                    addr.in6.sa.addr[12],
-                    addr.in6.sa.addr[13],
-                    addr.in6.sa.addr[14],
-                    addr.in6.sa.addr[15],
+                    addr.ip6.bytes[12],
+                    addr.ip6.bytes[13],
+                    addr.ip6.bytes[14],
+                    addr.ip6.bytes[15],
                 });
             }
             const with_port = try std.fmt.allocPrint(allocator, "{}", .{addr});
@@ -3890,8 +4040,8 @@ fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) 
 
 fn parseIpv4AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![4]u8 {
     const host = host_ptr.?[0..host_len];
-    const addr = try std.net.Address.parseIp4(host, 0);
-    return std.mem.asBytes(&addr.in.sa.addr).*;
+    const addr = try NetAddr.parseIp4(host, 0);
+    return std.mem.asBytes(&addr.ip4.bytes).*;
 }
 
 fn parseOptionalIpv4AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![4]u8 {
@@ -3905,8 +4055,8 @@ fn ipv4BytesToInAddr(bytes: [4]u8) InAddr {
 
 fn parseIpv6AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![16]u8 {
     const host = host_ptr.?[0..host_len];
-    const addr = try std.net.Address.parseIp6(host, 0);
-    return addr.in6.sa.addr;
+    const addr = try NetAddr.parseIp6(host, 0);
+    return addr.ip6.bytes;
 }
 
 fn parseInterfaceIndex(iface_ptr: ?[*]const u8, iface_len: u64) u32 {
@@ -3920,7 +4070,7 @@ fn setSocketOptionRaw(fd: std.posix.socket_t, level: c_int, optname: c_int, byte
     return 0;
 }
 
-fn dgramAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: std.net.Address) bool {
+fn dgramAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: NetAddr) bool {
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
@@ -3939,8 +4089,8 @@ fn dgramSetBlockList(dest: *std.array_list.Managed(BlockListRule), blocklist_ptr
 
 fn dgramCreateSocketWithOptions(family: std.posix.sa_family_t, reuse_addr: bool, reuse_port: bool, ipv6_only: bool, recv_buffer_size: u32, send_buffer_size: u32) !*SaDgramSocket {
     if (family != std.posix.AF.INET and family != std.posix.AF.INET6) return error.InvalidAddressFamily;
-    const fd = try std.posix.socket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.UDP);
-    errdefer std.posix.close(fd);
+    const fd = try netSocket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.UDP);
+    errdefer netCloseSocket(fd);
 
     const on: c_int = 1;
     if (reuse_addr) try std.posix.setsockopt(fd, std.posix.SOL.SOCKET, std.posix.SO.REUSEADDR, std.mem.asBytes(&on));
@@ -4000,7 +4150,8 @@ pub export fn sa_node_plugin_dgram_create_options(socket_type: u32, reuse_addr: 
 pub export fn sa_node_plugin_dgram_bind(socket_ptr: ?*anyopaque, host_ptr: ?[*]const u8, host_len: u64, port: u64) u32 {
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
-    std.posix.bind(socket.fd, &address.any, address.getOsSockLen()) catch return 2;
+    const sa = netAddrSockaddr(address);
+    netBindSocket(socket.fd, &sa.storage, sa.len) catch return 2;
     return 0;
 }
 
@@ -4009,7 +4160,8 @@ pub export fn sa_node_plugin_dgram_send(socket_ptr: ?*anyopaque, data_ptr: ?[*]c
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, address)) return 2;
     const data = data_ptr.?[0..data_len];
-    _ = std.posix.sendto(socket.fd, data, 0, &address.any, address.getOsSockLen()) catch return 2;
+    const sa = netAddrSockaddr(address);
+    netSendTo(socket.fd, data, &sa.storage, sa.len) catch return 2;
     return 0;
 }
 
@@ -4017,15 +4169,20 @@ pub export fn sa_node_plugin_dgram_connect(socket_ptr: ?*anyopaque, host_ptr: ?[
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, address)) return 2;
-    std.posix.connect(socket.fd, &address.any, address.getOsSockLen()) catch return 2;
+    {
+        const sa = netAddrSockaddr(address);
+        netConnectSocket(socket.fd, &sa.storage, sa.len) catch return 2;
+    }
     socket.connected = true;
     return 0;
 }
 
 pub export fn sa_node_plugin_dgram_disconnect(socket_ptr: ?*anyopaque) u32 {
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
-    var addr: std.posix.sockaddr = .{ .family = std.posix.AF.UNSPEC, .data = @splat(@as(u8, 0)) };
-    std.posix.connect(socket.fd, &addr, @sizeOf(std.posix.sockaddr)) catch return 2;
+    var storage: std.posix.sockaddr.storage = undefined;
+    const addr: *std.posix.sockaddr = @ptrCast(@alignCast(&storage));
+    addr.* = .{ .family = std.posix.AF.UNSPEC, .data = @splat(@as(u8, 0)) };
+    netConnectSocket(socket.fd, &storage, @sizeOf(std.posix.sockaddr)) catch return 2;
     socket.connected = false;
     return 0;
 }
@@ -4036,7 +4193,8 @@ pub export fn sa_node_plugin_dgram_send_connected(socket_ptr: ?*anyopaque, data_
     const peer = getSocketAddress(socket.fd, true) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, peer)) return 2;
     const data = data_ptr.?[0..data_len];
-    _ = std.posix.send(socket.fd, data, 0) catch return 2;
+    const rc = std.c.send(socket.fd, data.ptr, data.len, 0);
+    if (rc < 0) return 2;
     return 0;
 }
 
@@ -4250,11 +4408,13 @@ pub export fn sa_node_plugin_dgram_recv(
     const buf = std.heap.page_allocator.alloc(u8, max_len) catch return 2;
     errdefer std.heap.page_allocator.free(buf);
 
-    var src_addr: std.net.Address = undefined;
+    var src_storage: std.posix.sockaddr.storage = undefined;
     var src_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
+    var src_addr: NetAddr = NetAddr{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = 0 } };
     const n = while (true) {
         src_len = @sizeOf(std.posix.sockaddr.storage);
-        const read_len = std.posix.recvfrom(socket.fd, buf, 0, &src_addr.any, &src_len) catch return 2;
+        const read_len = netRecvFrom(socket.fd, buf, &src_storage, &src_len) catch return 2;
+        src_addr = netSockaddrToAddr(&src_storage) catch return 2;
         if (!dgramAddressBlocked(socket.allocator, socket.receive_block_list.items, src_addr)) break read_len;
     };
     const owned = std.heap.page_allocator.alloc(u8, n) catch return 2;

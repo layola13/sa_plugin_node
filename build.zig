@@ -55,12 +55,21 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
 
+    const sio_module = b.createModule(.{
+        .root_source_file = .{ .cwd_relative = b.pathJoin(&.{ sci_root, "src", "sa_io.zig" }) },
+        .target = target,
+        .optimize = optimize,
+    });
+
     root_module.addImport("plugin_api", plugin_api);
     root_module.addImport("sa_http2", sa_http2);
     http_client_module.addImport("plugin_api", plugin_api);
     http_server_module.addImport("plugin_api", plugin_api);
     http_client_module.addImport("sa_net_primitives", sa_net_primitives);
     http_server_module.addImport("sa_net_primitives", sa_net_primitives);
+    http_client_module.addImport("sio", sio_module);
+    http_server_module.addImport("sio", sio_module);
+    sa_http2.addImport("sio", sio_module);
     root_module.addImport("http_client", http_client_module);
     root_module.addImport("http_server", http_server_module);
     root_module.addOptions("build_options", build_options);

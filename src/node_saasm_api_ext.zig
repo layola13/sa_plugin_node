@@ -407,7 +407,7 @@ fn tlsTimevalFromMs(ms: u64) std.posix.timeval {
 
 const NetAddr = std.Io.net.IpAddress;
 
-fn netAddrFamily(addr: NetAddr) u32 {
+fn netAddrFamily(addr: NetAddr) std.posix.sa_family_t {
     return switch (addr) {
         .ip4 => std.posix.AF.INET,
         .ip6 => std.posix.AF.INET6,
@@ -507,7 +507,7 @@ fn tlsWriteSocketAddressJson(handle: *TlsClientHandle, peer: bool, out_ptr: ?*?[
     defer out.deinit();
     out.appendSlice("{\"address\":") catch return fail();
     appendJsonString(&out, host) catch return fail();
-    sio.managedWriter(out).print(",\"port\":{d},\"family\":\"{s}\"}}", .{
+    sio.managedWriter(&out).print(",\"port\":{d},\"family\":\"{s}\"}}", .{
         addr.getPort(),
         switch (addr) {
             .ip4 => "IPv4",
@@ -1951,12 +1951,9 @@ fn fsEnsureParentPath(path: []const u8) !void {
     }
 }
 
-fn fsCopySymlink(src_dir: std.Io.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
+fn fsCopySymlink(src_dir: sio.Dir, src_path: []const u8, dst_path: []const u8, force: bool) !void {
     var target_buffer: [sio.max_path_bytes]u8 = undefined;
-    const target = blk: {
-        const n = try src_dir.readLink(sio.io(), src_path, &target_buffer);
-        break :blk target_buffer[0..n];
-    };
+    const target = try src_dir.readLink(src_path, &target_buffer);
 
     try fsEnsureParentPath(dst_path);
     if (force) sio.cwd().deleteFile(dst_path) catch {};
@@ -1993,7 +1990,7 @@ fn fsCopyDirectoryRecursive(src_path: []const u8, dst_path: []const u8, force: b
                 defer std.heap.page_allocator.free(child_src);
                 try fsCopyFilePath(child_src, child_dst, force);
             },
-            .sym_link => try fsCopySymlink(entry.dir.inner, entry.basename, child_dst, force),
+            .sym_link => try fsCopySymlink(.{ .inner = entry.dir }, entry.basename, child_dst, force),
             else => {},
         }
     }
@@ -2015,7 +2012,7 @@ fn fsCpPath(src_path: []const u8, dst_path: []const u8, recursive: bool, force: 
             try fsCopyDirectoryRecursive(src_path, dst_path, force);
         },
         .file => try fsCopyFilePath(src_path, dst_path, force),
-        .sym_link => try fsCopySymlink(sio.cwd().inner, src_path, dst_path, force),
+        .sym_link => try fsCopySymlink(sio.cwd(), src_path, dst_path, force),
         else => return error.UnsupportedFileType,
     }
 }
@@ -2520,7 +2517,9 @@ fn dnsSystemHasNonLoopbackFamily(family: u32) bool {
             if (!(bytes[0] == 0 or bytes[0] == 127)) return true;
         } else if (family == 6 and af == std.posix.AF.INET6) {
             const addr: *const std.posix.sockaddr.in6 = @ptrCast(@alignCast(raw));
-            if (!std.mem.eql(u8, &addr.addr, &[_]u8{0}**16) and !std.mem.eql(u8, &addr.addr, &([_]u8{0}**15 ++ [_]u8{1}))) return true;
+            const zero = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            const loopback = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+            if (!std.mem.eql(u8, &addr.addr, &zero) and !std.mem.eql(u8, &addr.addr, &loopback)) return true;
         }
     }
     return false;
@@ -2833,7 +2832,7 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: NetAddr, timeout_ms
     try sio.managedWriter(&query).writeInt(u16, DnsClassIn, .big);
 
     const fd = try netSocket(netAddrFamily(server), std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
-    defer std.posix.close(fd);
+    defer _ = std.os.linux.close(fd);
 
     if (try dnsLocalBindAddress(server, local_ipv4, local_ipv6)) |bind_addr| {
         const bind_sa = netAddrSockaddr(bind_addr);
@@ -2897,7 +2896,7 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 if (rdlen != 16) return error.Truncated;
                 var addr_bytes: [16]u8 = undefined;
                 @memcpy(&addr_bytes, packet[offset .. offset + 16]);
-                const addr: NetAddr = .{ .ip6 = .{ .bytes = addr_bytes, .port = 0, .scope_id = 0 } };
+                const addr: NetAddr = .{ .ip6 = .{ .bytes = addr_bytes, .port = 0 } };
                 var buf: [64]u8 = undefined;
                 var w = std.Io.Writer.fixed(&buf);
                 try addr.ip6.format(&w);

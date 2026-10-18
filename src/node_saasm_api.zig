@@ -2115,10 +2115,15 @@ pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const
     var buf = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer buf.deinit();
 
-    const stdin = std.Io.getStdIn().reader();
-    stdin.streamUntilDelimiter(sio.managedWriter(&buf), '\n', null) catch |err| {
-        if (err == error.EndOfStream) {} else return 2;
-    };
+    var stdin_buf: [4096]u8 = undefined;
+    var stdin_r = sio.getStdIn().reader(&stdin_buf);
+    while (true) {
+        const byte = stdin_r.interface.takeByte() catch |err| {
+            if (err == error.EndOfStream) break else return 2;
+        };
+        if (byte == '\n') break;
+        buf.append(byte) catch return 2;
+    }
 
     if (buf.items.len > 0 and buf.items[buf.items.len - 1] == '\r') {
         _ = buf.pop();
@@ -4400,11 +4405,11 @@ pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, 
     const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
-    var buf: [std.fs.max_path_bytes]u8 = undefined;
-    const target = if (std.fs.path.isAbsolute(path_z))
-        std.fs.readLinkAbsolute(path_z, &buf) catch return 2
-    else
-        sio.cwd().readLink(path_z, &buf) catch return 2;
+    var buf: [sio.max_path_bytes]u8 = undefined;
+    const target: []u8 = if (std.fs.path.isAbsolute(path_z)) blk: {
+        const n = std.Io.Dir.readLinkAbsolute(sio.io(), path_z, &buf) catch return 2;
+        break :blk buf[0..n];
+    } else sio.cwd().readLink(path_z, &buf) catch return 2;
 
     const owned = std.heap.page_allocator.dupe(u8, target) catch return 2;
     out_ptr.?.* = owned.ptr;
@@ -4460,15 +4465,9 @@ pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64,
         sio.cwd().openFile(path_z, .{}) catch return 2;
     defer file.close();
 
-    const size = (file.stat() catch return 2).size;
-    const buf = std.heap.page_allocator.alloc(u8, size) catch return 2;
-    errdefer std.heap.page_allocator.free(buf);
-
-    const bytes_read = file.readAll(buf) catch return 2;
-    if (bytes_read != size) return 2;
-
-    out_ptr.?.* = buf.ptr;
-    out_len.?.* = size;
+    const owned = file.readToEndAlloc(std.heap.page_allocator, std.math.maxInt(usize)) catch return 2;
+    out_ptr.?.* = owned.ptr;
+    out_len.?.* = owned.len;
     return 0;
 }
 
@@ -4505,7 +4504,7 @@ pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, rec
         }
     } else {
         if (is_abs) {
-            std.fs.makeDirAbsolute(path_z) catch return 2;
+            std.Io.Dir.createDirAbsolute(sio.io(), path_z, .default_dir) catch return 2;
         } else {
             sio.cwd().makeDir(path_z) catch return 2;
         }
@@ -4519,7 +4518,7 @@ pub export fn sa_node_plugin_fs_rmdir(path_ptr: ?[*]const u8, path_len: u64) u32
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
-        std.fs.deleteDirAbsolute(path_z) catch return 2;
+        std.Io.Dir.deleteDirAbsolute(sio.io(), path_z) catch return 2;
     } else {
         sio.cwd().deleteDir(path_z) catch return 2;
     }
@@ -4532,7 +4531,7 @@ pub export fn sa_node_plugin_fs_unlink(path_ptr: ?[*]const u8, path_len: u64) u3
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
-        std.fs.deleteFileAbsolute(path_z) catch return 2;
+        std.Io.Dir.deleteFileAbsolute(sio.io(), path_z) catch return 2;
     } else {
         sio.cwd().deleteFile(path_z) catch return 2;
     }
@@ -4549,9 +4548,9 @@ pub export fn sa_node_plugin_fs_rename(old_ptr: ?[*]const u8, old_len: u64, new_
     defer std.heap.page_allocator.free(new_z);
 
     if (std.fs.path.isAbsolute(old_z) and std.fs.path.isAbsolute(new_z)) {
-        std.fs.renameAbsolute(old_z, new_z) catch return 2;
+        std.Io.Dir.renameAbsolute(old_z, new_z, sio.io()) catch return 2;
     } else {
-        sio.cwd().rename(old_z, new_z) catch return 2;
+        sio.cwd().rename(old_z, sio.cwd(), new_z) catch return 2;
     }
     return 0;
 }
@@ -4566,7 +4565,7 @@ pub export fn sa_node_plugin_fs_copy_file(src_ptr: ?[*]const u8, src_len: u64, d
     defer std.heap.page_allocator.free(dst_z);
 
     if (std.fs.path.isAbsolute(src_z) and std.fs.path.isAbsolute(dst_z)) {
-        std.fs.copyFileAbsolute(src_z, dst_z, .{}) catch return 2;
+        std.Io.Dir.copyFileAbsolute(src_z, dst_z, sio.io(), .{}) catch return 2;
     } else {
         sio.cwd().copyFile(src_z, sio.cwd(), dst_z, .{}) catch return 2;
     }

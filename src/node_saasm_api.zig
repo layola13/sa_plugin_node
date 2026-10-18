@@ -711,7 +711,12 @@ pub export fn sa_node_plugin_crypto_hash(algo: ?[*]const u8, algo_len: u64, data
     }
 
     var hex_buf: [128]u8 = undefined;
-    const hex = std.fmt.bufPrint(&hex_buf, "{s}", .{std.fmt.fmtSliceHexLower(hash_buf[0..hash_len])}) catch return 2;
+    const hex_digits = "0123456789abcdef";
+    for (hash_buf[0..hash_len], 0..) |b, i| {
+        hex_buf[i * 2] = hex_digits[b >> 4];
+        hex_buf[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    const hex = hex_buf[0 .. hash_len * 2];
     const owned = std.heap.page_allocator.dupe(u8, hex) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -1804,23 +1809,18 @@ pub export fn sa_node_plugin_crypto_random_uuid(out_ptr: ?*?[*]const u8, out_len
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
     var buf: [36]u8 = undefined;
-    _ = std.fmt.bufPrint(&buf, "{s:0>2}{s:0>2}{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}{s:0>2}{s:0>2}{s:0>2}{s:0>2}", .{
-        std.fmt.fmtSliceHexLower(bytes[0..1]),
-        std.fmt.fmtSliceHexLower(bytes[1..2]),
-        std.fmt.fmtSliceHexLower(bytes[2..3]),
-        std.fmt.fmtSliceHexLower(bytes[3..4]),
-        std.fmt.fmtSliceHexLower(bytes[4..5]),
-        std.fmt.fmtSliceHexLower(bytes[5..6]),
-        std.fmt.fmtSliceHexLower(bytes[6..7]),
-        std.fmt.fmtSliceHexLower(bytes[7..8]),
-        std.fmt.fmtSliceHexLower(bytes[8..9]),
-        std.fmt.fmtSliceHexLower(bytes[9..10]),
-        std.fmt.fmtSliceHexLower(bytes[10..11]),
-        std.fmt.fmtSliceHexLower(bytes[11..12]),
-        std.fmt.fmtSliceHexLower(bytes[12..13]),
-        std.fmt.fmtSliceHexLower(bytes[13..14]),
-        std.fmt.fmtSliceHexLower(bytes[14..15]),
-        std.fmt.fmtSliceHexLower(bytes[15..16]),
+    const hex_digits = "0123456789abcdef";
+    var hex_tmp: [32]u8 = undefined;
+    for (bytes, 0..) |b, i| {
+        hex_tmp[i * 2] = hex_digits[b >> 4];
+        hex_tmp[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    _ = std.fmt.bufPrint(&buf, "{s}-{s}-{s}-{s}-{s}", .{
+        hex_tmp[0..8],
+        hex_tmp[8..12],
+        hex_tmp[12..16],
+        hex_tmp[16..20],
+        hex_tmp[20..32],
     }) catch return 2;
 
     const owned = std.heap.page_allocator.dupe(u8, &buf) catch return 2;
@@ -1865,7 +1865,12 @@ pub export fn sa_node_plugin_crypto_hmac(algo: ?[*]const u8, algo_len: u64, key:
     }
 
     var hex_buf: [64]u8 = undefined;
-    const hex = std.fmt.bufPrint(&hex_buf, "{s}", .{std.fmt.fmtSliceHexLower(&mac_buf)}) catch return 2;
+    const hex_digits = "0123456789abcdef";
+    for (mac_buf[0..], 0..) |b, i| {
+        hex_buf[i * 2] = hex_digits[b >> 4];
+        hex_buf[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    const hex = hex_buf[0..];
     const owned = std.heap.page_allocator.dupe(u8, hex) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;

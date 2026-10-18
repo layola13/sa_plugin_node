@@ -40,7 +40,13 @@
 
 ## 3. 分批修复计划
 
-- [ ] **S5-a 机械批 (约 40 个, 无语义风险)**: `Mutex.lock→spinLock/tryLock` (12, 复用 api.zig 现有 `spinLock`), `fmtSliceHexLower→手写hex` (5), `crypto.random→sio.io().random` (5), `timing_safe` (1), `sleep/getcwd/clock_gettime` (6), `comptime_int字面量` (4), `ArrayList→Managed` (2), `Child.run/Exited` (2+test1), `allocPrintZ` (1), `managedWriter(&out→out)` (5)
+> 进展 2026-10-18: **S5-a 已完成并推送** (`05aa7fb` + random/hex 待提交)。
+> 错误数 128 → **105** (Mutex 12 / managedWriter真指针 10 / random 5 / timing 1 / hex 5+test1 / `**`空格 全消)。
+> 新浮现 (被早期错误掩盖): `tls.Client read/writeAll` x2, `Ip6Address.scope_id`, `Io.net.Stream.handle`, `expected error union found usize` x1。
+
+- [x] **S5-a 机械批**: `Mutex.lock→spinLock` (12), `managedWriter(&out→out)` 真指针点 (10, 按函数作用域+阴影判断),
+> `crypto.random→sio.io().random` (5), `timingSafeEql→timing_safe.eql` (1), `fmtSliceHexLower→手写hex` (api 3 + ext 1),
+> `**` 空格 (`}.{0}**16`, `[_]u8{...}**32`) — 已推送 `05aa7fb`, 本批剩余 random/hex 待提交
 - [ ] **S5-b fs/posix 批 (约 35 个)**: `fs.cwd/File/Dir→sio` (20), `*Absolute→Io.Dir.*Absolute(sio.io())` (6), `posix socket/close/bind/connect/recvfrom/sendto/getsockname/getpeername/setsockopt→std.c/os.linux/Io.net` (deep socket, 与 S4 checkpoint 描述一致), `pipe→std.c.pipe`, `write→std.c.write`, `linkat/symlinkat/futimens/fsync/fchown→std.c.*`, `readAll(void)调用点重写` (9, 切 `readToEndAlloc` 或 streaming read loop), `writeFile/makePath/realpathAlloc` (4)
 - [ ] **S5-c net/TLS/DNS 大批 (约 35 个)**: `std.net.Address/Stream/Server/tcpConnectToHost/getAddressList/connectUnixSocket→std.Io.net` (30, 对标 http_client `dialHost`: `IpAddress.parse else HostName.connect`), `SaNetObject/TlsClientHandle stream 字段类型`, `Bundle map/rescan/parseCert` (2+ 周边 `tlsBuildBundle*`), `dgram raw fd 路径` (api.zig 3823-4240, 需 `std.c.socket` + `Io.net.Socket` 决策 — 最大风险点)
 - [ ] **S5-d tests 批 (19 个)**: `socket/pipe/net/Server/cwd/realpathAlloc/writeFile/sleep` 全量对标 http_client `150fb99` (TcpConn helper + `server.socket.address.getPort()` + `sleepNs`)

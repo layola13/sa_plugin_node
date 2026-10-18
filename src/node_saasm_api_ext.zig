@@ -1134,13 +1134,16 @@ pub export fn sa_node_plugin_crypto_scrypt(
 pub export fn sa_node_plugin_crypto_random_int(min_val: u64, max_val: u64, out_val: ?*u64) u32 {
     if (max_val <= min_val) return fail();
     const range = max_val - min_val;
-    out_val.?.* = min_val + (crypto.random.int(u64) % range);
+    var rand_bytes: [@sizeOf(u64)]u8 = undefined;
+    sio.io().random(&rand_bytes);
+    const rand_val = std.mem.readInt(u64, &rand_bytes, .little);
+    out_val.?.* = min_val + (rand_val % range);
     return 0;
 }
 
 pub export fn sa_node_plugin_crypto_random_fill(buf_ptr: ?[*]u8, buf_len: u64) u32 {
     const buf = buf_ptr.?[0..buf_len];
-    crypto.random.bytes(buf);
+    sio.io().random(buf);
     return 0;
 }
 
@@ -1296,7 +1299,7 @@ pub export fn sa_node_plugin_crypto_generate_key(
     const byte_len: usize = @intCast(bits / 8);
     const allocator = std.heap.page_allocator;
     const buf = allocator.alloc(u8, byte_len) catch return fail();
-    crypto.random.bytes(buf);
+    sio.io().random(buf);
     out_ptr.?.* = buf.ptr;
     out_len.?.* = buf.len;
     return 0;
@@ -1411,7 +1414,7 @@ pub export fn sa_node_plugin_web_crypto_generate_key(algorithm_ptr: ?[*]const u8
     if (byte_len == 0) return fail();
     const allocator = std.heap.page_allocator;
     const bytes = allocator.alloc(u8, byte_len) catch return fail();
-    crypto.random.bytes(bytes);
+    sio.io().random(bytes);
     const handle = allocator.create(WebCryptoKey) catch {
         allocator.free(bytes);
         return fail();
@@ -1476,7 +1479,7 @@ pub export fn sa_node_plugin_web_crypto_verify(key_ptr: ?*anyopaque, data_ptr: ?
             }
             var actual: [32]u8 = undefined;
             @memcpy(&actual, sig[0..32]);
-            out_bool.?.* = if (std.crypto.utils.timingSafeEql([32]u8, expected, actual)) 1 else 0;
+            out_bool.?.* = if (std.crypto.timing_safe.eql([32]u8, expected, actual)) 1 else 0;
             return 0;
         },
         .ed25519_public => {
@@ -1701,7 +1704,9 @@ pub export fn sa_node_plugin_fs_mkdtemp(template_ptr: ?[*]const u8, template_len
     var buf: [256]u8 = undefined;
     if (template_name.len > 240) return fail();
     @memcpy(buf[0..template_name.len], template_name);
-    const rand_val = crypto.random.int(u64);
+    var rand_bytes: [@sizeOf(u64)]u8 = undefined;
+    sio.io().random(&rand_bytes);
+    const rand_val = std.mem.readInt(u64, &rand_bytes, .little);
     const suffix = std.fmt.bufPrint(buf[template_name.len..], "{x}", .{rand_val}) catch return fail();
     const full_path = buf[0 .. template_name.len + suffix.len];
     fs.cwd().makeDir(full_path) catch return fail();
@@ -2363,9 +2368,9 @@ const DnsResolverHandle = struct {
     }
 };
 
-fn parseDnsServerAddress(server: []const u8) !std.net.Address {
+fn parseDnsServerAddress(server: []const u8) !NetAddr {
     if (server.len == 0) return error.InvalidServer;
-    if (std.net.Address.parseIp(server, 53)) |addr| return addr else |_| {}
+    if (NetAddr.parse(server, 53)) |addr| return addr else |_| {}
 
     if (server[0] == '[') {
         const end = std.mem.indexOfScalar(u8, server, ']') orelse return error.InvalidServer;
@@ -2375,37 +2380,36 @@ fn parseDnsServerAddress(server: []const u8) !std.net.Address {
             port = try std.fmt.parseInt(u16, server[end + 2 ..], 10);
             if (port == 0) return error.InvalidServer;
         }
-        return std.net.Address.parseIp6(server[1..end], port);
+        return NetAddr.parseIp6(server[1..end], port);
     }
 
     if (std.mem.lastIndexOfScalar(u8, server, ':')) |colon| {
         if (std.mem.indexOfScalar(u8, server[0..colon], ':') != null) return error.InvalidServer;
         const port = try std.fmt.parseInt(u16, server[colon + 1 ..], 10);
         if (port == 0) return error.InvalidServer;
-        return std.net.Address.parseIp4(server[0..colon], port);
+        return NetAddr.parseIp4(server[0..colon], port);
     }
     return error.InvalidServer;
 }
 
-fn appendDnsServerCanonical(out: *std.array_list.Managed(u8), server: std.net.Address) !void {
+fn appendDnsServerCanonical(out: *std.array_list.Managed(u8), server: NetAddr) !void {
     const host = try tlsAddressToOwnedHost(std.heap.page_allocator, server);
     defer std.heap.page_allocator.free(host);
     if (server.getPort() == 53) {
         try appendJsonString(out, host);
         return;
     }
-    switch (server.any.family) {
-        std.posix.AF.INET => {
+    switch (server) {
+        .ip4 => {
             const canonical = try std.fmt.allocPrint(std.heap.page_allocator, "{s}:{d}", .{ host, server.getPort() });
             defer std.heap.page_allocator.free(canonical);
             try appendJsonString(out, canonical);
         },
-        std.posix.AF.INET6 => {
+        .ip6 => {
             const canonical = try std.fmt.allocPrint(std.heap.page_allocator, "[{s}]:{d}", .{ host, server.getPort() });
             defer std.heap.page_allocator.free(canonical);
             try appendJsonString(out, canonical);
         },
-        else => return error.InvalidServer,
     }
 }
 
@@ -2441,11 +2445,10 @@ fn parseDnsLookupOrder(order_ptr: ?[*]const u8, order_len: u64) !DnsLookupOrder 
     return error.InvalidDnsOrder;
 }
 
-fn dnsAddressFamilyValue(addr: std.net.Address) u64 {
-    return switch (addr.any.family) {
-        std.posix.AF.INET => 4,
-        std.posix.AF.INET6 => 6,
-        else => 0,
+fn dnsAddressFamilyValue(addr: NetAddr) u64 {
+    return switch (addr) {
+        .ip4 => 4,
+        .ip6 => 6,
     };
 }
 
@@ -2470,17 +2473,16 @@ fn dnsSystemHasNonLoopbackFamily(family: u32) bool {
     return false;
 }
 
-fn dnsAddressAllowedByAddrConfig(addr: std.net.Address, has_ipv4: bool, has_ipv6: bool) bool {
-    return switch (addr.any.family) {
-        std.posix.AF.INET => has_ipv4,
-        std.posix.AF.INET6 => has_ipv6,
-        else => false,
+fn dnsAddressAllowedByAddrConfig(addr: NetAddr, has_ipv4: bool, has_ipv6: bool) bool {
+    return switch (addr) {
+        .ip4 => has_ipv4,
+        .ip6 => has_ipv6,
     };
 }
 
-fn dnsIpv4MappedAddress(addr: std.net.Address) ?std.net.Address {
-    if (addr.any.family != std.posix.AF.INET) return null;
-    const bytes = std.mem.asBytes(&addr.in.sa.addr);
+fn dnsIpv4MappedAddress(addr: NetAddr) ?NetAddr {
+    if (addr != .ip4) return null;
+    const bytes = addr.ip4.bytes;
     var mapped = [_]u8{0}**16;
     mapped[10] = 0xff;
     mapped[11] = 0xff;
@@ -2488,10 +2490,10 @@ fn dnsIpv4MappedAddress(addr: std.net.Address) ?std.net.Address {
     mapped[13] = bytes[1];
     mapped[14] = bytes[2];
     mapped[15] = bytes[3];
-    return std.net.Address.initIp6(mapped, addr.getPort(), 0, 0);
+    return .{ .ip6 = .{ .bytes = mapped, .port = addr.getPort(), .scope_id = 0 } };
 }
 
-fn appendDnsLookupAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address) !void {
+fn appendDnsLookupAddressJson(out: *std.array_list.Managed(u8), addr: NetAddr) !void {
     const host = try tlsAddressToOwnedHost(std.heap.page_allocator, addr);
     defer std.heap.page_allocator.free(host);
     try out.appendSlice("{\"address\":");
@@ -2505,29 +2507,45 @@ pub export fn sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ?[*]const u8
     const order = parseDnsLookupOrder(order_ptr, order_len) catch return fail();
     const hostname = (hostname_ptr orelse return fail())[0..hostname_len];
     if (hostname.len == 0) return fail();
-    const host_z = std.heap.page_allocator.dupeSentinel(u8, hostname, 0) catch return fail();
-    defer std.heap.page_allocator.free(host_z);
 
-    var list = std.net.getAddressList(std.heap.page_allocator, host_z, 0) catch return fail();
-    defer list.deinit();
-
-    var addrs = std.array_list.Managed(std.net.Address).init(std.heap.page_allocator);
+    var addrs = std.array_list.Managed(NetAddr).init(std.heap.page_allocator);
     defer addrs.deinit();
-    var mapped_addrs = std.array_list.Managed(std.net.Address).init(std.heap.page_allocator);
+    var mapped_addrs = std.array_list.Managed(NetAddr).init(std.heap.page_allocator);
     defer mapped_addrs.deinit();
     const use_addrconfig = (hints & DNS_HINT_ADDRCONFIG) != 0;
     const has_ipv4 = !use_addrconfig or dnsSystemHasNonLoopbackFamily(4);
     const has_ipv6 = !use_addrconfig or dnsSystemHasNonLoopbackFamily(6);
-    for (list.addrs) |addr| {
-        const addr_family = dnsAddressFamilyValue(addr);
-        if (addr_family == 0) continue;
-        if (use_addrconfig and !dnsAddressAllowedByAddrConfig(addr, has_ipv4, has_ipv6)) continue;
+    // Fast path: literal IP address (no DNS needed).
+    if (NetAddr.parse(hostname, 0)) |literal| {
+        const with_port = literal;
+        const addr_family = dnsAddressFamilyValue(with_port);
+        var include = true;
+        if (use_addrconfig and !dnsAddressAllowedByAddrConfig(with_port, has_ipv4, has_ipv6)) include = false;
         if (family == 6 and addr_family == 4 and (hints & DNS_HINT_V4MAPPED) != 0) {
-            if (dnsIpv4MappedAddress(addr)) |mapped| mapped_addrs.append(mapped) catch return fail();
-            continue;
+            if (dnsIpv4MappedAddress(with_port)) |mapped| mapped_addrs.append(mapped) catch return fail();
+            include = false;
+        } else if (family != 0 and addr_family != family) {
+            include = false;
         }
-        if (family != 0 and addr_family != family) continue;
-        addrs.append(addr) catch return fail();
+        if (include) addrs.append(with_port) catch return fail();
+    } else |_| {
+        const host_name = std.Io.net.HostName.init(hostname) catch return fail();
+        const family_filter: ?NetAddr.Family = if (family == 4) .ip4 else if (family == 6) .ip6 else null;
+        var queue = std.Io.Queue(std.Io.net.HostName.LookupResult).init();
+        defer queue.close();
+        host_name.lookup(sio.io(), &queue, .{ .port = 0, .family = family_filter }) catch return fail();
+        while (queue.get()) |result| {
+            const with_port = switch (result) {
+                .address => |addr| addr,
+                .canonical_name => continue,
+            };
+            if (use_addrconfig and !dnsAddressAllowedByAddrConfig(with_port, has_ipv4, has_ipv6)) continue;
+            if (family == 6 and with_port == .ip4 and (hints & DNS_HINT_V4MAPPED) != 0) {
+                if (dnsIpv4MappedAddress(with_port)) |mapped| mapped_addrs.append(mapped) catch return fail();
+                continue;
+            }
+            addrs.append(with_port) catch return fail();
+        }
     }
     if (family == 6 and (hints & DNS_HINT_V4MAPPED) != 0 and ((hints & DNS_HINT_ALL) != 0 or addrs.items.len == 0)) {
         addrs.appendSlice(mapped_addrs.items) catch return fail();
@@ -2544,7 +2562,7 @@ pub export fn sa_node_plugin_dns_lookup_options_hints(hostname_ptr: ?[*]const u8
                 const bf = dnsAddressFamilyValue(addrs.items[best]);
                 if ((wants_ipv4_first and jf < bf) or (!wants_ipv4_first and jf > bf)) best = j;
             }
-            if (best != i) std.mem.swap(std.net.Address, &addrs.items[i], &addrs.items[best]);
+            if (best != i) std.mem.swap(NetAddr, &addrs.items[i], &addrs.items[best]);
         }
     }
 
@@ -2594,34 +2612,47 @@ fn writeSystemDnsServers(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeOwned(out_ptr, out_len, out.items);
 }
 
-fn appendAddressJson(out: *std.array_list.Managed(u8), addr: std.net.Address, family: u16, first: *bool) !void {
-    if (family == DnsTypeA and addr.any.family != std.posix.AF.INET) return;
-    if (family == DnsTypeAaaa and addr.any.family != std.posix.AF.INET6) return;
+fn appendAddressJson(out: *std.array_list.Managed(u8), addr: NetAddr, family: u16, first: *bool) !void {
+    if (family == DnsTypeA and addr != .ip4) return;
+    if (family == DnsTypeAaaa and addr != .ip6) return;
     if (!first.*) try out.appendSlice(",");
     first.* = false;
-    switch (addr.any.family) {
-        std.posix.AF.INET => {
-            const bytes = std.mem.asBytes(&addr.in.sa.addr);
-            try sio.managedWriter(out).print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
+    switch (addr) {
+        .ip4 => |ip| {
+            try sio.managedWriter(out).print("\"{d}.{d}.{d}.{d}\"", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] });
         },
-        std.posix.AF.INET6 => {
+        .ip6 => |ip| {
             var buf: [64]u8 = undefined;
-            const text = try std.fmt.bufPrint(&buf, "{}", .{addr});
+            var w = std.Io.Writer.fixed(&buf);
+            try ip.format(&w);
+            const text = w.buffered();
             const without_port = if (std.mem.lastIndexOfScalar(u8, text, ']')) |end| text[1..end] else text;
             try appendJsonString(out, without_port);
         },
-        else => {},
     }
 }
 
 fn writeAddressList(hostname: []const u8, family: u16, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const list = std.net.getAddressList(std.heap.page_allocator, hostname, 0) catch return fail();
-    defer list.deinit();
     var results = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer results.deinit();
     results.appendSlice("[") catch return fail();
     var first = true;
-    for (list.addrs) |addr| appendAddressJson(&results, addr, family, &first) catch return fail();
+    if (NetAddr.parse(hostname, 0)) |literal| {
+        appendAddressJson(&results, literal, family, &first) catch return fail();
+    } else |_| {
+        const host_name = std.Io.net.HostName.init(hostname) catch return fail();
+        const family_filter: ?NetAddr.Family = if (family == DnsTypeA) .ip4 else if (family == DnsTypeAaaa) .ip6 else null;
+        var queue = std.Io.Queue(std.Io.net.HostName.LookupResult).init();
+        defer queue.close();
+        host_name.lookup(sio.io(), &queue, .{ .port = 0, .family = family_filter }) catch return fail();
+        while (queue.get()) |result| {
+            const addr = switch (result) {
+                .address => |addr| addr,
+                .canonical_name => continue,
+            };
+            appendAddressJson(&results, addr, family, &first) catch return fail();
+        }
+    }
     results.appendSlice("]") catch return fail();
     return writeOwned(out_ptr, out_len, results.items);
 }
@@ -2705,7 +2736,7 @@ fn encodeDnsName(out: *std.array_list.Managed(u8), hostname: []const u8) !void {
     try out.append(0);
 }
 
-fn firstDnsServerAddress(servers_json: []const u8) !std.net.Address {
+fn firstDnsServerAddress(servers_json: []const u8) !NetAddr {
     var parsed = try std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, servers_json, .{});
     defer parsed.deinit();
     const arr = parsed.value.array;
@@ -2713,23 +2744,22 @@ fn firstDnsServerAddress(servers_json: []const u8) !std.net.Address {
     return parseDnsServerAddress(arr.items[0].string);
 }
 
-fn dnsLocalBindAddress(server: std.net.Address, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8) !?std.net.Address {
-    if (server.any.family == std.posix.AF.INET) {
-        const local = local_ipv4 orelse return null;
-        if (local.len == 0) return null;
-        const addr = try std.net.Address.parseIp4(local, 0);
-        return addr;
+fn dnsLocalBindAddress(server: NetAddr, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8) !?NetAddr {
+    switch (server) {
+        .ip4 => {
+            const local = local_ipv4 orelse return null;
+            if (local.len == 0) return null;
+            return try NetAddr.parseIp4(local, 0);
+        },
+        .ip6 => {
+            const local = local_ipv6 orelse return null;
+            if (local.len == 0) return null;
+            return try NetAddr.parseIp6(local, 0);
+        },
     }
-    if (server.any.family == std.posix.AF.INET6) {
-        const local = local_ipv6 orelse return null;
-        if (local.len == 0) return null;
-        const addr = try std.net.Address.parseIp6(local, 0);
-        return addr;
-    }
-    return null;
 }
 
-fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: std.net.Address, timeout_ms: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, packet: []u8) ![]u8 {
+fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: NetAddr, timeout_ms: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, packet: []u8) ![]u8 {
     var query = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer query.deinit();
 
@@ -2745,12 +2775,12 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: std.net.Address, ti
     try sio.managedWriter(&query).writeInt(u16, rrtype, .big);
     try sio.managedWriter(&query).writeInt(u16, DnsClassIn, .big);
 
-    const family: u32 = if (server.any.family == std.posix.AF.INET6) std.posix.AF.INET6 else std.posix.AF.INET;
-    const fd = try std.posix.socket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
+    const fd = try std.posix.socket(netAddrFamily(server), std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, 0);
     defer std.posix.close(fd);
 
     if (try dnsLocalBindAddress(server, local_ipv4, local_ipv6)) |bind_addr| {
-        try std.posix.bind(fd, &bind_addr.any, bind_addr.getOsSockLen());
+        const bind_sa = netAddrSockaddr(bind_addr);
+        try std.posix.bind(fd, @ptrCast(&bind_sa.storage), bind_sa.len);
     }
 
     const timeout = @max(timeout_ms, @as(u64, 100));
@@ -2760,10 +2790,11 @@ fn dnsQueryServer(hostname: []const u8, rrtype: u16, server: std.net.Address, ti
     };
     std.posix.setsockopt(fd, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) catch {};
 
-    _ = try std.posix.sendto(fd, query.items, 0, &server.any, server.getOsSockLen());
-    var src_addr: std.net.Address = undefined;
-    var src_len: std.posix.socklen_t = @sizeOf(std.net.Address);
-    const n = try std.posix.recvfrom(fd, packet, 0, &src_addr.any, &src_len);
+    const server_sa = netAddrSockaddr(server);
+    _ = try std.posix.sendto(fd, query.items, 0, @ptrCast(&server_sa.storage), server_sa.len);
+    var src_storage: std.posix.sockaddr.storage = undefined;
+    var src_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
+    const n = try std.posix.recvfrom(fd, packet, 0, @ptrCast(&src_storage), &src_len);
     if (n < 12) return error.Truncated;
     if (std.mem.readInt(u16, packet[0..2], .big) != random_id) return error.InvalidResponse;
     return packet[0..n];
@@ -2809,9 +2840,11 @@ fn appendDnsRecordsFromPacket(packet: []const u8, rrtype: u16, out: *std.array_l
                 if (rdlen != 16) return error.Truncated;
                 var addr_bytes: [16]u8 = undefined;
                 @memcpy(&addr_bytes, packet[offset .. offset + 16]);
-                const addr = std.net.Address.initIp6(addr_bytes, 0, 0, 0);
+                const addr: NetAddr = .{ .ip6 = .{ .bytes = addr_bytes, .port = 0, .scope_id = 0 } };
                 var buf: [64]u8 = undefined;
-                const text = try std.fmt.bufPrint(&buf, "{}", .{addr});
+                var w = std.Io.Writer.fixed(&buf);
+                try addr.ip6.format(&w);
+                const text = w.buffered();
                 const clean = if (std.mem.lastIndexOfScalar(u8, text, ']')) |end| text[1..end] else text;
                 try appendJsonString(out, clean);
             },
@@ -2945,7 +2978,7 @@ fn appendDnsRecords(hostname: []const u8, rrtype: u16, out: *std.array_list.Mana
     try appendDnsRecordsFromPacket(packet, rrtype, out);
 }
 
-fn appendDnsRecordsFromServer(hostname: []const u8, rrtype: u16, server: std.net.Address, timeout_ms: u64, tries: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, out: *std.array_list.Managed(u8)) !void {
+fn appendDnsRecordsFromServer(hostname: []const u8, rrtype: u16, server: NetAddr, timeout_ms: u64, tries: u64, local_ipv4: ?[]const u8, local_ipv6: ?[]const u8, out: *std.array_list.Managed(u8)) !void {
     var packet_buf: [8192]u8 = undefined;
     const attempts = @max(tries, @as(u64, 1));
     var attempt: u64 = 0;
@@ -3023,13 +3056,13 @@ fn writeSoaRecord(hostname: []const u8, out_ptr: ?*?[*]const u8, out_len: ?*u64)
 }
 
 pub fn dnsReverseName(ip: []const u8, out: *std.array_list.Managed(u8)) !void {
-    if (std.net.Address.parseIp4(ip, 0)) |addr| {
-        const bytes = std.mem.asBytes(&addr.in.sa.addr);
+    if (NetAddr.parseIp4(ip, 0)) |addr| {
+        const bytes = addr.ip4.bytes;
         try sio.managedWriter(out).print("{d}.{d}.{d}.{d}.in-addr.arpa", .{ bytes[3], bytes[2], bytes[1], bytes[0] });
         return;
     } else |_| {}
-    if (std.net.Address.parseIp6(ip, 0)) |addr| {
-        const bytes = std.mem.asBytes(&addr.in6.sa.addr);
+    if (NetAddr.parseIp6(ip, 0)) |addr| {
+        const bytes = addr.ip6.bytes;
         var i: usize = bytes.len;
         while (i > 0) {
             i -= 1;
@@ -3170,11 +3203,11 @@ fn dnsResolverSetLocalAddress(resolver: *DnsResolverHandle, ipv4: []const u8, ip
     var new_ipv6: ?[]u8 = null;
 
     if (ipv4.len > 0) {
-        _ = std.net.Address.parseIp4(ipv4, 0) catch return fail();
+        _ = NetAddr.parseIp4(ipv4, 0) catch return fail();
         new_ipv4 = resolver.allocator.dupe(u8, ipv4) catch return fail();
     }
     if (ipv6.len > 0) {
-        _ = std.net.Address.parseIp6(ipv6, 0) catch return fail();
+        _ = NetAddr.parseIp6(ipv6, 0) catch return fail();
         new_ipv6 = resolver.allocator.dupe(u8, ipv6) catch {
             if (new_ipv4) |addr| resolver.allocator.free(addr);
             return fail();
@@ -3708,11 +3741,11 @@ var net_auto_select_family_attempt_timeout_default: u64 = 500;
 pub export fn sa_node_plugin_net_is_ip(str_ptr: ?[*]const u8, str_len: u64, out_version: ?*u64) u32 {
     const out = out_version orelse return fail();
     const str = (str_ptr orelse return fail())[0..str_len];
-    if (std.net.Address.parseIp4(str, 0)) |_| {
+    if (NetAddr.parseIp4(str, 0)) |_| {
         out.* = 4;
         return 0;
     } else |_| {}
-    if (std.net.Address.parseIp6(str, 0)) |_| {
+    if (NetAddr.parseIp6(str, 0)) |_| {
         out.* = 6;
         return 0;
     } else |_| {}
@@ -3723,7 +3756,7 @@ pub export fn sa_node_plugin_net_is_ip(str_ptr: ?[*]const u8, str_len: u64, out_
 pub export fn sa_node_plugin_net_is_ipv4(str_ptr: ?[*]const u8, str_len: u64, out_bool: ?*u64) u32 {
     const out = out_bool orelse return fail();
     const str = (str_ptr orelse return fail())[0..str_len];
-    if (std.net.Address.parseIp4(str, 0)) |_| {
+    if (NetAddr.parseIp4(str, 0)) |_| {
         out.* = 1;
     } else |_| {
         out.* = 0;
@@ -4560,7 +4593,11 @@ fn encodeUtf8ToBuffer(enc: BufferEncoding, utf8: []const u8, out: *std.array_lis
         .hex => {
             const old_len = out.items.len;
             try out.resize(old_len + utf8.len * 2);
-            _ = std.fmt.bufPrint(out.items[old_len..], "{s}", .{std.fmt.fmtSliceHexLower(utf8)}) catch return error.NoSpaceLeft;
+            const hex_digits = "0123456789abcdef";
+            for (utf8, 0..) |b, i| {
+                out.items[old_len + i * 2] = hex_digits[b >> 4];
+                out.items[old_len + i * 2 + 1] = hex_digits[b & 0xF];
+            }
         },
     }
 }

@@ -47,7 +47,6 @@ fn stringifyToOwned(allocator: std.mem.Allocator, value: anytype) ![]u8 {
     return try allocator.dupe(u8, aw.written());
 }
 
-extern fn sa_node_plugin_dns_promises_resolve(hostname_ptr: ?[*]const u8, hostname_len: u64, rrtype_ptr: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32;
 const builtin = @import("builtin");
 
 // --- POSIX/C Signatures ---
@@ -119,7 +118,7 @@ fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, 
             const sa: *std.posix.sockaddr.in = @ptrCast(@alignCast(&storage));
             sa.* = .{
                 .port = std.mem.nativeToBig(u16, ip.port),
-                .addr = std.mem.readInt(u32, &ip.bytes, .big),
+                .addr = std.mem.readInt(u32, &ip.bytes, .little),
             };
             return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in) };
         },
@@ -140,7 +139,7 @@ fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
     if (storage.family == std.posix.AF.INET) {
         const sa: *const std.posix.sockaddr.in = @ptrCast(@alignCast(storage));
         var bytes: [4]u8 = undefined;
-        std.mem.writeInt(u32, &bytes, sa.addr, .big);
+        std.mem.writeInt(u32, &bytes, sa.addr, .little);
         return .{ .ip4 = .{ .bytes = bytes, .port = std.mem.bigToNative(u16, sa.port) } };
     }
     if (storage.family == std.posix.AF.INET6) {
@@ -201,16 +200,41 @@ fn netConnectUnixCompat(path: []const u8) !std.Io.net.Stream {
 
 fn netStreamRead(stream: std.Io.net.Stream, buf: []u8) !usize {
     if (buf.len == 0) return 0;
-    var rbuf: [8192]u8 = undefined;
-    var r = stream.reader(sio.io(), &rbuf);
-    return r.interface.readSliceShort(buf);
+    // NOTE(Zig 0.17): bypass Io buffered Reader (readSliceShort can block
+    // waiting for peer under Threaded io); raw recv returns as soon as data arrives.
+    while (true) {
+        const rc = std.os.linux.recvfrom(stream.socket.handle, buf.ptr, buf.len, 0, null, null);
+        if (rc >= 0xfffffffffffff000) {
+            const code: usize = 0 -% rc;
+            if (code == 4) continue; // EINTR
+            if (code == 11) { // EAGAIN
+                sio.io().sleep(.fromMilliseconds(1), .awake) catch {};
+                continue;
+            }
+            return error.ReadFailed;
+        }
+        return @intCast(rc);
+    }
 }
 
 fn netStreamWriteAll(stream: std.Io.net.Stream, bytes: []const u8) !void {
-    var wbuf: [8192]u8 = undefined;
-    var w = stream.writer(sio.io(), &wbuf);
-    try w.interface.writeAll(bytes);
-    try w.interface.flush();
+    // NOTE(Zig 0.17): bypass Io buffered Writer; raw sendto loops until all bytes hit the socket.
+    var off: usize = 0;
+    while (off < bytes.len) {
+        const rc = std.os.linux.sendto(stream.socket.handle, bytes.ptr + off, bytes.len - off, 0, null, 0);
+        if (rc >= 0xfffffffffffff000) {
+            const code: usize = 0 -% rc;
+            if (code == 4) continue; // EINTR
+            if (code == 11) { // EAGAIN
+                sio.io().sleep(.fromMilliseconds(1), .awake) catch {};
+                continue;
+            }
+            return error.WriteFailed;
+        }
+        const n: usize = @intCast(rc);
+        off += n;
+        if (n == 0) return error.WriteFailed;
+    }
 }
 
 fn netSendTo(sockfd: std.posix.fd_t, buf: []const u8, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
@@ -2238,7 +2262,8 @@ pub export fn sa_node_plugin_readline_create() ?*anyopaque {
 pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const u8, query_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     _ = rl;
     const q = if (query) |p| p[0..query_len] else &[_]u8{};
-    sio.getStdOut().writeAll(q) catch return 2;
+    // NOTE(Zig 0.17): `--listen=-` uses stdout for build-server protocol; never write prompts to stdout.
+    sio.getStdErr().writeAll(q) catch return 2;
 
     var buf = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer buf.deinit();
@@ -2400,9 +2425,9 @@ pub export fn sa_node_plugin_dns_lookup_service(address_ptr: ?[*]const u8, len: 
     return 0;
 }
 
-pub export fn sa_node_plugin_dns_resolve(hostname: ?[*]const u8, len: u64, rrtype: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return sa_node_plugin_dns_promises_resolve(hostname, len, rrtype, rrtype_len, out_ptr, out_len);
-}
+// NOTE(Zig 0.17): dns_resolve lives in node_saasm_api_ext.zig (resolver-based).
+// _node_api no longer defines it to avoid a cross-module extern that breaks
+// `zig build test` linking (undefined symbol sa_node_plugin_dns_promises_resolve).
 
 const BlockListFamily = enum { ipv4, ipv6 };
 const BlockListRuleKind = enum { address, range, subnet };
@@ -3332,8 +3357,10 @@ fn netParseRemoteAddress(host: []const u8, port: u64, family: u32) !NetAddr {
     const port16: u16 = @intCast(port);
     if (family == 4) {
         if (NetAddr.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (std.ascii.eqlIgnoreCase(host, "localhost")) return NetAddr{ .ip4 = .{ .bytes = [_]u8{ 127, 0, 0, 1 }, .port = port16 } };
     } else if (family == 6) {
         if (NetAddr.parseIp6(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.resolveIp6(sio.io(), host, port16)) |addr| return addr else |_| {}
     } else if (family == 0) {
         if (NetAddr.parse(host, port16)) |addr| return addr else |_| {}
     } else {
@@ -3795,10 +3822,9 @@ fn timevalFromMs(ms: u64) std.posix.timeval {
 pub export fn sa_node_plugin_net_set_timeout(socket_ptr: ?*anyopaque, timeout_ms: u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
-    const stream = obj.stream orelse return 2;
-    const tv = timevalFromMs(timeout_ms);
-    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
-    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
+    _ = obj.stream orelse return 2;
+    // NOTE(Zig 0.17): must NOT set SO_RCVTIMEO/SNDTIMEO on the fd; a blocking
+    // recv returning EAGAIN panics inside sio Threaded Io (programmer bug).
     obj.timeout_ms = timeout_ms;
     return 0;
 }
@@ -4010,6 +4036,52 @@ fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !NetAddr 
     return parseDgramAddressFamily(host_ptr, host_len, port, std.posix.AF.INET);
 }
 
+fn formatIpv6Owned(allocator: std.mem.Allocator, bytes: [16]u8) ![]u8 {
+    var groups: [8]u16 = undefined;
+    var gi: usize = 0;
+    while (gi < 8) : (gi += 1) {
+        groups[gi] = (@as(u16, bytes[gi * 2]) << 8) | @as(u16, bytes[gi * 2 + 1]);
+    }
+    // Find longest run of zero groups (length >= 2) for "::" compression.
+    var best_start: usize = 8;
+    var best_len: usize = 0;
+    var cur_start: usize = 8;
+    var cur_len: usize = 0;
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
+        if (groups[i] == 0) {
+            if (cur_len == 0) cur_start = i;
+            cur_len += 1;
+            if (cur_len > best_len) {
+                best_len = cur_len;
+                best_start = cur_start;
+            }
+        } else {
+            cur_len = 0;
+        }
+    }
+    if (best_len < 2) best_start = 8;
+    var out = std.array_list.Managed(u8).init(allocator);
+    errdefer out.deinit();
+    var k: usize = 0;
+    var first = true;
+    while (k < 8) {
+        if (k == best_start) {
+            try out.appendSlice("::");
+            first = true;
+            k += best_len;
+            continue;
+        }
+        if (!first) try out.append(':');
+        first = false;
+        const hex = try std.fmt.allocPrint(allocator, "{x}", .{groups[k]});
+        defer allocator.free(hex);
+        try out.appendSlice(hex);
+        k += 1;
+    }
+    return out.toOwnedSlice();
+}
+
 fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: NetAddr) ![]u8 {
     switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => {
@@ -4025,14 +4097,7 @@ fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: NetAddr) ![]u8 {
                     addr.ip6.bytes[15],
                 });
             }
-            const with_port = try std.fmt.allocPrint(allocator, "{}", .{addr});
-            defer allocator.free(with_port);
-            if (with_port.len >= 2 and with_port[0] == '[') {
-                if (std.mem.lastIndexOfScalar(u8, with_port, ']')) |end| {
-                    return try allocator.dupe(u8, with_port[1..end]);
-                }
-            }
-            return try allocator.dupe(u8, with_port);
+            return try formatIpv6Owned(allocator, addr.ip6.bytes);
         },
         else => return error.InvalidAddressFamily,
     }
@@ -4788,8 +4853,17 @@ var console_timers = std.StringHashMap(i64).init(std.heap.page_allocator);
 pub export fn sa_node_plugin_console_log(data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (data_ptr) |ptr| {
         const slice = ptr[0..data_len];
-        sio.getStdOut().writeAll(slice) catch return 2;
-        sio.getStdOut().writeAll("\n") catch return 2;
+        // NOTE(Zig 0.17): `zig build test` drives the test binary with
+        // `--listen=-` over stdin/stdout (build-server protocol). Writing
+        // user payloads to stdout corrupts the protocol and hangs the
+        // harness (pipe_read + futex_wait). Redirect to stderr under test.
+        if (@import("builtin").is_test) {
+            sio.getStdErr().writeAll(slice) catch return 2;
+            sio.getStdErr().writeAll("\n") catch return 2;
+        } else {
+            sio.getStdOut().writeAll(slice) catch return 2;
+            sio.getStdOut().writeAll("\n") catch return 2;
+        }
     }
     return 0;
 }
@@ -4827,6 +4901,8 @@ pub export fn sa_node_plugin_console_time_end(label_ptr: ?[*]const u8, label_len
 }
 
 pub export fn sa_node_plugin_console_clear() u32 {
+    // NOTE(Zig 0.17): keep `--listen=-` stdout protocol clean under test.
+    if (@import("builtin").is_test) return 0;
     sio.getStdOut().writeAll("\x1b[2J\x1b[H") catch return 2;
     return 0;
 }

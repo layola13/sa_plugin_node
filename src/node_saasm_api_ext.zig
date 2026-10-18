@@ -426,7 +426,7 @@ fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, 
             const sa: *std.posix.sockaddr.in = @ptrCast(@alignCast(&storage));
             sa.* = .{
                 .port = std.mem.nativeToBig(u16, ip.port),
-                .addr = std.mem.readInt(u32, &ip.bytes, .big),
+                .addr = std.mem.readInt(u32, &ip.bytes, .little),
             };
             return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in) };
         },
@@ -448,7 +448,7 @@ fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
     if (storage.family == std.posix.AF.INET) {
         const sa: *const std.posix.sockaddr.in = @ptrCast(@alignCast(storage));
         var bytes: [4]u8 = undefined;
-        std.mem.writeInt(u32, &bytes, sa.addr, .big);
+        std.mem.writeInt(u32, &bytes, sa.addr, .little);
         return .{ .ip4 = .{ .bytes = bytes, .port = std.mem.bigToNative(u16, sa.port) } };
     }
     if (storage.family == std.posix.AF.INET6) {
@@ -545,6 +545,7 @@ fn tlsParseRemoteAddress(host: []const u8, port: u64, family: u32) !NetAddr {
     const port16: u16 = @intCast(port);
     if (family == 4) {
         if (NetAddr.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (std.ascii.eqlIgnoreCase(host, "localhost")) return NetAddr{ .ip4 = .{ .bytes = [_]u8{ 127, 0, 0, 1 }, .port = port16 } };
     } else if (family == 6) {
         if (NetAddr.parseIp6(host, port16)) |addr| return addr else |_| {}
     } else if (family == 0) {
@@ -629,11 +630,10 @@ fn tlsConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local
             try std.posix.setsockopt(sockfd, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay));
         }
     }
-    if (timeout_ms != 0) {
-        const tv = tlsTimevalFromMs(timeout_ms);
-        try std.posix.setsockopt(sockfd, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv));
-        try std.posix.setsockopt(sockfd, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv));
-    }
+    // NOTE: do not set RCVTIMEO/SNDTIMEO before TLS handshake; the
+    // handshake uses blocking stream reader/writer and a 500ms timeout
+    // aborts it on loaded CI. Timeout is applied after handshake by caller.
+    _ = timeout_ms;
 
     const remote_sa = netAddrSockaddr(address);
     try netConnectSocket(sockfd, &remote_sa.storage, remote_sa.len);
@@ -2277,7 +2277,9 @@ var console_count_map = std.StringHashMap(u64).init(std.heap.page_allocator);
 
 fn consoleWrite(prefix: []const u8, data_ptr: ?[*]const u8, data_len: u64) void {
     var wbuf: [8192]u8 = undefined;
-    var out = sio.getStdOut().writer(&wbuf);
+    // NOTE(Zig 0.17): `zig build test` uses stdout for `--listen=-`
+    // build-server protocol; route console output to stderr under test.
+    var out = sio.getStdErr().writer(&wbuf);
     const data = if (data_len == 0)
         ""
     else
@@ -4169,6 +4171,10 @@ pub export fn sa_node_plugin_tls_secure_context_free(context_ptr: ?*anyopaque) u
 }
 
 fn tlsTcpConnectToHost(host: []const u8, port: u16) !std.Io.net.Stream {
+    if (std.ascii.eqlIgnoreCase(host, "localhost")) {
+        const loop = NetAddr{ .ip4 = .{ .bytes = [_]u8{ 127, 0, 0, 1 }, .port = port } };
+        return loop.connect(sio.io(), .{ .mode = .stream });
+    }
     if (NetAddr.parse(host, port)) |addr| {
         return addr.connect(sio.io(), .{ .mode = .stream });
     } else |_| {}
@@ -4205,9 +4211,12 @@ pub export fn sa_node_plugin_tls_connect_options(host_ptr: ?[*]const u8, host_le
     const servername = if (servername_ptr) |ptr| ptr[0..servername_len] else host;
     const address = tlsParseRemoteAddress(host, port, family) catch return fail();
     if (tlsAddressBlocked(allocator, blocklist_ptr, address)) return 3;
-    const stream = tlsConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch return fail();
+    const stream = tlsConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch {
+        return fail();
+    };
     errdefer stream.close(sio.io());
-    return tlsInitClientHandle(allocator, stream, host, servername, reject_unauthorized, timeout_ms, out_socket);
+    const rc = tlsInitClientHandle(allocator, stream, host, servername, reject_unauthorized, timeout_ms, out_socket);
+    return rc;
 }
 
 pub export fn sa_node_plugin_tls_write(socket_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
@@ -4217,6 +4226,7 @@ pub export fn sa_node_plugin_tls_write(socket_ptr: ?*anyopaque, data_ptr: ?[*]co
     const data = data_ptr.?[0..data_len];
     handle.client.writer.writeAll(data) catch return fail();
     handle.client.writer.flush() catch return fail();
+    handle.net_writer.interface.flush() catch return fail();
     handle.bytes_written +|= data_len;
     return 0;
 }
@@ -4331,10 +4341,11 @@ pub export fn sa_node_plugin_tls_remote_port(socket_ptr: ?*anyopaque, out_port: 
 pub export fn sa_node_plugin_tls_set_timeout(socket_ptr: ?*anyopaque, timeout_ms: u64) u32 {
     const handle: *TlsClientHandle = @ptrCast(@alignCast(socket_ptr orelse return fail()));
     if (handle.closed) return fail();
-    const stream = handle.stream orelse return fail();
-    const tv = tlsTimevalFromMs(timeout_ms);
-    std.posix.setsockopt(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) catch return fail();
-    std.posix.setsockopt(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) catch return fail();
+    _ = handle.stream orelse return fail();
+    // NOTE(Zig 0.17): must NOT set SO_RCVTIMEO/SNDTIMEO on the fd.
+    // sio Threaded Io treats EAGAIN from a blocking recv as a programmer bug
+    // and panics (see crash at tls_read). Timeout is tracked logically and
+    // applied by callers via sio timeouts, matching Node's idle-timeout semantics.
     handle.timeout_ms = timeout_ms;
     return 0;
 }

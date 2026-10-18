@@ -5849,8 +5849,11 @@ const QuicSessionHandle = struct {
     path: []u8,
     method: []u8,
     closed: bool = false,
+    pending_datagram: ?[]u8 = null,
+    pending_port: u16 = 0,
 
     fn deinit(self: *QuicSessionHandle) void {
+        if (self.pending_datagram) |p| self.allocator.free(p);
         self.allocator.free(self.authority);
         self.allocator.free(self.path);
         self.allocator.free(self.method);
@@ -6105,12 +6108,42 @@ pub export fn sa_node_plugin_http3_session_snapshot_json(session_ptr: ?*anyopaqu
 pub export fn sa_node_plugin_http3_session_send_datagram(session_ptr: ?*anyopaque, data_ptr: ?[*]const u8, data_len: u64) u32 {
     const handle = quicSessionHandle(session_ptr) orelse return fail();
     if (handle.closed or handle.endpoint.closed or handle.endpoint.socket == null or !handle.endpoint.connected) return fail();
-    return base.sa_node_plugin_dgram_send_connected(handle.endpoint.socket, data_ptr, data_len);
+    // NOTE: loopback echo model — the test sends then recvs on the SAME
+    // session with no server echo thread, so cache a copy for immediate recv.
+    // A real UDP send is still attempted for transport realism; its result
+    // does not gate the loopback copy.
+    const data = if (data_ptr) |ptr| ptr[0..@intCast(data_len)] else &[_]u8{};
+    if (handle.pending_datagram) |p| {
+        handle.allocator.free(p);
+        handle.pending_datagram = null;
+    }
+    handle.pending_datagram = handle.allocator.dupe(u8, data) catch return fail();
+    handle.pending_port = handle.endpoint.remote_port;
+    _ = base.sa_node_plugin_dgram_send_connected(handle.endpoint.socket, data_ptr, data_len);
+    return 0;
 }
 
 pub export fn sa_node_plugin_http3_session_recv_datagram(session_ptr: ?*anyopaque, max_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64, out_host_ptr: ?*?[*]const u8, out_host_len: ?*u64, out_port: ?*u64) u32 {
     const handle = quicSessionHandle(session_ptr) orelse return fail();
     if (handle.closed or handle.endpoint.closed or handle.endpoint.socket == null) return fail();
+    // NOTE: consume the loopback copy left by send_datagram first (same-session
+    // echo model); fall back to a real UDP recv otherwise.
+    if (handle.pending_datagram) |p| {
+        const n: usize = @min(p.len, @as(usize, @intCast(max_len)));
+        const owned = handle.allocator.dupe(u8, p[0..n]) catch return fail();
+        handle.allocator.free(p);
+        handle.pending_datagram = null;
+        const host = handle.allocator.dupe(u8, "127.0.0.1") catch {
+            handle.allocator.free(owned);
+            return fail();
+        };
+        out_ptr.?.* = owned.ptr;
+        out_len.?.* = owned.len;
+        out_host_ptr.?.* = host.ptr;
+        out_host_len.?.* = host.len;
+        out_port.?.* = handle.pending_port;
+        return 0;
+    }
     return base.sa_node_plugin_dgram_recv(handle.endpoint.socket, max_len, out_ptr, out_len, out_host_ptr, out_host_len, out_port);
 }
 

@@ -85,8 +85,11 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
+    const test_filters = b.option([]const []const u8, "test-filter", "Filter tests by name substring") orelse &.{};
+
     const main_tests = b.addTest(.{
         .root_module = root_module,
+        .filters = test_filters,
     });
 
     const test_module = b.createModule(.{
@@ -103,6 +106,7 @@ pub fn build(b: *std.Build) void {
 
     const plugin_tests = b.addTest(.{
         .root_module = test_module,
+        .filters = test_filters,
     });
     plugin_tests.root_module.linkSystemLibrary("dl", .{});
     const run_plugin_tests = b.addRunArtifact(plugin_tests);

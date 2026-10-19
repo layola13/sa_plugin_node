@@ -3167,6 +3167,24 @@ pub export fn sa_node_plugin_dns_reverse(ip_ptr: ?[*]const u8, ip_len: u64, out_
     return writeDnsRecords(name.items, DnsTypePtr, out_ptr, out_len);
 }
 
+pub export fn sa_node_plugin_dns_resolve(hostname_ptr: ?[*]const u8, hostname_len: u64, rrtype_ptr: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
+    const rrtype = (rrtype_ptr orelse return fail())[0..rrtype_len];
+    if (std.ascii.eqlIgnoreCase(rrtype, "A")) return sa_node_plugin_dns_resolve4(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "AAAA")) return sa_node_plugin_dns_resolve6(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "CNAME")) return sa_node_plugin_dns_resolve_cname(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "MX")) return sa_node_plugin_dns_resolve_mx(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "NS")) return sa_node_plugin_dns_resolve_ns(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "TXT")) return sa_node_plugin_dns_resolve_txt(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "SRV")) return sa_node_plugin_dns_resolve_srv(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "PTR")) return sa_node_plugin_dns_resolve_ptr(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "CAA")) return sa_node_plugin_dns_resolve_caa(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "NAPTR")) return sa_node_plugin_dns_resolve_naptr(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "SOA")) return sa_node_plugin_dns_resolve_soa(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "TLSA")) return sa_node_plugin_dns_resolve_tlsa(hostname_ptr, hostname_len, out_ptr, out_len);
+    if (std.ascii.eqlIgnoreCase(rrtype, "ANY")) return sa_node_plugin_dns_resolve_any(hostname_ptr, hostname_len, out_ptr, out_len);
+    return fail();
+}
+
 pub export fn sa_node_plugin_dns_resolve_any(hostname_ptr: ?[*]const u8, hostname_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     return writeDnsRecords(hostname_ptr.?[0..hostname_len], DnsTypeAny, out_ptr, out_len);
 }

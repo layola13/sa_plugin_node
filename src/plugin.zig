@@ -1215,3 +1215,16 @@ pub export const saasm_plugin_descriptor_v1: plugin_api.PluginDescriptor = descr
 pub export fn saasm_plugin_descriptor_v1_fn(out: *plugin_api.PluginDescriptor) callconv(.c) void {
     out.* = descriptor;
 }
+// NOTE(Zig 0.17): force analysis of imported export decls so ABI symbols are emitted.
+comptime {
+        @setEvalBranchQuota(200000);
+        for (.{ _node_api, _node_ext, _node_extra, _node_bridge }) |api| {
+            for (std.meta.declarations(api)) |d| {
+                const decl = @field(api, d);
+                switch (@typeInfo(@TypeOf(decl))) {
+                    .@"fn" => _ = &decl,
+                    else => {},
+                }
+            }
+        }
+}

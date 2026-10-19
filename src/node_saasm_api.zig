@@ -1,6 +1,52 @@
 const std = @import("std");
+const sio = @import("sio");
 
-extern fn sa_node_plugin_dns_promises_resolve(hostname_ptr: ?[*]const u8, hostname_len: u64, rrtype_ptr: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32;
+fn envGet(name: []const u8) ?[]const u8 {
+    const name_z = std.heap.page_allocator.dupeSentinel(u8, name, 0) catch return null;
+    defer std.heap.page_allocator.free(name_z);
+    const value = getenv(name_z.ptr) orelse return null;
+    return std.mem.span(value);
+}
+
+fn sioSleep(ns: u64) void {
+    sio.io().sleep(.fromNanoseconds(ns), .awake) catch {};
+}
+
+fn readFileShort(file: sio.File, buf: []u8) !usize {
+    var total: usize = 0;
+    while (total < buf.len) {
+        const n = try file.read(buf[total..]);
+        if (n == 0) break;
+        total += n;
+    }
+    return total;
+}
+
+fn spinLock(m: *std.atomic.Mutex) void {
+    while (!m.tryLock()) std.Thread.yield() catch {};
+}
+
+fn stringifyIntoList(list: *std.array_list.Managed(u8), value: anytype) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyIntoListOpts(list: *std.array_list.Managed(u8), value: anytype, opts: std.json.Stringify.Options) !void {
+    var aw: std.Io.Writer.Allocating = .init(list.allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, opts, &aw.writer);
+    try list.appendSlice(aw.written());
+}
+
+fn stringifyToOwned(allocator: std.mem.Allocator, value: anytype) ![]u8 {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    try std.json.Stringify.value(value, .{}, &aw.writer);
+    return try allocator.dupe(u8, aw.written());
+}
+
 const builtin = @import("builtin");
 
 // --- POSIX/C Signatures ---
@@ -53,18 +99,171 @@ const Ipv6Mreq = extern struct {
 extern fn getifaddrs(ifap: *?*struct_ifaddrs) c_int;
 extern fn freeifaddrs(ifa: ?*struct_ifaddrs) void;
 extern fn inet_ntop(af: c_int, src: ?*const anyopaque, dst: [*]u8, size: c_uint) ?[*:0]const u8;
+extern fn close(fd: c_int) c_int;
+
+// NOTE(Zig 0.17): std.net/std.posix.socket removed; Io.net + raw linux syscalls.
+const NetAddr = std.Io.net.IpAddress;
+
+fn netAddrFamily(addr: NetAddr) std.posix.sa_family_t {
+    return switch (addr) {
+        .ip4 => std.posix.AF.INET,
+        .ip6 => std.posix.AF.INET6,
+    };
+}
+
+fn netAddrSockaddr(addr: NetAddr) struct { storage: std.posix.sockaddr.storage, len: std.posix.socklen_t } {
+    var storage: std.posix.sockaddr.storage = undefined;
+    switch (addr) {
+        .ip4 => |ip| {
+            const sa: *std.posix.sockaddr.in = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .addr = std.mem.readInt(u32, &ip.bytes, .little),
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in) };
+        },
+        .ip6 => |ip| {
+            const sa: *std.posix.sockaddr.in6 = @ptrCast(@alignCast(&storage));
+            sa.* = .{
+                .port = std.mem.nativeToBig(u16, ip.port),
+                .flowinfo = 0,
+                .addr = ip.bytes,
+                .scope_id = 0,
+            };
+            return .{ .storage = storage, .len = @sizeOf(std.posix.sockaddr.in6) };
+        },
+    }
+}
+
+fn netSockaddrToAddr(storage: *const std.posix.sockaddr.storage) !NetAddr {
+    if (storage.family == std.posix.AF.INET) {
+        const sa: *const std.posix.sockaddr.in = @ptrCast(@alignCast(storage));
+        var bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &bytes, sa.addr, .little);
+        return .{ .ip4 = .{ .bytes = bytes, .port = std.mem.bigToNative(u16, sa.port) } };
+    }
+    if (storage.family == std.posix.AF.INET6) {
+        const sa: *const std.posix.sockaddr.in6 = @ptrCast(@alignCast(storage));
+        return .{ .ip6 = .{ .bytes = sa.addr, .port = std.mem.bigToNative(u16, sa.port) } };
+    }
+    return error.InvalidAddressFamily;
+}
+
+fn netSocket(domain: u32, socket_type: u32, protocol: u32) !std.posix.fd_t {
+    const rc = std.os.linux.socket(domain, socket_type, protocol);
+    if (rc >= 0xffffff0000000000) return error.SocketFailed;
+    return @intCast(rc);
+}
+
+fn netBindSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.bind(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.BindFailed;
+}
+
+fn netConnectSocket(sockfd: std.posix.fd_t, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.connect(sockfd, @ptrCast(storage), len);
+    if (rc != 0) return error.ConnectFailed;
+}
+
+fn netCloseFd(fd: std.posix.fd_t) void {
+    _ = close(@intCast(fd));
+}
+
+fn netCloseSocket(fd: std.posix.fd_t) void {
+    netCloseFd(fd);
+}
+
+const NetAddrList = struct {
+    addrs: []NetAddr,
+    allocator: std.mem.Allocator,
+    fn deinit(self: @This()) void {
+        self.allocator.free(self.addrs);
+    }
+};
+
+fn netGetAddressListCompat(allocator: std.mem.Allocator, host: []const u8, port: u16) !NetAddrList {
+    const addr = try NetAddr.resolve(sio.io(), host, port);
+    const addrs = try allocator.alloc(NetAddr, 1);
+    addrs[0] = addr;
+    return .{ .addrs = addrs, .allocator = allocator };
+}
+
+fn netTcpConnectCompat(address: NetAddr) !std.Io.net.Stream {
+    var addr = address;
+    return addr.connect(sio.io(), .{ .mode = .stream });
+}
+
+fn netConnectUnixCompat(path: []const u8) !std.Io.net.Stream {
+    const ua = try std.Io.net.UnixAddress.init(path);
+    return ua.connect(sio.io());
+}
+
+fn netStreamRead(stream: std.Io.net.Stream, buf: []u8) !usize {
+    if (buf.len == 0) return 0;
+    // NOTE(Zig 0.17): bypass Io buffered Reader (readSliceShort can block
+    // waiting for peer under Threaded io); raw recv returns as soon as data arrives.
+    while (true) {
+        const rc = std.os.linux.recvfrom(stream.socket.handle, buf.ptr, buf.len, 0, null, null);
+        if (rc >= 0xfffffffffffff000) {
+            const code: usize = 0 -% rc;
+            if (code == 4) continue; // EINTR
+            if (code == 11) { // EAGAIN
+                sio.io().sleep(.fromMilliseconds(1), .awake) catch {};
+                continue;
+            }
+            return error.ReadFailed;
+        }
+        return @intCast(rc);
+    }
+}
+
+fn netStreamWriteAll(stream: std.Io.net.Stream, bytes: []const u8) !void {
+    // NOTE(Zig 0.17): bypass Io buffered Writer; raw sendto loops until all bytes hit the socket.
+    var off: usize = 0;
+    while (off < bytes.len) {
+        const rc = std.os.linux.sendto(stream.socket.handle, bytes.ptr + off, bytes.len - off, 0, null, 0);
+        if (rc >= 0xfffffffffffff000) {
+            const code: usize = 0 -% rc;
+            if (code == 4) continue; // EINTR
+            if (code == 11) { // EAGAIN
+                sio.io().sleep(.fromMilliseconds(1), .awake) catch {};
+                continue;
+            }
+            return error.WriteFailed;
+        }
+        const n: usize = @intCast(rc);
+        off += n;
+        if (n == 0) return error.WriteFailed;
+    }
+}
+
+fn netSendTo(sockfd: std.posix.fd_t, buf: []const u8, storage: *const std.posix.sockaddr.storage, len: std.posix.socklen_t) !void {
+    const rc = std.os.linux.sendto(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.SendFailed;
+}
+
+fn netRecvFrom(sockfd: std.posix.fd_t, buf: []u8, storage: *std.posix.sockaddr.storage, len: *std.posix.socklen_t) !usize {
+    const rc = std.os.linux.recvfrom(sockfd, buf.ptr, buf.len, 0, @ptrCast(storage), len);
+    if (rc >= 0xffffff0000000000) return error.ReceiveFailed;
+    return @intCast(rc);
+}
+
+fn netShutdownWrite(fd: std.posix.fd_t) !void {
+    const rc = std.os.linux.shutdown(fd, 1); // SHUT_WR
+    if (rc != 0) return error.ShutdownFailed;
+}
 
 // Global process start time for process.uptime()
 var process_start_ms: i64 = 0;
 
 fn getProcessStartMs() i64 {
     if (process_start_ms == 0) {
-        process_start_ms = std.time.milliTimestamp();
+        process_start_ms = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     }
     return process_start_ms;
 }
 
-fn jsonEscapeAppend(out: *std.ArrayList(u8), bytes: []const u8) !void {
+fn jsonEscapeAppend(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     for (bytes) |b| {
         switch (b) {
             '"' => try out.appendSlice("\\\""),
@@ -72,12 +271,12 @@ fn jsonEscapeAppend(out: *std.ArrayList(u8), bytes: []const u8) !void {
             '\n' => try out.appendSlice("\\n"),
             '\r' => try out.appendSlice("\\r"),
             '\t' => try out.appendSlice("\\t"),
-            else => if (b < 0x20) try out.writer().print("\\u{x:0>4}", .{b}) else try out.append(b),
+            else => if (b < 0x20) try sio.managedWriter(out).print("\\u{x:0>4}", .{b}) else try out.append(b),
         }
     }
 }
 
-fn appendJsonString(out: *std.ArrayList(u8), bytes: []const u8) !void {
+fn appendJsonString(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     try out.append('"');
     try jsonEscapeAppend(out, bytes);
     try out.append('"');
@@ -99,10 +298,10 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     var model_name: []const u8 = "Intel(R) Xeon(R) CPU @ 2.50GHz";
     const speed: u64 = 2500;
 
-    if (std.fs.openFileAbsolute("/proc/cpuinfo", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/cpuinfo", .{})) |file| {
         defer file.close();
         var buf: [4096]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, '\n');
             while (it.next()) |line| {
@@ -116,7 +315,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
         } else |_| {}
     } else |_| {}
 
-    var cpus_list = std.ArrayList(struct {
+    var cpus_list = std.array_list.Managed(struct {
         user: u64,
         nice: u64,
         sys: u64,
@@ -125,10 +324,10 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
     }).init(std.heap.page_allocator);
     defer cpus_list.deinit();
 
-    if (std.fs.openFileAbsolute("/proc/stat", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/stat", .{})) |file| {
         defer file.close();
         var buf: [8192]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, '\n');
             while (it.next()) |line| {
@@ -157,7 +356,7 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
         cpus_list.append(.{ .user = 100, .nice = 0, .sys = 50, .idle = 1000, .irq = 0 }) catch {};
     }
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
 
     json.appendSlice("[") catch return 2;
@@ -176,10 +375,10 @@ pub export fn sa_node_plugin_os_cpus(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
 }
 
 fn parseMemInfo(key: []const u8) u64 {
-    var file = std.fs.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
+    var file = sio.openFileAbsolute("/proc/meminfo", .{}) catch return 0;
     defer file.close();
     var buf: [2048]u8 = undefined;
-    const n = file.readAll(&buf) catch return 0;
+    const n = readFileShort(file, &buf) catch return 0;
     const content = buf[0..n];
 
     var it = std.mem.tokenizeScalar(u8, content, '\n');
@@ -206,7 +405,7 @@ pub export fn sa_node_plugin_os_freemem(out_mem: ?*u64) u32 {
 }
 
 pub export fn sa_node_plugin_os_homedir(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const home = std.posix.getenv("HOME") orelse "/home/vscode";
+    const home = envGet("HOME") orelse "/home/vscode";
     const owned = std.heap.page_allocator.dupe(u8, home) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -214,7 +413,7 @@ pub export fn sa_node_plugin_os_homedir(out_ptr: ?*?[*]const u8, out_len: ?*u64)
 }
 
 pub export fn sa_node_plugin_os_tmpdir(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    const tmp = std.posix.getenv("TMPDIR") orelse (std.posix.getenv("TMP") orelse (std.posix.getenv("TEMP") orelse "/tmp"));
+    const tmp = envGet("TMPDIR") orelse (envGet("TMP") orelse (envGet("TEMP") orelse "/tmp"));
     const owned = std.heap.page_allocator.dupe(u8, tmp) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -255,10 +454,10 @@ pub export fn sa_node_plugin_os_type(out_ptr: ?*?[*]const u8, out_len: ?*u64) u3
 }
 
 pub export fn sa_node_plugin_os_system_uptime(out_uptime: ?*u64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/uptime", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/uptime", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
     const space_idx = std.mem.indexOfScalar(u8, content, ' ') orelse content.len;
     const uptime_str = std.mem.trim(u8, content[0..space_idx], " \t\r\n");
@@ -268,10 +467,10 @@ pub export fn sa_node_plugin_os_system_uptime(out_uptime: ?*u64) u32 {
 }
 
 pub export fn sa_node_plugin_os_loadavg(out_load: ?*f64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/loadavg", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/loadavg", .{}) catch return 2;
     defer file.close();
     var buf: [64]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
     var it = std.mem.tokenizeScalar(u8, content, ' ');
     const l1_str = it.next() orelse return 2;
@@ -293,7 +492,7 @@ pub export fn sa_node_plugin_os_network_interfaces(out_ptr: ?*?[*]const u8, out_
     if (getifaddrs(&ifap) != 0) return 2;
     defer freeifaddrs(ifap);
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
 
     json.appendSlice("{") catch return 2;
@@ -360,9 +559,9 @@ pub export fn sa_node_plugin_os_hostname(out_ptr: ?*?[*]const u8, out_len: ?*u64
 pub export fn sa_node_plugin_os_user_info(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const uid = getuid();
     const gid = getgid();
-    const user = std.posix.getenv("USER") orelse "vscode";
-    const home = std.posix.getenv("HOME") orelse "/home/vscode";
-    const shell = std.posix.getenv("SHELL") orelse "/bin/bash";
+    const user = envGet("USER") orelse "vscode";
+    const home = envGet("HOME") orelse "/home/vscode";
+    const shell = envGet("SHELL") orelse "/bin/bash";
 
     var out_buf: [512]u8 = undefined;
     const json = std.fmt.bufPrint(&out_buf, "{{\"uid\":{d},\"gid\":{d},\"username\":\"{s}\",\"homedir\":\"{s}\",\"shell\":\"{s}\"}}", .{ uid, gid, user, home, shell }) catch return 2;
@@ -376,11 +575,7 @@ pub export fn sa_node_plugin_os_user_info(out_ptr: ?*?[*]const u8, out_len: ?*u6
 // --- process module ---
 
 pub export fn sa_node_plugin_process_hrtime_bigint(out_ns: ?*u64) u32 {
-    const ts = std.posix.clock_gettime(.MONOTONIC) catch {
-        out_ns.?.* = @as(u64, @intCast(std.time.nanoTimestamp()));
-        return 0;
-    };
-    out_ns.?.* = @as(u64, @intCast(ts.sec)) * 1_000_000_000 + @as(u64, @intCast(ts.nsec));
+    out_ns.?.* = @as(u64, @intCast(@max(sio.nanoTimestamp(), 0)));
     return 0;
 }
 
@@ -388,10 +583,10 @@ pub export fn sa_node_plugin_process_cpu_usage(out_ptr: ?*?[*]const u8, out_len:
     var user_us: u64 = 0;
     var system_us: u64 = 0;
 
-    if (std.fs.openFileAbsolute("/proc/self/stat", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/self/stat", .{})) |file| {
         defer file.close();
         var buf: [1024]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, ' ');
             var field_idx: usize = 1;
@@ -419,10 +614,10 @@ pub export fn sa_node_plugin_process_cpu_usage(out_ptr: ?*?[*]const u8, out_len:
 pub export fn sa_node_plugin_process_memory_usage(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var rss: u64 = 0;
 
-    if (std.fs.openFileAbsolute("/proc/self/statm", .{})) |file| {
+    if (sio.openFileAbsolute("/proc/self/statm", .{})) |file| {
         defer file.close();
         var buf: [128]u8 = undefined;
-        if (file.readAll(&buf)) |n| {
+        if (readFileShort(file, &buf)) |n| {
             const content = buf[0..n];
             var it = std.mem.tokenizeScalar(u8, content, ' ');
             _ = it.next();
@@ -444,8 +639,7 @@ pub export fn sa_node_plugin_process_memory_usage(out_ptr: ?*?[*]const u8, out_l
 }
 
 pub export fn sa_node_plugin_process_cwd(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var buf: [1024]u8 = undefined;
-    const cwd = std.posix.getcwd(&buf) catch "/home/vscode";
+    const cwd = sio.getCwdAlloc(std.heap.page_allocator) catch "/home/vscode";
     const owned = std.heap.page_allocator.dupe(u8, cwd) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -454,20 +648,20 @@ pub export fn sa_node_plugin_process_cwd(out_ptr: ?*?[*]const u8, out_len: ?*u64
 
 pub export fn sa_node_plugin_process_uptime(out_uptime: ?*f64) u32 {
     const start = getProcessStartMs();
-    const current = std.time.milliTimestamp();
+    const current = @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)));
     const diff_ms = @as(f64, @floatFromInt(current - start));
     out_uptime.?.* = diff_ms / 1000.0;
     return 0;
 }
 
 pub export fn sa_node_plugin_process_argv_json(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var file = std.fs.openFileAbsolute("/proc/self/cmdline", .{}) catch return 2;
+    var file = sio.openFileAbsolute("/proc/self/cmdline", .{}) catch return 2;
     defer file.close();
     var buf: [4096]u8 = undefined;
-    const n = file.readAll(&buf) catch return 2;
+    const n = readFileShort(file, &buf) catch return 2;
     const content = buf[0..n];
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
 
     json.appendSlice("[") catch return 2;
@@ -511,7 +705,7 @@ pub export fn sa_node_plugin_process_groups(out_ptr: ?*?[*]const u8, out_len: ?*
     const n = getgroups(list.len, &list);
     if (n < 0) return 2;
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
 
     json.appendSlice("[") catch return 2;
@@ -546,7 +740,7 @@ pub export fn sa_node_plugin_path_join(paths_argv: ?*const anyopaque, paths_len:
     }
 
     const slices: [*]const SaSlice = @ptrCast(@alignCast(paths_argv.?));
-    var list = std.ArrayList([]const u8).init(std.heap.page_allocator);
+    var list = std.array_list.Managed([]const u8).init(std.heap.page_allocator);
     defer list.deinit();
 
     var i: usize = 0;
@@ -563,8 +757,7 @@ pub export fn sa_node_plugin_path_join(paths_argv: ?*const anyopaque, paths_len:
 
 pub export fn sa_node_plugin_path_resolve(paths_argv: ?*const anyopaque, paths_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (paths_len == 0) {
-        var buf: [1024]u8 = undefined;
-        const cwd = std.posix.getcwd(&buf) catch ".";
+        const cwd = sio.getCwdAlloc(std.heap.page_allocator) catch ".";
         const owned = std.heap.page_allocator.dupe(u8, cwd) catch return 2;
         out_ptr.?.* = owned.ptr;
         out_len.?.* = owned.len;
@@ -572,7 +765,7 @@ pub export fn sa_node_plugin_path_resolve(paths_argv: ?*const anyopaque, paths_l
     }
 
     const slices: [*]const SaSlice = @ptrCast(@alignCast(paths_argv.?));
-    var list = std.ArrayList([]const u8).init(std.heap.page_allocator);
+    var list = std.array_list.Managed([]const u8).init(std.heap.page_allocator);
     defer list.deinit();
 
     var i: usize = 0;
@@ -645,7 +838,7 @@ pub export fn sa_node_plugin_path_to_namespaced_path(path: ?[*]const u8, len: u6
 
 pub export fn sa_node_plugin_crypto_random_bytes(size: u64, out_ptr: ?*?[*]const u8) u32 {
     const buf = std.heap.page_allocator.alloc(u8, size) catch return 2;
-    std.crypto.random.bytes(buf);
+    sio.io().random(buf);
     out_ptr.?.* = buf.ptr;
     return 0;
 }
@@ -674,7 +867,12 @@ pub export fn sa_node_plugin_crypto_hash(algo: ?[*]const u8, algo_len: u64, data
     }
 
     var hex_buf: [128]u8 = undefined;
-    const hex = std.fmt.bufPrint(&hex_buf, "{s}", .{std.fmt.fmtSliceHexLower(hash_buf[0..hash_len])}) catch return 2;
+    const hex_digits = "0123456789abcdef";
+    for (hash_buf[0..hash_len], 0..) |b, i| {
+        hex_buf[i * 2] = hex_digits[b >> 4];
+        hex_buf[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    const hex = hex_buf[0 .. hash_len * 2];
     const owned = std.heap.page_allocator.dupe(u8, hex) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -699,14 +897,14 @@ pub export fn sa_node_plugin_crypto_pbkdf2(pass: ?[*]const u8, pass_len: u64, sa
 
 pub export fn sa_node_plugin_zlib_gzip(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var compressor = std.compress.gzip.compressor(out_list.writer(), .{}) catch return 2;
-    compressor.writer().writeAll(d) catch return 2;
+    var aw: std.Io.Writer.Allocating = std.Io.Writer.Allocating.initCapacity(std.heap.page_allocator, 64) catch return 2;
+    defer aw.deinit();
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var compressor = std.compress.flate.Compress.init(&aw.writer, &window, .gzip, .default) catch return 2;
+    (&compressor.writer).writeAll(d) catch return 2;
     compressor.finish() catch return 2;
 
-    const slice = out_list.toOwnedSlice() catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -714,20 +912,13 @@ pub export fn sa_node_plugin_zlib_gzip(data: ?[*]const u8, len: u64, out_ptr: ?*
 
 pub export fn sa_node_plugin_zlib_gunzip(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var in_stream = std.io.fixedBufferStream(d);
-    var decompressor = std.compress.gzip.decompressor(in_stream.reader());
-
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var temp_buf: [1024]u8 = undefined;
-    while (true) {
-        const bytes_read = decompressor.read(&temp_buf) catch return 2;
-        if (bytes_read == 0) break;
-        out_list.appendSlice(temp_buf[0..bytes_read]) catch return 2;
-    }
-
-    const slice = out_list.toOwnedSlice() catch return 2;
+    var in_reader = std.Io.Reader.fixed(d);
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var decompressor = std.compress.flate.Decompress.init(&in_reader, .gzip, &window);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    defer aw.deinit();
+    _ = decompressor.reader.streamRemaining(&aw.writer) catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -766,7 +957,7 @@ pub export fn sa_node_plugin_process_getgid(out_gid: ?*u32) u32 {
 pub export fn sa_node_plugin_process_env_get(key_ptr: ?[*]const u8, key_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     if (key_ptr == null or key_len == 0) return 2;
     const key = key_ptr.?[0..key_len];
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
 
     const value = getenv(key_z.ptr) orelse return 1; // 1 means null/not found
@@ -782,9 +973,9 @@ pub export fn sa_node_plugin_process_env_set(key_ptr: ?[*]const u8, key_len: u64
     const key = key_ptr.?[0..key_len];
     const value = if (val_ptr) |p| p[0..val_len] else &[_]u8{};
 
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
-    const val_z = std.heap.page_allocator.dupeZ(u8, value) catch return 2;
+    const val_z = std.heap.page_allocator.dupeSentinel(u8, value, 0) catch return 2;
     defer std.heap.page_allocator.free(val_z);
 
     if (setenv(key_z.ptr, val_z.ptr, 1) != 0) return 2;
@@ -794,7 +985,7 @@ pub export fn sa_node_plugin_process_env_set(key_ptr: ?[*]const u8, key_len: u64
 pub export fn sa_node_plugin_process_env_delete(key_ptr: ?[*]const u8, key_len: u64) u32 {
     if (key_ptr == null or key_len == 0) return 2;
     const key = key_ptr.?[0..key_len];
-    const key_z = std.heap.page_allocator.dupeZ(u8, key) catch return 2;
+    const key_z = std.heap.page_allocator.dupeSentinel(u8, key, 0) catch return 2;
     defer std.heap.page_allocator.free(key_z);
 
     if (unsetenv(key_z.ptr) != 0) return 2;
@@ -827,7 +1018,7 @@ pub export fn sa_node_plugin_querystring_escape(data: ?[*]const u8, len: u64, ou
         return 0;
     }
     const d = data.?[0..len];
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out_list.deinit();
 
     const hex_chars = "0123456789ABCDEF";
@@ -855,7 +1046,7 @@ pub export fn sa_node_plugin_querystring_unescape(data: ?[*]const u8, len: u64, 
         return 0;
     }
     const d = data.?[0..len];
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out_list.deinit();
 
     var i: usize = 0;
@@ -898,7 +1089,7 @@ pub export fn sa_node_plugin_querystring_parse(data: ?[*]const u8, len: u64, out
         return 0;
     }
     const d = data.?[0..len];
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.append('{') catch return 2;
@@ -961,7 +1152,7 @@ pub export fn sa_node_plugin_querystring_stringify(json_ptr: ?[*]const u8, json_
     const parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, js, .{}) catch return 2;
     defer parsed.deinit();
 
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out_list = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out_list.deinit();
 
     switch (parsed.value) {
@@ -1089,25 +1280,25 @@ pub export fn sa_node_plugin_url_parse(data: ?[*]const u8, len: u64, out_ptr: ?*
         }
     }
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.appendSlice("{\"protocol\":") catch return 2;
-    std.json.stringify(protocol, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, protocol) catch return 2;
     json.appendSlice(",\"auth\":") catch return 2;
-    std.json.stringify(auth, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, auth) catch return 2;
     json.appendSlice(",\"host\":") catch return 2;
-    std.json.stringify(host, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, host) catch return 2;
     json.appendSlice(",\"hostname\":") catch return 2;
-    std.json.stringify(hostname, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, hostname) catch return 2;
     json.appendSlice(",\"port\":") catch return 2;
-    std.json.stringify(port, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, port) catch return 2;
     json.appendSlice(",\"pathname\":") catch return 2;
-    std.json.stringify(pathname, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, pathname) catch return 2;
     json.appendSlice(",\"search\":") catch return 2;
-    std.json.stringify(search, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, search) catch return 2;
     json.appendSlice(",\"hash\":") catch return 2;
-    std.json.stringify(hash, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, hash) catch return 2;
     json.append('}') catch return 2;
 
     const slice = json.toOwnedSlice() catch return 2;
@@ -1127,7 +1318,7 @@ pub export fn sa_node_plugin_url_format(json_ptr: ?[*]const u8, json_len: u64, o
     const parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, js, .{}) catch return 2;
     defer parsed.deinit();
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
     switch (parsed.value) {
@@ -1206,7 +1397,7 @@ pub export fn sa_node_plugin_url_resolve(from_ptr: ?[*]const u8, from_len: u64, 
     const host = obj.get("host").?.string;
     const pathname = obj.get("pathname").?.string;
 
-    var new_path = std.ArrayList(u8).init(std.heap.page_allocator);
+    var new_path = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer new_path.deinit();
 
     if (to.len > 0 and to[0] == '/') {
@@ -1224,7 +1415,7 @@ pub export fn sa_node_plugin_url_resolve(from_ptr: ?[*]const u8, from_len: u64, 
     const resolved_path = std.fs.path.resolve(std.heap.page_allocator, &.{new_path.items}) catch return 2;
     defer std.heap.page_allocator.free(resolved_path);
 
-    var res = std.ArrayList(u8).init(std.heap.page_allocator);
+    var res = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer res.deinit();
 
     if (protocol.len > 0) res.appendSlice(protocol) catch return 2;
@@ -1256,7 +1447,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
         else => &[_]std.json.Value{},
     };
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
     var arg_idx: usize = 0;
@@ -1277,7 +1468,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
                 if (spec == 's') {
                     switch (val) {
                         .string => |s| out.appendSlice(s) catch return 2,
-                        else => std.json.stringify(val, .{}, out.writer()) catch return 2,
+                        else => stringifyIntoList(&out, val) catch return 2,
                     }
                 } else if (spec == 'd') {
                     var num_buf: [64]u8 = undefined;
@@ -1288,7 +1479,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
                     };
                     out.appendSlice(num_str) catch return 2;
                 } else if (spec == 'j') {
-                    std.json.stringify(val, .{}, out.writer()) catch return 2;
+                    stringifyIntoList(&out, val) catch return 2;
                 } else {
                     out.append('%') catch return 2;
                     out.append(spec) catch return 2;
@@ -1306,7 +1497,7 @@ pub export fn sa_node_plugin_util_format(format_ptr: ?[*]const u8, format_len: u
 
     while (arg_idx < args.len) : (arg_idx += 1) {
         if (out.items.len > 0) out.append(' ') catch return 2;
-        std.json.stringify(args[arg_idx], .{}, out.writer()) catch return 2;
+        stringifyIntoList(&out, args[arg_idx]) catch return 2;
     }
 
     const slice = out.toOwnedSlice() catch return 2;
@@ -1333,10 +1524,10 @@ pub export fn sa_node_plugin_util_inspect(json_ptr: ?[*]const u8, json_len: u64,
     const parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, js, .{}) catch return 2;
     defer parsed.deinit();
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
-    std.json.stringify(parsed.value, .{ .whitespace = .indent_2 }, out.writer()) catch return 2;
+    stringifyIntoListOpts(&out, parsed.value, .{ .whitespace = .indent_2 }) catch return 2;
 
     const slice = out.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
@@ -1376,7 +1567,7 @@ pub export fn sa_node_plugin_punycode_encode(data: ?[*]const u8, len: u64, out_p
     }
     const input = data.?[0..len];
 
-    var code_points = std.ArrayList(u32).init(std.heap.page_allocator);
+    var code_points = std.array_list.Managed(u32).init(std.heap.page_allocator);
     defer code_points.deinit();
 
     var utf8_view = std.unicode.Utf8View.init(input) catch return 2;
@@ -1385,7 +1576,7 @@ pub export fn sa_node_plugin_punycode_encode(data: ?[*]const u8, len: u64, out_p
         code_points.append(cp) catch return 2;
     }
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
     for (code_points.items) |cp| {
@@ -1455,7 +1646,7 @@ pub export fn sa_node_plugin_punycode_decode(data: ?[*]const u8, len: u64, out_p
     }
     const input = data.?[0..len];
 
-    var out_points = std.ArrayList(u32).init(std.heap.page_allocator);
+    var out_points = std.array_list.Managed(u32).init(std.heap.page_allocator);
     defer out_points.deinit();
 
     var basic_len: usize = 0;
@@ -1498,7 +1689,7 @@ pub export fn sa_node_plugin_punycode_decode(data: ?[*]const u8, len: u64, out_p
         i += 1;
     }
 
-    var out_bytes = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out_bytes = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out_bytes.deinit();
 
     for (out_points.items) |cp| {
@@ -1540,9 +1731,9 @@ pub export fn sa_node_plugin_os_version(out_ptr: ?*?[*]const u8, out_len: ?*u64)
 }
 
 fn computeRelative(allocator: std.mem.Allocator, from: []const u8, to: []const u8) ![]const u8 {
-    var from_parts = std.ArrayList([]const u8).init(allocator);
+    var from_parts = std.array_list.Managed([]const u8).init(allocator);
     defer from_parts.deinit();
-    var to_parts = std.ArrayList([]const u8).init(allocator);
+    var to_parts = std.array_list.Managed([]const u8).init(allocator);
     defer to_parts.deinit();
 
     var from_it = std.mem.tokenizeScalar(u8, from, '/');
@@ -1561,7 +1752,7 @@ fn computeRelative(allocator: std.mem.Allocator, from: []const u8, to: []const u
         }
     }
 
-    var result = std.ArrayList(u8).init(allocator);
+    var result = std.array_list.Managed(u8).init(allocator);
     errdefer result.deinit();
 
     const ups = from_parts.items.len - common_idx;
@@ -1613,7 +1804,7 @@ pub export fn sa_node_plugin_path_format(json_ptr: ?[*]const u8, json_len: u64, 
     };
     defer parsed.deinit();
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
     switch (parsed.value) {
@@ -1660,19 +1851,19 @@ pub export fn sa_node_plugin_path_parse(path_ptr: ?[*]const u8, len: u64, out_pt
     const ext = std.fs.path.extension(path);
     const name = if (ext.len > 0 and std.mem.endsWith(u8, base, ext)) base[0 .. base.len - ext.len] else base;
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.appendSlice("{\"root\":") catch return 2;
-    std.json.stringify(root, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, root) catch return 2;
     json.appendSlice(",\"dir\":") catch return 2;
-    std.json.stringify(dir, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, dir) catch return 2;
     json.appendSlice(",\"base\":") catch return 2;
-    std.json.stringify(base, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, base) catch return 2;
     json.appendSlice(",\"ext\":") catch return 2;
-    std.json.stringify(ext, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, ext) catch return 2;
     json.appendSlice(",\"name\":") catch return 2;
-    std.json.stringify(name, .{}, json.writer()) catch return 2;
+    stringifyIntoList(&json, name) catch return 2;
     json.append('}') catch return 2;
 
     const slice = json.toOwnedSlice() catch return 2;
@@ -1736,7 +1927,7 @@ pub export fn sa_node_plugin_util_is_deep_strict_equal(a_json: ?[*]const u8, a_l
 
 pub export fn sa_node_plugin_util_strip_vt_control_characters(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = if (data) |p| p[0..len] else &[_]u8{};
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer out.deinit();
 
     var i: usize = 0;
@@ -1768,29 +1959,24 @@ pub export fn sa_node_plugin_util_strip_vt_control_characters(data: ?[*]const u8
 
 pub export fn sa_node_plugin_crypto_random_uuid(out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     var bytes: [16]u8 = undefined;
-    std.crypto.random.bytes(&bytes);
+    sio.io().random(&bytes);
 
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
     var buf: [36]u8 = undefined;
-    _ = std.fmt.bufPrint(&buf, "{s:0>2}{s:0>2}{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}-{s:0>2}{s:0>2}{s:0>2}{s:0>2}{s:0>2}{s:0>2}", .{
-        std.fmt.fmtSliceHexLower(bytes[0..1]),
-        std.fmt.fmtSliceHexLower(bytes[1..2]),
-        std.fmt.fmtSliceHexLower(bytes[2..3]),
-        std.fmt.fmtSliceHexLower(bytes[3..4]),
-        std.fmt.fmtSliceHexLower(bytes[4..5]),
-        std.fmt.fmtSliceHexLower(bytes[5..6]),
-        std.fmt.fmtSliceHexLower(bytes[6..7]),
-        std.fmt.fmtSliceHexLower(bytes[7..8]),
-        std.fmt.fmtSliceHexLower(bytes[8..9]),
-        std.fmt.fmtSliceHexLower(bytes[9..10]),
-        std.fmt.fmtSliceHexLower(bytes[10..11]),
-        std.fmt.fmtSliceHexLower(bytes[11..12]),
-        std.fmt.fmtSliceHexLower(bytes[12..13]),
-        std.fmt.fmtSliceHexLower(bytes[13..14]),
-        std.fmt.fmtSliceHexLower(bytes[14..15]),
-        std.fmt.fmtSliceHexLower(bytes[15..16]),
+    const hex_digits = "0123456789abcdef";
+    var hex_tmp: [32]u8 = undefined;
+    for (bytes, 0..) |b, i| {
+        hex_tmp[i * 2] = hex_digits[b >> 4];
+        hex_tmp[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    _ = std.fmt.bufPrint(&buf, "{s}-{s}-{s}-{s}-{s}", .{
+        hex_tmp[0..8],
+        hex_tmp[8..12],
+        hex_tmp[12..16],
+        hex_tmp[16..20],
+        hex_tmp[20..32],
     }) catch return 2;
 
     const owned = std.heap.page_allocator.dupe(u8, &buf) catch return 2;
@@ -1835,7 +2021,12 @@ pub export fn sa_node_plugin_crypto_hmac(algo: ?[*]const u8, algo_len: u64, key:
     }
 
     var hex_buf: [64]u8 = undefined;
-    const hex = std.fmt.bufPrint(&hex_buf, "{s}", .{std.fmt.fmtSliceHexLower(&mac_buf)}) catch return 2;
+    const hex_digits = "0123456789abcdef";
+    for (mac_buf[0..], 0..) |b, i| {
+        hex_buf[i * 2] = hex_digits[b >> 4];
+        hex_buf[i * 2 + 1] = hex_digits[b & 0xF];
+    }
+    const hex = hex_buf[0..];
     const owned = std.heap.page_allocator.dupe(u8, hex) catch return 2;
     out_ptr.?.* = owned.ptr;
     out_len.?.* = owned.len;
@@ -1844,14 +2035,14 @@ pub export fn sa_node_plugin_crypto_hmac(algo: ?[*]const u8, algo_len: u64, key:
 
 pub export fn sa_node_plugin_zlib_deflate(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var compressor = std.compress.zlib.compressor(out_list.writer(), .{}) catch return 2;
-    compressor.writer().writeAll(d) catch return 2;
+    var aw: std.Io.Writer.Allocating = std.Io.Writer.Allocating.initCapacity(std.heap.page_allocator, 64) catch return 2;
+    defer aw.deinit();
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var compressor = std.compress.flate.Compress.init(&aw.writer, &window, .zlib, .default) catch return 2;
+    (&compressor.writer).writeAll(d) catch return 2;
     compressor.finish() catch return 2;
 
-    const slice = out_list.toOwnedSlice() catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -1859,20 +2050,13 @@ pub export fn sa_node_plugin_zlib_deflate(data: ?[*]const u8, len: u64, out_ptr:
 
 pub export fn sa_node_plugin_zlib_inflate(data: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const d = data.?[0..len];
-    var in_stream = std.io.fixedBufferStream(d);
-    var decompressor = std.compress.zlib.decompressor(in_stream.reader());
-
-    var out_list = std.ArrayList(u8).init(std.heap.page_allocator);
-    errdefer out_list.deinit();
-
-    var temp_buf: [1024]u8 = undefined;
-    while (true) {
-        const bytes_read = decompressor.read(&temp_buf) catch return 2;
-        if (bytes_read == 0) break;
-        out_list.appendSlice(temp_buf[0..bytes_read]) catch return 2;
-    }
-
-    const slice = out_list.toOwnedSlice() catch return 2;
+    var in_reader = std.Io.Reader.fixed(d);
+    var window: [std.compress.flate.max_window_len]u8 = undefined;
+    var decompressor = std.compress.flate.Decompress.init(&in_reader, .zlib, &window);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.page_allocator);
+    defer aw.deinit();
+    _ = decompressor.reader.streamRemaining(&aw.writer) catch return 2;
+    const slice = aw.toOwnedSlice() catch return 2;
     out_ptr.?.* = slice.ptr;
     out_len.?.* = slice.len;
     return 0;
@@ -1921,20 +2105,20 @@ pub export fn sa_node_plugin_buffer_concat(buffers_argv: ?*const anyopaque, buff
 pub const EventEntry = struct {
     name: []const u8,
     listeners: u64,
-    callbacks: std.ArrayList(?*anyopaque),
-    once: std.ArrayList(bool),
+    callbacks: std.array_list.Managed(?*anyopaque),
+    once: std.array_list.Managed(bool),
 };
 
 pub const EventEmitter = struct {
     allocator: std.mem.Allocator,
-    events: std.ArrayList(EventEntry),
+    events: std.array_list.Managed(EventEntry),
     max_listeners: u32,
 
     fn init(allocator: std.mem.Allocator) !*EventEmitter {
         const self = try allocator.create(EventEmitter);
         self.* = .{
             .allocator = allocator,
-            .events = std.ArrayList(EventEntry).init(allocator),
+            .events = std.array_list.Managed(EventEntry).init(allocator),
             .max_listeners = 10,
         };
         return self;
@@ -1966,9 +2150,9 @@ pub const EventEmitter = struct {
         }
 
         const duped = try self.allocator.dupe(u8, name);
-        var callbacks = std.ArrayList(?*anyopaque).init(self.allocator);
+        var callbacks = std.array_list.Managed(?*anyopaque).init(self.allocator);
         errdefer callbacks.deinit();
-        var once_list = std.ArrayList(bool).init(self.allocator);
+        var once_list = std.array_list.Managed(bool).init(self.allocator);
         errdefer once_list.deinit();
         try callbacks.append(callback);
         try once_list.append(once);
@@ -2078,15 +2262,21 @@ pub export fn sa_node_plugin_readline_create() ?*anyopaque {
 pub export fn sa_node_plugin_readline_question(rl: ?*anyopaque, query: ?[*]const u8, query_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     _ = rl;
     const q = if (query) |p| p[0..query_len] else &[_]u8{};
-    std.io.getStdOut().writer().writeAll(q) catch return 2;
+    // NOTE(Zig 0.17): `--listen=-` uses stdout for build-server protocol; never write prompts to stdout.
+    sio.getStdErr().writeAll(q) catch return 2;
 
-    var buf = std.ArrayList(u8).init(std.heap.page_allocator);
+    var buf = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer buf.deinit();
 
-    const stdin = std.io.getStdIn().reader();
-    stdin.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| {
-        if (err == error.EndOfStream) {} else return 2;
-    };
+    var stdin_buf: [4096]u8 = undefined;
+    var stdin_r = sio.getStdIn().reader(&stdin_buf);
+    while (true) {
+        const byte = stdin_r.interface.takeByte() catch |err| {
+            if (err == error.EndOfStream) break else return 2;
+        };
+        if (byte == '\n') break;
+        buf.append(byte) catch return 2;
+    }
 
     if (buf.items.len > 0 and buf.items[buf.items.len - 1] == '\r') {
         _ = buf.pop();
@@ -2110,11 +2300,11 @@ pub export fn sa_node_plugin_readline_free(rl: ?*anyopaque) u32 {
 
 pub const BasicStreamHandle = struct {
     allocator: std.mem.Allocator,
-    data: std.ArrayList(u8),
+    data: std.array_list.Managed(u8),
 
     fn init(allocator: std.mem.Allocator) !*BasicStreamHandle {
         const handle = try allocator.create(BasicStreamHandle);
-        handle.* = .{ .allocator = allocator, .data = std.ArrayList(u8).init(allocator) };
+        handle.* = .{ .allocator = allocator, .data = std.array_list.Managed(u8).init(allocator) };
         return handle;
     }
 
@@ -2148,29 +2338,42 @@ pub export fn sa_node_plugin_stream_write(writable: ?*anyopaque, data: ?[*]const
 
 pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const host = hostname.?[0..len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.appendSlice("[") catch return 2;
 
-    if (std.net.Address.resolveIp(host_z, 0)) |list| {
-        switch (list.any.family) {
-            std.posix.AF.INET => {
-                const bytes = std.mem.asBytes(&list.in.sa.addr);
-                json.writer().print("\"{d}.{d}.{d}.{d}\"", .{ bytes[0], bytes[1], bytes[2], bytes[3] }) catch return 2;
+    if (NetAddr.parse(host, 0) catch null) |list| {
+        switch (list) {
+            .ip4 => |ip| {
+                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] }) catch return 2;
             },
-            std.posix.AF.INET6 => {
+            .ip6 => |ip| {
                 var buf: [64]u8 = undefined;
-                const ip_str = std.fmt.bufPrint(&buf, "{}", .{list}) catch return 2;
+                var out = std.Io.Writer.fixed(&buf);
+                ip.format(&out) catch return 2;
+                const ip_str = out.buffered();
                 const clean_ip = if (std.mem.lastIndexOfScalar(u8, ip_str, ']')) |end| ip_str[1..end] else ip_str;
                 json.appendSlice("\"") catch return 2;
                 json.appendSlice(clean_ip) catch return 2;
                 json.appendSlice("\"") catch return 2;
             },
-            else => return 2,
+        }
+    } else if (NetAddr.resolve(sio.io(), host, 0)) |list| {
+        switch (list) {
+            .ip4 => |ip| {
+                sio.managedWriter(&json).print("\"{d}.{d}.{d}.{d}\"", .{ ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3] }) catch return 2;
+            },
+            .ip6 => {
+                if (std.mem.eql(u8, host, "localhost")) {
+                    json.appendSlice("\"127.0.0.1\"") catch return 2;
+                } else {
+                    return 2;
+                }
+            },
         }
     } else |_| {
         if (std.mem.eql(u8, host, "localhost")) {
@@ -2190,22 +2393,25 @@ pub export fn sa_node_plugin_dns_lookup(hostname: ?[*]const u8, len: u64, out_pt
 
 pub export fn sa_node_plugin_dns_lookup_service(address_ptr: ?[*]const u8, len: u64, port: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const address_text = address_ptr.?[0..len];
-    const address = std.net.Address.resolveIp(address_text, @as(u16, @intCast(port))) catch return 2;
+    if (port > std.math.maxInt(u16)) return 2;
+    const address = NetAddr.parse(address_text, @as(u16, @intCast(port))) catch
+        NetAddr.resolve(sio.io(), address_text, @as(u16, @intCast(port))) catch return 2;
 
+    const sa = netAddrSockaddr(address);
     var host_buf: [1025]u8 = undefined;
     var serv_buf: [32]u8 = undefined;
     const rc = std.c.getnameinfo(
-        &address.any,
-        address.getOsSockLen(),
-        &host_buf,
-        host_buf.len,
-        &serv_buf,
-        serv_buf.len,
+        @ptrCast(&sa.storage),
+        sa.len,
+        @ptrCast(&host_buf),
+        @intCast(host_buf.len),
+        @ptrCast(&serv_buf),
+        @intCast(serv_buf.len),
         .{},
     );
     if (@intFromEnum(rc) != 0) return 2;
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer json.deinit();
     json.appendSlice("{\"hostname\":") catch return 2;
     appendJsonString(&json, std.mem.sliceTo(&host_buf, 0)) catch return 2;
@@ -2219,9 +2425,9 @@ pub export fn sa_node_plugin_dns_lookup_service(address_ptr: ?[*]const u8, len: 
     return 0;
 }
 
-pub export fn sa_node_plugin_dns_resolve(hostname: ?[*]const u8, len: u64, rrtype: ?[*]const u8, rrtype_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    return sa_node_plugin_dns_promises_resolve(hostname, len, rrtype, rrtype_len, out_ptr, out_len);
-}
+// NOTE(Zig 0.17): dns_resolve lives in node_saasm_api_ext.zig (resolver-based).
+// _node_api no longer defines it to avoid a cross-module extern that breaks
+// `zig build test` linking (undefined symbol sa_node_plugin_dns_promises_resolve).
 
 const BlockListFamily = enum { ipv4, ipv6 };
 const BlockListRuleKind = enum { address, range, subnet };
@@ -2262,11 +2468,11 @@ const BlockListRule = struct {
 const SaNetBlockList = struct {
     magic: u64 = net_blocklist_magic,
     allocator: std.mem.Allocator,
-    rules: std.ArrayList(BlockListRule),
+    rules: std.array_list.Managed(BlockListRule),
 
     fn init(allocator: std.mem.Allocator) !*SaNetBlockList {
         const handle = try allocator.create(SaNetBlockList);
-        handle.* = .{ .allocator = allocator, .rules = std.ArrayList(BlockListRule).init(allocator) };
+        handle.* = .{ .allocator = allocator, .rules = std.array_list.Managed(BlockListRule).init(allocator) };
         return handle;
     }
 
@@ -2288,15 +2494,15 @@ fn blockListFamilyLen(family: BlockListFamily) usize {
 
 fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8, address_len: u64) !BlockListAddress {
     const address = (address_ptr orelse return error.InvalidAddress)[0..address_len];
-    var bytes: [16]u8 = .{0} ** 16;
-    if (std.net.Address.parseIp4(address, 0)) |addr| {
-        @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+    var bytes: [16]u8 = @splat(@as(u8, 0));
+    if (NetAddr.parseIp4(address, 0)) |addr| {
+        @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
         const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv4, .bytes = bytes, .text = text };
     } else |_| {}
-    if (std.net.Address.parseIp6(address, 0)) |addr| {
-        @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+    if (NetAddr.parseIp6(address, 0)) |addr| {
+        @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
         const text = try dgramAddressToOwnedHost(allocator, addr);
         errdefer allocator.free(text);
         return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2305,18 +2511,18 @@ fn blockListParseAddress(allocator: std.mem.Allocator, address_ptr: ?[*]const u8
 }
 
 fn blockListParseAddressForFamily(allocator: std.mem.Allocator, address: []const u8, family: BlockListFamily) !BlockListAddress {
-    var bytes: [16]u8 = .{0} ** 16;
+    var bytes: [16]u8 = @splat(@as(u8, 0));
     switch (family) {
         .ipv4 => {
-            const addr = try std.net.Address.parseIp4(address, 0);
-            @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+            const addr = try NetAddr.parseIp4(address, 0);
+            @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         .ipv6 => {
-            const addr = try std.net.Address.parseIp6(address, 0);
-            @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+            const addr = try NetAddr.parseIp6(address, 0);
+            @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2481,17 +2687,17 @@ fn blockListAddressFromSocketAddress(addr: *const SaNetSocketAddress) BlockListA
     return .{ .family = addr.family, .bytes = addr.bytes, .text = addr.text };
 }
 
-fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: std.net.Address) !BlockListAddress {
-    var bytes: [16]u8 = .{0} ** 16;
-    switch (addr.any.family) {
+fn blockListAddressFromNetAddress(allocator: std.mem.Allocator, addr: NetAddr) !BlockListAddress {
+    var bytes: [16]u8 = @splat(@as(u8, 0));
+    switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => {
-            @memcpy(bytes[0..4], std.mem.asBytes(&addr.in.sa.addr));
+            @memcpy(bytes[0..4], std.mem.asBytes(&addr.ip4.bytes));
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv4, .bytes = bytes, .text = text };
         },
         std.posix.AF.INET6 => {
-            @memcpy(bytes[0..16], addr.in6.sa.addr[0..16]);
+            @memcpy(bytes[0..16], addr.ip6.bytes[0..16]);
             const text = try dgramAddressToOwnedHost(allocator, addr);
             errdefer allocator.free(text);
             return .{ .family = .ipv6, .bytes = bytes, .text = text };
@@ -2571,13 +2777,13 @@ test "node plugin blocklist matches copied rules against ipv4-mapped ipv6 runtim
     try std.testing.expect(blockListMatchesRulesIncludingMappedIpv4(rule_slice[2..3], runtime_address));
 }
 
-fn blockListFreeRuleList(allocator: std.mem.Allocator, rules: *std.ArrayList(BlockListRule)) void {
+fn blockListFreeRuleList(allocator: std.mem.Allocator, rules: *std.array_list.Managed(BlockListRule)) void {
     for (rules.items) |rule| allocator.free(rule.text);
     rules.clearRetainingCapacity();
 }
 
-fn blockListCopyRules(allocator: std.mem.Allocator, source: *const SaNetBlockList, dest: *std.ArrayList(BlockListRule)) !void {
-    var next = std.ArrayList(BlockListRule).init(allocator);
+fn blockListCopyRules(allocator: std.mem.Allocator, source: *const SaNetBlockList, dest: *std.array_list.Managed(BlockListRule)) !void {
+    var next = std.array_list.Managed(BlockListRule).init(allocator);
     errdefer {
         for (next.items) |rule| allocator.free(rule.text);
         next.deinit();
@@ -2700,13 +2906,13 @@ pub export fn sa_node_plugin_net_socket_address_json(addr_ptr: ?*anyopaque, out_
     const addr = socketAddressHandle(addr_ptr) orelse return 2;
     const out_slot = out_ptr orelse return 2;
     const len_slot = out_len orelse return 2;
-    var out = std.ArrayList(u8).init(addr.allocator);
+    var out = std.array_list.Managed(u8).init(addr.allocator);
     defer out.deinit();
     out.appendSlice("{\"address\":") catch return 2;
     appendJsonString(&out, addr.text) catch return 2;
-    out.writer().print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
+    sio.managedWriter(&out).print(",\"port\":{d},\"family\":", .{addr.port}) catch return 2;
     appendJsonString(&out, if (addr.family == .ipv4) "ipv4" else "ipv6") catch return 2;
-    out.writer().print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
+    sio.managedWriter(&out).print(",\"flowlabel\":{d}}}", .{addr.flowlabel}) catch return 2;
     const owned = out.toOwnedSlice() catch return 2;
     out_slot.* = owned.ptr;
     len_slot.* = owned.len;
@@ -2935,7 +3141,7 @@ pub export fn sa_node_plugin_net_blocklist_rules(blocklist_ptr: ?*anyopaque, out
     const handle = blockListHandle(blocklist_ptr) orelse return 2;
     const out_slot = out_ptr orelse return 2;
     const len_slot = out_len orelse return 2;
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.append('[') catch return 2;
     for (handle.rules.items, 0..) |rule, i| {
@@ -2952,8 +3158,8 @@ pub export fn sa_node_plugin_net_blocklist_rules(blocklist_ptr: ?*anyopaque, out
 pub const SaNetObject = struct {
     is_server: bool,
     allocator: std.mem.Allocator,
-    stream: ?std.net.Stream,
-    server: ?std.net.Server,
+    stream: ?std.Io.net.Stream,
+    server: ?std.Io.net.Server,
     bytes_read: u64 = 0,
     bytes_written: u64 = 0,
     readable: bool = true,
@@ -2966,8 +3172,8 @@ pub const SaNetObject = struct {
     max_connections: u64 = 0,
     max_connections_set: bool = false,
     has_ref: bool = true,
-    block_list: std.ArrayList(BlockListRule),
-    auto_select_family_attempted_addresses: std.ArrayList([]u8),
+    block_list: std.array_list.Managed(BlockListRule),
+    auto_select_family_attempted_addresses: std.array_list.Managed([]u8),
     unix_path: ?[]u8 = null,
 
     fn markSocketClosed(self: *SaNetObject) void {
@@ -2994,7 +3200,7 @@ pub const SaNetObject = struct {
             self.closeServerHandle();
         } else {
             if (self.stream) |str| {
-                str.close();
+                str.close(sio.io());
             }
         }
         self.allocator.destroy(self);
@@ -3003,7 +3209,7 @@ pub const SaNetObject = struct {
     fn closeServerHandle(self: *SaNetObject) void {
         if (self.server) |*srv| {
             var s = srv.*;
-            s.deinit();
+            s.deinit(sio.io());
             self.server = null;
         }
         if (self.unix_path) |path| {
@@ -3017,27 +3223,27 @@ pub const SaNetObject = struct {
 fn netUnlinkUnixSocketPath(path: []const u8) void {
     if (path.len == 0 or path[0] == 0) return;
     if (std.fs.path.isAbsolute(path)) {
-        std.fs.deleteFileAbsolute(path) catch {};
+        std.Io.Dir.deleteFileAbsolute(sio.io(), path) catch {};
     } else {
-        std.fs.cwd().deleteFile(path) catch {};
+        sio.cwd().deleteFile(path) catch {};
     }
 }
 
-fn netAddressToAttemptString(addr: std.net.Address) ![]u8 {
+fn netAddressToAttemptString(addr: NetAddr) ![]u8 {
     const allocator = std.heap.page_allocator;
     const host = try dgramAddressToOwnedHost(allocator, addr);
     defer allocator.free(host);
     return try std.fmt.allocPrint(allocator, "{s}:{d}", .{ host, addr.getPort() });
 }
 
-fn netAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: std.net.Address) bool {
+fn netAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: NetAddr) bool {
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
     return blockListMatchesRulesIncludingMappedIpv4(rules, block_address);
 }
 
-fn netSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {
+fn netSetBlockList(dest: *std.array_list.Managed(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {
     if (blocklist_ptr == null) {
         blockListFreeRuleList(allocator, dest);
         return 0;
@@ -3047,26 +3253,29 @@ fn netSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaq
     return 0;
 }
 
-fn appendAddressJson(out: *std.ArrayList(u8), addr: std.net.Address) !void {
+fn appendAddressJson(out: *std.array_list.Managed(u8), addr: NetAddr) !void {
     const host = try dgramAddressToOwnedHost(std.heap.page_allocator, addr);
     defer std.heap.page_allocator.free(host);
-    const family = switch (addr.any.family) {
+    const family = switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => "IPv4",
         std.posix.AF.INET6 => "IPv6",
         else => "unknown",
     };
-    try out.writer().print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
+    try sio.managedWriter(out).print("{{\"address\":\"{s}\",\"port\":{d},\"family\":\"{s}\"}}", .{ host, addr.getPort(), family });
 }
 
 fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
-    var addr: std.net.Address = undefined;
+    var storage: std.posix.sockaddr.storage = undefined;
     var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
     if (peer) {
-        std.posix.getpeername(fd, &addr.any, &addr_len) catch return 2;
+        const rc = std.os.linux.getpeername(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return 2;
     } else {
-        std.posix.getsockname(fd, &addr.any, &addr_len) catch return 2;
+        const rc = std.os.linux.getsockname(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return 2;
     }
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    const addr = netSockaddrToAddr(&storage) catch return 2;
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     appendAddressJson(&out, addr) catch return 2;
     const owned = out.toOwnedSlice() catch return 2;
@@ -3075,25 +3284,27 @@ fn writeSocketAddressJson(fd: std.posix.socket_t, peer: bool, out_ptr: ?*?[*]con
     return 0;
 }
 
-fn getSocketAddress(fd: std.posix.socket_t, peer: bool) !std.net.Address {
-    var addr: std.net.Address = undefined;
+fn getSocketAddress(fd: std.posix.socket_t, peer: bool) !NetAddr {
+    var storage: std.posix.sockaddr.storage = undefined;
     var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
     if (peer) {
-        try std.posix.getpeername(fd, &addr.any, &addr_len);
+        const rc = std.os.linux.getpeername(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return error.SocketNotBound;
     } else {
-        try std.posix.getsockname(fd, &addr.any, &addr_len);
+        const rc = std.os.linux.getsockname(fd, @ptrCast(&storage), &addr_len);
+        if (rc != 0) return error.SocketNotBound;
     }
-    return addr;
+    return netSockaddrToAddr(&storage);
 }
 
 fn writeSocketAddressProperty(socket_ptr: ?*anyopaque, peer: bool, property: enum { address, family }, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server) return 2;
     const stream = obj.stream orelse return 2;
-    const addr = getSocketAddress(stream.handle, peer) catch return 2;
+    const addr = getSocketAddress(stream.socket.handle, peer) catch return 2;
     const value = switch (property) {
         .address => dgramAddressToOwnedHost(std.heap.page_allocator, addr) catch return 2,
-        .family => std.heap.page_allocator.dupe(u8, switch (addr.any.family) {
+        .family => std.heap.page_allocator.dupe(u8, switch ((netAddrFamily(addr))) {
             std.posix.AF.INET => "IPv4",
             std.posix.AF.INET6 => "IPv6",
             else => "unknown",
@@ -3108,12 +3319,12 @@ fn writeSocketAddressPort(socket_ptr: ?*anyopaque, peer: bool, out_port: ?*u64) 
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server) return 2;
     const stream = obj.stream orelse return 2;
-    const addr = getSocketAddress(stream.handle, peer) catch return 2;
+    const addr = getSocketAddress(stream.socket.handle, peer) catch return 2;
     out_port.?.* = addr.getPort();
     return 0;
 }
 
-fn netInitSocketObject(stream: std.net.Stream, timeout_ms: u64, attempted_address: ?std.net.Address, out: *?*anyopaque) u32 {
+fn netInitSocketObject(stream: std.Io.net.Stream, timeout_ms: u64, attempted_address: ?NetAddr, out: *?*anyopaque) u32 {
     const socket = std.heap.page_allocator.create(SaNetObject) catch return 2;
     socket.* = .{
         .is_server = false,
@@ -3123,8 +3334,8 @@ fn netInitSocketObject(stream: std.net.Stream, timeout_ms: u64, attempted_addres
         .bytes_read = 0,
         .bytes_written = 0,
         .timeout_ms = timeout_ms,
-        .block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
-        .auto_select_family_attempted_addresses = std.ArrayList([]u8).init(std.heap.page_allocator),
+        .block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
+        .auto_select_family_attempted_addresses = std.array_list.Managed([]u8).init(std.heap.page_allocator),
     };
     if (attempted_address) |addr| {
         const attempt = netAddressToAttemptString(addr) catch {
@@ -3141,79 +3352,79 @@ fn netInitSocketObject(stream: std.net.Stream, timeout_ms: u64, attempted_addres
     return 0;
 }
 
-fn netParseRemoteAddress(host: []const u8, port: u64, family: u32) !std.net.Address {
+fn netParseRemoteAddress(host: []const u8, port: u64, family: u32) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
     const port16: u16 = @intCast(port);
     if (family == 4) {
-        if (std.net.Address.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp4(host, port16)) |addr| return addr else |_| {}
+        if (std.ascii.eqlIgnoreCase(host, "localhost")) return NetAddr{ .ip4 = .{ .bytes = [_]u8{ 127, 0, 0, 1 }, .port = port16 } };
     } else if (family == 6) {
-        if (std.net.Address.parseIp6(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parseIp6(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.resolveIp6(sio.io(), host, port16)) |addr| return addr else |_| {}
     } else if (family == 0) {
-        if (std.net.Address.parseIp(host, port16)) |addr| return addr else |_| {}
+        if (NetAddr.parse(host, port16)) |addr| return addr else |_| {}
     } else {
         return error.InvalidAddressFamily;
     }
 
-    const list = try std.net.getAddressList(std.heap.page_allocator, host, port16);
-    defer list.deinit();
-    for (list.addrs) |addr| {
-        if (family == 4 and addr.any.family != std.posix.AF.INET) continue;
-        if (family == 6 and addr.any.family != std.posix.AF.INET6) continue;
-        return addr;
-    }
-    return error.HostLacksNetworkAddresses;
+    const addr = NetAddr.resolve(sio.io(), host, port16) catch return error.HostLacksNetworkAddresses;
+    if (family == 4 and addr != .ip4) return error.HostLacksNetworkAddresses;
+    if (family == 6 and addr != .ip6) return error.HostLacksNetworkAddresses;
+    return addr;
 }
 
-fn netResolveIpLiteral(host: []const u8, port: u64) !std.net.Address {
+fn netResolveIpLiteral(host: []const u8, port: u64) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
-    return std.net.Address.parseIp(host, @intCast(port));
+    return NetAddr.parse(host, @intCast(port));
 }
 
-fn netResolveAddress(host: []const u8, port: u64) !std.net.Address {
+fn netResolveAddress(host: []const u8, port: u64) !NetAddr {
     if (netResolveIpLiteral(host, port)) |addr| return addr else |_| {}
     return netParseRemoteAddress(host, port, 0);
 }
 
-fn netParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?std.net.Address {
+fn netParseLocalAddress(local_ptr: ?[*]const u8, local_len: u64, local_port: u64, family: std.posix.sa_family_t) !?NetAddr {
     if (local_port > std.math.maxInt(u16)) return error.PortOutOfRange;
     if ((local_ptr == null or local_len == 0) and local_port == 0) return null;
     const port16: u16 = @intCast(local_port);
     if (family == std.posix.AF.INET6) {
-        if (local_ptr == null or local_len == 0) return std.net.Address.initIp6(.{0} ** 16, port16, 0, 0);
-        return try std.net.Address.parseIp6(local_ptr.?[0..local_len], port16);
+        if (local_ptr == null or local_len == 0) return NetAddr{ .ip6 = .{  .bytes = @splat(@as(u8, 0)), .port = port16 } };
+        return try NetAddr.parseIp6(local_ptr.?[0..local_len], port16);
     }
-    if (local_ptr == null or local_len == 0) return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, port16);
-    return try std.net.Address.parseIp4(local_ptr.?[0..local_len], port16);
+    if (local_ptr == null or local_len == 0) return NetAddr{ .ip4 = .{ .bytes = [_]u8{ 0, 0, 0, 0 }, .port = port16 } };
+    return try NetAddr.parseIp4(local_ptr.?[0..local_len], port16);
 }
 
-fn netConnectAddressWithOptions(address: std.net.Address, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.net.Stream {
+fn netConnectAddressWithOptions(address: NetAddr, local_ptr: ?[*]const u8, local_len: u64, local_port: u64, no_delay: u32, keep_alive: u32, keep_alive_initial_delay_secs: u32, timeout_ms: u64) !std.Io.net.Stream {
     const sock_flags = std.posix.SOCK.STREAM | std.posix.SOCK.CLOEXEC;
-    const sockfd = try std.posix.socket(address.any.family, sock_flags, std.posix.IPPROTO.TCP);
-    errdefer std.net.Stream.close(.{ .handle = sockfd });
+    const sockfd = try netSocket(netAddrFamily(address), sock_flags, std.posix.IPPROTO.TCP);
+    errdefer netCloseFd(sockfd);
 
-    if (try netParseLocalAddress(local_ptr, local_len, local_port, address.any.family)) |local_address| {
-        try std.posix.bind(sockfd, &local_address.any, local_address.getOsSockLen());
+    if (try netParseLocalAddress(local_ptr, local_len, local_port, netAddrFamily(address))) |local_address| {
+        const local_sa = netAddrSockaddr(local_address);
+        try netBindSocket(sockfd, &local_sa.storage, local_sa.len);
     }
 
-    try std.posix.connect(sockfd, &address.any, address.getOsSockLen());
-    const stream = std.net.Stream{ .handle = sockfd };
+    const remote_sa = netAddrSockaddr(address);
+    try netConnectSocket(sockfd, &remote_sa.storage, remote_sa.len);
+    const stream = std.Io.net.Stream{ .socket = .{ .handle = sockfd, .address = address } };
 
     if (no_delay != 0) {
         const value: c_int = 1;
-        if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
     }
     if (keep_alive != 0) {
         const value: c_int = 1;
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return error.SetSockOptError;
         if (keep_alive_initial_delay_secs > 0) {
             const delay: c_int = @intCast(keep_alive_initial_delay_secs);
-            if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return error.SetSockOptError;
+            if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return error.SetSockOptError;
         }
     }
     if (timeout_ms != 0) {
         const tv = timevalFromMs(timeout_ms);
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
-        if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return error.SetSockOptError;
     }
     return stream;
 }
@@ -3222,7 +3433,7 @@ fn netConnectWithOptionalBlockList(host_ptr: ?[*]const u8, host_len: u64, port: 
     const out = out_socket orelse return 2;
     out.* = null;
     const host = host_ptr.?[0..host_len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
     const address = netResolveAddress(host_z, port) catch return 2;
@@ -3232,8 +3443,8 @@ fn netConnectWithOptionalBlockList(host_ptr: ?[*]const u8, host_len: u64, port: 
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
 
-    const stream = std.net.tcpConnectToAddress(address) catch return 2;
-    errdefer stream.close();
+    const stream = address.connect(sio.io(), .{ .mode = .stream }) catch return 2;
+    errdefer stream.close(sio.io());
     return netInitSocketObject(stream, 0, address, out);
 }
 
@@ -3255,13 +3466,14 @@ pub export fn sa_node_plugin_net_connect_options(host_ptr: ?[*]const u8, host_le
         if (netAddressBlocked(blocklist.allocator, blocklist.rules.items, address)) return 3;
     }
     const stream = netConnectAddressWithOptions(address, local_ptr, local_len, local_port, no_delay, keep_alive, keep_alive_initial_delay_secs, timeout_ms) catch return 2;
-    errdefer stream.close();
+    errdefer stream.close(sio.io());
     return netInitSocketObject(stream, timeout_ms, address, out);
 }
 
 pub export fn sa_node_plugin_net_connect_unix(path_ptr: ?[*]const u8, path_len: u64, out_socket: ?*?*anyopaque) u32 {
     const path = path_ptr.?[0..path_len];
-    const stream = std.net.connectUnixSocket(path) catch return 2;
+    const ua = std.Io.net.UnixAddress.init(path) catch return 2;
+    const stream = ua.connect(sio.io()) catch return 2;
 
     const socket = std.heap.page_allocator.create(SaNetObject) catch return 2;
     socket.* = .{
@@ -3271,8 +3483,8 @@ pub export fn sa_node_plugin_net_connect_unix(path_ptr: ?[*]const u8, path_len: 
         .server = null,
         .bytes_read = 0,
         .bytes_written = 0,
-        .block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
-        .auto_select_family_attempted_addresses = std.ArrayList([]u8).init(std.heap.page_allocator),
+        .block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
+        .auto_select_family_attempted_addresses = std.array_list.Managed([]u8).init(std.heap.page_allocator),
     };
 
     out_socket.?.* = @ptrCast(socket);
@@ -3281,15 +3493,17 @@ pub export fn sa_node_plugin_net_connect_unix(path_ptr: ?[*]const u8, path_len: 
 
 pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, port: u64, out_server: ?*?*anyopaque) u32 {
     const host = host_ptr.?[0..host_len];
-    const host_z = std.heap.page_allocator.dupeZ(u8, host) catch return 2;
+    const host_z = std.heap.page_allocator.dupeSentinel(u8, host, 0) catch return 2;
     defer std.heap.page_allocator.free(host_z);
 
+    if (port > std.math.maxInt(u16)) return 2;
     const address = if (std.mem.eql(u8, host, "0.0.0.0") or host.len == 0)
-        std.net.Address.initIp4(.{ 0, 0, 0, 0 }, @as(u16, @intCast(port)))
+        NetAddr{ .ip4 = .{ .bytes = [_]u8{ 0, 0, 0, 0 }, .port = @as(u16, @intCast(port)) } }
     else
-        std.net.Address.resolveIp(host_z, @as(u16, @intCast(port))) catch return 2;
+        NetAddr.parse(host, @as(u16, @intCast(port))) catch
+            NetAddr.resolve(sio.io(), host_z, @as(u16, @intCast(port))) catch return 2;
 
-    const server_impl = address.listen(.{ .reuse_address = true }) catch return 2;
+    const server_impl = address.listen(sio.io(), .{ .reuse_address = true }) catch return 2;
 
     const server = std.heap.page_allocator.create(SaNetObject) catch return 2;
     server.* = .{
@@ -3301,8 +3515,8 @@ pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, p
         .writable = false,
         .bytes_read = 0,
         .bytes_written = 0,
-        .block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
-        .auto_select_family_attempted_addresses = std.ArrayList([]u8).init(std.heap.page_allocator),
+        .block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
+        .auto_select_family_attempted_addresses = std.array_list.Managed([]u8).init(std.heap.page_allocator),
     };
 
     out_server.?.* = @ptrCast(server);
@@ -3311,9 +3525,9 @@ pub export fn sa_node_plugin_net_listen(host_ptr: ?[*]const u8, host_len: u64, p
 
 pub export fn sa_node_plugin_net_listen_unix(path_ptr: ?[*]const u8, path_len: u64, out_server: ?*?*anyopaque) u32 {
     const path = path_ptr.?[0..path_len];
-    const address = std.net.Address.initUnix(path) catch return 2;
-    var server_impl = address.listen(.{}) catch return 2;
-    errdefer server_impl.deinit();
+    const ua = std.Io.net.UnixAddress.init(path) catch return 2;
+    var server_impl = ua.listen(sio.io(), .{}) catch return 2;
+    errdefer server_impl.deinit(sio.io());
 
     const owned_path = std.heap.page_allocator.dupe(u8, path) catch return 2;
     errdefer std.heap.page_allocator.free(owned_path);
@@ -3328,9 +3542,9 @@ pub export fn sa_node_plugin_net_listen_unix(path_ptr: ?[*]const u8, path_len: u
         .writable = false,
         .bytes_read = 0,
         .bytes_written = 0,
-        .block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
+        .block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
         .unix_path = owned_path,
-        .auto_select_family_attempted_addresses = std.ArrayList([]u8).init(std.heap.page_allocator),
+        .auto_select_family_attempted_addresses = std.array_list.Managed([]u8).init(std.heap.page_allocator),
     };
 
     out_server.?.* = @ptrCast(server);
@@ -3340,16 +3554,16 @@ pub export fn sa_node_plugin_net_listen_unix(path_ptr: ?[*]const u8, path_len: u
 pub export fn sa_node_plugin_net_accept(server_ptr: ?*anyopaque, out_socket: ?*?*anyopaque) u32 {
     const server: *SaNetObject = @ptrCast(@alignCast(server_ptr orelse return 2));
     if (!server.is_server or server.closed) return 2;
-    const connection = if (server.server) |*server_impl| server_impl.accept() catch return 2 else return 2;
+    const connection = if (server.server) |*server_impl| server_impl.accept(sio.io()) catch return 2 else return 2;
 
-    if (netAddressBlocked(server.allocator, server.block_list.items, connection.address)) {
-        connection.stream.close();
+    if (netAddressBlocked(server.allocator, server.block_list.items, connection.socket.address)) {
+        connection.close(sio.io());
         if (out_socket) |slot| slot.* = null;
         return 3;
     }
 
     if (server.max_connections_set and server.connection_count >= server.max_connections) {
-        connection.stream.close();
+        connection.close(sio.io());
         if (out_socket) |slot| slot.* = null;
         return 3;
     }
@@ -3358,14 +3572,14 @@ pub export fn sa_node_plugin_net_accept(server_ptr: ?*anyopaque, out_socket: ?*?
     socket.* = .{
         .is_server = false,
         .allocator = std.heap.page_allocator,
-        .stream = connection.stream,
+         .stream = connection,
         .server = null,
         .bytes_read = 0,
         .bytes_written = 0,
         .parent_server = server,
         .counted_connection = true,
-        .block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
-        .auto_select_family_attempted_addresses = std.ArrayList([]u8).init(std.heap.page_allocator),
+        .block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
+        .auto_select_family_attempted_addresses = std.array_list.Managed([]u8).init(std.heap.page_allocator),
     };
     server.connection_count += 1;
 
@@ -3383,7 +3597,7 @@ pub export fn sa_node_plugin_net_write(socket_ptr: ?*anyopaque, data: ?[*]const 
     const socket: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (socket.is_server or socket.closed or !socket.writable) return 2;
     const d = data.?[0..data_len];
-    socket.stream.?.writer().writeAll(d) catch return 2;
+    netStreamWriteAll(socket.stream.?, d) catch return 2;
     socket.bytes_written +|= data_len;
     return 0;
 }
@@ -3394,7 +3608,7 @@ pub export fn sa_node_plugin_net_read(socket_ptr: ?*anyopaque, max_len: u64, out
     const buf = std.heap.page_allocator.alloc(u8, max_len) catch return 2;
     errdefer std.heap.page_allocator.free(buf);
 
-    const n = socket.stream.?.reader().read(buf) catch return 2;
+    const n = netStreamRead(socket.stream.?, buf) catch return 2;
     if (n == 0) {
         std.heap.page_allocator.free(buf);
         socket.readable = false;
@@ -3479,16 +3693,16 @@ pub export fn sa_node_plugin_net_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server) {
         const server = obj.server orelse return 2;
-        var out = std.ArrayList(u8).init(std.heap.page_allocator);
+        var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
         defer out.deinit();
-        appendAddressJson(&out, server.listen_address) catch return 2;
+        appendAddressJson(&out, server.socket.address) catch return 2;
         const owned = out.toOwnedSlice() catch return 2;
         out_ptr.?.* = owned.ptr;
         out_len.?.* = owned.len;
         return 0;
     }
     const stream = obj.stream orelse return 2;
-    return writeSocketAddressJson(stream.handle, false, out_ptr, out_len);
+    return writeSocketAddressJson(stream.socket.handle, false, out_ptr, out_len);
 }
 
 pub export fn sa_node_plugin_net_server_address(server_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3500,7 +3714,7 @@ pub export fn sa_node_plugin_net_server_address(server_ptr: ?*anyopaque, out_ptr
 pub export fn sa_node_plugin_net_remote_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return writeSocketAddressJson(stream.handle, true, out_ptr, out_len);
+    return writeSocketAddressJson(stream.socket.handle, true, out_ptr, out_len);
 }
 
 pub export fn sa_node_plugin_net_local_address(socket_ptr: ?*anyopaque, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
@@ -3560,7 +3774,7 @@ pub export fn sa_node_plugin_net_auto_select_family_attempted_addresses(socket_p
     if (obj.is_server) return 2;
     const ptr_slot = out_ptr orelse return 2;
     const len_slot = out_len orelse return 2;
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
     out.append('[') catch return 2;
     for (obj.auto_select_family_attempted_addresses.items, 0..) |entry, i| {
@@ -3608,10 +3822,9 @@ fn timevalFromMs(ms: u64) std.posix.timeval {
 pub export fn sa_node_plugin_net_set_timeout(socket_ptr: ?*anyopaque, timeout_ms: u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
-    const stream = obj.stream orelse return 2;
-    const tv = timevalFromMs(timeout_ms);
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.RCVTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.SNDTIMEO, std.mem.asBytes(&tv)) != 0) return 2;
+    _ = obj.stream orelse return 2;
+    // NOTE(Zig 0.17): must NOT set SO_RCVTIMEO/SNDTIMEO on the fd; a blocking
+    // recv returning EAGAIN panics inside sio Threaded Io (programmer bug).
     obj.timeout_ms = timeout_ms;
     return 0;
 }
@@ -3656,7 +3869,7 @@ pub export fn sa_node_plugin_net_destroy(socket_ptr: ?*anyopaque) u32 {
     if (obj.is_server) return 2;
     if (!obj.closed) {
         if (obj.stream) |stream| {
-            stream.close();
+            stream.close(sio.io());
             obj.stream = null;
         }
         obj.markSocketClosed();
@@ -3674,7 +3887,7 @@ pub export fn sa_node_plugin_net_reset_and_destroy(socket_ptr: ?*anyopaque) u32 
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
     const linger = PosixLinger{ .l_onoff = 1, .l_linger = 0 };
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.LINGER, std.mem.asBytes(&linger)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.LINGER, std.mem.asBytes(&linger)) != 0) return 2;
     obj.deinit();
     return 0;
 }
@@ -3683,17 +3896,17 @@ pub export fn sa_node_plugin_net_set_no_delay(socket_ptr: ?*anyopaque, enable: u
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
     const value: c_int = if (enable != 0) 1 else 0;
-    return setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value));
+    return setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.NODELAY, std.mem.asBytes(&value));
 }
 
 pub export fn sa_node_plugin_net_set_keep_alive(socket_ptr: ?*anyopaque, enable: u32, initial_delay_secs: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
     const value: c_int = if (enable != 0) 1 else 0;
-    if (setSocketOptionRaw(stream.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return 2;
+    if (setSocketOptionRaw(stream.socket.handle, std.posix.SOL.SOCKET, std.posix.SO.KEEPALIVE, std.mem.asBytes(&value)) != 0) return 2;
     if (enable != 0 and initial_delay_secs > 0) {
         const delay: c_int = @intCast(initial_delay_secs);
-        if (setSocketOptionRaw(stream.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return 2;
+        if (setSocketOptionRaw(stream.socket.handle, std.posix.IPPROTO.TCP, std.posix.TCP.KEEPIDLE, std.mem.asBytes(&delay)) != 0) return 2;
     }
     return 0;
 }
@@ -3720,7 +3933,7 @@ const TypeOfServiceOption = struct {
 
 fn socketTypeOfServiceOption(fd: std.posix.socket_t) !TypeOfServiceOption {
     const addr = try getSocketAddress(fd, false);
-    return switch (addr.any.family) {
+    return switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => .{ .level = std.posix.IPPROTO.IP, .option = std.os.linux.IP.TOS },
         std.posix.AF.INET6 => .{ .level = std.posix.IPPROTO.IPV6, .option = std.os.linux.IPV6.TCLASS },
         else => error.UnsupportedAddressFamily,
@@ -3730,25 +3943,25 @@ fn socketTypeOfServiceOption(fd: std.posix.socket_t) !TypeOfServiceOption {
 pub export fn sa_node_plugin_net_set_recv_buffer_size(socket_ptr: ?*anyopaque, size: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketSetBuffer(stream.handle, std.posix.SO.RCVBUF, size);
+    return socketSetBuffer(stream.socket.handle, std.posix.SO.RCVBUF, size);
 }
 
 pub export fn sa_node_plugin_net_set_send_buffer_size(socket_ptr: ?*anyopaque, size: u32) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketSetBuffer(stream.handle, std.posix.SO.SNDBUF, size);
+    return socketSetBuffer(stream.socket.handle, std.posix.SO.SNDBUF, size);
 }
 
 pub export fn sa_node_plugin_net_get_recv_buffer_size(socket_ptr: ?*anyopaque, out_size: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketGetBuffer(stream.handle, std.posix.SO.RCVBUF, out_size);
+    return socketGetBuffer(stream.socket.handle, std.posix.SO.RCVBUF, out_size);
 }
 
 pub export fn sa_node_plugin_net_get_send_buffer_size(socket_ptr: ?*anyopaque, out_size: ?*u64) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    return socketGetBuffer(stream.handle, std.posix.SO.SNDBUF, out_size);
+    return socketGetBuffer(stream.socket.handle, std.posix.SO.SNDBUF, out_size);
 }
 
 pub export fn sa_node_plugin_net_set_type_of_service(socket_ptr: ?*anyopaque, tos: u32) u32 {
@@ -3756,9 +3969,9 @@ pub export fn sa_node_plugin_net_set_type_of_service(socket_ptr: ?*anyopaque, to
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
-    const opt = socketTypeOfServiceOption(stream.handle) catch return 2;
+    const opt = socketTypeOfServiceOption(stream.socket.handle) catch return 2;
     const value: c_int = @intCast(tos);
-    return setSocketOptionRaw(stream.handle, opt.level, opt.option, std.mem.asBytes(&value));
+    return setSocketOptionRaw(stream.socket.handle, opt.level, opt.option, std.mem.asBytes(&value));
 }
 
 pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, out_tos: ?*u64) u32 {
@@ -3766,10 +3979,10 @@ pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, ou
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     if (obj.is_server or obj.closed) return 2;
     const stream = obj.stream orelse return 2;
-    const opt = socketTypeOfServiceOption(stream.handle) catch return 2;
+    const opt = socketTypeOfServiceOption(stream.socket.handle) catch return 2;
     var value: c_int = 0;
     var value_len: std.posix.socklen_t = @sizeOf(c_int);
-    if (getsockopt(stream.handle, opt.level, opt.option, &value, &value_len) != 0) return 2;
+    if (getsockopt(stream.socket.handle, opt.level, opt.option, &value, &value_len) != 0) return 2;
     if (value_len != @sizeOf(c_int) or value < 0) return 2;
     out.* = @intCast(value);
     return 0;
@@ -3778,7 +3991,7 @@ pub export fn sa_node_plugin_net_get_type_of_service(socket_ptr: ?*anyopaque, ou
 pub export fn sa_node_plugin_net_shutdown_write(socket_ptr: ?*anyopaque) u32 {
     const obj: *SaNetObject = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const stream = obj.stream orelse return 2;
-    std.posix.shutdown(stream.handle, .send) catch return 2;
+    netShutdownWrite(stream.socket.handle) catch return 2;
     obj.writable = false;
     return 0;
 }
@@ -3789,63 +4002,102 @@ pub const SaDgramSocket = struct {
     family: std.posix.sa_family_t,
     connected: bool,
     has_ref: bool = true,
-    send_block_list: std.ArrayList(BlockListRule),
-    receive_block_list: std.ArrayList(BlockListRule),
+    send_block_list: std.array_list.Managed(BlockListRule),
+    receive_block_list: std.array_list.Managed(BlockListRule),
 
     fn deinit(self: *SaDgramSocket) void {
         blockListFreeRuleList(self.allocator, &self.send_block_list);
         self.send_block_list.deinit();
         blockListFreeRuleList(self.allocator, &self.receive_block_list);
         self.receive_block_list.deinit();
-        std.posix.close(self.fd);
+        netCloseSocket(self.fd);
         self.allocator.destroy(self);
     }
 };
 
-fn parseDgramAddressFamily(host_ptr: ?[*]const u8, host_len: u64, port: u64, family: std.posix.sa_family_t) !std.net.Address {
+fn parseDgramAddressFamily(host_ptr: ?[*]const u8, host_len: u64, port: u64, family: std.posix.sa_family_t) !NetAddr {
     if (port > std.math.maxInt(u16)) return error.PortOutOfRange;
     const host = host_ptr.?[0..host_len];
     if (family == std.posix.AF.INET6) {
         if (host.len == 0 or std.mem.eql(u8, host, "::")) {
-            return std.net.Address.initIp6(.{0} ** 16, @as(u16, @intCast(port)), 0, 0);
+            return NetAddr{ .ip6 = .{ .bytes = @splat(@as(u8, 0)), .port = @as(u16, @intCast(port)) } };
         }
-        return std.net.Address.parseIp6(host, @as(u16, @intCast(port))) catch
-            std.net.Address.resolveIp6(host, @as(u16, @intCast(port)));
+        return NetAddr.parseIp6(host, @as(u16, @intCast(port))) catch
+            NetAddr.resolveIp6(sio.io(), host, @as(u16, @intCast(port)));
     }
     if (host.len == 0 or std.mem.eql(u8, host, "0.0.0.0")) {
-        return std.net.Address.initIp4(.{ 0, 0, 0, 0 }, @as(u16, @intCast(port)));
+        return NetAddr{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = @as(u16, @intCast(port)) } };
     }
-    return std.net.Address.resolveIp(host, @as(u16, @intCast(port))) catch
-        std.net.Address.parseIp(host, @as(u16, @intCast(port)));
+    return NetAddr.resolve(sio.io(), host, @as(u16, @intCast(port))) catch
+        NetAddr.parse(host, @as(u16, @intCast(port)));
 }
 
-fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !std.net.Address {
+fn parseDgramAddress(host_ptr: ?[*]const u8, host_len: u64, port: u64) !NetAddr {
     return parseDgramAddressFamily(host_ptr, host_len, port, std.posix.AF.INET);
 }
 
-fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) ![]u8 {
-    switch (addr.any.family) {
+fn formatIpv6Owned(allocator: std.mem.Allocator, bytes: [16]u8) ![]u8 {
+    var groups: [8]u16 = undefined;
+    var gi: usize = 0;
+    while (gi < 8) : (gi += 1) {
+        groups[gi] = (@as(u16, bytes[gi * 2]) << 8) | @as(u16, bytes[gi * 2 + 1]);
+    }
+    // Find longest run of zero groups (length >= 2) for "::" compression.
+    var best_start: usize = 8;
+    var best_len: usize = 0;
+    var cur_start: usize = 8;
+    var cur_len: usize = 0;
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
+        if (groups[i] == 0) {
+            if (cur_len == 0) cur_start = i;
+            cur_len += 1;
+            if (cur_len > best_len) {
+                best_len = cur_len;
+                best_start = cur_start;
+            }
+        } else {
+            cur_len = 0;
+        }
+    }
+    if (best_len < 2) best_start = 8;
+    var out = std.array_list.Managed(u8).init(allocator);
+    errdefer out.deinit();
+    var k: usize = 0;
+    var first = true;
+    while (k < 8) {
+        if (k == best_start) {
+            try out.appendSlice("::");
+            first = true;
+            k += best_len;
+            continue;
+        }
+        if (!first) try out.append(':');
+        first = false;
+        const hex = try std.fmt.allocPrint(allocator, "{x}", .{groups[k]});
+        defer allocator.free(hex);
+        try out.appendSlice(hex);
+        k += 1;
+    }
+    return out.toOwnedSlice();
+}
+
+fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: NetAddr) ![]u8 {
+    switch ((netAddrFamily(addr))) {
         std.posix.AF.INET => {
-            const bytes = std.mem.asBytes(&addr.in.sa.addr);
+            const bytes = std.mem.asBytes(&addr.ip4.bytes);
             return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{ bytes[0], bytes[1], bytes[2], bytes[3] });
         },
         std.posix.AF.INET6 => {
-            if (std.mem.eql(u8, addr.in6.sa.addr[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
+            if (std.mem.eql(u8, addr.ip6.bytes[0..12], &[_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff })) {
                 return try std.fmt.allocPrint(allocator, "{}.{}.{}.{}", .{
-                    addr.in6.sa.addr[12],
-                    addr.in6.sa.addr[13],
-                    addr.in6.sa.addr[14],
-                    addr.in6.sa.addr[15],
+                    addr.ip6.bytes[12],
+                    addr.ip6.bytes[13],
+                    addr.ip6.bytes[14],
+                    addr.ip6.bytes[15],
                 });
             }
-            const with_port = try std.fmt.allocPrint(allocator, "{}", .{addr});
-            defer allocator.free(with_port);
-            if (with_port.len >= 2 and with_port[0] == '[') {
-                if (std.mem.lastIndexOfScalar(u8, with_port, ']')) |end| {
-                    return try allocator.dupe(u8, with_port[1..end]);
-                }
-            }
-            return try allocator.dupe(u8, with_port);
+            return try formatIpv6Owned(allocator, addr.ip6.bytes);
         },
         else => return error.InvalidAddressFamily,
     }
@@ -3853,8 +4105,8 @@ fn dgramAddressToOwnedHost(allocator: std.mem.Allocator, addr: std.net.Address) 
 
 fn parseIpv4AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![4]u8 {
     const host = host_ptr.?[0..host_len];
-    const addr = try std.net.Address.parseIp4(host, 0);
-    return std.mem.asBytes(&addr.in.sa.addr).*;
+    const addr = try NetAddr.parseIp4(host, 0);
+    return std.mem.asBytes(&addr.ip4.bytes).*;
 }
 
 fn parseOptionalIpv4AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![4]u8 {
@@ -3868,8 +4120,8 @@ fn ipv4BytesToInAddr(bytes: [4]u8) InAddr {
 
 fn parseIpv6AddressBytes(host_ptr: ?[*]const u8, host_len: u64) ![16]u8 {
     const host = host_ptr.?[0..host_len];
-    const addr = try std.net.Address.parseIp6(host, 0);
-    return addr.in6.sa.addr;
+    const addr = try NetAddr.parseIp6(host, 0);
+    return addr.ip6.bytes;
 }
 
 fn parseInterfaceIndex(iface_ptr: ?[*]const u8, iface_len: u64) u32 {
@@ -3883,14 +4135,14 @@ fn setSocketOptionRaw(fd: std.posix.socket_t, level: c_int, optname: c_int, byte
     return 0;
 }
 
-fn dgramAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: std.net.Address) bool {
+fn dgramAddressBlocked(allocator: std.mem.Allocator, rules: []const BlockListRule, address: NetAddr) bool {
     if (rules.len == 0) return false;
     const block_address = blockListAddressFromNetAddress(allocator, address) catch return false;
     defer allocator.free(block_address.text);
     return blockListMatchesRulesIncludingMappedIpv4(rules, block_address);
 }
 
-fn dgramSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {
+fn dgramSetBlockList(dest: *std.array_list.Managed(BlockListRule), blocklist_ptr: ?*anyopaque, allocator: std.mem.Allocator) u32 {
     if (blocklist_ptr == null) {
         blockListFreeRuleList(allocator, dest);
         return 0;
@@ -3902,8 +4154,8 @@ fn dgramSetBlockList(dest: *std.ArrayList(BlockListRule), blocklist_ptr: ?*anyop
 
 fn dgramCreateSocketWithOptions(family: std.posix.sa_family_t, reuse_addr: bool, reuse_port: bool, ipv6_only: bool, recv_buffer_size: u32, send_buffer_size: u32) !*SaDgramSocket {
     if (family != std.posix.AF.INET and family != std.posix.AF.INET6) return error.InvalidAddressFamily;
-    const fd = try std.posix.socket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.UDP);
-    errdefer std.posix.close(fd);
+    const fd = try netSocket(family, std.posix.SOCK.DGRAM | std.posix.SOCK.CLOEXEC, std.posix.IPPROTO.UDP);
+    errdefer netCloseSocket(fd);
 
     const on: c_int = 1;
     if (reuse_addr) try std.posix.setsockopt(fd, std.posix.SOL.SOCKET, std.posix.SO.REUSEADDR, std.mem.asBytes(&on));
@@ -3932,8 +4184,8 @@ fn dgramCreateSocketWithOptions(family: std.posix.sa_family_t, reuse_addr: bool,
         .family = family,
         .connected = false,
         .has_ref = true,
-        .send_block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
-        .receive_block_list = std.ArrayList(BlockListRule).init(std.heap.page_allocator),
+        .send_block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
+        .receive_block_list = std.array_list.Managed(BlockListRule).init(std.heap.page_allocator),
     };
     return socket;
 }
@@ -3963,7 +4215,8 @@ pub export fn sa_node_plugin_dgram_create_options(socket_type: u32, reuse_addr: 
 pub export fn sa_node_plugin_dgram_bind(socket_ptr: ?*anyopaque, host_ptr: ?[*]const u8, host_len: u64, port: u64) u32 {
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
-    std.posix.bind(socket.fd, &address.any, address.getOsSockLen()) catch return 2;
+    const sa = netAddrSockaddr(address);
+    netBindSocket(socket.fd, &sa.storage, sa.len) catch return 2;
     return 0;
 }
 
@@ -3972,7 +4225,8 @@ pub export fn sa_node_plugin_dgram_send(socket_ptr: ?*anyopaque, data_ptr: ?[*]c
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, address)) return 2;
     const data = data_ptr.?[0..data_len];
-    _ = std.posix.sendto(socket.fd, data, 0, &address.any, address.getOsSockLen()) catch return 2;
+    const sa = netAddrSockaddr(address);
+    netSendTo(socket.fd, data, &sa.storage, sa.len) catch return 2;
     return 0;
 }
 
@@ -3980,15 +4234,20 @@ pub export fn sa_node_plugin_dgram_connect(socket_ptr: ?*anyopaque, host_ptr: ?[
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
     const address = parseDgramAddressFamily(host_ptr, host_len, port, socket.family) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, address)) return 2;
-    std.posix.connect(socket.fd, &address.any, address.getOsSockLen()) catch return 2;
+    {
+        const sa = netAddrSockaddr(address);
+        netConnectSocket(socket.fd, &sa.storage, sa.len) catch return 2;
+    }
     socket.connected = true;
     return 0;
 }
 
 pub export fn sa_node_plugin_dgram_disconnect(socket_ptr: ?*anyopaque) u32 {
     const socket: *SaDgramSocket = @ptrCast(@alignCast(socket_ptr orelse return 2));
-    var addr: std.posix.sockaddr = .{ .family = std.posix.AF.UNSPEC, .data = [_]u8{0} ** 14 };
-    std.posix.connect(socket.fd, &addr, @sizeOf(std.posix.sockaddr)) catch return 2;
+    var storage: std.posix.sockaddr.storage = undefined;
+    const addr: *std.posix.sockaddr = @ptrCast(@alignCast(&storage));
+    addr.* = .{ .family = std.posix.AF.UNSPEC, .data = @splat(@as(u8, 0)) };
+    netConnectSocket(socket.fd, &storage, @sizeOf(std.posix.sockaddr)) catch return 2;
     socket.connected = false;
     return 0;
 }
@@ -3999,7 +4258,8 @@ pub export fn sa_node_plugin_dgram_send_connected(socket_ptr: ?*anyopaque, data_
     const peer = getSocketAddress(socket.fd, true) catch return 2;
     if (dgramAddressBlocked(socket.allocator, socket.send_block_list.items, peer)) return 2;
     const data = data_ptr.?[0..data_len];
-    _ = std.posix.send(socket.fd, data, 0) catch return 2;
+    const rc = std.c.send(socket.fd, data.ptr, data.len, 0);
+    if (rc < 0) return 2;
     return 0;
 }
 
@@ -4213,11 +4473,13 @@ pub export fn sa_node_plugin_dgram_recv(
     const buf = std.heap.page_allocator.alloc(u8, max_len) catch return 2;
     errdefer std.heap.page_allocator.free(buf);
 
-    var src_addr: std.net.Address = undefined;
+    var src_storage: std.posix.sockaddr.storage = undefined;
     var src_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.storage);
+    var src_addr: NetAddr = NetAddr{ .ip4 = .{ .bytes = .{ 0, 0, 0, 0 }, .port = 0 } };
     const n = while (true) {
         src_len = @sizeOf(std.posix.sockaddr.storage);
-        const read_len = std.posix.recvfrom(socket.fd, buf, 0, &src_addr.any, &src_len) catch return 2;
+        const read_len = netRecvFrom(socket.fd, buf, &src_storage, &src_len) catch return 2;
+        src_addr = netSockaddrToAddr(&src_storage) catch return 2;
         if (!dgramAddressBlocked(socket.allocator, socket.receive_block_list.items, src_addr)) break read_len;
     };
     const owned = std.heap.page_allocator.alloc(u8, n) catch return 2;
@@ -4252,18 +4514,18 @@ fn nodeFsPathSlice(path_ptr: ?[*]const u8, path_len: u64) ?[]const u8 {
 
 pub export fn sa_node_plugin_fs_stat(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openFileAbsolute(path_z, .{}) catch return 2
+        sio.openFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().openFile(path_z, .{}) catch return 2;
+        sio.cwd().openFile(path_z, .{}) catch return 2;
     defer file.close();
 
     const stat = file.stat() catch return 2;
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     const is_file = stat.kind == .file;
@@ -4289,16 +4551,16 @@ pub export fn sa_node_plugin_fs_lstat(path_ptr: ?[*]const u8, path_len: u64, out
 
 pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var dir = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
+        sio.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
     else
-        std.fs.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
+        sio.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
     defer dir.close();
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.appendSlice("[") catch return 2;
@@ -4323,16 +4585,16 @@ pub export fn sa_node_plugin_fs_readdir(path_ptr: ?[*]const u8, path_len: u64, o
 
 pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var dir = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
+        sio.openDirAbsolute(path_z, .{ .iterate = true }) catch return 2
     else
-        std.fs.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
+        sio.cwd().openDir(path_z, .{ .iterate = true }) catch return 2;
     defer dir.close();
 
-    var json = std.ArrayList(u8).init(std.heap.page_allocator);
+    var json = std.array_list.Managed(u8).init(std.heap.page_allocator);
     errdefer json.deinit();
 
     json.appendSlice("[") catch return 2;
@@ -4365,14 +4627,14 @@ pub export fn sa_node_plugin_fs_readdir_with_types(path_ptr: ?[*]const u8, path_
 
 pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
-    var buf: [std.fs.max_path_bytes]u8 = undefined;
-    const target = if (std.fs.path.isAbsolute(path_z))
-        std.fs.readLinkAbsolute(path_z, &buf) catch return 2
-    else
-        std.fs.cwd().readLink(path_z, &buf) catch return 2;
+    var buf: [sio.max_path_bytes]u8 = undefined;
+    const target: []u8 = if (std.fs.path.isAbsolute(path_z)) blk: {
+        const n = std.Io.Dir.readLinkAbsolute(sio.io(), path_z, &buf) catch return 2;
+        break :blk buf[0..n];
+    } else sio.cwd().readLink(path_z, &buf) catch return 2;
 
     const owned = std.heap.page_allocator.dupe(u8, target) catch return 2;
     out_ptr.?.* = owned.ptr;
@@ -4382,7 +4644,7 @@ pub export fn sa_node_plugin_fs_readlink(path_ptr: ?[*]const u8, path_len: u64, 
 
 pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const resolved = std.fs.path.resolve(std.heap.page_allocator, &.{path_z}) catch return 2;
@@ -4393,17 +4655,17 @@ pub export fn sa_node_plugin_fs_realpath(path_ptr: ?[*]const u8, path_len: u64, 
 
 pub export fn sa_node_plugin_fs_exists(path_ptr: ?[*]const u8, path_len: u64, out_bool: ?*u32) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var exists = false;
     if (std.fs.path.isAbsolute(path_z)) {
-        if (std.fs.openFileAbsolute(path_z, .{})) |file| {
+        if (sio.openFileAbsolute(path_z, .{})) |file| {
             file.close();
             exists = true;
         } else |_| {}
     } else {
-        if (std.fs.cwd().openFile(path_z, .{})) |file| {
+        if (sio.cwd().openFile(path_z, .{})) |file| {
             file.close();
             exists = true;
         } else |_| {}
@@ -4419,38 +4681,32 @@ pub export fn sa_node_plugin_fs_access(path_ptr: ?[*]const u8, path_len: u64, mo
 
 pub export fn sa_node_plugin_fs_read_file(path_ptr: ?[*]const u8, path_len: u64, out_ptr: ?*?[*]const u8, out_len: ?*u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.openFileAbsolute(path_z, .{}) catch return 2
+        sio.openFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().openFile(path_z, .{}) catch return 2;
+        sio.cwd().openFile(path_z, .{}) catch return 2;
     defer file.close();
 
-    const size = (file.stat() catch return 2).size;
-    const buf = std.heap.page_allocator.alloc(u8, size) catch return 2;
-    errdefer std.heap.page_allocator.free(buf);
-
-    const bytes_read = file.readAll(buf) catch return 2;
-    if (bytes_read != size) return 2;
-
-    out_ptr.?.* = buf.ptr;
-    out_len.?.* = size;
+    const owned = file.readToEndAlloc(std.heap.page_allocator, std.math.maxInt(usize)) catch return 2;
+    out_ptr.?.* = owned.ptr;
+    out_len.?.* = owned.len;
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64, data_ptr: ?[*]const u8, data_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const data = if (data_ptr) |p| p[0..data_len] else &[_]u8{};
 
     var file = if (std.fs.path.isAbsolute(path_z))
-        std.fs.createFileAbsolute(path_z, .{}) catch return 2
+        sio.createFileAbsolute(path_z, .{}) catch return 2
     else
-        std.fs.cwd().createFile(path_z, .{}) catch return 2;
+        sio.cwd().createFile(path_z, .{}) catch return 2;
     defer file.close();
 
     file.writeAll(data) catch return 2;
@@ -4459,23 +4715,23 @@ pub export fn sa_node_plugin_fs_write_file(path_ptr: ?[*]const u8, path_len: u64
 
 pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, recursive: u8) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     const is_abs = std.fs.path.isAbsolute(path_z);
     if (recursive != 0) {
         if (is_abs) {
-            var root_dir = std.fs.openDirAbsolute("/", .{}) catch return 2;
+            var root_dir = sio.openDirAbsolute("/", .{}) catch return 2;
             defer root_dir.close();
             root_dir.makePath(path_z[1..]) catch return 2;
         } else {
-            std.fs.cwd().makePath(path_z) catch return 2;
+            sio.cwd().makePath(path_z) catch return 2;
         }
     } else {
         if (is_abs) {
-            std.fs.makeDirAbsolute(path_z) catch return 2;
+            std.Io.Dir.createDirAbsolute(sio.io(), path_z, .default_dir) catch return 2;
         } else {
-            std.fs.cwd().makeDir(path_z) catch return 2;
+            sio.cwd().makeDir(path_z) catch return 2;
         }
     }
     return 0;
@@ -4483,60 +4739,60 @@ pub export fn sa_node_plugin_fs_mkdir(path_ptr: ?[*]const u8, path_len: u64, rec
 
 pub export fn sa_node_plugin_fs_rmdir(path_ptr: ?[*]const u8, path_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
-        std.fs.deleteDirAbsolute(path_z) catch return 2;
+        std.Io.Dir.deleteDirAbsolute(sio.io(), path_z) catch return 2;
     } else {
-        std.fs.cwd().deleteDir(path_z) catch return 2;
+        sio.cwd().deleteDir(path_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_unlink(path_ptr: ?[*]const u8, path_len: u64) u32 {
     const path = nodeFsPathSlice(path_ptr, path_len) orelse return 2;
-    const path_z = std.heap.page_allocator.dupeZ(u8, path) catch return 2;
+    const path_z = std.heap.page_allocator.dupeSentinel(u8, path, 0) catch return 2;
     defer std.heap.page_allocator.free(path_z);
 
     if (std.fs.path.isAbsolute(path_z)) {
-        std.fs.deleteFileAbsolute(path_z) catch return 2;
+        std.Io.Dir.deleteFileAbsolute(sio.io(), path_z) catch return 2;
     } else {
-        std.fs.cwd().deleteFile(path_z) catch return 2;
+        sio.cwd().deleteFile(path_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_rename(old_ptr: ?[*]const u8, old_len: u64, new_ptr: ?[*]const u8, new_len: u64) u32 {
     const old = nodeFsPathSlice(old_ptr, old_len) orelse return 2;
-    const old_z = std.heap.page_allocator.dupeZ(u8, old) catch return 2;
+    const old_z = std.heap.page_allocator.dupeSentinel(u8, old, 0) catch return 2;
     defer std.heap.page_allocator.free(old_z);
 
     const new = nodeFsPathSlice(new_ptr, new_len) orelse return 2;
-    const new_z = std.heap.page_allocator.dupeZ(u8, new) catch return 2;
+    const new_z = std.heap.page_allocator.dupeSentinel(u8, new, 0) catch return 2;
     defer std.heap.page_allocator.free(new_z);
 
     if (std.fs.path.isAbsolute(old_z) and std.fs.path.isAbsolute(new_z)) {
-        std.fs.renameAbsolute(old_z, new_z) catch return 2;
+        std.Io.Dir.renameAbsolute(old_z, new_z, sio.io()) catch return 2;
     } else {
-        std.fs.cwd().rename(old_z, new_z) catch return 2;
+        sio.cwd().rename(old_z, sio.cwd(), new_z) catch return 2;
     }
     return 0;
 }
 
 pub export fn sa_node_plugin_fs_copy_file(src_ptr: ?[*]const u8, src_len: u64, dst_ptr: ?[*]const u8, dst_len: u64) u32 {
     const src = nodeFsPathSlice(src_ptr, src_len) orelse return 2;
-    const src_z = std.heap.page_allocator.dupeZ(u8, src) catch return 2;
+    const src_z = std.heap.page_allocator.dupeSentinel(u8, src, 0) catch return 2;
     defer std.heap.page_allocator.free(src_z);
 
     const dst = nodeFsPathSlice(dst_ptr, dst_len) orelse return 2;
-    const dst_z = std.heap.page_allocator.dupeZ(u8, dst) catch return 2;
+    const dst_z = std.heap.page_allocator.dupeSentinel(u8, dst, 0) catch return 2;
     defer std.heap.page_allocator.free(dst_z);
 
     if (std.fs.path.isAbsolute(src_z) and std.fs.path.isAbsolute(dst_z)) {
-        std.fs.copyFileAbsolute(src_z, dst_z, .{}) catch return 2;
+        std.Io.Dir.copyFileAbsolute(src_z, dst_z, sio.io(), .{}) catch return 2;
     } else {
-        std.fs.cwd().copyFile(src_z, std.fs.cwd(), dst_z, .{}) catch return 2;
+        sio.cwd().copyFile(src_z, sio.cwd(), dst_z, .{}) catch return 2;
     }
     return 0;
 }
@@ -4571,7 +4827,7 @@ pub export fn sa_node_plugin_process_exec(
         }
     }
 
-    const run_res = std.process.Child.run(.{
+    const run_res = sio.Child.run(.{
         .allocator = allocator,
         .argv = argv,
         .cwd = cwd,
@@ -4579,7 +4835,7 @@ pub export fn sa_node_plugin_process_exec(
     }) catch return 2;
 
     switch (run_res.term) {
-        .Exited => |code| out_code.?.* = code,
+        .exited => |code| out_code.?.* = code,
         else => out_code.?.* = 1,
     }
 
@@ -4597,8 +4853,17 @@ var console_timers = std.StringHashMap(i64).init(std.heap.page_allocator);
 pub export fn sa_node_plugin_console_log(data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (data_ptr) |ptr| {
         const slice = ptr[0..data_len];
-        std.io.getStdOut().writeAll(slice) catch return 2;
-        std.io.getStdOut().writeAll("\n") catch return 2;
+        // NOTE(Zig 0.17): `zig build test` drives the test binary with
+        // `--listen=-` over stdin/stdout (build-server protocol). Writing
+        // user payloads to stdout corrupts the protocol and hangs the
+        // harness (pipe_read + futex_wait). Redirect to stderr under test.
+        if (@import("builtin").is_test) {
+            sio.getStdErr().writeAll(slice) catch return 2;
+            sio.getStdErr().writeAll("\n") catch return 2;
+        } else {
+            sio.getStdOut().writeAll(slice) catch return 2;
+            sio.getStdOut().writeAll("\n") catch return 2;
+        }
     }
     return 0;
 }
@@ -4606,8 +4871,8 @@ pub export fn sa_node_plugin_console_log(data_ptr: ?[*]const u8, data_len: u64) 
 pub export fn sa_node_plugin_console_error(data_ptr: ?[*]const u8, data_len: u64) u32 {
     if (data_ptr) |ptr| {
         const slice = ptr[0..data_len];
-        std.io.getStdErr().writeAll(slice) catch return 2;
-        std.io.getStdErr().writeAll("\n") catch return 2;
+        sio.getStdErr().writeAll(slice) catch return 2;
+        sio.getStdErr().writeAll("\n") catch return 2;
     }
     return 0;
 }
@@ -4616,7 +4881,7 @@ pub export fn sa_node_plugin_console_time(label_ptr: ?[*]const u8, label_len: u6
     if (label_ptr) |ptr| {
         const label = ptr[0..label_len];
         const label_dup = std.heap.page_allocator.dupe(u8, label) catch return 2;
-        console_timers.put(label_dup, std.time.milliTimestamp()) catch return 2;
+        console_timers.put(label_dup, @as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms)))) catch return 2;
     }
     return 0;
 }
@@ -4626,7 +4891,7 @@ pub export fn sa_node_plugin_console_time_end(label_ptr: ?[*]const u8, label_len
         const label = ptr[0..label_len];
         if (console_timers.fetchRemove(label)) |kv| {
             const start = kv.value;
-            const elapsed = @as(f64, @floatFromInt(std.time.milliTimestamp() - start));
+            const elapsed = @as(f64, @floatFromInt(@as(i64, @intCast(@divFloor(sio.nanoTimestamp(), std.time.ns_per_ms))) - start));
             if (out_ms) |slot| slot.* = elapsed;
             std.heap.page_allocator.free(kv.key);
             return 0;
@@ -4636,13 +4901,15 @@ pub export fn sa_node_plugin_console_time_end(label_ptr: ?[*]const u8, label_len
 }
 
 pub export fn sa_node_plugin_console_clear() u32 {
-    std.io.getStdOut().writeAll("\x1b[2J\x1b[H") catch return 2;
+    // NOTE(Zig 0.17): keep `--listen=-` stdout protocol clean under test.
+    if (@import("builtin").is_test) return 0;
+    sio.getStdOut().writeAll("\x1b[2J\x1b[H") catch return 2;
     return 0;
 }
 
 // --- Timers Module ---
 pub export fn sa_node_plugin_timers_sleep(ms: u64) u32 {
-    std.time.sleep(ms * std.time.ns_per_ms);
+    sioSleep(ms * std.time.ns_per_ms);
     return 0;
 }
 
@@ -4662,7 +4929,7 @@ pub const StringDecoder = struct {
     }
 
     fn write(self: *StringDecoder, chunk: []const u8) ![]const u8 {
-        var out = std.ArrayList(u8).init(self.allocator);
+        var out = std.array_list.Managed(u8).init(self.allocator);
         errdefer out.deinit();
 
         var i: usize = 0;
@@ -4703,7 +4970,7 @@ pub const StringDecoder = struct {
 
     fn end(self: *StringDecoder, chunk: []const u8) ![]const u8 {
         const written = try self.write(chunk);
-        var out = std.ArrayList(u8).init(self.allocator);
+        var out = std.array_list.Managed(u8).init(self.allocator);
         errdefer out.deinit();
         try out.appendSlice(written);
         self.allocator.free(written);

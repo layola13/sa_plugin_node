@@ -1,8 +1,9 @@
 const std = @import("std");
+const sio = @import("sio");
 const http_client = @import("http_client");
 const http_server = @import("http_server");
 
-fn appendJsonString(out: *std.ArrayList(u8), bytes: []const u8) !void {
+fn appendJsonString(out: *std.array_list.Managed(u8), bytes: []const u8) !void {
     try out.append('"');
     for (bytes) |c| switch (c) {
         '"' => try out.appendSlice("\\\""),
@@ -60,9 +61,9 @@ fn httpOneShotJson(method: []const u8, url: []const u8, body: ?[]const u8, out_p
     var content_type_len: u64 = 0;
     const has_content_type = sa_node_plugin_http_client_resp_get_header(resp, "content-type", 12, &content_type_ptr, &content_type_len) == 0;
 
-    var out = std.ArrayList(u8).init(std.heap.page_allocator);
+    var out = std.array_list.Managed(u8).init(std.heap.page_allocator);
     defer out.deinit();
-    out.writer().print("{{\"statusCode\":{d},\"body\":", .{sa_node_plugin_http_client_resp_status(resp)}) catch return 2;
+    sio.managedWriter(&out).print("{{\"statusCode\":{d},\"body\":", .{sa_node_plugin_http_client_resp_status(resp)}) catch return 2;
     appendJsonString(&out, (body_ptr orelse return 2)[0..body_len]) catch return 2;
     out.appendSlice(",\"contentType\":") catch return 2;
     if (has_content_type) {

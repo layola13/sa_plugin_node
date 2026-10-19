@@ -1,11 +1,17 @@
 const std = @import("std");
 
+/// NOTE(Zig 0.17): `Build.pathFromRoot` was removed. Equivalent helper.
+fn pathFromRoot(b: *std.Build, sub_path: []const u8) []u8 {
+    const root_path = b.root.root_dir.path orelse ".";
+    return std.fs.path.resolve(b.allocator, &.{ root_path, sub_path }) catch @panic("OOM");
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const sci_root = b.option([]const u8, "sci-root", "Path to the sci checkout") orelse "../sci";
     const build_options = b.addOptions();
-    build_options.addOption([]const u8, "plugin_root", b.pathFromRoot("."));
+    build_options.addOption([]const u8, "plugin_root", pathFromRoot(b, "."));
 
     const plugin_api = b.createModule(.{
         .root_source_file = b.path("src/plugin_api.zig"),
@@ -49,12 +55,22 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
 
+    const sio_module = b.createModule(.{
+        .root_source_file = .{ .cwd_relative = b.pathJoin(&.{ sci_root, "src", "sa_io.zig" }) },
+        .target = target,
+        .optimize = optimize,
+    });
+
     root_module.addImport("plugin_api", plugin_api);
+    root_module.addImport("sio", sio_module);
     root_module.addImport("sa_http2", sa_http2);
     http_client_module.addImport("plugin_api", plugin_api);
     http_server_module.addImport("plugin_api", plugin_api);
     http_client_module.addImport("sa_net_primitives", sa_net_primitives);
     http_server_module.addImport("sa_net_primitives", sa_net_primitives);
+    http_client_module.addImport("sio", sio_module);
+    http_server_module.addImport("sio", sio_module);
+    sa_http2.addImport("sio", sio_module);
     root_module.addImport("http_client", http_client_module);
     root_module.addImport("http_server", http_server_module);
     root_module.addOptions("build_options", build_options);
@@ -64,13 +80,16 @@ pub fn build(b: *std.Build) void {
         .root_module = root_module,
         .linkage = .dynamic,
     });
-    lib.linkSystemLibrary("resolv");
-    lib.linkSystemLibrary("dl");
+    root_module.linkSystemLibrary("resolv", .{});
+    root_module.linkSystemLibrary("dl", .{});
 
     b.installArtifact(lib);
 
+    const test_filters = b.option([]const []const u8, "test-filter", "Filter tests by name substring") orelse &.{};
+
     const main_tests = b.addTest(.{
         .root_module = root_module,
+        .filters = test_filters,
     });
 
     const test_module = b.createModule(.{
@@ -80,19 +99,17 @@ pub fn build(b: *std.Build) void {
     });
     test_module.addImport("node", root_module);
     test_module.addImport("plugin_api", plugin_api);
+    test_module.addImport("sio", sio_module);
 
     const run_main_tests = b.addRunArtifact(main_tests);
-    main_tests.linkSystemLibrary("dl");
+    main_tests.root_module.linkSystemLibrary("dl", .{});
 
     const plugin_tests = b.addTest(.{
         .root_module = test_module,
+        .filters = test_filters,
     });
-    plugin_tests.linkSystemLibrary("dl");
+    plugin_tests.root_module.linkSystemLibrary("dl", .{});
     const run_plugin_tests = b.addRunArtifact(plugin_tests);
-    if (b.args) |args| {
-        run_main_tests.addArgs(args);
-        run_plugin_tests.addArgs(args);
-    }
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_main_tests.step);
